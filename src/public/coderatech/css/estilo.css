@@ -1,0 +1,28 @@
+
+
+/** Arrumando BANNER da sessão de ESTATÍSTICAS */
+.stat-facts{
+	background: url('/futebol/images/stat/banner-estatisticas.jpg') no-repeat center center;
+	-webkit-background-size: cover; 
+	-moz-background-size: cover; 
+	-o-background-size: cover; 
+	background-size: cover;
+}
+
+/** Arrumando BANNER da sessão de VÍDEO */
+.bg-section {
+    background: url('/futebol/images/video/banner-video.jpg') no-repeat center center;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+
+/** Arrumando BANNER da sessão de CLIENTES */
+.bg-client {
+    background: url('/futebol/images/client/banner-client.jpg') no-repeat center center;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
