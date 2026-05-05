@@ -26,3 +26,11 @@
     -o-background-size: cover;
     background-size: cover;
 }
+
+.tab-team-bg{
+	background: url('/futebol/images/team/banner-estatisticas-jogadores.jpg') top center;
+	-webkit-background-size: cover; 
+	-moz-background-size: cover; 
+	-o-background-size: cover; 
+	background-size: cover;
+}

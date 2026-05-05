@@ -513,7 +513,7 @@ strong, b{
 }
 
 .subbanner{
-	background:url('http://placehold.it/1920x400') no-repeat center center;
+	background:url('../images/bannerSobre.jpg') no-repeat center center;
 	-webkit-background-size: cover; 
 	-moz-background-size: cover; 
 	-o-background-size: cover; 

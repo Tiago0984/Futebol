@@ -27,13 +27,13 @@
 					
 					<div id="about-caro" class="owl-carousel owl-theme">
 						<div class="item">
-							<img src="http://placehold.it/1280x768" alt="" class="img-responsive" />
+							<img src="{{asset('futebol/images/about/slide1.jpg')}}" alt="" class="img-responsive" />
 						</div>
 						<div class="item">
-							<img src="http://placehold.it/1280x768" alt="" class="img-responsive" />
+							<img src="{{asset('futebol/images/about/slide2.jpg')}}" alt="" class="img-responsive" />
 						</div>
 						<div class="item">
-							<img src="http://placehold.it/1280x768" alt="" class="img-responsive" />
+							<img src="{{asset('futebol/images/about/slide3.jpg')}}" alt="" class="img-responsive" />
 						</div>
 					</div>
 					

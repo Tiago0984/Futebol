@@ -67,7 +67,7 @@
 									<div id="primary-team-caro" class="owl-carousel owl-theme">
 										<div class="item">
 											<div class="teams-image">
-												<img src="http://placehold.it/390x585" alt="" class="img-responsive" />
+												<img src="{{asset('futebol/images/jogador1.jpg')}}" alt="" class="img-responsive" />
 											</div>
 											<div class="teams-description">
 												<p><span class="title">NATIONAL : </span>PORTUGAL</p>

@@ -24,7 +24,7 @@
 				
 						<div class="item history-item">
 							<div class="gambar">
-								<img src="http://placehold.it/600x400" alt="" class="img-responsive">
+								<img src="{{asset('futebol/images/history1.jpg')}}" alt="" class="img-responsive">
 							</div>
 							<div class="item-body">
 								<div class="title" data-year="1980">
@@ -35,7 +35,7 @@
 						</div>
 						<div class="item history-item">
 							<div class="gambar">
-								<img src="http://placehold.it/600x400" alt="" class="img-responsive">
+								<img src="{{asset('futebol/images/history1.jpg')}}" alt="" class="img-responsive">
 							</div>
 							<div class="item-body">
 								<div class="title" data-year="1990">
@@ -46,7 +46,7 @@
 						</div>
 						<div class="item history-item">
 							<div class="gambar">
-								<img src="http://placehold.it/600x400" alt="" class="img-responsive">
+								<img src="{{asset('futebol/images/history1.jpg')}}" alt="" class="img-responsive">
 							</div>
 							<div class="item-body">
 								<div class="title" data-year="1995">
@@ -57,7 +57,7 @@
 						</div>
 						<div class="item history-item">
 							<div class="gambar">
-								<img src="http://placehold.it/600x400" alt="" class="img-responsive">
+								<img src="{{asset('futebol/images/history1.jpg')}}" alt="" class="img-responsive">
 							</div>
 							<div class="item-body">
 								<div class="title" data-year="2001">
@@ -68,7 +68,7 @@
 						</div>
 						<div class="item history-item">
 							<div class="gambar">
-								<img src="http://placehold.it/600x400" alt="" class="img-responsive">
+								<img src="{{asset('futebol/images/history1.jpg')}}" alt="" class="img-responsive">
 							</div>
 							<div class="item-body">
 								<div class="title" data-year="2012">
@@ -79,7 +79,7 @@
 						</div>
 						<div class="item history-item">
 							<div class="gambar">
-								<img src="http://placehold.it/600x400" alt="" class="img-responsive">
+								<img src="{{asset('futebol/images/history1.jpg')}}" alt="" class="img-responsive">
 							</div>
 							<div class="item-body">
 								<div class="title" data-year="2015">
