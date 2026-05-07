@@ -130,7 +130,7 @@ CREATE TABLE `tbl_autorizacoes` (
   `id_autorizacao` int(11) NOT NULL AUTO_INCREMENT,
   `id_atleta` int(11) NOT NULL,
   `id_responsavel` int(11) NOT NULL,
-  `data_assinatura_autorizacao` date NOT NULL DEFAULT current_timestamp(),
+  `data_assinatura_autorizacao` datetime NOT NULL DEFAULT current_timestamp(),
   PRIMARY KEY (`id_autorizacao`),
   KEY `fk_aut_atleta` (`id_atleta`),
   KEY `fk_aut_responsavel` (`id_responsavel`),
