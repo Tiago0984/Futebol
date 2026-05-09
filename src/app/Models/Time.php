@@ -1,0 +1,12 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Time extends Model
+{
+    protected $table = 'tbl_time';
+    protected $primaryKey = 'id_time';
+    public $timestamps = false;
+}
