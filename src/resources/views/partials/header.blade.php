@@ -40,8 +40,9 @@
 				<li><a href="{{ route('home') }}">HOME</a></li>
 				<li><a href="{{ route('sobre') }}">SOBRE</a></li>
 				<li><a href="{{ route('agenda') }}">AGENDA</a></li>
-				<li><a href="{{ route('evento') }}">EVENTO</a></li>
-				<li><a href="{{ route('portfolio') }}">PORTFOLIO</a></li>
+				<li><a href="{{ route('campeonato') }}">CAMPEONATOS</a></li>
+				<li><a href="{{ route('noticias') }}">NOTÍCIAS</a></li>
+				<li><a href="{{ route('shopping') }}">SHOPPING</a></li>
 				<li><a href="{{ route('parcerias') }}">PARCERIAS</a></li>
 				<li><a href="{{ route('contato') }}">CONTATO</a></li>
 			</ul>
