@@ -1,62 +1,113 @@
-<div class="section banner" >
-		<div id="carousel-example-generic" class="carousel slide" data-ride="carousel">
-			<!-- Indicators -->
-			<ol class="carousel-indicators">
-				<li data-target="#carousel-example-generic" data-slide-to="0" class="active"></li>
-				<li data-target="#carousel-example-generic" data-slide-to="1"></li>
-				<li data-target="#carousel-example-generic" data-slide-to="2"></li>
-			</ol>
+{{-- resources/views/site/parcerias/banner.blade.php --}}
 
-			<!-- Wrapper for slides -->
-			<div class="carousel-inner" role="listbox">
-				<div class="item active">
-					<img src="{{asset('futebol/images/banner/banner1.jpg')}}" alt="...">
-					<div class="carousel-caption">
-						<div class="container">
-							<div class="wrap-caption">
-								<div class="caption-heading">WELCOME TO PRO SOCCER</div>
-								<div class="caption-desc">This template is using bootstrap framework, works totally responsive, easy to customise, well commented codes and seo friendly.</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="item">
-					<img src="{{asset('futebol/images/banner/banner2.jpg')}}" alt="...">
-					<div class="carousel-caption">
-						<div class="container">
-							<div class="wrap-caption">
-								<div class="caption-heading">WE ARE PROFESSIONAL FOOTBALL CLUB</div>
-								<div class="caption-desc">This template is using adobe muse making it easier to edit, add content, and without having to use the coding in the edit.</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				<div class="item">
-					<img src="{{asset('futebol/images/banner/banner3.jpg')}}" alt="...">
-					<div class="carousel-caption">
-						<div class="container">
-							<div class="wrap-caption">
-								<div class="caption-heading">WE ARE DREAM CLUB</div>
-								<div class="caption-desc">This template is using adobe muse making it easier to edit, add content, and without having to use the coding in the edit.</div>
-							</div>
-						</div>
-					</div>
-				</div>
-				
+<section class="parcerias-banner">
+    {{-- Bloco cinza simulando imagem de fundo (substituir por img/CSS background real futuramente) --}}
+    <div class="parcerias-banner__bg-placeholder"></div>
+    <div class="parcerias-banner__overlay"></div>
 
-			</div>
+    <div class="container parcerias-banner__content">
+        <span class="parcerias-banner__label">Parcerias & Patrocínios</span>
+        <h1 class="parcerias-banner__title">
+            Jogue junto com quem <br>
+            <strong>transforma vidas</strong> através do esporte.
+        </h1>
+        <p class="parcerias-banner__subtitle">
+            Sua marca ao lado de quem forma atletas, cidadãos e futuros líderes.
+        </p>
+        <div class="parcerias-banner__actions">
+            <a href="#parceria-form" class="btn btn-primary btn-lg parcerias-banner__cta">
+                Quero ser parceiro
+            </a>
+            <a href="#nossos-parceiros" class="btn btn-outline-light btn-lg parcerias-banner__cta-secondary">
+                Conheça nossos parceiros
+            </a>
+        </div>
+    </div>
+</section>
 
-			<!-- Controls -->
-			<a class="left carousel-control" href="#carousel-example-generic" role="button" data-slide="prev">
-				<span class="fa fa-chevron-left" ></span>
-				<span class="sr-only">Previous</span>
-			</a>
-			<a class="right carousel-control" href="#carousel-example-generic" role="button" data-slide="next">
-				<span class="fa fa-chevron-right" ></span>
-				<span class="sr-only">Next</span>
-			</a>
-		</div>
+{{-- ─── STYLE ─────────────────────────────────────────────────────────────── --}}
+<style>
+.parcerias-banner {
+    position: relative;
+    min-height: 90vh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+}
 
-		<!-- END CAROUSEL -->
-		
-	</div>
+/* Placeholder cinza de fundo — remover quando houver imagem real */
+.parcerias-banner__bg-placeholder {
+    position: absolute;
+    inset: 0;
+    background: #2a2a2a;
+    /* Futuramente: background-image: url('{{ asset("assets/img/parcerias/banner.jpg") }}');
+       background-size: cover;
+       background-position: center; */
+}
+
+.parcerias-banner__overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        135deg,
+        rgba(0, 0, 0, 0.80) 0%,
+        rgba(0, 0, 0, 0.50) 60%,
+        rgba(0, 0, 0, 0.65) 100%
+    );
+    z-index: 1;
+}
+
+.parcerias-banner__content {
+    position: relative;
+    z-index: 2;
+    padding-top: 120px;
+    padding-bottom: 80px;
+}
+
+.parcerias-banner__label {
+    display: inline-block;
+    font-size: 0.80rem;
+    font-weight: 700;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--color-primary, #e63312);
+    border-left: 3px solid var(--color-primary, #e63312);
+    padding-left: 12px;
+    margin-bottom: 20px;
+}
+
+.parcerias-banner__title {
+    font-size: clamp(2.2rem, 5vw, 4rem);
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1.15;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    letter-spacing: -0.01em;
+}
+
+.parcerias-banner__title strong {
+    color: var(--color-primary, #e63312);
+}
+
+.parcerias-banner__subtitle {
+    font-size: clamp(1rem, 2vw, 1.25rem);
+    color: rgba(255, 255, 255, 0.80);
+    max-width: 540px;
+    margin-bottom: 40px;
+    line-height: 1.6;
+}
+
+.parcerias-banner__actions {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.parcerias-banner__cta {
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 14px 36px;
+}
+</style>

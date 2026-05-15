@@ -1,215 +1,154 @@
-<!-- ABOUT SECTION -->
-	<div class="section about">
-		<div class="container">
-			
-			<div class="row">
-				<div class="col-sm-12 col-md-12">
-					<div class="page-title">
-						<h2 class="lead">ABOUT FC</h2>
-						<div class="border-style"></div>
-					</div>
-				</div>
-			</div>
-			
-			<div class="row">
-				
-				<div class="col-sm-12 col-md-4">
-					<div id="shop-caro" class="owl-carousel owl-theme">
-						<div class="item shop-item">
-							<div class="img">
-								<img src="{{asset('futebol/images/about/item1.jpg')}}" alt="" class="img-responsive" />
-							</div>
-							<div class="description">
-								<div class="collection-name">
-									<strong>NEW</strong> COLLECTIONS
-									<div class="category">T-shirts</div>
-								</div>
-								<div class="collection-callout">
-									<a href="#" title=""><span class="fa fa-facebook"></span>SHOP NOW</a>
-								</div>
-							</div>
-						</div>
-						<div class="item shop-item">
-							<div class="img">
-								<img src="{{asset('futebol/images/about/item2.jpg')}}" alt="" class="img-responsive" />
-							</div>
-							<div class="description">
-								<div class="collection-name">
-									<strong>NEW</strong> COLLECTIONS
-									<div class="category">Pin</div>
-								</div>
-								<div class="collection-callout">
-									<a href="#" title=""><span class="fa fa-facebook"></span>SHOP NOW</a>
-								</div>
-							</div>
-						</div>
-						
-					</div>
-					
-				</div>
-				
-				<div class="col-sm-12 col-md-8">
-					
-					  <div class="bs-example bs-example-tabs" data-example-id="togglable-tabs">
-						<ul id="myTabs" class="nav nav-tabs" role="tablist">
-							<li class="active"><a href="#match" id="match-tab" role="tab" data-toggle="tab" aria-controls="match" aria-expanded="true">NEXT MATCH</a></li>
-							<li><a href="#training" role="tab" id="training-tab" data-toggle="tab" aria-controls="training">TRAINING SCHEDULE</a></li>
-							<li><a href="#league" role="tab" id="league-tab" data-toggle="tab" aria-controls="league">LEAGUE TABLE</a></li>
-						</ul>
-						<div id="myTabContent" class="tab-content tab-content-bg">
-							<div role="tabpanel" class="tab-pane fade in active" id="match" aria-labelledBy="match-tab">
-								<div class="table-responsive">
-									<table class="table table-striped">
-										<tbody>
-											<tr>
-												<td class="tw40"><div class="match-date">01 Juni 19:00</div></td>
-												<td><div class="match-title text-right">Jupentus</div></td>
-												<td><div class="text-center">VS</div></td>
-												<td><div class="match-title color-red">Pro Soccer</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">06 Juni 19:00</div></td>
-												<td><div class="match-title color-red text-right">Pro Soccer</div></td>
-												<td><div class="text-center">VS</div></td>
-												<td><div class="match-title">Viorentina</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">12 Juni 19:00</div></td>
-												<td><div class="match-title color-red text-right">Pro Soccer</div></td>
-												<td><div class="text-center">VS</div></td>
-												<td><div class="match-title">ACE Milan</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">16 Juni 19:00</div></td>
-												<td><div class="match-title text-right">Atlantas</div></td>
-												<td><div class="text-center">VS</div></td>
-												<td><div class="match-title color-red">Pro Soccer</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">21 Juni 19:00</div></td>
-												<td><div class="match-title color-red text-right">Pro Soccer</div></td>
-												<td><div class="text-center">VS</div></td>
-												<td><div class="match-title">Navoli</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">25 Juni 19:00</div></td>
-												<td><div class="match-title color-red text-right">Pro Soccer</div></td>
-												<td><div class="text-center">VS</div></td>
-												<td><div class="match-title">Gemoa</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">30 Juni 19:00</div></td>
-												<td><div class="match-title color-red text-right">Pro Soccer</div></td>
-												<td><div class="text-center">VS</div></td>
-												<td><div class="match-title">Samdorio</div></td>
-											</tr>
-										</tbody>
-									</table>
-								
-								</div>
-							</div>
-							<div role="tabpanel" class="tab-pane fade" id="training" aria-labelledBy="training-tab">
-								<div class="table-responsive">
-									<table class="table table-striped">
-										<tbody>
-											<tr>
-												<td class="tw40"><div class="match-date">Sunday 07:00 - 10:00</div></td>
-												<td><div class="match-title">Workout</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">Sunday 14:00 - 18:00</div></td>
-												<td><div class="match-title">Training Penalty Kick</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">Monday 07:00 - 10:00</div></td>
-												<td><div class="match-title">Aerobic</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">Monday 14:00 - 18:00</div></td>
-												<td><div class="match-title">Training Free Kick</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">Wednesday 07:00 - 18:00</div></td>
-												<td><div class="match-title">Swimming</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">Friday 14:00 - 18:00</div></td>
-												<td><div class="match-title">Training Strategy</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-date">Friday 15:00 - 17:00</div></td>
-												<td><div class="match-title">Match Team 1 vs Team 2</div></td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							</div>
-							<div role="tabpanel" class="tab-pane fade" id="league" aria-labelledBy="league-tab">
-								<div class="table-responsive">
-									<table class="table table-striped">
-										<thead>
-											<tr>
-												<td class="tw50">TEAM</td>
-												<td class="tw10">W</td>
-												<td class="tw10">D</td>
-												<td class="tw10">L</td>
-												<td>POINT</td>
-											</tr>
-										</thead>
-										<tbody>
-											<tr>
-												<td><div class="match-title">1. Jupentus</div></td>
-												<td>4</td>
-												<td>0</td>
-												<td>1</td>
-												<td><div class="match-title">12</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-title color-red">2. Pro Soccer</div></td>
-												<td>3</td>
-												<td>1</td>
-												<td>1</td>
-												<td><div class="match-title">10</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-title">3. Atalantas</div></td>
-												<td>2</td>
-												<td>2</td>
-												<td>2</td>
-												<td><div class="match-title">8</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-title">4. ACE Milan</div></td>
-												<td>2</td>
-												<td>1</td>
-												<td>3</td>
-												<td><div class="match-title">7</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-title">19. AES Roma</div></td>
-												<td>0</td>
-												<td>1</td>
-												<td>6</td>
-												<td><div class="match-title">1</div></td>
-											</tr>
-											<tr>
-												<td><div class="match-title">20. Navoli</div></td>
-												<td>0</td>
-												<td>1</td>
-												<td>8</td>
-												<td><div class="match-title">0</div></td>
-											</tr>
-										</tbody>
-									</table>
-								</div>
-							</div>
-						  
-						</div>
-					  </div><!-- /example -->
-					
-				</div>
-				
-				
-			</div>
-		</div>
-	</div>
+{{-- resources/views/site/parcerias/about.blade.php --}}
+
+<section class="parcerias-about section-padding">
+    <div class="container">
+        <div class="row align-items-center g-5">
+
+            {{-- Lado esquerdo: texto institucional --}}
+            <div class="col-lg-6">
+                <span class="section-label">Sobre as Parcerias</span>
+                <h2 class="parcerias-about__title">
+                    Mais do que uma parceria, <br>
+                    <span class="text-primary">um compromisso com o futuro.</span>
+                </h2>
+                <p class="parcerias-about__text">
+                    {{-- TEXTO BASE — substituir pelo texto real da escolinha --}}
+                    Nossos parceiros fazem parte direta do crescimento da escolinha e contribuem com o
+                    desenvolvimento esportivo, social e educacional dos nossos atletas. Cada apoio recebido
+                    é revertido em estrutura, oportunidade e sonhos realizados dentro e fora do campo.
+                </p>
+                <p class="parcerias-about__text">
+                    {{-- TEXTO BASE — substituir pelo texto real da escolinha --}}
+                    Acreditamos que o esporte transforma vidas, e nossos parceiros acreditam nisso também.
+                    Juntos, construímos uma comunidade mais forte, unida e cheia de propósito.
+                </p>
+                <div class="parcerias-about__stats">
+                    <div class="parcerias-about__stat">
+                        {{-- NÚMERO BASE — substituir pelo número real --}}
+                        <span class="parcerias-about__stat-number">00+</span>
+                        <span class="parcerias-about__stat-label">Parceiros ativos</span>
+                    </div>
+                    <div class="parcerias-about__stat">
+                        {{-- NÚMERO BASE — substituir pelo número real --}}
+                        <span class="parcerias-about__stat-number">000+</span>
+                        <span class="parcerias-about__stat-label">Atletas beneficiados</span>
+                    </div>
+                    <div class="parcerias-about__stat">
+                        {{-- NÚMERO BASE — substituir pelo número real --}}
+                        <span class="parcerias-about__stat-number">00+</span>
+                        <span class="parcerias-about__stat-label">Anos de parceria</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Lado direito: placeholder de imagem --}}
+            <div class="col-lg-6">
+                <div class="parcerias-about__img-wrap">
+                    {{-- Bloco cinza placeholder — substituir por <img> real futuramente --}}
+                    <div class="parcerias-about__img-placeholder">
+                        <span>Imagem ilustrativa<br><small>Substituir por imagem real</small></span>
+                    </div>
+                    {{-- Destaque flutuante --}}
+                    <div class="parcerias-about__badge">
+                        <i class="fas fa-trophy"></i>
+                        <span>Parceiros que <strong>acreditam</strong> no esporte</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
+
+{{-- ─── STYLE ─────────────────────────────────────────────────────────────── --}}
+<style>
+.parcerias-about {
+    background: #ffffff;
+}
+
+.parcerias-about__title {
+    font-size: clamp(1.6rem, 3vw, 2.4rem);
+    font-weight: 900;
+    color: #111;
+    text-transform: uppercase;
+    line-height: 1.2;
+    margin-bottom: 24px;
+    letter-spacing: -0.01em;
+}
+
+.parcerias-about__text {
+    color: #555;
+    font-size: 1rem;
+    line-height: 1.8;
+    margin-bottom: 16px;
+}
+
+.parcerias-about__stats {
+    display: flex;
+    gap: 32px;
+    margin-top: 36px;
+    padding-top: 28px;
+    border-top: 1px solid #eee;
+    flex-wrap: wrap;
+}
+
+.parcerias-about__stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.parcerias-about__stat-number {
+    font-size: 2rem;
+    font-weight: 900;
+    color: var(--color-primary, #e63312);
+    line-height: 1;
+}
+
+.parcerias-about__stat-label {
+    font-size: 0.78rem;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-top: 4px;
+}
+
+/* Placeholder de imagem */
+.parcerias-about__img-wrap {
+    position: relative;
+}
+
+.parcerias-about__img-placeholder {
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #d0d0d0;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: #888;
+    font-size: 0.9rem;
+    /* Futuramente: remover este bloco e usar <img src="..." class="img-fluid rounded"> */
+}
+
+.parcerias-about__badge {
+    position: absolute;
+    bottom: -20px;
+    left: -20px;
+    background: var(--color-primary, #e63312);
+    color: #fff;
+    padding: 16px 22px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.85rem;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    max-width: 240px;
+}
+
+.parcerias-about__badge i {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+</style>

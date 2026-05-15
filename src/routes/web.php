@@ -27,6 +27,8 @@ Route::get('/noticias', [NoticiasController::class, 'noticias'])->name('noticias
 Route::get('/shopping', [ShoppingController::class, 'shopping'])->name('shopping');
 
 Route::get('/parcerias', [ParceriasController::class, 'parcerias'])->name('parcerias');
+//Formulário de parcerias:
+Route::post('/parcerias', [ParceriasController::class, 'form'])->name('parcerias.form'); // ← falta isso
 
 Route::get('/contato', [ContatoController::class, 'contato'])->name('contato');
 
