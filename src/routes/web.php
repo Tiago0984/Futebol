@@ -1,5 +1,6 @@
 <?php
 
+//Site
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\SobreController;
@@ -9,6 +10,10 @@ use App\Http\Controllers\NoticiasController;
 use App\Http\Controllers\ShoppingController;
 use App\Http\Controllers\ParceriasController;
 use App\Http\Controllers\ContatoController;
+
+//Dashboard
+
+use App\Http\Controllers\Admin\DashController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -26,4 +31,14 @@ Route::get('/parcerias', [ParceriasController::class, 'parcerias'])->name('parce
 
 Route::get('/contato', [ContatoController::class, 'contato'])->name('contato');
 
+
+Route::prefix('admin')->name('admin.')->group(function () {
+    // Rotas para o painel administrativo
+    // Exemplo: Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
+
+    Route::get('/', [DashController::class, 'index'])->name('dash');
+    Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');
+
+
+});
 
