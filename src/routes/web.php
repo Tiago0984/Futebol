@@ -2,17 +2,16 @@
 
 //Site
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\HomeController;
-use App\Http\Controllers\SobreController;
-use App\Http\Controllers\AgendaController;
-use App\Http\Controllers\CampeonatoController;
-use App\Http\Controllers\NoticiasController;
-use App\Http\Controllers\ShoppingController;
-use App\Http\Controllers\ParceriasController;
-use App\Http\Controllers\ContatoController;
+use App\Http\Controllers\Site\HomeController;
+use App\Http\Controllers\Site\SobreController;
+use App\Http\Controllers\Site\AgendaController;
+use App\Http\Controllers\Site\CampeonatoController;
+use App\Http\Controllers\Site\NoticiasController;
+use App\Http\Controllers\Site\ShoppingController;
+use App\Http\Controllers\Site\ParceriasController;
+use App\Http\Controllers\Site\ContatoController;
 
 //Dashboard
-
 use App\Http\Controllers\Admin\DashController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
