@@ -1,17 +1,30 @@
+/* ==========================================================================
+   COMPORTAMENTO GLOBAL DE ROLAGEM
+   Garante que qualquer link com âncora (#id) role a página suavemente.
+   ========================================================================== */
+html {
+    scroll-behavior: smooth;
+}
 
+/** Arrumando tamanho da logo no header */
+.navbar-main .navbar-brand > img {
+    width: 90%;
+}
 
 /** Arrumando BANNER da sessão de ESTATÍSTICAS */
-.stat-facts{
-	background: url('/futebol/images/stat/banner-estatisticas.jpg') no-repeat center center;
-	-webkit-background-size: cover; 
-	-moz-background-size: cover; 
-	-o-background-size: cover; 
-	background-size: cover;
+.stat-facts {
+    background: url("/futebol/images/stat/banner-estatisticas.jpg") no-repeat
+        center center;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
 }
 
 /** Arrumando BANNER da sessão de VÍDEO */
 .bg-section {
-    background: url('/futebol/images/video/banner-video.jpg') no-repeat center center;
+    background: url("/futebol/images/video/banner-video.jpg") no-repeat center
+        center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
@@ -20,7 +33,8 @@
 
 /** Arrumando BANNER da sessão de CLIENTES */
 .bg-client {
-    background: url('/futebol/images/client/banner-client.jpg') no-repeat center center;
+    background: url("/futebol/images/client/banner-client.jpg") no-repeat center
+        center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
@@ -45,3 +59,945 @@
     background-position: center center;
     background-repeat: no-repeat;
 }   
+.tab-team-bg {
+    background: url("/futebol/images/team/banner-estatisticas-jogadores.jpg")
+        top center;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+}
+
+/* ==========================================================================
+   CONFIGURAÇÕES DE RITMO VISUAL, CORES E ESPAÇAMENTO (RESET & UTILS)
+   ========================================================================== */
+.container-partnership {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+/* Padronização rígida de espaçamento de blocos de título */
+.section-title-block {
+    text-align: center;
+    margin-bottom: 56px; /* Espaçamento generoso abaixo do título */
+}
+.section-title-block h2 {
+    font-size: 2.6rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin: 10px 0 16px 0;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+.section-title-block p {
+    color: #666666;
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.5;
+}
+.section-subtitle-tag {
+    color: #e31c1c;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 2px;
+    display: block;
+}
+
+/* ==========================================================================
+   SESSÃO 1: BANNER PRINCIPAL (FUNDO ESCURO #1a1a1a)
+   ========================================================================== */
+.partnership-banner {
+    position: relative;
+    background: #1a1a1a;
+    padding: 120px 0; /* Mais respiro vertical */
+    color: #ffffff;
+    text-align: center;
+}
+.banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 1;
+}
+.partnership-banner .container-partnership {
+    position: relative;
+    z-index: 2;
+}
+/* .partnership-badge {
+    background: #e31c1c;
+    color: #fff;
+    padding: 6px 16px;
+    text-transform: uppercase;
+    font-weight: bold;
+    font-size: 0.8rem;
+    letter-spacing: 1.5px;
+    border-radius: 4px;
+} */
+.banner-title {
+    font-size: 3.2rem;
+    font-weight: 900;
+    margin: 24px 0 16px 0;
+    text-transform: uppercase;
+    line-height: 1.15;
+}
+.banner-subtitle {
+    font-size: 1.25rem;
+    max-width: 720px;
+    margin: 0 auto 40px auto; /* Espaçamento controlado antes do botão */
+    opacity: 0.85;
+    line-height: 1.6;
+}
+.btn-partnership-cta {
+    background: #e31c1c;
+    color: #fff;
+    padding: 16px 40px;
+    text-decoration: none;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
+    transition: background 0.2s ease-in-out;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+}
+.btn-partnership-cta:hover {
+    background: #b51212;
+}
+
+/* ==========================================================================
+   SEÇÃO NOVA: TRANSIÇÃO/CTA PÓS-BANNER (FUNDO CLARO #ffffff OU #f9f9f9)
+   Serve como ponte direta de conversão logo após o banner institucional.
+   ========================================================================== */
+.partnership-cta-transition {
+    padding: 60px 0; /* Menor que as seções cheias (100px) para agir como uma barra de ação rápido */
+    background: #ffffff;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.cta-transition-flex {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+}
+
+/* Lado do Texto */
+.cta-message-block {
+    flex: 2;
+    min-width: 300px;
+}
+.cta-message-block h2 {
+    font-size: 2rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 10px 0;
+    line-height: 1.2;
+}
+.cta-message-block p {
+    font-size: 1.1rem;
+    color: #555555;
+    margin: 0;
+    line-height: 1.5;
+}
+
+/* Lado do Botão */
+.cta-action-block {
+    flex: 1;
+    min-width: 250px;
+    display: flex;
+    justify-content: flex-end; /* Alinha o botão totalmente à direita */
+}
+.btn-partnership-action {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #e31c1c;
+    color: #ffffff;
+    text-decoration: none;
+    padding: 16px 36px;
+    border-radius: 6px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 1rem;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(227, 28, 28, 0.2);
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+.btn-partnership-action:hover {
+    background: #b51212;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(227, 28, 28, 0.3);
+}
+.btn-icon-arrow {
+    transition: transform 0.2s ease;
+}
+.btn-partnership-action:hover .btn-icon-arrow {
+    transform: translateX(4px);
+}
+
+/* Ajuste Responsivo para Celulares */
+@media (max-width: 768px) {
+    .partnership-cta-transition {
+        padding: 48px 0;
+    }
+    .cta-action-block {
+        justify-content: flex-start; /* No mobile, o botão volta para a esquerda alinhando com o texto */
+    }
+    .btn-partnership-action {
+        width: 100%; /* Botão ocupa a largura total no celular para facilitar o clique */
+    }
+}
+
+/* ==========================================================================
+   SESSÃO 2: SOBRE AS PARCERIAS (FUNDO CLARO #ffffff)
+   ========================================================================== */
+.partnership-about {
+    padding: 100px 0;
+    background: #ffffff;
+}
+.about-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 64px; /* Espaço amplo entre texto e bloco cinza */
+    align-items: center;
+}
+.about-text-block {
+    flex: 12;
+    min-width: 320px;
+}
+.about-text-block h2 {
+    font-size: 2.6rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-bottom: 24px;
+    line-height: 1.1;
+}
+.about-text-block p {
+    font-size: 1.15rem;
+    line-height: 1.7;
+    color: #444444;
+}
+.about-image-block {
+    flex: 10;
+    min-width: 320px;
+}
+.placeholder-gray-box {
+    background: #e5e5e5;
+    width: 100%;
+    height: 380px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+.placeholder-gray-box span {
+    color: #666;
+    font-weight: 700;
+}
+
+/* ==========================================================================
+   SESSÃO 3: NOVO CARROSSEL COM HISTÓRIA (FUNDO CINZA CLARO #f4f4f4)
+   ========================================================================== */
+.partnership-history-slider {
+    padding: 100px 0;
+    background: #f4f4f4; /* Transição de cor para quebrar a monotonia */
+    border-top: 1px solid #eaeaea;
+    border-bottom: 1px solid #eaeaea;
+}
+.history-carousel-wrapper {
+    margin-top: 40px;
+}
+/* Item do slide estilizado em Grid interno */
+.history-slide-item {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 48px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    margin-bottom: 20px; /* Margem de segurança */
+}
+.slide-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    align-items: center;
+}
+/* Lado Esquerdo: Logo e Badge */
+.slide-logo-side {
+    flex: 1;
+    min-width: 220px;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+.partner-logo-box {
+    background: #f0f0f0;
+    width: 180px;
+    height: 120px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+.partner-logo-box span {
+    color: #888;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+.partner-type-badge {
+    background: #e31c1c;
+    color: #fff;
+    padding: 4px 14px;
+    border-radius: 30px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.partner-type-badge.text-social {
+    background: #2b7a78; /* Variação de cor para parceiros sociais se preferir */
+}
+/* Lado Direito: A História e Impacto */
+.slide-content-side {
+    flex: 2;
+    min-width: 300px;
+}
+.slide-content-side h3 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    margin-bottom: 16px;
+    color: #111111;
+}
+.partner-story-text {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #555555;
+    margin-bottom: 24px;
+}
+.partner-quote {
+    border-left: 4px solid #e31c1c;
+    padding-left: 20px;
+    margin: 0;
+    font-style: italic;
+    color: #333333;
+    font-size: 1.05rem;
+}
+
+/* ==========================================================================
+   SESSÃO 4: BENEFÍCIOS DA PARCERIA (FUNDO CLARO #ffffff)
+   ========================================================================== */
+.partnership-benefits {
+    padding: 100px 0;
+    background: #ffffff;
+}
+.benefits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 32px;
+}
+.benefit-card {
+    padding: 32px;
+    border: 1px solid #eeeeee;
+    border-radius: 8px;
+    border-top: 4px solid #e31c1c;
+    background: #ffffff;
+}
+.benefit-icon {
+    font-size: 2.2rem;
+    margin-bottom: 16px;
+}
+.benefit-card h4 {
+    font-size: 1.3rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+    color: #111;
+}
+.benefit-card p {
+    font-size: 1rem;
+    color: #555555;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   SESSÃO 5: FORMULÁRIO DE CAPTAÇÃO (FUNDO ESCURO #1a1a1a)
+   ========================================================================== */
+
+/* Força a rolagem suave a respeitar um recuo do topo (ajuste os 90px de acordo com a altura do seu menu)
+#fazer-parceria,
+#enviar-mensagem {
+    scroll-margin-top: 90px;
+} */
+
+.partnership-form-section {
+    padding: 100px 0;
+    background: #1a1a1a;
+    color: #ffffff;
+}
+.form-container {
+    max-width: 700px;
+    margin: 0 auto;
+    background: #222222;
+    padding: 48px;
+    border-radius: 12px;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+    border: 1px solid #2d2d2d;
+    box-sizing: border-box;
+}
+.form-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+.form-header h3 {
+    font-size: 2.2rem;
+    text-transform: uppercase;
+    color: #e31c1c;
+    font-weight: 900;
+    margin-bottom: 8px;
+}
+.form-header p {
+    color: #cccccc;
+    font-size: 1rem;
+}
+.form-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 24px;
+}
+.form-group {
+    flex: 1;
+    min-width: 240px;
+}
+.form-group-full {
+    margin-bottom: 24px;
+}
+.form-container label {
+    display: block;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #bbbbbb;
+    font-weight: 600;
+}
+.form-input {
+    width: 100%;
+    padding: 14px;
+    background: #2d2d2d;
+    border: 1px solid #444444;
+    color: #ffffff;
+    border-radius: 6px;
+    box-sizing: border-box;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+.form-input:focus {
+    border-color: #e31c1c;
+    outline: none;
+}
+.form-select {
+    height: 52px;
+}
+.form-textarea {
+    resize: vertical;
+}
+.form-submit-block {
+    text-align: center;
+    margin-top: 32px;
+}
+.btn-form-submit {
+    background: #e31c1c;
+    color: #ffffff;
+    border: none;
+    padding: 16px 40px;
+    font-size: 1.15rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+    letter-spacing: 1px;
+    transition: background 0.2s;
+}
+.btn-form-submit:hover {
+    background: #b51212;
+}
+
+/* ==========================================================================
+   PÁGINA DE CONTATO - ESTRUTURAÇÃO COMPLETA (RITMO VISUAL E ESPAÇAMENTOS)
+   ========================================================================== */
+
+/* --- Container e Alinhamentos Base --- */
+.container-contact {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   SESSÃO 1: NOVO BANNER PREMIUM ASSIMÉTRICO (FUNDO ESCURO #111111)
+   Substitui o topo tradicional por um layout dividido em Grid com efeito Pulse.
+   ========================================================================== */
+.contact-banner-premium {
+    position: relative;
+    background: #111111; /* Tom mais profundo de preto para destacar o card */
+    padding: 140px 0; /* Mais espaçamento para valorizar o design */
+    color: #ffffff;
+    overflow: hidden;
+}
+
+/* Background com grafismo ou textura sutil */
+.banner-dynamic-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at 80% 20%,
+        rgba(227, 28, 28, 0.15) 0%,
+        transparent 50%
+    );
+    z-index: 1;
+}
+
+.banner-split-grid {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 64px;
+}
+
+/* --- Lado Esquerdo: Mensagem --- */
+.banner-message-side {
+    flex: 14;
+    min-width: 320px;
+}
+.contact-badge-premium {
+    background: rgba(227, 28, 28, 0.1);
+    color: #e31c1c;
+    border: 1px solid #e31c1c;
+    padding: 6px 16px;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-bottom: 24px;
+}
+.banner-title-premium {
+    font-size: 3.5rem;
+    font-weight: 900;
+    line-height: 1.15;
+    text-transform: uppercase;
+    margin: 0 0 20px 0;
+}
+.banner-title-premium .text-highlight {
+    color: #e31c1c;
+    position: relative;
+}
+.banner-subtitle-premium {
+    font-size: 1.2rem;
+    line-height: 1.65;
+    color: #cccccc;
+    max-width: 580px;
+    margin: 0;
+}
+
+/* --- Lado Direito: Card de Status --- */
+.banner-status-side {
+    align-self: end;
+    flex: 10;
+    min-width: 300px;
+}
+.status-panel-card {
+    background: #1a1a1a;
+    border: 1px solid #2d2d2d;
+    border-radius: 16px;
+    padding: 32px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    position: relative;
+}
+/* Efeito de bola piscando (Pulse) simulando tempo real */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(37, 211, 102, 0.1);
+    padding: 6px 14px;
+    border-radius: 30px;
+}
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #25d366;
+    border-radius: 50%;
+    display: inline-block;
+    animation: statusPulse 1.8s infinite ease-in-out;
+}
+.status-text {
+    color: #25d366;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+}
+.status-panel-card h3 {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 24px 0 16px 0;
+    color: #ffffff;
+}
+.panel-info-row {
+    font-size: 1rem;
+    color: #aaaaaa;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.panel-info-row strong {
+    color: #ffffff;
+}
+
+/* Botão de Ação do Card e Reset de bordas externas */
+.contact-banner-premium .panel-footer {
+    padding: 0; /* Remove os espaçamentos internos que mostram o fundo antigo */
+    background: transparent; /* Força o fundo a ficar transparente, assumindo o preto do card */
+    border: none; /* Elimina qualquer borda superior ou lateral herdada */
+    margin-top: 28px; /* Mantém o distanciamento correto entre o texto e o botão */
+}
+
+.btn-banner-premium {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: #e31c1c;
+    color: #ffffff;
+    text-decoration: none;
+    padding: 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    transition:
+        background 0.2s ease,
+        transform 0.2s ease;
+}
+.btn-banner-premium:hover {
+    background: #b51212;
+    transform: translateY(-2px);
+}
+.btn-arrow {
+    transition: transform 0.2s ease;
+}
+.btn-banner-premium:hover .btn-arrow {
+    transform: translateX(4px);
+}
+
+/* Animação do Ponto de Status */
+@keyframes statusPulse {
+    0% {
+        transform: scale(0.9);
+        opacity: 0.6;
+    }
+    50% {
+        transform: scale(1.1);
+        opacity: 1;
+    }
+    100% {
+        transform: scale(0.9);
+        opacity: 0.6;
+    }
+}
+
+/* Ajustes Responsivos para Telas Menores */
+@media (max-width: 991px) {
+    .contact-banner-premium {
+        padding: 100px 0;
+    }
+    .banner-split-grid {
+        gap: 40px;
+    }
+    .banner-title-premium {
+        font-size: 2.8rem;
+    }
+}
+
+/* ==========================================================================
+   SESSÃO 2: CARDS DOS CANAIS DE ATENDIMENTO (FUNDO CLARO #ffffff)
+   Organiza os contatos principais em formato de blocos modernos com hover.
+   ========================================================================== */
+.contact-channels-section {
+    padding: 100px 0;
+    background: #ffffff;
+}
+.contact-channels-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
+    margin-top: 40px;
+}
+.channel-card {
+    background: #fdfdfd;
+    border: 1px solid #eaeaea;
+    padding: 40px 32px;
+    border-radius: 12px;
+    text-align: center;
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+.channel-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.05);
+}
+/* Destaque visual focado no canal de maior conversão (WhatsApp) */
+.channel-card.highlight-whatsapp {
+    border-top: 4px solid #25d366;
+}
+.channel-card.highlight-whatsapp .card-icon-box {
+    background: rgba(37, 211, 102, 0.1);
+    color: #25d366;
+}
+.card-icon-box {
+    font-size: 2.2rem;
+    width: 70px;
+    height: 70px;
+    background: #f4f4f4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px auto;
+    border-radius: 50%;
+}
+.channel-card h3 {
+    font-size: 1.4rem;
+    font-weight: 800;
+    margin-bottom: 12px;
+    color: #111111;
+}
+.channel-detail {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #e31c1c;
+    margin-bottom: 8px;
+}
+.channel-sub {
+    font-size: 0.9rem;
+    color: #666666;
+}
+
+/* ==========================================================================
+   SEÇÃO: FAQ / ACCORDION EXPANSÍVEL (ANIMADO COM SCRIPT)
+   Usa JS para calcular a altura em pixels reais e CSS para suavizar.
+   ========================================================================== */
+.contact-faq-section {
+    padding: 100px 0;
+    background: #f9f9f9;
+    border-top: 1px solid #eaeaea;
+    border-bottom: 1px solid #eaeaea;
+}
+.faq-accordion-wrapper {
+    max-width: 800px;
+    margin: 40px auto 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+.faq-accordion-item {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    border-left: 4px solid #e31c1c;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+/* Gatilho transformado em button para melhor semântica de clique */
+.faq-accordion-trigger {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 24px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #111111;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    user-select: none;
+    text-align: left;
+    font-family: inherit; /* Herda a fonte do projeto */
+}
+.faq-accordion-trigger:focus {
+    outline: none;
+}
+/* Ícone de "+" customizado */
+.faq-icon {
+    position: relative;
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    margin-left: 15px;
+}
+.faq-icon::before,
+.faq-icon::after {
+    content: "";
+    position: absolute;
+    background-color: #e31c1c;
+    transition: transform 0.3s ease-in-out;
+}
+.faq-icon::before {
+    top: 7px;
+    left: 0;
+    width: 16px;
+    height: 2px;
+}
+.faq-icon::after {
+    top: 0;
+    left: 7px;
+    width: 2px;
+    height: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   ESTADOS DE ATIVAÇÃO DA ANIMAÇÃO (GEREANCIADO PELO SCRIPT)
+   -------------------------------------------------------------------------- */
+.faq-accordion-content {
+    height: 0; /* Começa totalmente recolhido */
+    overflow: hidden;
+    background: #fafafa;
+    /* Transição perfeita e linear para a propriedade height */
+    transition: height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+}
+/* Container interno para dar o espaçamento correto sem quebrar o cálculo da altura */
+.faq-accordion-body {
+    padding: 0 24px 24px 24px;
+    border-top: 1px solid #f5f5f5;
+}
+.faq-accordion-body p {
+    font-size: 1rem;
+    color: #555555;
+    line-height: 1.6;
+    margin: 20px 0 0 0;
+}
+
+/* Estilos aplicados quando o bloco ganha a classe ativa */
+.faq-accordion-item.is-active {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+}
+.faq-accordion-item.is-active .faq-icon::after {
+    transform: rotate(90deg);
+}
+.faq-accordion-item.is-active .faq-icon::before {
+    transform: rotate(180deg);
+}
+
+/* ==========================================================================
+   SESSÃO 4: FORMULÁRIO + MAPA AS_SIMÉTRICO (FUNDO ESCURO #1a1a1a)
+   Une a captação de mensagens com o mapa de localização lado a lado.
+   ========================================================================== */
+.contact-form-map-section {
+    padding: 100px 0;
+    background: #1a1a1a;
+    color: #ffffff;
+}
+.form-map-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 64px;
+    align-items: stretch;
+}
+/* Bloco do Formulário à esquerda */
+.form-side-container {
+    flex: 13;
+    min-width: 320px;
+    background: #222222;
+    padding: 40px;
+    border-radius: 12px;
+    border: 1px solid #2d2d2d;
+    box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+}
+.form-header-left {
+    margin-bottom: 32px;
+}
+.form-header-left h3 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: #e31c1c;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+.form-header-left p {
+    color: #bbbbbb;
+    font-size: 0.95rem;
+}
+.form-submit-block-left {
+    margin-top: 24px;
+}
+
+/* Bloco do Mapa e Informações de Endereço à direita */
+.map-side-container {
+    flex: 11;
+    min-width: 320px;
+    display: flex;
+    flex-direction: column;
+}
+.location-briefing {
+    margin-bottom: 24px;
+}
+.location-briefing h3 {
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin-bottom: 16px;
+    color: #ffffff;
+}
+.location-briefing p {
+    font-size: 1.05rem;
+    color: #cccccc;
+    margin: 8px 0;
+}
+.map-wrapper-box {
+    flex: 1;
+    min-height: 350px;
+}
+/* Caixa cinza placeholder para o Google Maps */
+.map-wrapper-box .placeholder-map-box {
+    background: #2a2a2a;
+    width: 100%;
+    height: 100%;
+    min-height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    /* border: 15px solid #333333; */
+    box-sizing: border-box;
+    text-align: center;
+}
+.map-wrapper-box .placeholder-map-box span {
+    color: #888888;
+    font-weight: 700;
+}
