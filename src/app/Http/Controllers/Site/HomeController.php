@@ -6,12 +6,23 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Jogo;
 use App\Models\Time;
+use App\Models\Galeria;
+use App\Models\Banner;
 
 class HomeController extends Controller
 {
     public function home()
     {
+
+        $banners = Banner::where('status_banner', 'ATIVO')
+            ->orderBy('ordem_banner')
+            ->get();
+
         $jogos = Jogo::with(['timeCasa', 'timeVisitante'])->get();
+        $galerias = Galeria::where('status_galeria', 'ATIVO')
+            ->inRandomOrder()
+            ->limit(8)
+            ->get();
 
         // Calcular classificação
         $classificacao = [];
@@ -59,6 +70,6 @@ class HomeController extends Controller
         // Ordena por pontos
         usort($classificacao, fn($a, $b) => $b['pontos'] - $a['pontos']);
 
-        return view('site.home.home', compact('jogos', 'classificacao'));
+        return view('site.home.home', compact('jogos', 'classificacao', 'galerias', 'banners'));
     }
 }

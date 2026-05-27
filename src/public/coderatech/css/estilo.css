@@ -34,3 +34,14 @@
 	-o-background-size: cover; 
 	background-size: cover;
 }
+
+.ytmVideoCoverThumbnail {
+    background-image: url('/futebol/images/video/banner-video.jpg');
+}
+
+
+
+.carousel-inner .item {
+    background-position: center center;
+    background-repeat: no-repeat;
+}   
