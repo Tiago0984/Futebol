@@ -18,6 +18,8 @@
 
         @include('partials.footer')
 
+        <script src="{{ asset('coderatech/js/script.js') }}"></script>
+
 
     </body>
 
