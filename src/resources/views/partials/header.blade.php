@@ -39,7 +39,7 @@
 			<ul class="nav navbar-nav navbar-right">
 				<li><a href="{{ route('home') }}">HOME</a></li>
 				<li><a href="{{ route('sobre') }}">SOBRE</a></li>
-				<li><a href="{{ route('agenda') }}">AGENDA</a></li>
+				<li><a href="{{ route('calendario') }}">CALENDÁRIO</a></li>
 				<li><a href="{{ route('campeonato') }}">CAMPEONATOS</a></li>
 				<li><a href="{{ route('noticias') }}">NOTÍCIAS</a></li>
 				<li><a href="{{ route('shopping') }}">SHOPPING</a></li>

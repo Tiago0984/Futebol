@@ -2,8 +2,8 @@
 
 @section('content')
 
-@include('site.noticias.subbanner')
-@include('site.noticias.singlepage')
-
+@include('site.noticias.banner') 
+@include('site.noticias.news-feed') 
+@include('site.noticias.newsletter') 
 
 @endsection

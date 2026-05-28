@@ -4,7 +4,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\SobreController;
-use App\Http\Controllers\Site\AgendaController;
+use App\Http\Controllers\Site\CalendarioController;
 use App\Http\Controllers\Site\CampeonatoController;
 use App\Http\Controllers\Site\NoticiasController;
 use App\Http\Controllers\Site\ShoppingController;
@@ -18,7 +18,7 @@ Route::get('/', [HomeController::class, 'home'])->name('home');
 
 Route::get('/sobre', [SobreController::class, 'sobre'])->name('sobre');
 
-Route::get('/agenda', [AgendaController::class, 'agenda'])->name('agenda');
+Route::get('/calendario', [CalendarioController::class, 'calendario'])->name('calendario');
 
 Route::get('/campeonato', [CampeonatoController::class, 'campeonato'])->name('campeonato');
 

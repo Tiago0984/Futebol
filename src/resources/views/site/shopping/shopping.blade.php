@@ -3,7 +3,7 @@
 @section('content')
 
 @include('site.shopping.banner')
-@include('site.shopping.shop')
-@include('site.shopping.client')
+@include('site.shopping.store-front')
+@include('site.shopping.store-footer')
 
 @endsection
