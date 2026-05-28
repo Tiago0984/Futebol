@@ -41,6 +41,24 @@ html {
     background-size: cover;
 }
 
+.tab-team-bg{
+	background: url('/futebol/images/team/banner-estatisticas-jogadores.jpg') top center;
+	-webkit-background-size: cover; 
+	-moz-background-size: cover; 
+	-o-background-size: cover; 
+	background-size: cover;
+}
+
+.ytmVideoCoverThumbnail {
+    background-image: url('/futebol/images/video/banner-video.jpg');
+}
+
+
+
+.carousel-inner .item {
+    background-position: center center;
+    background-repeat: no-repeat;
+}   
 .tab-team-bg {
     background: url("/futebol/images/team/banner-estatisticas-jogadores.jpg")
         top center;
