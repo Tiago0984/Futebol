@@ -40,7 +40,26 @@
 				<li><a href="{{ route('home') }}">HOME</a></li>
 				<li><a href="{{ route('sobre') }}">SOBRE</a></li>
 				<li><a href="{{ route('calendario') }}">CALENDÁRIO</a></li>
-				<li><a href="{{ route('campeonato') }}">CAMPEONATOS</a></li>
+				<li class="dropdown">
+					<a href="{{ route('campeonato') }}" class="dropdown-toggle">
+						CAMPEONATOS <span class="caret"></span>
+					</a>
+					<ul class="dropdown-menu">
+						@isset($campeonatosMenu)
+						<li>
+							<a href="{{ route('campeonato') }}">Ver Todos</a>
+						</li>
+						<li class="divider"></li>
+						@foreach ($campeonatosMenu as $camp)
+						<li>
+							<a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
+								{{ $camp->nome_campeonato }}
+							</a>
+						</li>
+						@endforeach
+						@endisset
+					</ul>
+				</li>
 				<li><a href="{{ route('noticias') }}">NOTÍCIAS</a></li>
 				<li><a href="{{ route('shopping') }}">SHOPPING</a></li>
 				<li><a href="{{ route('parcerias') }}">PARCERIAS</a></li>

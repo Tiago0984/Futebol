@@ -2520,3 +2520,25 @@ html {
         flex-direction: column;
     }
 }
+
+/* Submenu Campeonatos ao hover */
+.navbar .dropdown:hover .dropdown-menu {
+    display: block;
+}
+
+.dropdown-menu {
+    background-color: #f00;
+    border: none;
+    border-radius: 0;
+    margin-top: 0;
+}
+
+.dropdown-menu li a {
+    color: #fff !important;
+    padding: 10px 20px;
+}
+
+.dropdown-menu li a:hover {
+    background-color: #a93226 !important;
+    color: #fff !important;
+}

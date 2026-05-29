@@ -40,6 +40,9 @@ Route::post('/parcerias', [ParceriasController::class, 'form'])->name('parcerias
 
 Route::get('/contato', [ContatoController::class, 'contato'])->name('contato');
 
+Route::get('/campeonato', [CampeonatoController::class, 'campeonato'])->name('campeonato');
+Route::get('/campeonato/{id}', [CampeonatoController::class, 'show'])->name('campeonato.show');
+
 
 Route::prefix('admin')->name('admin.')->group(function () {
     // Rotas para o painel administrativo
