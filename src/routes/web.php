@@ -24,6 +24,9 @@ Route::get('/campeonato', [CampeonatoController::class, 'campeonato'])->name('ca
 
 Route::get('/noticias', [NoticiasController::class, 'noticias'])->name('noticias');
 
+Route::get('/noticias', [NoticiasController::class, 'index'])->name('noticias.index');
+Route::get('/noticias/{id}', [NoticiasController::class, 'show'])->name('noticias.show');
+
 Route::get('/shopping', [ShoppingController::class, 'shopping'])->name('shopping');
 
 Route::get('/parcerias', [ParceriasController::class, 'parcerias'])->name('parcerias');
@@ -32,6 +35,9 @@ Route::post('/parcerias', [ParceriasController::class, 'form'])->name('parcerias
 
 Route::get('/contato', [ContatoController::class, 'contato'])->name('contato');
 
+Route::get('/campeonato', [CampeonatoController::class, 'campeonato'])->name('campeonato');
+Route::get('/campeonato/{id}', [CampeonatoController::class, 'show'])->name('campeonato.show');
+
 
 Route::prefix('admin')->name('admin.')->group(function () {
     // Rotas para o painel administrativo
@@ -39,7 +45,6 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     Route::get('/', [DashController::class, 'index'])->name('dash');
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');
-
-
 });
+
 

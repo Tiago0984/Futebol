@@ -8,6 +8,7 @@ use App\Models\Jogo;
 use App\Models\Time;
 use App\Models\Galeria;
 use App\Models\Banner;
+use App\Models\Noticia;
 
 class HomeController extends Controller
 {
@@ -18,10 +19,15 @@ class HomeController extends Controller
             ->orderBy('ordem_banner')
             ->get();
 
-        $jogos = Jogo::with(['timeCasa', 'timeVisitante'])->get();
+        $jogos = Jogo::with(['timeCasa', 'timeVisitante'])
+            ->get();
+
         $galerias = Galeria::where('status_galeria', 'ATIVO')
             ->inRandomOrder()
             ->limit(8)
+            ->get();
+        $noticias = Noticia::orderBy('data_publicacao_noticia', 'desc')
+            ->limit(3)
             ->get();
 
         // Calcular classificação
@@ -70,6 +76,6 @@ class HomeController extends Controller
         // Ordena por pontos
         usort($classificacao, fn($a, $b) => $b['pontos'] - $a['pontos']);
 
-        return view('site.home.home', compact('jogos', 'classificacao', 'galerias', 'banners'));
+        return view('site.home.home', compact('jogos', 'classificacao', 'galerias', 'banners', 'noticias'));
     }
 }

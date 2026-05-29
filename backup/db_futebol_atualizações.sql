@@ -22,3 +22,14 @@ CREATE TABLE tbl_banner (
     status_banner VARCHAR(10) DEFAULT 'ATIVO',
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO tbl_banner (titulo_banner, subtitulo_banner, foto_banner, ordem_banner) VALUES
+('WELCOME TO PRO SOCCER', 'Descrição do banner 1', 'banner1.jpg', 1),
+('WE ARE PROFESSIONAL FOOTBALL CLUB', 'Descrição do banner 2', 'banner2.jpg', 2),
+('WE ARE DREAM CLUB', 'Descrição do banner 3', 'banner3.jpg', 3);
+
+UPDATE tbl_banner SET titulo_banner = 'BEM VINDO AO PRO SOCCER' WHERE id_banner = 1;
+UPDATE tbl_banner SET titulo_banner = 'SOMOS UM CLUBE PROFISSIONAL DE FUTEBOL' WHERE id_banner = 2;
+UPDATE tbl_banner SET titulo_banner = 'SOMOS O CLUBE DOS SONHOS' WHERE id_banner = 3;
+
+ALTER TABLE tbl_noticias ADD COLUMN foto_noticia VARCHAR(255) DEFAULT NULL;

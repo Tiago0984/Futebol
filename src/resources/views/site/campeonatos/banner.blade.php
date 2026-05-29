@@ -3,7 +3,7 @@
 		<div class="container">
 			<div class="row">
 				<div class="col-sm-12 col-md-12">
-					<div class="caption">GALLERY</div>
+					<div class="caption">CAMPEONATOS</div>
 				</div>
 			</div>
 		</div>
