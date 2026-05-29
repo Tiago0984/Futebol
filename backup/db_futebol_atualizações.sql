@@ -22,3 +22,28 @@ CREATE TABLE tbl_banner (
     status_banner VARCHAR(10) DEFAULT 'ATIVO',
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+INSERT INTO tbl_banner (titulo_banner, subtitulo_banner, foto_banner, ordem_banner) VALUES
+
+('WELCOME TO PRO SOCCER', 'Descrição do banner 1', 'banner1.jpg', 1),
+
+('WE ARE PROFESSIONAL FOOTBALL CLUB', 'Descrição do banner 2', 'banner2.jpg', 2),
+
+('WE ARE DREAM CLUB', 'Descrição do banner 3', 'banner3.jpg', 3);
+
+UPDATE tbl_banner SET titulo_banner = 'BEM VINDO AO PRO SOCCER' WHERE id_banner = 1; UPDATE tbl_banner SET titulo_banner = 'SOMOS UM CLUBE PROFISSIONAL DE FUTEBOL' WHERE id_banner = 2; UPDATE tbl_banner SET titulo_banner = 'SOMOS O CLUBE DOS SONHOS' WHERE id_banner = 3;
+
+-- 1. ADICIONA OS NOVOS CAMPOS NA TABELA EXISTENTE
+ALTER TABLE `tbl_noticias` 
+ADD COLUMN `foto_noticia` VARCHAR(255) NULL AFTER `conteudo_noticia`,
+ADD COLUMN `categoria_noticia` VARCHAR(50) NOT NULL DEFAULT 'Avisos Oficiais' AFTER `foto_noticia`;
+
+-- 2. LIMPA REGISTROS ANTIGOS PARA DEIXAR O LAYOUT ALINHADO
+TRUNCATE TABLE `tbl_noticias`;
+
+-- 3. INSERE OS DADOS FIÉIS AO SEU NOVO PRINT DE TELA
+INSERT INTO `tbl_noticias` (`titulo_noticia`, `conteudo_noticia`, `foto_noticia`, `categoria_noticia`, `data_publicacao_noticia`, `autor_noticia`) VALUES
+('SUB-15 GOLEIA NA ESTREIA DA COPA BASE REGIONAL COM SHOW TÁTICO', 'Nossa categoria de base sub-15 entrou em campo na manhã deste sábado e aplicou um placar elástico de 4 a 0 contra o rival. O destaque da partida foi o coletivo e a forte pressão na saída de bola, o que garantiu os primeiros 3 pontos na tabela...', 'sub15_goleada.jpg', 'Campeonatos', '2026-05-28 09:00:00', 'Prof. Fábio'),
+('Dicas de nutrição para jovens atletas antes de competições', 'Manter uma alimentação balanceada e rica em carboidratos complexos nos dias que antecedem o confronto é vital para o rendimento tático e vigor físico dos nossos atletas da base.', 'nutricao_base.jpg', 'Nutrição & Saúde', '2026-05-25 14:20:00', 'Nutricionista Julia'),
+('Galeria de fotos: Álbum completo do torneio de integração interna', 'Confira os melhores cliques e momentos marcantes do nosso último torneio interno que reuniu familiares, atletas e toda a comissão técnica em um dia de celebração esportiva.', 'galeria_torneio.jpg', 'Treinamentos', '2026-05-20 11:15:00', 'Admin'),
+('Reforma do gramado sintético da quadra central é concluída', 'O departamento de infraestrutura finalizou a manutenção preventiva e aplicação de novos compostos amortecedores no nosso complexo sintético, elevando a segurança dos treinos diários.', 'reforma_quadra.jpg', 'Avisos Oficiais', '2026-05-15 16:00:00', 'Diretoria Executiva');

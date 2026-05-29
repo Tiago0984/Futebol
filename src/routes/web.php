@@ -22,7 +22,15 @@ Route::get('/calendario', [CalendarioController::class, 'calendario'])->name('ca
 
 Route::get('/campeonato', [CampeonatoController::class, 'campeonato'])->name('campeonato');
 
+
 Route::get('/noticias', [NoticiasController::class, 'noticias'])->name('noticias');
+
+    // Filtrar por Assunto/Categoria
+    Route::get('/noticias/categoria/{categoria}', [NoticiasController::class, 'filtrarPorCategoria'])->name('site.noticias.categoria');
+
+    // Página Interna da Notícia Completa por ID
+    Route::get('/noticias/post/{id}', [NoticiasController::class, 'show'])->name('site.noticias.show-noticia');
+
 
 Route::get('/shopping', [ShoppingController::class, 'shopping'])->name('shopping');
 
