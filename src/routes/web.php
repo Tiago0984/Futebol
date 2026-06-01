@@ -13,6 +13,15 @@ use App\Http\Controllers\Site\ContatoController;
 
 //Dashboard
 use App\Http\Controllers\Admin\DashController;
+use App\Http\Controllers\Admin\NoticiasController as AdminNoticiasController;
+use App\Http\Controllers\Admin\BannersController;
+use App\Http\Controllers\Admin\GaleriaController;
+use App\Http\Controllers\Admin\CampeonatosController;
+use App\Http\Controllers\Admin\TimesController;
+use App\Http\Controllers\Admin\JogosController;
+use App\Http\Controllers\Admin\CategoriasController;
+use App\Http\Controllers\Admin\AtletasController;
+use App\Http\Controllers\Admin\InscricoesController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -45,12 +54,26 @@ Route::get('/campeonato/{id}', [CampeonatoController::class, 'show'])->name('cam
 
 
 Route::prefix('admin')->name('admin.')->group(function () {
-    // Rotas para o painel administrativo
-    // Exemplo: Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 
     Route::get('/', [DashController::class, 'index'])->name('dash');
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');
 
+    // Conteúdo do site
+    Route::resource('noticias',  AdminNoticiasController::class);
+    Route::resource('banners',   BannersController::class);
+    Route::resource('galeria',   GaleriaController::class);
+
+    // Esporte
+    Route::resource('campeonatos', CampeonatosController::class);
+    Route::resource('times',       TimesController::class);
+    Route::resource('jogos',       JogosController::class);
+    Route::resource('categorias',  CategoriasController::class);
+
+    // Pessoas
+    Route::resource('atletas',    AtletasController::class);
+    Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');
+    Route::get('inscricoes/{id}',     [InscricoesController::class, 'show'])->name('inscricoes.show');
+    Route::delete('inscricoes/{id}',  [InscricoesController::class, 'destroy'])->name('inscricoes.destroy');
 
 });
 

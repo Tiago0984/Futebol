@@ -3,14 +3,37 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-
-use Illuminate\Http\Request;
+use App\Models\Noticia;
+use App\Models\Banner;
+use App\Models\Campeonato;
+use App\Models\Time;
+use App\Models\Galeria;
+use App\Models\Jogo;
 
 class DashController extends Controller
 {
     public function index()
     {
-        return view('admin/dash/dashboard');
+        try {
+            $stats = [
+                'noticias'    => Noticia::count(),
+                'banners'     => Banner::count(),
+                'campeonatos' => Campeonato::count(),
+                'times'       => Time::count(),
+                'galerias'    => Galeria::count(),
+                'jogos'       => Jogo::count(),
+            ];
+        } catch (\Exception $e) {
+            $stats = [
+                'noticias'    => 0,
+                'banners'     => 0,
+                'campeonatos' => 0,
+                'times'       => 0,
+                'galerias'    => 0,
+                'jogos'       => 0,
+            ];
+        }
 
+        return view('admin.dash.dashboard', compact('stats'));
     }
 }

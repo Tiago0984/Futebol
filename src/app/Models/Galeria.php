@@ -15,5 +15,10 @@ class Galeria extends Model
         'foto_galeria',
         'ordem_galeria',
         'status_galeria',
+        'criado_em',
+    ];
+
+    protected $casts = [
+        'criado_em' => 'datetime',
     ];
 }

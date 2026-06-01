@@ -12,10 +12,7 @@
 
     @include('admin.partials.app-sidebar')
 
-    <main class="app-main">
-      @yield('content')
-    </main>
-
+    @yield('content')
 
     @include('admin.partials.app-footer')
 
