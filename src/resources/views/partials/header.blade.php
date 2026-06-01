@@ -32,7 +32,7 @@
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 			</button>
-			<a class="navbar-brand" href="index.html"><img src="{{ asset('futebol/images/logo.png') }}" alt="" /></a>
+			<a class="navbar-brand" href="index.html"><img src="{{ asset('futebol/images/logo2.png') }}" alt="" /></a>
 
 		</div>
 		<nav class="navbar-collapse collapse">

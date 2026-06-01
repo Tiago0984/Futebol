@@ -21,7 +21,7 @@ class NoticiasController extends Controller
         $totalTodasNoticias = $todasAsNoticias->count(); // Criada a variável que faltava!
 
         $filtroCategoria = $todasAsNoticias
-            ->groupBy('categoria_noticia') 
+            ->groupBy('categoria_noticia')
             ->map(function ($itens, $chave) { // Para cada grupo, retorna um objeto com a categoria e o total
                 return (object) [
                     'categoria_noticia' => $chave, // O nome da categoria
@@ -55,7 +55,7 @@ class NoticiasController extends Controller
 
         $filtroCategoria = $todasAsNoticias
             ->groupBy('categoria_noticia')
-            ->map(function ($itens, $chave) {
+            ->map(function ($itens, $chave) { // ($itens) recebe o conteúdo da gaveta (a coleção de notícias). / ($chave) recebe o nome da etiqueta da gaveta (a string com o nome da categoria).
                 return (object) [
                     'categoria_noticia' => $chave,
                     'total' => $itens->count()
@@ -82,11 +82,11 @@ class NoticiasController extends Controller
 
         // Alinhando os contadores também na rota de filtro
         $todasAsNoticias = Noticia::all();
-        $totalTodasNoticias = $todasAsNoticias->count(); 
+        $totalTodasNoticias = $todasAsNoticias->count();
 
         $filtroCategoria = $todasAsNoticias
             ->groupBy('categoria_noticia')
-            ->map(function ($itens, $chave) {
+            ->map(function ($itens, $chave) { // ($itens) recebe o conteúdo da gaveta (a coleção de notícias). / ($chave) recebe o nome da etiqueta da gaveta (a string com o nome da categoria).
                 return (object) [
                     'categoria_noticia' => $chave,
                     'total' => $itens->count()
