@@ -3,6 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Atleta;
+use App\Models\Responsavel;
+use App\Models\Endereco;
+use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -10,34 +14,20 @@ class AtletasController extends Controller
 {
     public function index()
     {
-        $atletas = DB::table('tbl_atletas as a')
-            ->leftJoin('tbl_categoria_atleta as ca', 'ca.id_atleta', '=', 'a.id_atleta')
-            ->leftJoin('tbl_atleta_responsavel as ar', 'ar.id_atleta', '=', 'a.id_atleta')
-            ->leftJoin('tbl_responsavel as r', 'r.id_responsavel', '=', 'ar.id_responsavel')
-            ->leftJoin('tbl_categoria as c', 'c.id_categoria', '=', 'ca.id_categoria')
-            ->leftJoin('tbl_atleta_time as at', 'at.id_atleta', '=', 'a.id_atleta')
-            ->select(
-                'a.id_atleta',
-                'a.nome_atleta',
-                'a.foto_atleta',
-                'a.status_atleta',
-                'a.numero_atleta',
-                DB::raw('MAX(c.nome_categoria) as nome_categoria'),
-                DB::raw('MAX(at.posicao_atleta_time) as posicao_atleta_time'),
-                DB::raw('MAX(r.nome_responsavel) as nome_responsavel'),                
-            )
-            ->groupBy('a.id_atleta', 'a.nome_atleta', 'a.foto_atleta', 'a.status_atleta', 'a.numero_atleta')
-            ->orderBy('a.nome_atleta')
-            ->get();
+        $atletas = Atleta::with([
+            'categorias',
+            'responsaveis',
+            'times',
+        ])->orderBy('nome_atleta')->get();
 
-        $categorias = DB::table('tbl_categoria')->orderBy('nome_categoria')->get();
+        $categorias = Categoria::orderBy('nome_categoria')->get();
 
         return view('admin.atletas.index', compact('atletas', 'categorias'));
     }
 
     public function create()
     {
-        $categorias = DB::table('tbl_categoria')->orderBy('nome_categoria')->get();
+        $categorias = Categoria::orderBy('nome_categoria')->get();
         return view('admin.atletas.create', compact('categorias'));
     }
 
@@ -67,7 +57,8 @@ class AtletasController extends Controller
 
         DB::transaction(function () use ($request) {
 
-            $idEndereco = DB::table('tbl_endereco')->insertGetId([
+            // 1. Endereço do atleta
+            $endereco = Endereco::create([
                 'rua_endereco'         => $request->rua_endereco,
                 'numero_endereco'      => $request->numero_endereco,
                 'bairro_endereco'      => $request->bairro_endereco,
@@ -77,7 +68,8 @@ class AtletasController extends Controller
                 'estado_endereco'      => strtoupper($request->estado_endereco),
             ]);
 
-            $idResponsavel = DB::table('tbl_responsavel')->insertGetId([
+            // 2. Responsável
+            $responsavel = Responsavel::create([
                 'nome_responsavel'       => $request->nome_responsavel,
                 'cpf_responsavel'        => $request->cpf_responsavel,
                 'rg_responsavel'         => '',
@@ -85,15 +77,16 @@ class AtletasController extends Controller
                 'whatsapp_responsavel'   => $request->whatsapp_responsavel,
                 'assinatura_responsavel' => '',
                 'aceite_responsavel'     => 'pendente',
-                'id_endereco'            => $idEndereco,
+                'id_endereco'            => $endereco->id_endereco,
             ]);
 
+            // 3. Atleta
             $fotoPath = null;
             if ($request->hasFile('foto_atleta')) {
                 $fotoPath = $request->file('foto_atleta')->store('atletas', 'public');
             }
 
-            $idAtleta = DB::table('tbl_atletas')->insertGetId([
+            $atleta = Atleta::create([
                 'nome_atleta'            => $request->nome_atleta,
                 'data_nasc_atleta'       => $request->data_nasc_atleta,
                 'cpf_atleta'             => $request->cpf_atleta,
@@ -102,7 +95,7 @@ class AtletasController extends Controller
                 'escola_atleta'          => $request->escola_atleta,
                 'foto_atleta'            => $fotoPath,
                 'status_atleta'          => 'Ativo',
-                'id_endereco'            => $idEndereco,
+                'id_endereco'            => $endereco->id_endereco,
                 'peso_atleta'            => 0,
                 'altura_atleta'          => 0,
                 'sexo_atleta'            => 'M',
@@ -112,16 +105,14 @@ class AtletasController extends Controller
                 'periodo_escolar_atleta' => '',
             ]);
 
-            DB::table('tbl_atleta_responsavel')->insert([
-                'id_atleta'                   => $idAtleta,
-                'id_responsavel'              => $idResponsavel,
+            // 4. Pivot atleta <-> responsável
+            $atleta->responsaveis()->attach($responsavel->id_responsavel, [
                 'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
             ]);
 
+            // 5. Categoria (se selecionada)
             if ($request->filled('id_categoria')) {
-                DB::table('tbl_categoria_atleta')->insert([
-                    'id_atleta'                    => $idAtleta,
-                    'id_categoria'                 => $request->id_categoria,
+                $atleta->categorias()->attach($request->id_categoria, [
                     'data_inicio_categoria_atleta' => now(),
                     'status_categoria_atleta'      => 'Ativo',
                 ]);
@@ -134,44 +125,17 @@ class AtletasController extends Controller
 
     public function edit($id)
     {
-        $atleta = DB::table('tbl_atletas as a')
-            ->leftJoin('tbl_endereco as e', 'e.id_endereco', '=', 'a.id_endereco')
-            ->leftJoin('tbl_atleta_responsavel as ar', 'ar.id_atleta', '=', 'a.id_atleta')
-            ->leftJoin('tbl_responsavel as r', 'r.id_responsavel', '=', 'ar.id_responsavel')
-            ->leftJoin('tbl_categoria_atleta as ca', 'ca.id_atleta', '=', 'a.id_atleta')
-            ->leftJoin('tbl_atleta_time as at', 'at.id_atleta', '=', 'a.id_atleta')
-            ->select(
-                'a.*',
-                'e.*',
-                'r.id_responsavel',
-                'r.nome_responsavel',
-                'r.cpf_responsavel',
-                'r.whatsapp_responsavel',
-                'ar.grau_parentesco_responsavel',
-                'ca.id_categoria as id_categoria_atual',
-                DB::raw('MAX(at.posicao_atleta_time) as posicao_atleta_time')
-            )
-            ->where('a.id_atleta', $id)
-            ->groupBy(
-                'a.id_atleta',
-                'e.id_endereco',
-                'r.id_responsavel',
-                'ar.grau_parentesco_responsavel',
-                'ca.id_categoria'
-            )
-            ->first();
+        $atleta = Atleta::with(['endereco', 'responsaveis', 'categorias', 'times'])
+            ->findOrFail($id);
 
-        abort_if(!$atleta, 404);
-
-        $categorias = DB::table('tbl_categoria')->orderBy('nome_categoria')->get();
+        $categorias = Categoria::orderBy('nome_categoria')->get();
 
         return view('admin.atletas.edit', compact('atleta', 'categorias'));
     }
 
     public function update(Request $request, $id)
     {
-        $atleta = DB::table('tbl_atletas')->where('id_atleta', $id)->first();
-        abort_if(!$atleta, 404);
+        $atleta = Atleta::with(['endereco', 'responsaveis'])->findOrFail($id);
 
         $request->validate([
             'nome_atleta'                 => 'required|string|max:255',
@@ -194,15 +158,15 @@ class AtletasController extends Controller
             'estado_endereco'             => 'required|string|max:2',
         ]);
 
-        DB::transaction(function () use ($request, $id, $atleta) {
+        DB::transaction(function () use ($request, $atleta) {
 
-            // 1. Atualiza tbl_atletas
+            // 1. Atualiza atleta
             $fotoPath = $atleta->foto_atleta;
             if ($request->hasFile('foto_atleta')) {
                 $fotoPath = $request->file('foto_atleta')->store('atletas', 'public');
             }
 
-            DB::table('tbl_atletas')->where('id_atleta', $id)->update([
+            $atleta->update([
                 'nome_atleta'      => $request->nome_atleta,
                 'data_nasc_atleta' => $request->data_nasc_atleta,
                 'cpf_atleta'       => $request->cpf_atleta,
@@ -213,43 +177,50 @@ class AtletasController extends Controller
                 'foto_atleta'      => $fotoPath,
             ]);
 
-            // 2. Atualiza tbl_endereco
-            DB::table('tbl_endereco')->where('id_endereco', $atleta->id_endereco)->update([
-                'rua_endereco'         => $request->rua_endereco,
-                'numero_endereco'      => $request->numero_endereco,
-                'bairro_endereco'      => $request->bairro_endereco,
-                'complemento_endereco' => $request->complemento_endereco,
-                'cep_endereco'         => $request->cep_endereco,
-                'cidade_endereco'      => $request->cidade_endereco,
-                'estado_endereco'      => strtoupper($request->estado_endereco),
-            ]);
+            // 2. Atualiza endereço
+            if ($atleta->endereco) {
+                $atleta->endereco->update([
+                    'rua_endereco'         => $request->rua_endereco,
+                    'numero_endereco'      => $request->numero_endereco,
+                    'bairro_endereco'      => $request->bairro_endereco,
+                    'complemento_endereco' => $request->complemento_endereco,
+                    'cep_endereco'         => $request->cep_endereco,
+                    'cidade_endereco'      => $request->cidade_endereco,
+                    'estado_endereco'      => strtoupper($request->estado_endereco),
+                ]);
+            }
 
-            // 3. Atualiza tbl_responsavel via pivot
-            $pivot = DB::table('tbl_atleta_responsavel')->where('id_atleta', $id)->first();
-            if ($pivot) {
-                DB::table('tbl_responsavel')->where('id_responsavel', $pivot->id_responsavel)->update([
+            // 3. Atualiza responsável
+            $responsavel = $atleta->responsaveis->first();
+            if ($responsavel) {
+                $responsavel->update([
                     'nome_responsavel'     => $request->nome_responsavel,
                     'cpf_responsavel'      => $request->cpf_responsavel,
                     'whatsapp_responsavel' => $request->whatsapp_responsavel,
                     'telefone_responsavel' => $request->whatsapp_responsavel,
                 ]);
 
-                DB::table('tbl_atleta_responsavel')->where('id_atleta', $id)->update([
+                $atleta->responsaveis()->updateExistingPivot($responsavel->id_responsavel, [
                     'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
                 ]);
             }
 
             // 4. Atualiza categoria
             if ($request->filled('id_categoria')) {
-                $catExiste = DB::table('tbl_categoria_atleta')->where('id_atleta', $id)->exists();
-                if ($catExiste) {
-                    DB::table('tbl_categoria_atleta')->where('id_atleta', $id)->update([
+                $categoriaAtual = $atleta->categorias->first();
+                if ($categoriaAtual) {
+                    $atleta->categorias()->updateExistingPivot($categoriaAtual->id_categoria, [
                         'id_categoria' => $request->id_categoria,
                     ]);
+                    // Se mudou de categoria, sync
+                    if ($categoriaAtual->id_categoria != $request->id_categoria) {
+                        $atleta->categorias()->sync([$request->id_categoria => [
+                            'data_inicio_categoria_atleta' => now(),
+                            'status_categoria_atleta'      => 'Ativo',
+                        ]]);
+                    }
                 } else {
-                    DB::table('tbl_categoria_atleta')->insert([
-                        'id_atleta'                    => $id,
-                        'id_categoria'                 => $request->id_categoria,
+                    $atleta->categorias()->attach($request->id_categoria, [
                         'data_inicio_categoria_atleta' => now(),
                         'status_categoria_atleta'      => 'Ativo',
                     ]);
@@ -263,26 +234,22 @@ class AtletasController extends Controller
 
     public function toggleStatus($id)
     {
-        $atleta = DB::table('tbl_atletas')->where('id_atleta', $id)->first();
-        abort_if(!$atleta, 404);
-
+        $atleta = Atleta::findOrFail($id);
         $novoStatus = strtolower($atleta->status_atleta) === 'ativo' ? 'Inativo' : 'Ativo';
-
-        DB::table('tbl_atletas')->where('id_atleta', $id)->update(['status_atleta' => $novoStatus]);
+        $atleta->update(['status_atleta' => $novoStatus]);
 
         return back()->with('sucesso', "Atleta {$novoStatus} com sucesso.");
     }
 
     public function destroy($id)
     {
-        $atleta = DB::table('tbl_atletas')->where('id_atleta', $id)->first();
-        abort_if(!$atleta, 404);
+        $atleta = Atleta::findOrFail($id);
 
-        DB::transaction(function () use ($id) {
-            DB::table('tbl_atleta_responsavel')->where('id_atleta', $id)->delete();
-            DB::table('tbl_atleta_time')->where('id_atleta', $id)->delete();
-            DB::table('tbl_categoria_atleta')->where('id_atleta', $id)->delete();
-            DB::table('tbl_atletas')->where('id_atleta', $id)->delete();
+        DB::transaction(function () use ($atleta) {
+            $atleta->responsaveis()->detach();
+            $atleta->categorias()->detach();
+            $atleta->times()->detach();
+            $atleta->delete();
         });
 
         return redirect()->route('admin.atletas.index')

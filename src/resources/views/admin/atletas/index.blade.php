@@ -67,18 +67,28 @@
                       $iniciais = strtoupper(substr($partes[0], 0, 1) . (count($partes) > 1 ? substr(end($partes), 0, 1) : ''));
                       $paleta = ['#4361ee', '#3a0ca3', '#7209b7', '#f72585', '#4cc9f0', '#2ec4b6', '#e76f51', '#457b9d'];
                       $corAvatar = $paleta[abs(crc32($atleta->nome_atleta)) % count($paleta)];
+                      $avatarStyle = "width:42px;height:42px;background:{$corAvatar};font-size:0.8rem;flex-shrink:0;";
+                      $ativo = strtolower($atleta->status_atleta ?? '') === 'ativo';
+
+                      $categoria = $atleta->categorias->first();
+                      $nomeCategoria = $categoria->nome_categoria ?? null;
+                      $responsavel = $atleta->responsaveis->first();
+                      $nomeResponsavel = $responsavel->nome_responsavel ?? null;
+                      $grauParentesco = $responsavel?->pivot->grau_parentesco_responsavel ?? null;
+                      $time = $atleta->times->first();
+                      $posicao = $time?->pivot->posicao_atleta_time ?? null;
+
                       $corCategoria = match (true) {
-                        str_contains($atleta->nome_categoria ?? '', '11') => 'secondary',
-                        str_contains($atleta->nome_categoria ?? '', '13') => 'success',
-                        str_contains($atleta->nome_categoria ?? '', '15') => 'primary',
-                        str_contains($atleta->nome_categoria ?? '', '17') => 'warning',
-                        str_contains($atleta->nome_categoria ?? '', '19') => 'info',
+                        str_contains($nomeCategoria ?? '', '11') => 'secondary',
+                        str_contains($nomeCategoria ?? '', '13') => 'success',
+                        str_contains($nomeCategoria ?? '', '15') => 'primary',
+                        str_contains($nomeCategoria ?? '', '17') => 'warning',
+                        str_contains($nomeCategoria ?? '', '19') => 'info',
                         default => 'secondary',
                       };
-                      $ativo = strtolower($atleta->status_atleta ?? '') === 'ativo';
-                      $avatarStyle = "width:42px;height:42px;background:{$corAvatar};font-size:0.8rem;flex-shrink:0;";
                     @endphp
                     <tr>
+                      {{-- Foto --}}
                       <td class="ps-4">
                         @if($atleta->foto_atleta)
                           <img src="{{ asset('futebol/images/atleta/' . $atleta->foto_atleta) }}"
@@ -92,29 +102,41 @@
                         @endif
                       </td>
 
+                      {{-- Nome --}}
                       <td>
                         <div class="fw-semibold" style="line-height:1.3;">{{ $atleta->nome_atleta }}</div>
                         @if($atleta->numero_atleta)
                           <div class="text-muted" style="font-size:0.78rem;">Nº {{ $atleta->numero_atleta }}</div>
                         @endif
                       </td>
-                      
-                      <td>
-                        <span class="small text-muted">{{ $atleta->nome_responsavel ?? '—' }}</span>
-                      </td>
 
+                      {{-- Responsável --}}
                       <td>
-                        @if($atleta->nome_categoria)
-                          <span class="badge rounded-pill bg-{{ $corCategoria }}">{{ $atleta->nome_categoria }}</span>
+                        @if($nomeResponsavel)
+                          <div class="small fw-semibold" style="line-height:1.3;">{{ $nomeResponsavel }}</div>
+                          @if($grauParentesco)
+                            <div class="text-muted" style="font-size:0.75rem;">{{ $grauParentesco }}</div>
+                          @endif
                         @else
                           <span class="text-muted small">—</span>
                         @endif
                       </td>
 
+                      {{-- Categoria --}}
                       <td>
-                        <span class="text-muted small">{{ $atleta->posicao_atleta_time ?? '—' }}</span>
+                        @if($nomeCategoria)
+                          <span class="badge rounded-pill bg-{{ $corCategoria }}">{{ $nomeCategoria }}</span>
+                        @else
+                          <span class="text-muted small">—</span>
+                        @endif
                       </td>
 
+                      {{-- Posição --}}
+                      <td>
+                        <span class="text-muted small">{{ $posicao ?? '—' }}</span>
+                      </td>
+
+                      {{-- Status --}}
                       <td>
                         @if($ativo)
                           <span class="badge bg-success rounded-pill px-3">Ativo</span>
@@ -123,6 +145,7 @@
                         @endif
                       </td>
 
+                      {{-- Ações --}}
                       <td class="pe-4">
                         <div class="d-flex gap-2 align-items-center">
                           <a href="{{ route('admin.atletas.edit', $atleta->id_atleta) }}" class="btn btn-sm btn-warning"
