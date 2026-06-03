@@ -71,6 +71,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
     // Pessoas
     Route::resource('atletas',    AtletasController::class);
+    Route::patch('atletas/{id}/toggle-status', [AtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
     Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');
     Route::get('inscricoes/{id}',     [InscricoesController::class, 'show'])->name('inscricoes.show');
     Route::delete('inscricoes/{id}',  [InscricoesController::class, 'destroy'])->name('inscricoes.destroy');

@@ -13,11 +13,13 @@
   <div class="sidebar-wrapper">
     <nav class="mt-2">
       <!--begin::Sidebar Menu-->
-      <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="navigation" aria-label="Navegação principal" data-accordion="false" id="navigation">
+      <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="navigation"
+        aria-label="Navegação principal" data-accordion="false" id="navigation">
 
         <li class="nav-header">GERAL</li>
         <li class="nav-item">
-          <a href="{{ route('admin.dashboard') }}" class="nav-link {{ request()->routeIs('admin.dash', 'admin.dashboard') ? 'active' : '' }}">
+          <a href="{{ route('admin.dashboard') }}"
+            class="nav-link {{ request()->routeIs('admin.dash', 'admin.dashboard') ? 'active' : '' }}">
             <i class="nav-icon bi bi-speedometer2"></i>
             <p>Dashboard</p>
           </a>
@@ -109,6 +111,7 @@
             <i class="nav-icon bi bi-trophy"></i>
             <p>
               Campeonatos
+              <span class="badge text-bg-warning ms-1 me-auto" style="font-size:0.65rem;">pendente</span>
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
@@ -186,29 +189,30 @@
             <i class="nav-icon bi bi-person-badge"></i>
             <p>
               Atletas
-              <span class="badge text-bg-warning ms-1 me-auto" style="font-size:0.65rem;">pendente</span>
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.atletas.index') }}"
+                class="nav-link {{ request()->routeIs('admin.atletas.index') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Listar atletas</p>
               </a>
             </li>
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              {{-- <a href="{{ route('admin.atletas.index') }}"
+                class="nav-link {{ request()->routeIs('admin.atletas.create') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Cadastrar atleta</p>
-              </a>
+              </a> --}}
             </li>
-            <li class="nav-item">
+            {{-- <li class="nav-item">
               <a href="#" class="nav-link">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Responsáveis</p>
               </a>
-            </li>
+            </li> --}}
           </ul>
         </li>
         <li class="nav-item">
@@ -259,12 +263,16 @@
   <!--end::Sidebar Wrapper-->
 
   <!--begin::Sidebar User-->
-  <div style="position: absolute; bottom: 0; left: 0; right: 0; padding: 0.75rem 1rem; border-top: 1px solid rgba(255,255,255,0.1); background: inherit;">
+  <div
+    style="position: absolute; bottom: 0; left: 0; right: 0; padding: 0.75rem 1rem; border-top: 1px solid rgba(255,255,255,0.1); background: inherit;">
     <div class="d-flex align-items-center gap-2">
-      <div class="rounded-circle bg-success d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0" style="width:36px;height:36px;font-size:0.8rem;">AD</div>
+      <div
+        class="rounded-circle bg-success d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
+        style="width:36px;height:36px;font-size:0.8rem;">AD</div>
       <div style="min-width:0;">
         <div class="text-white fw-semibold" style="font-size:0.875rem;line-height:1.3;">Admin</div>
-        <div style="font-size:0.7rem;color:#6c757d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">admin@futebol.com</div>
+        <div style="font-size:0.7rem;color:#6c757d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          admin@futebol.com</div>
       </div>
     </div>
   </div>

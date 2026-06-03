@@ -22,6 +22,7 @@
 
   @include('admin.partials.script')
 
+  @stack('scripts')
 
 </body>
 
