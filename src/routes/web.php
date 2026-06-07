@@ -10,6 +10,8 @@ use App\Http\Controllers\Site\NoticiasController;
 use App\Http\Controllers\Site\ShoppingController;
 use App\Http\Controllers\Site\ParceriasController;
 use App\Http\Controllers\Site\ContatoController;
+use App\Http\Controllers\Site\CadastroController;
+use App\Http\Controllers\Site\AssinaturaController;
 
 //Dashboard
 use App\Http\Controllers\Admin\DashController;
@@ -22,6 +24,7 @@ use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
 use App\Http\Controllers\Admin\AtletasController;
 use App\Http\Controllers\Admin\InscricoesController;
+use App\Http\Controllers\Admin\LoginController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -49,11 +52,27 @@ Route::post('/parcerias', [ParceriasController::class, 'form'])->name('parcerias
 
 Route::get('/contato', [ContatoController::class, 'contato'])->name('contato');
 
+// Cadastro público de atletas
+Route::get('/cadastro',  [CadastroController::class, 'index'])->name('cadastro.index');
+Route::post('/cadastro', [CadastroController::class, 'store'])->name('cadastro.store');
+
+// Assinatura do responsável (link enviado por WhatsApp)
+Route::get('/assinar/{token}',  [AssinaturaController::class, 'show'])->name('assinar.show');
+Route::post('/assinar/{token}', [AssinaturaController::class, 'store'])->name('assinar.store');
+
 Route::get('/campeonato', [CampeonatoController::class, 'campeonato'])->name('campeonato');
 Route::get('/campeonato/{id}', [CampeonatoController::class, 'show'])->name('campeonato.show');
 
 
+// Rotas de autenticação admin (sem middleware)
 Route::prefix('admin')->name('admin.')->group(function () {
+    Route::get('/login',  [LoginController::class, 'showLogin'])->name('login');
+    Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+    Route::post('/logout',[LoginController::class, 'logout'])->name('logout');
+});
+
+// Rotas protegidas da área admin
+Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
 
     Route::get('/', [DashController::class, 'index'])->name('dash');
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');

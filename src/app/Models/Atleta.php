@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 
-class Atleta extends Model
+class Atleta extends Authenticatable
 {
     protected $table = 'tbl_atletas';
     protected $primaryKey = 'id_atleta';
@@ -27,6 +27,9 @@ class Atleta extends Model
         'periodo_escolar_atleta',
         'status_atleta',
         'id_endereco',
+        'email_atleta',
+        'password',
+        'remember_token',
     ];
 
     protected $casts = [

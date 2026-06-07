@@ -14,6 +14,8 @@ class Autorizacao extends Model
         'id_atleta',
         'id_responsavel',
         'data_assinatura_autorizacao',
+        'token_assinatura',
+        'status_autorizacao',
     ];
 
     protected $casts = [

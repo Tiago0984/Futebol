@@ -64,6 +64,12 @@
 				<li><a href="{{ route('shopping') }}">SHOPPING</a></li>
 				<li><a href="{{ route('parcerias') }}">PARCERIAS</a></li>
 				<li><a href="{{ route('contato') }}">CONTATO</a></li>
+				<li><a href="{{ route('cadastro.index') }}" style="color:#ffdd00; font-weight:bold;">MATRICULE-SE</a></li>
+				<li>
+					<a href="{{ url('/admin') }}" title="Área Admin" style="font-size:20px; padding: 15px 12px; color:#fff;">
+						<span class="fa fa-user"></span>
+					</a>
+				</li>
 			</ul>
 		</nav>
 	</div>

@@ -42,6 +42,14 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+        'admin' => [
+            'driver' => 'session',
+            'provider' => 'users',
+        ],
+        'aluno' => [
+            'driver' => 'session',
+            'provider' => 'atletas',
+        ],
     ],
 
     /*
@@ -65,6 +73,10 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+        'atletas' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Atleta::class,
         ],
 
         // 'users' => [

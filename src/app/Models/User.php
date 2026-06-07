@@ -2,31 +2,46 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Database\Factories\UserFactory;
-use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\Hidden;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
-#[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
-    /** @use HasFactory<UserFactory> */
-    use HasFactory, Notifiable;
+    use Notifiable;
 
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
+    protected $table      = 'tbl_usuarios';
+    protected $primaryKey = 'id';
+
+    const CREATED_AT = 'criado_em_usuarios';
+    const UPDATED_AT = 'atualizado_em_usuarios';
+
+    protected $fillable = [
+        'nome_usuario',
+        'email_usuario',
+        'senha_usuario',
+    ];
+
+    protected $hidden = [
+        'senha_usuario',
+        'remember_token_usuario',
+    ];
+
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
+            'senha_usuario' => 'hashed',
         ];
+    }
+
+    // Campo usado como senha
+    public function getAuthPassword()
+    {
+        return $this->senha_usuario;
+    }
+
+    // Campo remember token customizado
+    public function getRememberTokenName()
+    {
+        return 'remember_token_usuario';
     }
 }

@@ -47,3 +47,75 @@ INSERT INTO `tbl_noticias` (`titulo_noticia`, `conteudo_noticia`, `foto_noticia`
 ('Dicas de nutrição para jovens atletas antes de competições', 'Manter uma alimentação balanceada e rica em carboidratos complexos nos dias que antecedem o confronto é vital para o rendimento tático e vigor físico dos nossos atletas da base.', 'nutricao_base.jpg', 'Nutrição & Saúde', '2026-05-25 14:20:00', 'Nutricionista Julia'),
 ('Galeria de fotos: Álbum completo do torneio de integração interna', 'Confira os melhores cliques e momentos marcantes do nosso último torneio interno que reuniu familiares, atletas e toda a comissão técnica em um dia de celebração esportiva.', 'galeria_torneio.jpg', 'Treinamentos', '2026-05-20 11:15:00', 'Admin'),
 ('Reforma do gramado sintético da quadra central é concluída', 'O departamento de infraestrutura finalizou a manutenção preventiva e aplicação de novos compostos amortecedores no nosso complexo sintético, elevando a segurança dos treinos diários.', 'reforma_quadra.jpg', 'Avisos Oficiais', '2026-05-15 16:00:00', 'Diretoria Executiva');
+
+-- ============================================================
+-- Atualização: campos de autenticação na tabela tbl_atletas
+-- Executar no banco de dados do projeto Futebol
+-- ============================================================
+
+-- 1. Adiciona e-mail do atleta (único, pode ser NULL se ainda não cadastrado)
+ALTER TABLE `tbl_atletas`
+    ADD COLUMN `email_atleta` VARCHAR(255) NULL UNIQUE AFTER `status_atleta`;
+
+-- 2. Adiciona senha (obrigatório pelo Laravel para autenticação)
+ALTER TABLE `tbl_atletas`
+    ADD COLUMN `password` VARCHAR(255) NULL AFTER `email_atleta`;
+
+-- 3. Adiciona remember_token (usado pelo Laravel para "lembrar sessão")
+ALTER TABLE `tbl_atletas`
+    ADD COLUMN `remember_token` VARCHAR(100) NULL AFTER `password`;
+
+-- ============================================================
+-- Após rodar esse SQL, o atleta poderá logar com CPF ou e-mail
+-- O campo 'password' será preenchido pelo sistema (hash bcrypt)
+-- ============================================================
+
+-- ============================================================
+-- Atualização: fluxo de cadastro público + assinatura digital
+-- ============================================================
+
+-- 4. Token único para o link de assinatura enviado ao responsável
+ALTER TABLE `tbl_atletas`
+    ADD COLUMN `token_cadastro` VARCHAR(100) NULL UNIQUE AFTER `remember_token`;
+
+-- 5. Status do atleta passa a suportar PENDENTE (aguardando assinatura/aprovação)
+ALTER TABLE `tbl_atletas`
+    MODIFY COLUMN `status_atleta` VARCHAR(20) NOT NULL DEFAULT 'PENDENTE';
+
+-- ============================================================
+-- Atualização: fluxo de assinatura na tbl_autorizacoes
+-- ============================================================
+
+-- 6. Token do link enviado ao responsável para assinar
+ALTER TABLE `tbl_autorizacoes`
+    ADD COLUMN `token_assinatura` VARCHAR(100) NULL UNIQUE AFTER `data_assinatura_autorizacao`;
+
+-- 7. Status da autorização (PENDENTE = link enviado, ASSINADO = responsável assinou)
+ALTER TABLE `tbl_autorizacoes`
+    ADD COLUMN `status_autorizacao` VARCHAR(20) NOT NULL DEFAULT 'PENDENTE' AFTER `token_assinatura`;
+
+-- ============================================================
+-- Resumo dos status possíveis:
+-- tbl_atletas.status_atleta: PENDENTE | ATIVO | INATIVO
+-- tbl_autorizacoes.status_autorizacao: PENDENTE | ASSINADO
+-- ============================================================
+
+-- ============================================================
+-- Criação da tabela de usuários admin (tbl_usuarios)
+-- Substitui a tabela padrão 'users' do Laravel
+-- ============================================================
+
+CREATE TABLE `tbl_usuarios` (
+    `id`                       BIGINT UNSIGNED NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `nome_usuario`             VARCHAR(255) NOT NULL,
+    `email_usuario`            VARCHAR(255) NOT NULL UNIQUE,
+    `senha_usuario`            VARCHAR(255) NOT NULL,
+    `remember_token_usuario`   VARCHAR(100) NULL,
+    `criado_em_usuarios`       TIMESTAMP NULL DEFAULT NULL,
+    `atualizado_em_usuarios`   TIMESTAMP NULL DEFAULT NULL
+);
+
+-- Inserir usuário admin (senha: 1234567)
+-- Gere o hash via: docker compose exec php php artisan tinker
+-- App\Models\User::create(['nome_usuario'=>'Admin','email_usuario'=>'seu@email.com','senha_usuario'=>bcrypt('suasenha')]);
+-- ============================================================
