@@ -41,24 +41,23 @@ html {
     background-size: cover;
 }
 
-.tab-team-bg{
-	background: url('/futebol/images/team/banner-estatisticas-jogadores.jpg') top center;
-	-webkit-background-size: cover; 
-	-moz-background-size: cover; 
-	-o-background-size: cover; 
-	background-size: cover;
+.tab-team-bg {
+    background: url("/futebol/images/team/banner-estatisticas-jogadores.jpg")
+        top center;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
 }
 
 .ytmVideoCoverThumbnail {
-    background-image: url('/futebol/images/video/banner-video.jpg');
+    background-image: url("/futebol/images/video/banner-video.jpg");
 }
-
-
 
 .carousel-inner .item {
     background-position: center center;
     background-repeat: no-repeat;
-}   
+}
 .tab-team-bg {
     background: url("/futebol/images/team/banner-estatisticas-jogadores.jpg")
         top center;
@@ -69,7 +68,7 @@ html {
 }
 
 /* ==========================================================================
-   CONFIGURAÇÕES DE RITMO VISUAL, CORES E ESPAÇAMENTO (RESET & UTILS)
+    1. CONFIGURAÇÕES DE RITMO VISUAL, CORES E ESPAÇAMENTO (RESET & UTILS)
    ========================================================================== */
 .container-partnership {
     width: 100%;
@@ -109,7 +108,7 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 1: BANNER PRINCIPAL (FUNDO ESCURO #1a1a1a)
+   2. LAYOUT PARCERIAS: SESSÃO 1 - BANNER PRINCIPAL (FUNDO ESCURO #1a1a1a)
    ========================================================================== */
 .partnership-banner {
     position: relative;
@@ -172,7 +171,7 @@ html {
 }
 
 /* ==========================================================================
-   SEÇÃO NOVA: TRANSIÇÃO/CTA PÓS-BANNER (FUNDO CLARO #ffffff OU #f9f9f9)
+   3. LAYOUT PARCERIAS: SESSÃO 3 - TRANSIÇÃO/CTA PÓS-BANNER (FUNDO CLARO #ffffff OU #f9f9f9)
    Serve como ponte direta de conversão logo após o banner institucional.
    ========================================================================== */
 .partnership-cta-transition {
@@ -262,7 +261,7 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 2: SOBRE AS PARCERIAS (FUNDO CLARO #ffffff)
+   4. LAYOUT PARCERIAS: SESSÃO 2 - SOBRE AS PARCERIAS (FUNDO CLARO #ffffff)
    ========================================================================== */
 .partnership-about {
     padding: 100px 0;
@@ -309,7 +308,7 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 3: NOVO CARROSSEL COM HISTÓRIA (FUNDO CINZA CLARO #f4f4f4)
+   5. LAYOUT PARCERIAS: SESSÃO 3 - NOVO CARROSSEL COM HISTÓRIA (FUNDO CINZA CLARO #f4f4f4)
    ========================================================================== */
 .partnership-history-slider {
     padding: 100px 0;
@@ -397,7 +396,7 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 4: BENEFÍCIOS DA PARCERIA (FUNDO CLARO #ffffff)
+   6. LAYOUT PARCERIAS: SESSÃO 4 - BENEFÍCIOS DA PARCERIA (FUNDO CLARO #ffffff)
    ========================================================================== */
 .partnership-benefits {
     padding: 100px 0;
@@ -432,7 +431,7 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 5: FORMULÁRIO DE CAPTAÇÃO (FUNDO ESCURO #1a1a1a)
+   7. LAYOUT PARCERIAS: SESSÃO 5 - FORMULÁRIO DE CAPTAÇÃO (FUNDO ESCURO #1a1a1a)
    ========================================================================== */
 
 /* Força a rolagem suave a respeitar um recuo do topo (ajuste os 90px de acordo com a altura do seu menu)
@@ -537,7 +536,7 @@ html {
 }
 
 /* ==========================================================================
-   PÁGINA DE CONTATO - ESTRUTURAÇÃO COMPLETA (RITMO VISUAL E ESPAÇAMENTOS)
+   ! 8. LAYOUT DE CONTATO: PÁGINA DE CONTATO - ESTRUTURAÇÃO COMPLETA (RITMO VISUAL E ESPAÇAMENTOS) !
    ========================================================================== */
 
 /* --- Container e Alinhamentos Base --- */
@@ -550,8 +549,9 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 1: NOVO BANNER PREMIUM ASSIMÉTRICO (FUNDO ESCURO #111111)
-   Substitui o topo tradicional por um layout dividido em Grid com efeito Pulse.
+   9. LAYOUT DE CONTATO: SESSÃO 1 - NOVO BANNER PREMIUM ASSIMÉTRICO (FUNDO ESCURO #111111)
+
+   * Substitui o topo tradicional por um layout dividido em Grid com efeito Pulse.
    ========================================================================== */
 .contact-banner-premium {
     position: relative;
@@ -745,9 +745,11 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 2: CARDS DOS CANAIS DE ATENDIMENTO (FUNDO CLARO #ffffff)
-   Organiza os contatos principais em formato de blocos modernos com hover.
+   10. LAYOUT CONTATO: SESSÃO 2 - CARDS DOS CANAIS DE ATENDIMENTO (FUNDO CLARO #ffffff)
+
+   * Organiza os contatos principais em formato de blocos modernos com hover.
    ========================================================================== */
+
 .contact-channels-section {
     padding: 100px 0;
     background: #ffffff;
@@ -809,8 +811,9 @@ html {
 }
 
 /* ==========================================================================
-   SEÇÃO: FAQ / ACCORDION EXPANSÍVEL (ANIMADO COM SCRIPT)
-   Usa JS para calcular a altura em pixels reais e CSS para suavizar.
+   11. LAYOUT CONTATO: SEÇÃO -  FAQ / ACCORDION EXPANSÍVEL (ANIMADO COM SCRIPT)
+
+   * Usa JS para calcular a altura em pixels reais e CSS para suavizar.
    ========================================================================== */
 .contact-faq-section {
     padding: 100px 0;
@@ -882,7 +885,7 @@ html {
 }
 
 /* --------------------------------------------------------------------------
-   ESTADOS DE ATIVAÇÃO DA ANIMAÇÃO (GEREANCIADO PELO SCRIPT)
+   12. LAYOUT CONTATO: ESTADOS DE ATIVAÇÃO DA ANIMAÇÃO (GERENCIADO PELO SCRIPT)
    -------------------------------------------------------------------------- */
 .faq-accordion-content {
     height: 0; /* Começa totalmente recolhido */
@@ -915,7 +918,7 @@ html {
 }
 
 /* ==========================================================================
-   SESSÃO 4: FORMULÁRIO + MAPA AS_SIMÉTRICO (FUNDO ESCURO #1a1a1a)
+   13. LAYOUT CONTATO: SESSÃO 4 - FORMULÁRIO + MAPA AS_SIMÉTRICO (FUNDO ESCURO #1a1a1a)
    Une a captação de mensagens com o mapa de localização lado a lado.
    ========================================================================== */
 .contact-form-map-section {
@@ -1000,6 +1003,1522 @@ html {
 .map-wrapper-box .placeholder-map-box span {
     color: #888888;
     font-weight: 700;
+}
+
+/* ==========================================================================
+   14. LAYOUT SHOPPING: PÁGINA SHOPPING / LOJA OFICIAL - ARQUITETURA DE DESIGN
+   ========================================================================== */
+
+.container-shop {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   15. LAYOUT SHOPPING: SESSÃO 1 - CONTEÚDO DA LOJA (FUNDO CLARO #ffffff)
+   ========================================================================== */
+.shop-storefront {
+    padding: 80px 0;
+    background: #ffffff;
+}
+
+.storefront-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    align-items: flex-start;
+}
+
+/* --- Coluna da Esquerda: Sidebar --- */
+.shop-sidebar {
+    flex: 6;
+    min-width: 250px;
+}
+.sidebar-widget {
+    margin-bottom: 40px;
+}
+.sidebar-widget h3 {
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #111111;
+    border-bottom: 3px solid #e31c1c;
+    padding-bottom: 12px;
+    margin: 0 0 20px 0;
+    letter-spacing: -0.5px;
+}
+/* Lista de categorias com efeito de marcador */
+.shop-category-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.shop-category-list li a {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    color: #555555;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    border-radius: 4px;
+}
+.cat-marker {
+    width: 6px;
+    height: 6px;
+    background: #cccccc;
+    border-radius: 50%;
+    transition: all 0.2s ease;
+}
+.shop-category-list li a:hover,
+.shop-category-list li a.is-active {
+    background: #fdf2f2;
+    color: #e31c1c;
+}
+.shop-category-list li a:hover .cat-marker,
+.shop-category-list li a.is-active .cat-marker {
+    background: #e31c1c;
+    transform: scale(1.4);
+}
+/* Bloco de aviso interno da barra lateral */
+.shop-notice-box {
+    background: #f9f9f9;
+    border: 1px solid #eaeaea;
+    border-left: 4px solid #111111;
+    padding: 24px;
+    border-radius: 4px;
+}
+.shop-notice-box h4 {
+    margin: 0 0 8px 0;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #111111;
+}
+.shop-notice-box p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: #666666;
+    line-height: 1.5;
+}
+
+/* --- Coluna da Direita: Vitrine de Cards --- */
+.shop-products-display {
+    flex: 18;
+    min-width: 320px;
+}
+.shop-display-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 16px;
+    margin-bottom: 32px;
+}
+.shop-display-header h2 {
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #111111;
+    margin: 0;
+}
+.product-count {
+    font-size: 0.95rem;
+    color: #666666;
+    margin: 0;
+}
+
+/* Grid Inteligente de Produtos */
+.products-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 32px;
+}
+
+/* Estrutura do Card Espetacular */
+.product-card {
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.06);
+}
+/* Container da Imagem com efeito Zoom */
+.product-image-wrapper {
+    width: 100%;
+    height: 240px;
+    background: #f4f4f4;
+    overflow: hidden;
+    position: relative;
+}
+.product-image-wrapper img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+.product-card:hover .product-image-wrapper img {
+    transform: scale(1.06);
+}
+.product-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9e9e9;
+    color: #888888;
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+/* Detalhes internos do Card */
+.product-info {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+.product-tag {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    color: #e31c1c;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+.product-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #111111;
+    line-height: 1.4;
+    margin: 0 0 20px 0;
+    flex: 1; /* Garante alinhamento dos botões mesmo com títulos de tamanhos diferentes */
+}
+.product-action-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-top: 1px solid #f5f5f5;
+    padding-top: 16px;
+}
+.product-price {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #111111;
+    letter-spacing: -0.5px;
+}
+.btn-product-buy {
+    background: #e31c1c;
+    color: #ffffff;
+    text-decoration: none;
+    padding: 10px 20px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    transition: background 0.2s ease;
+}
+.btn-product-buy:hover {
+    background: #b51212;
+}
+
+/* ==========================================================================
+   16. LAYOUT SHOPPING: SESSÃO 2 - PAGINAÇÃO CUSTOMIZADA (ESTILO ESPORTIVO)
+   ========================================================================== */
+.shop-pagination-wrapper {
+    margin-top: 56px;
+    display: flex;
+    justify-content: center;
+}
+.shop-pagination {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 8px;
+}
+.page-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    color: #111111;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1rem;
+    border-radius: 4px;
+    transition: all 0.2s ease;
+}
+.page-link:hover {
+    border-color: #e31c1c;
+    color: #e31c1c;
+}
+.page-link.is-active {
+    background: #e31c1c;
+    border-color: #e31c1c;
+    color: #ffffff;
+}
+.page-link.prev-next {
+    font-size: 1.2rem;
+    background: #f9f9f9;
+}
+
+/* ==========================================================================
+   17. LAYOUT SHOPPING: SESSÃO 3 - RECURSOS DO RODAPÉ DA LOJA (FUNDO ESCURO #111111)
+   ========================================================================== */
+.shop-features-footer {
+    padding: 64px 0;
+    background: #111111;
+    color: #ffffff;
+    border-top: 1px solid #222222;
+}
+.features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 40px;
+}
+.feature-item {
+    text-align: center;
+    padding: 0 16px;
+}
+.feature-icon {
+    font-size: 2.2rem;
+    display: block;
+    margin-bottom: 16px;
+}
+.feature-item h4 {
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin: 0 0 10px 0;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+.feature-item p {
+    font-size: 0.95rem;
+    color: #aaaaaa;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* RESPONSIVIDADE COMPACTA */
+@media (max-width: 768px) {
+    .storefront-layout {
+        flex-direction: column;
+        gap: 40px;
+    }
+    .shop-sidebar {
+        width: 100%;
+    }
+    .shop-display-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+/* ==========================================================================
+   18. PÁGINA DE NOTÍCIAS / BLOG - ARQUITETURA EDITORIAL
+   ========================================================================== */
+
+.container-news {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   NOVO DESIGN EDITORIAL: PÁGINA INTERNA DA NOTÍCIA (SHOW PREMIUM)
+   ========================================================================== */
+
+/* --- 1. Banner Hero de Topo --- */
+.news-hero-banner {
+    position: relative;
+    width: 100%;
+    height: 60vh; /* Ocupa 60% da altura da tela do usuário */
+    min-height: 450px;
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed; /* Efeito Parallax elegante ao rolar */
+    display: flex;
+    align-items: flex-end;
+    padding-bottom: 60px;
+}
+
+.news-hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Gradiente escuro agressivo de baixo para cima para dar leitura ao texto */
+    background: linear-gradient(
+        to top,
+        rgba(17, 17, 17, 0.95) 0%,
+        rgba(17, 17, 17, 0.4) 50%,
+        transparent 100%
+    );
+    z-index: 1;
+}
+
+.hero-content-wrapper {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+}
+
+.news-hero-category {
+    background: #e31c1c;
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    padding: 6px 16px;
+    letter-spacing: 1.5px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-bottom: 20px;
+}
+
+.news-hero-title {
+    font-size: 3.5rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+    max-width: 900px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.news-hero-meta {
+    display: flex;
+    gap: 32px;
+    color: #cccccc;
+    font-size: 0.95rem;
+    border-left: 4px solid #e31c1c;
+    padding-left: 16px;
+}
+
+.news-hero-meta strong {
+    color: #ffffff;
+}
+
+/* --- 2. Área do Conteúdo (Grid & Leitura) --- */
+.news-body-section {
+    padding: 60px 0 100px 0;
+    background: #fcfcfc; /* Fundo levemente off-white para descansar a vista */
+}
+
+.page-show-premium .post-full-content {
+    font-size: 1.25rem; /* Fonte maior para leitura confortável */
+    color: #222222;
+    line-height: 1.9;
+    text-align: justify;
+    font-weight: 400;
+}
+
+/* Efeito Dropcap: Primeira letra do artigo estilizada maior */
+.page-show-premium .post-full-content > p:first-of-type::first-letter,
+.page-show-premium .post-full-content::first-letter {
+    font-size: 4.2rem;
+    font-weight: 900;
+    float: left;
+    color: #e31c1c;
+    line-height: 0.8;
+    margin-right: 12px;
+    margin-top: 4px;
+    font-family: "Montserrat", sans-serif;
+}
+
+.page-show-premium .post-full-content br {
+    display: block;
+    content: "";
+    margin-top: 18px;
+}
+
+/* --- 3. Botão Voltar Premium --- */
+.page-show-premium .post-footer-row {
+    margin-top: 50px;
+    border-top: 2px solid #eaeaea;
+    padding-top: 30px;
+}
+
+.btn-back-to-list-premium {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: #111111;
+    text-decoration: none;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease;
+}
+
+.btn-back-to-list-premium .arrow {
+    transition: transform 0.2s ease;
+}
+
+.btn-back-to-list-premium:hover {
+    color: #e31c1c;
+}
+
+.btn-back-to-list-premium:hover .arrow {
+    transform: translateX(-6px);
+}
+
+/* --- 4. Customização da Sidebar para a Página Interna --- */
+.sticky-sidebar {
+    position: sticky;
+    top: 40px; /* A sidebar acompanha a rolagem da notícia de forma suave */
+}
+
+.recent-post-item-premium {
+    display: block;
+    text-decoration: none;
+    padding: 12px 0;
+    border-bottom: 1px solid #eaeaea;
+}
+
+.recent-post-item-premium:last-child {
+    border-bottom: none;
+}
+
+.recent-post-item-premium h4 {
+    font-size: 1rem;
+    color: #111111;
+    font-weight: 700;
+    line-height: 1.4;
+    margin-bottom: 4px;
+    transition: color 0.2s ease;
+}
+
+.recent-post-item-premium:hover h4 {
+    color: #e31c1c;
+}
+
+/* --- 5. Ajustes Responsivos do Novo Design --- */
+@media (max-width: 991px) {
+    .news-hero-banner {
+        height: auto;
+        padding-top: 140px;
+        padding-bottom: 40px;
+        background-attachment: scroll; /* Desativa o parallax no mobile para performance */
+    }
+    .news-hero-title {
+        font-size: 2.2rem;
+    }
+    .news-hero-meta {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .page-show-premium .post-full-content {
+        text-align: left;
+        font-size: 1.15rem;
+    }
+}
+
+/* ==========================================================================
+   19. LAYOUT NOTÍCIAS: SESSÃO 1 - BANNER DE NOTÍCIAS (FUNDO ESCURO #111111)
+   ========================================================================== */
+.news-banner {
+    position: relative;
+    background: #111111;
+    padding: 100px 0;
+    color: #ffffff;
+    text-align: center;
+}
+.news-banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at center,
+        rgba(227, 28, 28, 0.08) 0%,
+        transparent 70%
+    );
+    z-index: 1;
+}
+.news-banner .container-news {
+    position: relative;
+    z-index: 2;
+}
+.news-badge {
+    background: #e31c1c;
+    color: #ffffff;
+    padding: 6px 14px;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    border-radius: 3px;
+    display: inline-block;
+}
+.news-banner-title {
+    font-size: 3.2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 20px 0 12px 0;
+    line-height: 1.1;
+}
+.news-banner-subtitle {
+    font-size: 1.15rem;
+    color: #cccccc;
+    max-width: 680px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   20. LAYOUT NOTÍCIAS: SESSÃO 2 - FEED PRINCIPAL + SIDEBAR (FUNDO CLARO #ffffff)
+   ========================================================================== */
+.news-feed-section {
+    padding: 80px 0;
+    background: #ffffff;
+}
+.feed-layout {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 64px;
+    align-items: flex-start;
+}
+
+/* --- Coluna da Esquerda: Feed --- */
+.news-main-content {
+    flex: 16;
+    min-width: 320px;
+}
+.news-post-card {
+    background: #ffffff;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 48px;
+    margin-bottom: 48px;
+}
+.news-post-card:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* Caixa da Imagem e Data Badge */
+.post-image-box {
+    position: relative;
+    width: 100%;
+    height: 380px;
+    background: #f4f4f4;
+    overflow: hidden;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+.post-image-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e9e9e9;
+    color: #777777;
+    font-weight: 800;
+    font-size: 1rem;
+}
+.post-date-badge {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: #e31c1c;
+    color: #ffffff;
+    padding: 10px 16px;
+    text-align: center;
+    border-radius: 4px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    display: flex;
+    flex-direction: column;
+    z-index: 3;
+}
+.post-date-badge .day {
+    font-size: 1.4rem;
+    font-weight: 900;
+    line-height: 1;
+}
+.post-date-badge .month {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-top: 2px;
+}
+
+/* Dados Meta (Autor, Categoria) */
+.post-meta-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    font-size: 0.9rem;
+    color: #666666;
+    margin-bottom: 16px;
+}
+.post-meta-info strong {
+    color: #111111;
+}
+.post-main-title {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #111111;
+    line-height: 1.25;
+    margin: 0 0 16px 0;
+    text-transform: uppercase;
+}
+.post-excerpt {
+    font-size: 1.05rem;
+    color: #444444;
+    line-height: 1.65;
+    margin: 0 0 24px 0;
+}
+.btn-read-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #e31c1c;
+    text-decoration: none;
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    transition: color 0.2s ease;
+}
+.btn-read-more:hover {
+    color: #111111;
+}
+.btn-read-more .arrow {
+    transition: transform 0.2s ease;
+}
+.btn-read-more:hover .arrow {
+    transform: translateX(4px);
+}
+
+/* --- Coluna da Direita: Sidebar --- */
+.news-sidebar {
+    flex: 8;
+    min-width: 280px;
+}
+.sidebar-news-widget {
+    margin-bottom: 48px;
+}
+.sidebar-news-widget h3 {
+    font-size: 1.3rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #111111;
+    border-bottom: 3px solid #e31c1c;
+    padding-bottom: 12px;
+    margin: 0 0 24px 0;
+}
+
+/* Lista de Posts Recentes */
+.recent-posts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+.recent-post-item {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    text-decoration: none;
+    group: hover;
+}
+.recent-thumb-placeholder {
+    width: 70px;
+    height: 70px;
+    background: #f00000; /* Vermelho esportivo tático para marcar bloco */
+    background: #e9e9e9;
+    flex-shrink: 0;
+    border-radius: 4px;
+}
+.recent-item-info h4 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111111;
+    margin: 0 0 4px 0;
+    line-height: 1.3;
+    transition: color 0.2s ease;
+}
+.recent-post-item:hover h4 {
+    color: #e31c1c;
+}
+.recent-date {
+    font-size: 0.8rem;
+    color: #888888;
+}
+
+/* Lista de Categorias Lateral */
+.news-cat-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.news-cat-list li a {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    background: #f9f9f9;
+    color: #333333;
+    text-decoration: none;
+    font-weight: 700;
+    border-radius: 4px;
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+}
+.news-cat-list li a:hover {
+    background: #e31c1c;
+    color: #ffffff;
+}
+.badge-count {
+    background: #eaeaea;
+    color: #666666;
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+.news-cat-list li a:hover .badge-count {
+    background: rgba(255, 255, 255, 0.2);
+    color: #ffffff;
+}
+
+/* Paginação das notícias */
+.news-pagination-wrapper {
+    margin-top: 24px;
+    display: flex;
+}
+.news-pagination {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    gap: 8px;
+}
+
+/* ==========================================================================
+   21. LAYOUT NOTÍCIAS: SESSÃO 3 - NEWSLETTER (FUNDO ESCURO #111111)
+   ========================================================================== */
+.news-newsletter-section {
+    padding: 60px 0;
+    background: #111111;
+    border-top: 1px solid #222222;
+    color: #ffffff;
+}
+.newsletter-flex {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+}
+.newsletter-text h3 {
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    margin: 0 0 8px 0;
+}
+.newsletter-text p {
+    color: #aaaaaa;
+    margin: 0;
+    font-size: 1rem;
+}
+.newsletter-form-box {
+    flex-grow: 1;
+    max-width: 500px;
+}
+.news-mini-form {
+    display: flex;
+    gap: 12px;
+    width: 100%;
+}
+.newsletter-input {
+    flex: 1;
+    background: #1a1a1a;
+    border: 1px solid #333333;
+    padding: 16px;
+    color: #ffffff;
+    font-size: 1rem;
+    border-radius: 4px;
+}
+.newsletter-input:focus {
+    outline: none;
+    border-color: #e31c1c;
+}
+.btn-newsletter-submit {
+    background: #e31c1c;
+    color: #ffffff;
+    border: none;
+    padding: 0 32px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.btn-newsletter-submit:hover {
+    background: #b51212;
+}
+
+/* RESPONSIVIDADE */
+@media (max-width: 991px) {
+    .feed-layout {
+        flex-direction: column;
+        gap: 48px;
+    }
+    .news-sidebar {
+        width: 100%;
+    }
+    .post-image-box {
+        height: 260px;
+    }
+    .post-main-title {
+        font-size: 1.6rem;
+    }
+}
+
+/* ==========================================================================
+   22. PÁGINA DE CALENDÁRIO / AGENDA - ARQUITETURA VISUAL ESPORTIVA
+   ========================================================================== */
+
+.container-cal {
+    width: 100%;
+    max-width: 1000px; /* Um pouco mais estreito para focar a leitura da linha do tempo */
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   23. LAYOUT CALENDÁRIO: SESSÃO 1 - BANNER DO CALENDÁRIO (FUNDO ESCURO #111111)
+   ========================================================================== */
+.cal-banner {
+    position: relative;
+    background: #111111;
+    padding: 100px 0;
+    color: #ffffff;
+    text-align: center;
+}
+.cal-banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(
+        circle at center,
+        rgba(227, 28, 28, 0.08) 0%,
+        transparent 70%
+    );
+    z-index: 1;
+}
+.cal-banner .container-cal {
+    position: relative;
+    z-index: 2;
+}
+.cal-badge {
+    background: #e31c1c;
+    color: #ffffff;
+    padding: 6px 14px;
+    text-transform: uppercase;
+    font-weight: 700;
+    font-size: 0.75rem;
+    letter-spacing: 2px;
+    border-radius: 3px;
+    display: inline-block;
+}
+.cal-banner-title {
+    font-size: 3.2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 20px 0 12px 0;
+    line-height: 1.1;
+}
+.cal-banner-subtitle {
+    font-size: 1.15rem;
+    color: #cccccc;
+    max-width: 680px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* ==========================================================================
+   24. LAYOUT CALENDÁRIO: SESSÃO 2 - FILTROS E LINHA DE EVENTOS (FUNDO CLARO #ffffff)
+   ========================================================================== */
+.cal-events-section {
+    padding: 80px 0;
+    background: #ffffff;
+}
+
+/* Barra de Filtros Táticos */
+.cal-filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    border-bottom: 1px solid #eaeaea;
+    padding-bottom: 24px;
+    margin-bottom: 48px;
+}
+.filter-label {
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: 0.9rem;
+    color: #111111;
+}
+.filter-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+.btn-cal-filter {
+    background: #f5f5f5;
+    border: 1px solid #eaeaea;
+    color: #444444;
+    padding: 10px 20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s ease;
+}
+.btn-cal-filter:hover {
+    border-color: #e31c1c;
+    color: #e31c1c;
+}
+.btn-cal-filter.is-active {
+    background: #e31c1c;
+    border-color: #e31c1c;
+    color: #ffffff;
+}
+
+/* Container da Timeline */
+.cal-events-timeline {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+/* Estrutura do Card de Evento (Design Estilo Ingresso) */
+.cal-event-card {
+    display: flex;
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 8px;
+    overflow: hidden;
+    transition:
+        transform 0.25s ease,
+        box-shadow 0.25s ease;
+}
+.cal-event-card:hover {
+    transform: translateX(4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
+}
+
+/* Bloco da Esquerda: Data em destaque */
+.event-date-block {
+    background: #111111;
+    color: #ffffff;
+    width: 110px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    padding: 20px;
+    text-align: center;
+}
+.event-day {
+    font-size: 2.2rem;
+    font-weight: 900;
+    line-height: 1;
+}
+.event-month {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-top: 4px;
+    color: #e31c1c; /* Vermelho dando o contraste na data */
+}
+
+/* Bloco da Direita: Conteúdo Informativo */
+.event-details-block {
+    padding: 28px;
+    flex: 1;
+}
+.event-type-tag {
+    display: inline-block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+/* Cores das Tags por Contexto */
+.tag-jogo {
+    background: #fdf2f2;
+    color: #e31c1c;
+}
+.tag-treino {
+    background: #f4f4f4;
+    color: #333333;
+}
+.tag-campeonato {
+    background: #fff9db;
+    color: #f59f00;
+}
+
+.event-title {
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 8px 0;
+    line-height: 1.3;
+}
+.event-meta {
+    font-size: 0.95rem;
+    color: #555555;
+    margin: 0 0 12px 0;
+}
+.event-meta strong {
+    color: #111111;
+}
+.event-description {
+    font-size: 0.95rem;
+    color: #666666;
+    line-height: 1.5;
+    margin: 0;
+}
+
+/* Tratamento de borda lateral esquerda do card com base no tipo para reforço visual */
+.event-jogo {
+    border-left: 4px solid #e31c1c;
+}
+.event-treino {
+    border-left: 4px solid #333333;
+}
+.event-campeonato {
+    border-left: 4px solid #f59f00;
+}
+
+/* ==========================================================================
+   25. LAYOUT CALENDÁRIO: SESSÃO 3 - RODAPÉ DE AVISOS (FUNDO ESCURO #111111)
+   ========================================================================== */
+.cal-notice-footer {
+    padding: 48px 0;
+    background: #111111;
+    color: #ffffff;
+    border-top: 1px solid #222222;
+}
+.notice-flex {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    background: #1a1a1a;
+    padding: 24px 32px;
+    border-radius: 6px;
+    border: 1px solid #2a2a2a;
+}
+.notice-icon {
+    font-size: 2rem;
+    flex-shrink: 0;
+}
+.notice-text h4 {
+    margin: 0 0 6px 0;
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #e31c1c;
+}
+.notice-text p {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #cccccc;
+    line-height: 1.5;
+}
+
+/* RESPONSIVIDADE ACELERADA */
+@media (max-width: 768px) {
+    .cal-filter-bar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .cal-event-card {
+        flex-direction: column;
+    }
+    .event-date-block {
+        width: 100%;
+        flex-direction: row;
+        gap: 12px;
+        padding: 12px;
+        justify-content: flex-start;
+    }
+    .event-details-block {
+        padding: 20px;
+    }
+    .notice-flex {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+
+/* ==========================================================================
+   26. PÁGINA SOBRE: POLIMENTO E ESTRUTURAÇÃO FINAL DO DESIGN
+   ========================================================================== */
+
+.container-about {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+
+/* Headers Centralizados Padrão do Projeto */
+.about-centered-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+.about-centered-header h2 {
+    font-size: 2.2rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #111111;
+    margin: 0 0 12px 0;
+    letter-spacing: -0.5px;
+}
+.header-line {
+    width: 120px;
+    height: 3px;
+    background: #e31c1c;
+    margin: 0 auto;
+    position: relative;
+}
+.header-line::after {
+    content: "";
+    position: absolute;
+    bottom: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 3px;
+    background: #e31c1c;
+}
+
+/* Banner de Entrada */
+.about-banner {
+    position: relative;
+    background: #111111;
+    padding: 80px 0;
+    color: #ffffff;
+    text-align: center;
+}
+.about-banner-title {
+    font-size: 2.8rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   27. SESSÃO: WELCOME TO PRO SOCCER (FUNDO CLARO)
+   -------------------------------------------------------------------------- */
+.about-welcome-section {
+    padding: 80px 0;
+    background: #ffffff;
+}
+.welcome-layout-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    align-items: flex-start;
+}
+.welcome-text-block {
+    flex: 12;
+    min-width: 320px;
+}
+.welcome-highlight-badge {
+    background: #e31c1c;
+    padding: 12px 24px;
+    margin-bottom: 24px;
+    display: inline-block;
+}
+.welcome-highlight-badge h3 {
+    color: #ffffff;
+    margin: 0;
+    text-transform: uppercase;
+    font-weight: 800;
+    font-size: 1.3rem;
+}
+.welcome-text-block p {
+    font-size: 1rem;
+    color: #555555;
+    line-height: 1.65;
+    margin: 0 0 16px 0;
+}
+.welcome-lead {
+    font-size: 1.05rem;
+    color: #222222 !important;
+}
+
+.welcome-image-block {
+    flex: 12;
+    min-width: 320px;
+}
+.welcome-img-wrapper {
+    width: 100%;
+    height: 340px;
+    background: #f4f4f4;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+.welcome-placeholder-graphic {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #dcdcdc;
+    color: #555555;
+    font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   28. SESSÃO: MEET OUR COACH (FUNDO CLARO ALTERNADO/SUAVE)
+   -------------------------------------------------------------------------- */
+.about-coaches-section {
+    padding: 80px 0;
+    background: #fdfdfd;
+    border-top: 1px solid #eaeaea;
+}
+.coaches-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 32px;
+}
+.coach-card-item {
+    background: #111111;
+    border-radius: 6px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+.coach-image-area {
+    height: 240px;
+    background: #e9e9e9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777777;
+    font-weight: 700;
+}
+.coach-footer-info {
+    background: #111111;
+    border-top: 4px solid #e31c1c;
+    padding: 20px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.coach-meta h4 {
+    margin: 0 0 2px 0;
+    color: #ffffff;
+    font-size: 1.15rem;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+.coach-meta span {
+    color: #e31c1c;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+.coach-social-links {
+    display: flex;
+    gap: 8px;
+}
+.social-icon {
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 700;
+    transition: all 0.2s ease;
+}
+.social-icon:hover {
+    background: #e31c1c;
+    border-color: #e31c1c;
+}
+
+/* --------------------------------------------------------------------------
+   29. SESSÃO: CLUB HISTORY & TIMELINE (FUNDO CLARO)
+   -------------------------------------------------------------------------- */
+.about-history-section {
+    padding: 80px 0;
+    background: #ffffff;
+    border-top: 1px solid #eaeaea;
+}
+.history-intro-text {
+    max-width: 800px;
+    margin: 0 auto 56px auto;
+    text-align: center;
+}
+.history-intro-text p {
+    font-size: 1rem;
+    color: #666666;
+    line-height: 1.65;
+}
+
+/* O Trilho Horizontal Vermelho da Linha do Tempo */
+.history-timeline-rail {
+    position: relative;
+    width: 100%;
+    margin-bottom: 56px;
+    padding: 20px 0;
+}
+.timeline-line {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 6px;
+    background: #e31c1c;
+    z-index: 1;
+}
+.timeline-nodes-container {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* Os Círculos/Nós de Anos */
+.timeline-node {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: #111111;
+    border: none;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s ease;
+}
+.timeline-node:hover,
+.timeline-node.is-active {
+    background: #e31c1c;
+    transform: scale(1.15);
+}
+
+/* Card Inferior de Exibição do Ano */
+.timeline-content-card {
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 4px;
+    padding: 40px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+}
+.timeline-card-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 40px;
+    align-items: center;
+}
+.timeline-card-image {
+    flex: 8;
+    min-width: 280px;
+}
+.history-img-placeholder {
+    width: 100%;
+    height: 220px;
+    background: #e9e9e9;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #777777;
+    font-weight: 700;
+}
+.timeline-card-text {
+    flex: 16;
+    min-width: 320px;
+}
+.timeline-card-text h3 {
+    font-size: 1.6rem;
+    text-transform: uppercase;
+    font-weight: 800;
+    color: #e31c1c;
+    margin: 0 0 16px 0;
+}
+.timeline-card-text p {
+    font-size: 1rem;
+    color: #555555;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* RESPONSIVIDADE ADAPTATIVA */
+@media (max-width: 768px) {
+    .timeline-nodes-container {
+        flex-wrap: wrap;
+        gap: 16px;
+        justify-content: center;
+    }
+    .timeline-line {
+        display: none;
+    } /* Oculta a linha no mobile para empilhar os nós */
+    .timeline-card-grid {
+        flex-direction: column;
+    }
 }
 
 /* Submenu Campeonatos ao hover */

@@ -9,4 +9,34 @@ class Time extends Model
     protected $table = 'tbl_time';
     protected $primaryKey = 'id_time';
     public $timestamps = false;
+
+    protected $fillable = [
+        'logo_time',
+        'nome_time',
+        'tipo_time',
+        'id_categoria',
+    ];
+
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
+    }
+
+    public function campeonatos()
+    {
+        return $this->belongsToMany(Campeonato::class, 'tbl_campeonato_time', 'id_time', 'id_campeonato');
+    }
+
+    public function atletas()
+    {
+        return $this->belongsToMany(Atleta::class, 'tbl_atleta_time', 'id_time', 'id_atleta')
+                    ->withPivot([
+                        'camisa_atleta_time',
+                        'posicao_atleta_time',
+                        'jogos_atleta_time',
+                        'convocacao_atleta_time',
+                        'gols_atleta_time',
+                        'defesas_atleta_time',
+                    ]);
+    }
 }

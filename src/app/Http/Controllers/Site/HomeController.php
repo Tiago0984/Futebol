@@ -30,6 +30,10 @@ class HomeController extends Controller
             ->limit(3)
             ->get();
 
+       $noticias = Noticia::orderBy('data_publicacao_noticia', 'desc')
+       ->take(3)
+       ->get();
+
         // Calcular classificação
         $classificacao = [];
 

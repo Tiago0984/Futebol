@@ -32,14 +32,14 @@
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 			</button>
-			<a class="navbar-brand" href="index.html"><img src="{{ asset('futebol/images/logo.png') }}" alt="" /></a>
+			<a class="navbar-brand" href="index.html"><img src="{{ asset('futebol/images/logo2.png') }}" alt="" /></a>
 
 		</div>
 		<nav class="navbar-collapse collapse">
 			<ul class="nav navbar-nav navbar-right">
 				<li><a href="{{ route('home') }}">HOME</a></li>
 				<li><a href="{{ route('sobre') }}">SOBRE</a></li>
-				<li><a href="{{ route('agenda') }}">CALENDARIO</a></li>
+				<li><a href="{{ route('calendario') }}">CALENDÁRIO</a></li>
 				<li class="dropdown">
 					<a href="{{ route('campeonato') }}" class="dropdown-toggle">
 						CAMPEONATOS <span class="caret"></span>
@@ -64,6 +64,12 @@
 				<li><a href="{{ route('shopping') }}">SHOPPING</a></li>
 				<li><a href="{{ route('parcerias') }}">PARCERIAS</a></li>
 				<li><a href="{{ route('contato') }}">CONTATO</a></li>
+				<li><a href="{{ route('cadastro.index') }}" style="color:#ffdd00; font-weight:bold;">MATRICULE-SE</a></li>
+				<li>
+					<a href="{{ url('/admin') }}" title="Área Admin" style="font-size:20px; padding: 15px 12px; color:#fff;">
+						<span class="fa fa-user"></span>
+					</a>
+				</li>
 			</ul>
 		</nav>
 	</div>

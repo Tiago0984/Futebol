@@ -2,23 +2,93 @@
 
 namespace App\Http\Controllers\Site;
 
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Noticia;
+use Illuminate\Http\Request;
 
 class NoticiasController extends Controller
 {
     public function index()
     {
-        $noticias = Noticia::orderBy('data_publicacao_noticia', 'desc')->paginate(6);
-        $recentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
-        return view('site.noticias.noticias', compact('noticias', 'recentes'));
+        $listaNoticias = Noticia::orderBy('data_publicacao_noticia', 'desc')->get();
+        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
+
+        $todasAsNoticias = Noticia::all();
+        $totalTodasNoticias = $todasAsNoticias->count();
+
+        $filtroCategoria = $todasAsNoticias
+            ->groupBy('categoria_noticia')
+            ->map(function ($itens, $chave) {
+                return (object) [
+                    'categoria_noticia' => $chave,
+                    'total' => $itens->count()
+                ];
+            })->sortByDesc('total');
+
+        $categoriaAtiva = 'all';
+
+        return view('site.noticias.noticias', compact(
+            'listaNoticias',
+            'noticiasRecentes',
+            'filtroCategoria',
+            'categoriaAtiva',
+            'totalTodasNoticias'
+        ));
     }
 
     public function show($id)
     {
         $noticia = Noticia::findOrFail($id);
-        $recentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
-        return view('site.noticias.detail', compact('noticia', 'recentes'));
+        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->take(3)->get();
+
+        $todasAsNoticias = Noticia::all();
+        $totalTodasNoticias = $todasAsNoticias->count();
+
+        $filtroCategoria = $todasAsNoticias
+            ->groupBy('categoria_noticia')
+            ->map(function ($itens, $chave) {
+                return (object) [
+                    'categoria_noticia' => $chave,
+                    'total' => $itens->count()
+                ];
+            })->sortByDesc('total');
+
+        return view('site.noticias.show-noticia', compact(
+            'noticia',
+            'noticiasRecentes',
+            'filtroCategoria',
+            'totalTodasNoticias'
+        ));
+    }
+
+    public function filtrarPorCategoria($categoria)
+    {
+        $listaNoticias = Noticia::where('categoria_noticia', $categoria)
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->get();
+
+        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
+
+        $todasAsNoticias = Noticia::all();
+        $totalTodasNoticias = $todasAsNoticias->count();
+
+        $filtroCategoria = $todasAsNoticias
+            ->groupBy('categoria_noticia')
+            ->map(function ($itens, $chave) {
+                return (object) [
+                    'categoria_noticia' => $chave,
+                    'total' => $itens->count()
+                ];
+            })->sortByDesc('total');
+
+        $categoriaAtiva = $categoria;
+
+        return view('site.noticias.noticias', compact(
+            'listaNoticias',
+            'noticiasRecentes',
+            'filtroCategoria',
+            'categoriaAtiva',
+            'totalTodasNoticias'
+        ));
     }
 }

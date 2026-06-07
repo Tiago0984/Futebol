@@ -2,10 +2,10 @@
 
 @section('content')
 
-@include('site.sobre.banner')
-@include('site.sobre.about')
-@include('site.sobre.coach')
-@include('site.sobre.club')
+@include('site.sobre.banner') 
+@include('site.sobre.welcome') 
+@include('site.sobre.coaches') 
+@include('site.sobre.history') 
 @include('site.sobre.client')
 
 @endsection

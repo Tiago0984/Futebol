@@ -16,5 +16,10 @@ class Banner extends Model
         'foto_banner',
         'ordem_banner',
         'status_banner',
+        'criado_em',
+    ];
+
+    protected $casts = [
+        'criado_em' => 'datetime',
     ];
 }
