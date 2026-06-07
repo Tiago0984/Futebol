@@ -260,15 +260,54 @@
                   value="{{ old('numero_atleta') }}">
               </div>
 
-              <div class="col-md-6">
+              <div class="col-md-4">
+                <label class="form-label small text-uppercase fw-semibold text-muted">Sexo</label>
+                <select name="sexo_atleta" class="form-select" required>
+                  <option value="">— Selecionar —</option>
+                  <option value="M" {{ old('sexo_atleta') == 'M' ? 'selected' : '' }}>Masculino</option>
+                  <option value="F" {{ old('sexo_atleta') == 'F' ? 'selected' : '' }}>Feminino</option>
+                </select>
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small text-uppercase fw-semibold text-muted">Peso (kg)</label>
+                <input type="number" name="peso_atleta" class="form-control" placeholder="Ex: 55.00"
+                  step="0.01" min="0" value="{{ old('peso_atleta') }}">
+              </div>
+              <div class="col-md-4">
+                <label class="form-label small text-uppercase fw-semibold text-muted">Altura (m)</label>
+                <input type="number" name="altura_atleta" class="form-control" placeholder="Ex: 1.70"
+                  step="0.01" min="0" value="{{ old('altura_atleta') }}">
+              </div>
+
+              <div class="col-md-5">
                 <label class="form-label small text-uppercase fw-semibold text-muted">Escola</label>
                 <input type="text" name="escola_atleta" class="form-control @error('escola_atleta') is-invalid @enderror"
                   placeholder="Nome da escola" required value="{{ old('escola_atleta') }}">
                 @error('escola_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
               </div>
+              <div class="col-md-4">
+                <label class="form-label small text-uppercase fw-semibold text-muted">Série</label>
+                <input type="text" name="serie_atleta" class="form-control" placeholder="Ex: 7º Ano"
+                  value="{{ old('serie_atleta') }}">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small text-uppercase fw-semibold text-muted">Período</label>
+                <select name="periodo_escolar_atleta" class="form-select">
+                  <option value="">— Selecionar —</option>
+                  @foreach(['MANHÃ', 'TARDE', 'NOITE'] as $per)
+                    <option value="{{ $per }}" {{ old('periodo_escolar_atleta') == $per ? 'selected' : '' }}>{{ $per }}</option>
+                  @endforeach
+                </select>
+              </div>
+
               <div class="col-md-6">
                 <label class="form-label small text-uppercase fw-semibold text-muted">Foto</label>
                 <input type="file" name="foto_atleta" class="form-control" accept="image/*">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label small text-uppercase fw-semibold text-muted">Descrição / Observações</label>
+                <input type="text" name="descricao_atleta" class="form-control" placeholder="Observações opcionais"
+                  value="{{ old('descricao_atleta') }}">
               </div>
             </div>
 

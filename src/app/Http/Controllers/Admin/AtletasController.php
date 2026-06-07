@@ -96,13 +96,13 @@ class AtletasController extends Controller
                 'foto_atleta'            => $fotoPath,
                 'status_atleta'          => 'Ativo',
                 'id_endereco'            => $endereco->id_endereco,
-                'peso_atleta'            => 0,
-                'altura_atleta'          => 0,
-                'sexo_atleta'            => 'M',
-                'serie_atleta'           => '',
-                'descricao_atleta'       => '',
+                'sexo_atleta'            => $request->sexo_atleta ?? 'M',
+                'peso_atleta'            => $request->peso_atleta ?? 0,
+                'altura_atleta'          => $request->altura_atleta ?? 0,
+                'serie_atleta'           => $request->serie_atleta ?? '',
+                'periodo_escolar_atleta' => $request->periodo_escolar_atleta ?? '',
+                'descricao_atleta'       => $request->descricao_atleta ?? '',
                 'sala_atleta'            => 0,
-                'periodo_escolar_atleta' => '',
             ]);
 
             // 4. Pivot atleta <-> responsável

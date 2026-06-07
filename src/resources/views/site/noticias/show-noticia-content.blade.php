@@ -25,7 +25,7 @@
                 </div>
 
                 <div class="post-footer-row">
-                    <a href="{{ route('noticias') }}" class="btn-back-to-list-premium">
+                    <a href="{{ route('noticias.index') }}" class="btn-back-to-list-premium">
                         <span class="arrow">←</span> Voltar para o Feed de Notícias
                     </a>
                 </div>
@@ -53,7 +53,7 @@
                 <h3>Filtrar por Assunto</h3>
                 <ul class="news-cat-list">
                     <li>
-                        <a href="{{ route('noticias') }}">
+                        <a href="{{ route('noticias.index') }}">
                             Todas as matérias
                             <span class="badge-count">{{ $totalTodasNoticias }}</span>
                         </a>

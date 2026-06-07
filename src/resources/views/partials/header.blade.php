@@ -66,7 +66,7 @@
 				<li><a href="{{ route('contato') }}">CONTATO</a></li>
 				<li><a href="{{ route('cadastro.index') }}" style="color:#ffdd00; font-weight:bold;">MATRICULE-SE</a></li>
 				<li>
-					<a href="{{ url('/admin') }}" title="Área Admin" style="font-size:20px; padding: 15px 12px; color:#fff;">
+					<a href="{{ url('/admin') }}" title="Área Admin" style="color:#fff; padding: 15px 12px; font-size:18px; line-height:20px;">
 						<span class="fa fa-user"></span>
 					</a>
 				</li>

@@ -74,7 +74,7 @@
 				<ul class="news-cat-list">
 
 					<li>
-						<a href="{{ route('noticias') }}">
+						<a href="{{ route('noticias.index') }}">
 							Todas as matérias
 							<span class="badge-count">{{ $totalTodasNoticias }}</span>
 						</a>

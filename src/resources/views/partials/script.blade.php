@@ -1,7 +1,6 @@
 <script type="text/javascript" src="{{ asset('futebol/js/jquery.min.js') }}"></script>
 
-<script type='text/javascript' src='https://maps.google.com/maps/api/js?sensor=false&#038;ver=4.1.5'></script>
-
+{{-- Google Maps removido: não utilizado no projeto --}}
 <script type='text/javascript' src='{{ asset("futebol/js/jqBootstrapValidation.js") }}'></script>
 
 <script type="text/javascript" src="{{ asset('futebol/js/bootstrap.min.js') }}"></script>
