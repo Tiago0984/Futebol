@@ -10,10 +10,19 @@ class NoticiasController extends Controller
 {
     public function index()
     {
-        $listaNoticias = Noticia::orderBy('data_publicacao_noticia', 'desc')->get();
-        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
+        // 1. Buscar APENAS as notícias ativas para a listagem principal
+        $listaNoticias = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->get();
 
-        $todasAsNoticias = Noticia::all();
+        // 2. Pegar as 3 últimas notícias RIGOROSAMENTE ATIVAS para o "Posts Recentes"
+        $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->limit(3)
+            ->get();
+
+        // 3. Montar os filtros laterais considerando APENAS o que está ATIVO
+        $todasAsNoticias = Noticia::where('status_noticia', 'ATIVO')->get();
         $totalTodasNoticias = $todasAsNoticias->count();
 
         $filtroCategoria = $todasAsNoticias
@@ -38,10 +47,16 @@ class NoticiasController extends Controller
 
     public function show($id)
     {
-        $noticia = Noticia::findOrFail($id);
-        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->take(3)->get();
+        // Garante que ninguém acesse uma notícia inativa digitando a URL direta
+        $noticia = Noticia::where('status_noticia', 'ATIVO')->findOrFail($id);
 
-        $todasAsNoticias = Noticia::all();
+        // Alimenta a barra lateral da página interna apenas com notícias ATIVAS
+        $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->take(3)
+            ->get();
+
+        $todasAsNoticias = Noticia::where('status_noticia', 'ATIVO')->get();
         $totalTodasNoticias = $todasAsNoticias->count();
 
         $filtroCategoria = $todasAsNoticias
@@ -63,13 +78,19 @@ class NoticiasController extends Controller
 
     public function filtrarPorCategoria($categoria)
     {
+        // Busca filtrando pela categoria e garantindo o status ATIVO
         $listaNoticias = Noticia::where('categoria_noticia', $categoria)
+            ->where('status_noticia', 'ATIVO')
             ->orderBy('data_publicacao_noticia', 'desc')
             ->get();
 
-        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
+        // Garante que os posts recentes continuem limpos mesmo na página de filtro de categoria
+        $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->limit(3)
+            ->get();
 
-        $todasAsNoticias = Noticia::all();
+        $todasAsNoticias = Noticia::where('status_noticia', 'ATIVO')->get();
         $totalTodasNoticias = $todasAsNoticias->count();
 
         $filtroCategoria = $todasAsNoticias
