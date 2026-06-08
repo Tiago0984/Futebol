@@ -44,7 +44,7 @@
                         <thead class="table-dark">
                             <tr>
                                 <th style="width: 100px;">Imagem</th>
-                                <th>Título</th>
+                                <th style="text-align: left; padding-left: 250px;">Título</th>
                                 <th>Categoria</th>
                                 <th style="font-size: 14px;">Status</th>
                                 <th>Data de Pub.</th>
@@ -62,7 +62,7 @@
                                     <span class="badge bg-secondary text-white">Sem foto</span>
                                     @endif
                                 </td>
-                                <td style="text-align: left;">
+                                <td style="text-align: left; padding-left: 250px;">
                                     <strong class="text-dark">{{ $noticia->titulo_noticia }}</strong>
                                 </td>
                                 <td>
