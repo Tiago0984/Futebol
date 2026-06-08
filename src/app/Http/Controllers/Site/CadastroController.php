@@ -26,7 +26,7 @@ class CadastroController extends Controller
             // Atleta
             'nome_atleta'            => 'required|string|max:100',
             'data_nasc_atleta'       => 'required|date',
-            'cpf_atleta'             => 'required|string|max:14',
+            'cpf_atleta'             => 'required|string|max:14|unique:tbl_atletas,cpf_atleta',
             'rg_atleta'              => 'required|string|max:11',
             'sexo_atleta'            => 'required|in:M,F',
             'escola_atleta'          => 'required|string|max:100',
@@ -56,6 +56,7 @@ class CadastroController extends Controller
             'estado_resp_endereco'   => 'required|string|max:2',
         ], [
             'email_atleta.unique'  => 'Este e-mail já está cadastrado.',
+            'cpf_atleta.unique'    => 'Este CPF já está cadastrado.',
             'password.confirmed'   => 'As senhas não coincidem.',
             'password.min'         => 'A senha deve ter pelo menos 8 caracteres.',
         ]);

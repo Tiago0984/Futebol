@@ -1,8 +1,23 @@
+-- ============================================================
+-- HISTÓRICO DE ATUALIZAÇÕES DO BANCO DE DADOS
+-- Projeto: Escolinha de Futebol
+-- Aplicar na ordem em que estão registradas
+-- ============================================================
+
+-- ============================================================
+-- Atualização: campo de data na tabela tbl_jogos
+-- ============================================================
+
+-- Adiciona coluna de data/hora do jogo
 ALTER TABLE tbl_jogos ADD COLUMN data_jogo datetime NULL;
 
+-- Popula datas dos jogos já existentes
 UPDATE tbl_jogos SET data_jogo = '2025-06-01 19:00:00' WHERE id_jogo = 1;
 UPDATE tbl_jogos SET data_jogo = '2025-06-06 19:00:00' WHERE id_jogo = 2;
 
+-- ============================================================
+-- Atualização: criação das tabelas de galeria e banners
+-- ============================================================
 
 CREATE TABLE tbl_galeria (
     id_galeria INT AUTO_INCREMENT PRIMARY KEY,
@@ -23,24 +38,24 @@ CREATE TABLE tbl_banner (
     criado_em DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Dados iniciais dos banners
 INSERT INTO tbl_banner (titulo_banner, subtitulo_banner, foto_banner, ordem_banner) VALUES
-('WELCOME TO PRO SOCCER', 'Descrição do banner 1', 'banner1.jpg', 1),
-('WE ARE PROFESSIONAL FOOTBALL CLUB', 'Descrição do banner 2', 'banner2.jpg', 2),
-('WE ARE DREAM CLUB', 'Descrição do banner 3', 'banner3.jpg', 3);
+('BEM VINDO AO PRO SOCCER', 'Descrição do banner 1', 'banner1.jpg', 1),
+('SOMOS UM CLUBE PROFISSIONAL DE FUTEBOL', 'Descrição do banner 2', 'banner2.jpg', 2),
+('SOMOS O CLUBE DOS SONHOS', 'Descrição do banner 3', 'banner3.jpg', 3);
 
-UPDATE tbl_banner SET titulo_banner = 'BEM VINDO AO PRO SOCCER' WHERE id_banner = 1;
-UPDATE tbl_banner SET titulo_banner = 'SOMOS UM CLUBE PROFISSIONAL DE FUTEBOL' WHERE id_banner = 2;
-UPDATE tbl_banner SET titulo_banner = 'SOMOS O CLUBE DOS SONHOS' WHERE id_banner = 3;
+-- ============================================================
+-- Atualização: novos campos e dados na tabela tbl_noticias
+-- ============================================================
 
--- 1. ADICIONA OS NOVOS CAMPOS NA TABELA EXISTENTE
+-- Adiciona foto e categoria às notícias
 ALTER TABLE `tbl_noticias`
 ADD COLUMN `foto_noticia` VARCHAR(255) NULL AFTER `conteudo_noticia`,
 ADD COLUMN `categoria_noticia` VARCHAR(50) NOT NULL DEFAULT 'Avisos Oficiais' AFTER `foto_noticia`;
 
--- 2. LIMPA REGISTROS ANTIGOS PARA DEIXAR O LAYOUT ALINHADO
+-- Limpa registros antigos e insere notícias de exemplo
 TRUNCATE TABLE `tbl_noticias`;
 
--- 3. INSERE OS DADOS FIÉIS AO SEU NOVO PRINT DE TELA
 INSERT INTO `tbl_noticias` (`titulo_noticia`, `conteudo_noticia`, `foto_noticia`, `categoria_noticia`, `data_publicacao_noticia`, `autor_noticia`) VALUES
 ('SUB-15 GOLEIA NA ESTREIA DA COPA BASE REGIONAL COM SHOW TÁTICO', 'Nossa categoria de base sub-15 entrou em campo na manhã deste sábado e aplicou um placar elástico de 4 a 0 contra o rival. O destaque da partida foi o coletivo e a forte pressão na saída de bola, o que garantiu os primeiros 3 pontos na tabela...', 'sub15_goleada.jpg', 'Campeonatos', '2026-05-28 09:00:00', 'Prof. Fábio'),
 ('Dicas de nutrição para jovens atletas antes de competições', 'Manter uma alimentação balanceada e rica em carboidratos complexos nos dias que antecedem o confronto é vital para o rendimento tático e vigor físico dos nossos atletas da base.', 'nutricao_base.jpg', 'Nutrição & Saúde', '2026-05-25 14:20:00', 'Nutricionista Julia'),
@@ -117,4 +132,46 @@ CREATE TABLE `tbl_usuarios` (
 -- Inserir usuário admin (senha: 1234567)
 -- Gere o hash via: docker compose exec php php artisan tinker
 -- App\Models\User::create(['nome_usuario'=>'Admin','email_usuario'=>'seu@email.com','senha_usuario'=>bcrypt('suasenha')]);
+-- ============================================================
+
+-- ============================================================
+-- Atualização: foto de perfil do usuário admin (tbl_usuarios)
+-- 2026-06-08
+-- ============================================================
+
+-- 8. Adiciona campo de foto para o usuário admin
+--    Armazena apenas o nome do arquivo (ex: avatar5.png)
+--    Os arquivos ficam em public/dash/assets/img/user/
+ALTER TABLE `tbl_usuarios`
+    ADD COLUMN `foto_usuario` VARCHAR(255) NULL AFTER `email_usuario`;
+
+-- ============================================================
+-- Atualização: campos nullable em tbl_atletas
+-- Campos atribuídos pelo admin após o cadastro público não
+-- devem ser obrigatórios no insert inicial do formulário
+-- 2026-06-08
+-- ============================================================
+
+-- 9. Torna nullable os campos preenchidos pelo admin depois
+ALTER TABLE `tbl_atletas`
+    MODIFY COLUMN `numero_atleta`  VARCHAR(20)    NULL,
+    MODIFY COLUMN `sala_atleta`    VARCHAR(20)    NULL,
+    MODIFY COLUMN `peso_atleta`    DECIMAL(5,2)   NULL,
+    MODIFY COLUMN `altura_atleta`  DECIMAL(4,2)   NULL,
+    MODIFY COLUMN `descricao_atleta` TEXT         NULL,
+    MODIFY COLUMN `foto_atleta`    VARCHAR(255)   NULL;
+
+-- ============================================================
+-- Atualização: campos nullable em tbl_responsavel
+-- assinatura_responsavel é preenchida quando o responsável
+-- clica no link e assina digitalmente — não existe no cadastro
+-- telefone_responsavel é opcional no formulário público
+-- 2026-06-08
+-- ============================================================
+
+-- 10. Torna nullable os campos da tabela de responsáveis
+ALTER TABLE `tbl_responsavel`
+    MODIFY COLUMN `assinatura_responsavel` TEXT         NULL,
+    MODIFY COLUMN `telefone_responsavel`   VARCHAR(20)  NULL;
+
 -- ============================================================

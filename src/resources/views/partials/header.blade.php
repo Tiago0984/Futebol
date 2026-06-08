@@ -46,27 +46,30 @@
 					</a>
 					<ul class="dropdown-menu">
 						@isset($campeonatosMenu)
-						<li>
-							<a href="{{ route('campeonato') }}">Ver Todos</a>
-						</li>
-						<li class="divider"></li>
-						@foreach ($campeonatosMenu as $camp)
-						<li>
-							<a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
-								{{ $camp->nome_campeonato }}
-							</a>
-						</li>
-						@endforeach
+							<li>
+								<a href="{{ route('campeonato') }}">Ver Todos</a>
+							</li>
+							<li class="divider"></li>
+							@foreach ($campeonatosMenu as $camp)
+								<li>
+									<a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
+										{{ $camp->nome_campeonato }}
+									</a>
+								</li>
+							@endforeach
 						@endisset
 					</ul>
 				</li>
 				<li><a href="{{ route('noticias.index') }}">NOTÍCIAS</a></li>
 				<li><a href="{{ route('shopping') }}">SHOPPING</a></li>
 				<li><a href="{{ route('parcerias') }}">PARCERIAS</a></li>
+				<li><a href="{{ route('cadastro.index') }}" style="color:#fff; font-weight:bold;">MATRICULE-SE</a>
+				</li>
 				<li><a href="{{ route('contato') }}">CONTATO</a></li>
-				<li><a href="{{ route('cadastro.index') }}" style="color:#ffdd00; font-weight:bold;">MATRICULE-SE</a></li>
+
 				<li>
-					<a href="{{ url('/admin') }}" title="Área Admin" style="color:#fff; padding: 15px 12px; font-size:18px; line-height:20px;">
+					<a href="{{ url('/admin') }}" title="Área Admin"
+						style="color:#fff; padding: 15px 12px; font-size:18px; line-height:20px;">
 						<span class="fa fa-user"></span>
 					</a>
 				</li>

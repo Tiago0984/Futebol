@@ -26,6 +26,7 @@ class Atleta extends Authenticatable
         'sala_atleta',
         'periodo_escolar_atleta',
         'status_atleta',
+        'token_cadastro',
         'id_endereco',
         'email_atleta',
         'password',

@@ -2542,3 +2542,300 @@ html {
     background-color: #a93226 !important;
     color: #fff !important;
 }
+
+/* Estilo da pagina Matricule-se */
+.mat-section {
+    background: #fff;
+    border-radius: 8px;
+    padding: 28px 30px;
+    margin-bottom: 22px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.07);
+    border-top: 4px solid #c00;
+}
+.mat-section h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #c00;
+    margin: 0 0 22px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f0f0f0;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+.mat-section h3 .fa {
+    margin-right: 8px;
+}
+
+.mat-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    color: #888;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+}
+.mat-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #333;
+    background: #fafafa;
+    transition:
+        border-color 0.2s,
+        box-shadow 0.2s;
+    -webkit-appearance: none;
+}
+.mat-input:focus {
+    outline: none;
+    border-color: #c00;
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.08);
+}
+.mat-group {
+    margin-bottom: 18px;
+}
+
+.mat-divider {
+    border: none;
+    border-top: 1px solid #f0f0f0;
+    margin: 22px 0 18px;
+}
+.mat-subtitle {
+    font-size: 13px;
+    font-weight: 700;
+    color: #555;
+    margin: 0 0 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.mat-hint {
+    font-size: 11px;
+    color: #aaa;
+    margin-top: 4px;
+}
+.mat-btn {
+    display: inline-block;
+    background: #c00;
+    color: #fff;
+    padding: 14px 48px;
+    font-size: 15px;
+    font-weight: 700;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    transition: background 0.2s;
+}
+.mat-btn:hover {
+    background: #a00;
+}
+
+.alert-ok {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 14px 18px;
+    border-radius: 5px;
+    color: #155724;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.alert-err {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+    padding: 14px 18px;
+    border-radius: 5px;
+    color: #721c24;
+    margin-bottom: 20px;
+}
+.alert-err ul {
+    margin: 6px 0 0;
+    padding-left: 18px;
+    font-size: 13px;
+}
+
+.whatsapp-box {
+    background: #e8f5e9;
+    border-left: 4px solid #25d366;
+    padding: 14px 18px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+.whatsapp-box p {
+    margin: 0 0 8px;
+    font-size: 13px;
+    color: #2e7d32;
+    font-weight: 600;
+}
+.whatsapp-box a {
+    display: inline-block;
+    background: #25d366;
+    color: #fff;
+    padding: 9px 20px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+@media (max-width: 767px) {
+    .mat-section {
+        padding: 20px 15px;
+    }
+    .mat-col {
+        margin-bottom: 0;
+    }
+}
+
+
+
+
+/* Estilo Autorização de Matricula */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+body {
+    font-family: Arial, sans-serif;
+    background: #f2f2f2;
+    color: #333;
+}
+
+.header {
+    background: #c00;
+    color: #fff;
+    text-align: center;
+    padding: 20px 15px;
+}
+.header h1 {
+    font-size: 20px;
+    letter-spacing: 1px;
+}
+.header p {
+    font-size: 13px;
+    margin-top: 5px;
+    opacity: 0.85;
+}
+
+.card {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+.card h2 {
+    font-size: 15px;
+    color: #c00;
+    border-bottom: 2px solid #c00;
+    padding-bottom: 8px;
+    margin-bottom: 15px;
+}
+.info-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+.info-row span:first-child {
+    color: #888;
+}
+.info-row span:last-child {
+    font-weight: bold;
+}
+
+.assinatura-box {
+    margin: 15px;
+}
+.assinatura-box h2 {
+    font-size: 15px;
+    color: #c00;
+    margin-bottom: 10px;
+}
+.assinatura-box p {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 10px;
+}
+
+#canvas-assinatura {
+    width: 100%;
+    height: 200px;
+    border: 2px dashed #c00;
+    border-radius: 8px;
+    background: #fff;
+    touch-action: none;
+    cursor: crosshair;
+    display: block;
+}
+
+.btn-limpar {
+    background: #888;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-top: 10px;
+    cursor: pointer;
+    width: 100%;
+}
+.btn-assinar {
+    background: #c00;
+    color: #fff;
+    border: none;
+    padding: 15px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    margin-top: 10px;
+    cursor: pointer;
+    width: 100%;
+    letter-spacing: 1px;
+}
+.btn-assinar:disabled {
+    background: #aaa;
+    cursor: not-allowed;
+}
+
+.aviso {
+    background: #fff8e1;
+    border-left: 4px solid #f59c00;
+    padding: 12px 15px;
+    margin: 15px;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #7a5700;
+}
+
+.sucesso {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+    padding: 20px 15px;
+    margin: 15px;
+    border-radius: 4px;
+    text-align: center;
+    color: #155724;
+}
+.sucesso h2 {
+    font-size: 18px;
+    margin-bottom: 8px;
+}
+.sucesso p {
+    font-size: 14px;
+}
+
+.ja-assinado {
+    background: #e8f4fd;
+    border-left: 4px solid #17a2b8;
+    padding: 20px 15px;
+    margin: 15px;
+    border-radius: 4px;
+    text-align: center;
+    color: #0c5460;
+}
