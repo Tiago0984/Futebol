@@ -8,18 +8,14 @@ use Illuminate\Http\Request;
 
 class NoticiasController extends Controller
 {
+    // 1. Carrega a listagem e os modais estruturados nela
     public function index()
     {
         $noticias = Noticia::orderBy('data_publicacao_noticia', 'desc')->get();
-
         return view('admin.noticias.index', compact('noticias'));
     }
 
-    public function create()
-    {
-        return view('admin.noticias.create');
-    }
-
+    // 2. Salva os dados enviados pelo modal de criação
     public function store(Request $request)
     {
         $request->validate([
@@ -48,13 +44,7 @@ class NoticiasController extends Controller
         return redirect()->route('admin.noticias.index')->with('sucesso', 'Notícia criada com sucesso.');
     }
 
-    public function edit($id)
-    {
-        $noticia = Noticia::findOrFail($id);
-
-        return view('admin.noticias.edit', compact('noticia'));
-    }
-
+    // 3. Processa a atualização dos dados vindos do modal de edição
     public function update(Request $request, $id)
     {
         $noticia = Noticia::findOrFail($id);
@@ -85,11 +75,21 @@ class NoticiasController extends Controller
         return redirect()->route('admin.noticias.index')->with('sucesso', 'Notícia atualizada com sucesso.');
     }
 
+    // 4. Alterna o Status entre Ativo e Inativo
     public function destroy($id)
     {
         $noticia = Noticia::findOrFail($id);
-        $noticia->delete();
 
-        return redirect()->route('admin.noticias.index')->with('sucesso', 'Notícia removida com sucesso.');
+        if ($noticia->status_noticia === 'ATIVO') {
+            $noticia->status_noticia = 'INATIVO';
+            $mensagem = 'Notícia inativada com sucesso!';
+        } else {
+            $noticia->status_noticia = 'ATIVO';
+            $mensagem = 'Notícia reativada com sucesso!';
+        }
+
+        $noticia->save();
+
+        return redirect()->route('admin.noticias.index')->with('sucesso', $mensagem);
     }
 }

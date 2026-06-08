@@ -25,9 +25,10 @@ class HomeController extends Controller
             ->limit(8)
             ->get();
 
-       $noticias = Noticia::orderBy('data_publicacao_noticia', 'desc')
-       ->take(3)
-       ->get();
+        $noticias = Noticia::where('status_noticia', 'ATIVO') // Me dê as 3 notícias mais recentes, mas apenas se a coluna status_noticia for exatamente igual a 'ATIVO'
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->take(3)
+            ->get();
 
         // Calcular classificação
         $classificacao = [];
