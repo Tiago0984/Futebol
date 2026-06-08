@@ -37,23 +37,10 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.noticias.index') }}" class="nav-link">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Listar notícias</p>
               </a>
-            </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Adicionar notícia</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Categorias</p>
-              </a>
-            </li>
           </ul>
         </li>
         <li class="nav-item">

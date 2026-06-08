@@ -3,35 +3,39 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
-use App\Models\Noticia; // O Model cuidando de toda a camada de dados (M)
+use App\Models\Noticia;
 use Illuminate\Http\Request;
 
 class NoticiasController extends Controller
 {
     public function noticias()
     {
-        // 1. M - Buscar todas as notícias ativas ordenadas por data
-        $listaNoticias = Noticia::orderBy('data_publicacao_noticia', 'desc')->get();
+        // 1. Buscar APENAS as notícias ativas para a listagem principal
+        $listaNoticias = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->get();
 
-        // 2. M - Pegar as 3 últimas notícias para o "Posts Recentes"
-        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
+        // 2. Pegar as 3 últimas notícias RIGOROSAMENTE ATIVAS para o "Posts Recentes"
+        $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->limit(3)
+            ->get();
 
-        // 3. M - Montar a lista de filtros de categoria e calcular totais (Padrão Eloquent)
-        $todasAsNoticias = Noticia::all();
-        $totalTodasNoticias = $todasAsNoticias->count(); // Criada a variável que faltava!
+        // 3. Montar os filtros laterais considerando APENAS o que está ATIVO (corrige os contadores e listas)
+        $todasAsNoticias = Noticia::where('status_noticia', 'ATIVO')->get();
+        $totalTodasNoticias = $todasAsNoticias->count();
 
         $filtroCategoria = $todasAsNoticias
             ->groupBy('categoria_noticia')
-            ->map(function ($itens, $chave) { // Para cada grupo, retorna um objeto com a categoria e o total
+            ->map(function ($itens, $chave) {
                 return (object) [
-                    'categoria_noticia' => $chave, // O nome da categoria
-                    'total' => $itens->count() // O total de notícias naquela categoria
+                    'categoria_noticia' => $chave,
+                    'total' => $itens->count()
                 ];
-            })->sortByDesc('total');  // Ordena as categorias pelo total de notícias, do maior para o menor
+            })->sortByDesc('total');
 
         $categoriaAtiva = 'all';
 
-        // 4. V - Retorna a View passando as variáveis (Incluindo a totalTodasNoticias)
         return view('site.noticias.noticias', compact(
             'listaNoticias',
             'noticiasRecentes',
@@ -41,28 +45,29 @@ class NoticiasController extends Controller
         ));
     }
 
-    // MÉTODO NOVO DA PÁGINA INTERNA (show-noticia) 
     public function show($id)
     {
-        // 1. Busca a notícia exata clicada pelo usuário
-        $noticia = Noticia::findOrFail($id);
+        // Garante que ninguém acesse uma notícia inativa digitando a URL direta
+        $noticia = Noticia::where('status_noticia', 'ATIVO')->findOrFail($id);
 
-        // 2. Alimenta a barra lateral
-        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->take(3)->get();
+        // Alimenta a barra lateral da página interna apenas com notícias ATIVAS
+        $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->take(3)
+            ->get();
 
-        $todasAsNoticias = Noticia::all();
+        $todasAsNoticias = Noticia::where('status_noticia', 'ATIVO')->get();
         $totalTodasNoticias = $todasAsNoticias->count();
 
         $filtroCategoria = $todasAsNoticias
             ->groupBy('categoria_noticia')
-            ->map(function ($itens, $chave) { // ($itens) recebe o conteúdo da gaveta (a coleção de notícias). / ($chave) recebe o nome da etiqueta da gaveta (a string com o nome da categoria).
+            ->map(function ($itens, $chave) {
                 return (object) [
                     'categoria_noticia' => $chave,
                     'total' => $itens->count()
                 ];
             })->sortByDesc('total');
 
-        // 3. Retorna a View da página interna
         return view('site.noticias.show-noticia', compact(
             'noticia',
             'noticiasRecentes',
@@ -73,20 +78,24 @@ class NoticiasController extends Controller
 
     public function filtrarPorCategoria($categoria)
     {
-        // M - Busca filtrando pela string da categoria
+        // Busca filtrando pela categoria e garantindo o status ATIVO
         $listaNoticias = Noticia::where('categoria_noticia', $categoria)
+            ->where('status_noticia', 'ATIVO')
             ->orderBy('data_publicacao_noticia', 'desc')
             ->get();
 
-        $noticiasRecentes = Noticia::orderBy('data_publicacao_noticia', 'desc')->limit(3)->get();
+        // Garante que os posts recentes continuem limpos mesmo na página de filtro de categoria
+        $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO')
+            ->orderBy('data_publicacao_noticia', 'desc')
+            ->limit(3)
+            ->get();
 
-        // Alinhando os contadores também na rota de filtro
-        $todasAsNoticias = Noticia::all();
+        $todasAsNoticias = Noticia::where('status_noticia', 'ATIVO')->get();
         $totalTodasNoticias = $todasAsNoticias->count();
 
         $filtroCategoria = $todasAsNoticias
             ->groupBy('categoria_noticia')
-            ->map(function ($itens, $chave) { // ($itens) recebe o conteúdo da gaveta (a coleção de notícias). / ($chave) recebe o nome da etiqueta da gaveta (a string com o nome da categoria).
+            ->map(function ($itens, $chave) {
                 return (object) [
                     'categoria_noticia' => $chave,
                     'total' => $itens->count()

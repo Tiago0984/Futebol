@@ -1,4 +1,3 @@
-<!-- NAVBAR SECTION -->
 <div class="navbar navbar-main navbar-fixed-top">
 	<div class="header-top">
 		<div class="container">
@@ -7,13 +6,21 @@
 					<div class="info">
 						<h3>News : </h3>
 						<div class="info-item">
-							<div>Chelsoa reject De Bruyno could get the last laugh.</div>
-							<div>Breaking down Bayern's summer transfer plans.</div>
-							<div>Fellaino and the players who cost more than Pigbo.</div>
+							@if(isset($noticiasRecentes) && $noticiasRecentes->count() > 0)
+							@foreach($noticiasRecentes as $recente)
+							<div>
+								<a href="{{ route('site.noticias.show-noticia', $recente->id_noticia) }}" style="margin-left: 10px;color: #ffffff;text-decoration: none;">
+									{{ \Illuminate\Support\Str::limit($recente->titulo_noticia, 47, '...') }}
+								</a>
+							</div>
+							@endforeach
+							@else
+							<div>Nenhuma notícia recente publicada.</div>
+							@endif
 						</div>
 					</div>
 				</div>
-				<div class="col-xs-12 col-sm-5 col-md-5 col-lg-5">
+				<div class=" col-xs-12 col-sm-5 col-md-5 col-lg-5">
 					<div class="top-sosmed pull-right">
 						<a href="#" title=""><span class="fa fa-facebook"></span></a>
 						<a href="#" title=""><span class="fa fa-twitter"></span></a>
@@ -32,8 +39,9 @@
 				<span class="icon-bar"></span>
 				<span class="icon-bar"></span>
 			</button>
-			<a class="navbar-brand" href="index.html"><img src="{{ asset('futebol/images/logo2.png') }}" alt="" /></a>
-
+			<a class="navbar-brand" href="{{ route('home') }}">
+				<img src="{{ asset('futebol/images/logo2.png') }}" alt="Logo AACJ" />
+			</a>
 		</div>
 		<nav class="navbar-collapse collapse">
 			<ul class="nav navbar-nav navbar-right">

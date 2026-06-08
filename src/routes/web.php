@@ -59,7 +59,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');
 
     // Conteúdo do site
-    Route::resource('noticias',  AdminNoticiasController::class);
+    Route::resource('noticias', AdminNoticiasController::class);
     Route::resource('banners',   BannersController::class);
     Route::resource('galeria',   GaleriaController::class);
 

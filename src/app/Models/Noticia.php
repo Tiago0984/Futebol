@@ -25,6 +25,7 @@ class Noticia extends Model
         'categoria_noticia',
         'data_publicacao_noticia',
         'autor_noticia',
+        'status_noticia', // Adicionado aqui
     ];
 
     // Defina o cast para converter a string do MySQL em um objeto Carbon automaticamente
