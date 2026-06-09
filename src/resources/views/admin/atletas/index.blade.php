@@ -23,14 +23,14 @@
                 @if(session('sucesso'))
                 <div class="alert alert-success alert-dismissible fade show m-3" role="alert" style="text-align: left;">
                     <strong>Sucesso!</strong> {{ session('sucesso') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0; background: transparent;"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0;"></button>
                 </div>
                 @endif
 
                 @if(session('erro'))
                 <div class="alert alert-danger alert-dismissible fade show m-3" role="alert" style="text-align: left;">
                     <strong>Erro!</strong> {{ session('erro') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0; background: transparent;"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0;"></button>
                 </div>
                 @endif
 
@@ -42,7 +42,7 @@
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0; background: transparent;"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0;"></button>
                 </div>
                 @endif
 
@@ -74,8 +74,7 @@
                                 $responsavel = $atleta->responsaveis->first();
                                 $nomeResponsavel = $responsavel->nome_responsavel ?? null;
                                 $grauParentesco = $responsavel?->pivot->grau_parentesco_responsavel ?? null;
-                                $time = $atleta->times->first();
-                                $posicao = $time?->pivot->posicao_atleta_time ?? null;
+                                $posicao = $atleta->posicao_atleta ?? null;
 
                                 $corCategoria = match (true) {
                                     str_contains($nomeCategoria ?? '', '11') => 'secondary',
@@ -85,6 +84,10 @@
                                     str_contains($nomeCategoria ?? '', '19') => 'info',
                                     default => 'secondary',
                                 };
+
+                                $corPosicao = '#0dcaf0';
+
+                                $idade = $atleta->data_nasc_atleta?->age;
                             @endphp
                             <tr>
                                 <td>
@@ -101,9 +104,11 @@
                                 </td>
                                 <td style="text-align: left; padding-left: 300px;">
                                     <strong class="text-dark">{{ $atleta->nome_atleta }}</strong>
-                                    @if($atleta->numero_atleta)
-                                        <div class="text-muted" style="font-size:0.78rem;">Nº {{ $atleta->numero_atleta }}</div>
-                                    @endif
+                                    <div class="text-muted" style="font-size:0.78rem; line-height: 1.5;">
+                                        {{ implode(' &nbsp;·&nbsp; ', array_filter([
+                                            $atleta->numero_atleta ? 'Nº '.$atleta->numero_atleta : null,
+                                        ])) }}
+                                    </div>
                                 </td>
                                 <td>
                                     @if($nomeResponsavel)
@@ -117,7 +122,7 @@
                                 </td>
                                 <td>
                                     @if($nomeCategoria)
-                                        <span class="badge bg-{{ $corCategoria }} text-white" style="font-size: 13px; padding: 5px 10px;">
+                                        <span class="badge bg-{{ $corCategoria }} text-white" style="font-size: 13px; padding: 5px 10px; text-transform: uppercase;">
                                             {{ $nomeCategoria }}
                                         </span>
                                     @else
@@ -125,7 +130,13 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="text-muted small">{{ $posicao ?? '—' }}</span>
+                                    @if($posicao)
+                                        <span class="badge text-white fw-semibold" style="background:{{ $corPosicao }}; font-size: 12px; padding: 5px 10px; text-transform: uppercase;">
+                                            {{ $posicao }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted small">—</span>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($ativo)
@@ -146,7 +157,7 @@
                                                 data-id="{{ $atleta->id_atleta }}"
                                                 data-nome="{{ $atleta->nome_atleta }}"
                                                 data-numero="{{ $atleta->numero_atleta }}"
-                                                data-data-nasc="{{ $atleta->data_nasc_atleta }}"
+                                                data-data-nasc="{{ $atleta->data_nasc_atleta ? $atleta->data_nasc_atleta->format('Y-m-d') : '' }}"
                                                 data-cpf="{{ $atleta->cpf_atleta }}"
                                                 data-rg="{{ $atleta->rg_atleta }}"
                                                 data-sexo="{{ $atleta->sexo_atleta }}"
@@ -156,7 +167,18 @@
                                                 data-serie="{{ $atleta->serie_atleta }}"
                                                 data-periodo="{{ $atleta->periodo_escolar_atleta }}"
                                                 data-descricao="{{ $atleta->descricao_atleta }}"
-                                                data-categoria="{{ $idCategoria }}">
+                                                data-categoria="{{ $idCategoria }}"
+                                                data-posicao="{{ $atleta->posicao_atleta }}"
+                                                data-telefone="{{ $atleta->telefone_atleta }}"
+                                                data-sala="{{ $atleta->sala_atleta }}"
+                                                data-email="{{ $atleta->email_atleta }}"
+                                                data-cep="{{ $atleta->endereco->cep_endereco ?? '' }}"
+                                                data-rua="{{ $atleta->endereco->rua_endereco ?? '' }}"
+                                                data-numero-end="{{ $atleta->endereco->numero_endereco ?? '' }}"
+                                                data-bairro="{{ $atleta->endereco->bairro_endereco ?? '' }}"
+                                                data-complemento="{{ $atleta->endereco->complemento_endereco ?? '' }}"
+                                                data-cidade="{{ $atleta->endereco->cidade_endereco ?? '' }}"
+                                                data-estado="{{ $atleta->endereco->estado_endereco ?? '' }}">
                                             <i class="bi bi-pencil" style="font-size: 13px;"></i>
                                         </button>
 
@@ -232,6 +254,21 @@
 
                 const categoriaSelect = document.getElementById('edit_categoria');
                 if (categoriaSelect) categoriaSelect.value = this.getAttribute('data-categoria') ?? '';
+
+                const posicaoSelect = document.getElementById('edit_posicao');
+                if (posicaoSelect) posicaoSelect.value = this.getAttribute('data-posicao') ?? '';
+
+                document.getElementById('edit_telefone').value   = this.getAttribute('data-telefone') ?? '';
+                document.getElementById('edit_sala').value       = this.getAttribute('data-sala') ?? '';
+                document.getElementById('edit_email').value      = this.getAttribute('data-email') ?? '';
+
+                document.getElementById('edit_cep').value        = this.getAttribute('data-cep') ?? '';
+                document.getElementById('edit_rua').value        = this.getAttribute('data-rua') ?? '';
+                document.getElementById('edit_numero_end').value = this.getAttribute('data-numero-end') ?? '';
+                document.getElementById('edit_bairro').value     = this.getAttribute('data-bairro') ?? '';
+                document.getElementById('edit_complemento').value= this.getAttribute('data-complemento') ?? '';
+                document.getElementById('edit_cidade').value     = this.getAttribute('data-cidade') ?? '';
+                document.getElementById('edit_estado').value     = this.getAttribute('data-estado') ?? '';
             });
         });
     });

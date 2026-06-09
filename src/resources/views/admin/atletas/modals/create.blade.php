@@ -1,5 +1,6 @@
-<div class="modal fade {{ $errors->any() ? 'show' : '' }}" id="modalNovoAtleta" tabindex="-1"
-    aria-labelledby="modalNovoAtletaLabel" @if($errors->any()) style="display:block;" aria-modal="true" role="dialog" @endif>
+@php $abrirModalCriar = $errors->any() && old('form_origin') === 'create'; @endphp
+<div class="modal fade {{ $abrirModalCriar ? 'show' : '' }}" id="modalNovoAtleta" tabindex="-1"
+    aria-labelledby="modalNovoAtletaLabel" @if($abrirModalCriar) style="display:block;" aria-modal="true" role="dialog" @endif>
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content text-start">
 
@@ -12,6 +13,7 @@
             </div>
 
             <form action="{{ route('admin.atletas.store') }}" method="POST" enctype="multipart/form-data" novalidate>
+                <input type="hidden" name="form_origin" value="create">
                 @csrf
                 <div class="modal-body px-4" style="max-height:65vh;overflow-y:auto;">
 
@@ -113,14 +115,36 @@
                             </select>
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Sala</label>
+                            <input type="text" name="sala_atleta" class="form-control" placeholder="Ex: 101"
+                                value="{{ old('sala_atleta') }}">
+                        </div>
+                        <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Foto</label>
                             <input type="file" name="foto_atleta" class="form-control" accept="image/*">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Descrição / Observações</label>
                             <input type="text" name="descricao_atleta" class="form-control" placeholder="Observações opcionais"
                                 value="{{ old('descricao_atleta') }}">
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">E-mail <span class="text-muted" style="font-size:11px;">(opcional)</span></label>
+                            <input type="email" name="email_atleta" class="form-control @error('email_atleta') is-invalid @enderror"
+                                placeholder="email@exemplo.com" value="{{ old('email_atleta') }}">
+                            @error('email_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Senha <span class="text-muted" style="font-size:11px;">(opcional)</span></label>
+                            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+                                placeholder="Mínimo 8 caracteres">
+                            @error('password')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Confirmar Senha</label>
+                            <input type="password" name="password_confirmation" class="form-control" placeholder="Repita a senha">
                         </div>
                     </div>
 
@@ -150,19 +174,79 @@
                             @error('grau_parentesco_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="col-md-6">
-                            <label class="form-label font-weight-bold text-dark">WhatsApp</label>
-                            <input type="text" name="whatsapp_responsavel"
-                                class="form-control @error('whatsapp_responsavel') is-invalid @enderror" placeholder="(11) 99999-9999"
-                                required value="{{ old('whatsapp_responsavel') }}">
-                            @error('whatsapp_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">CPF do Responsável</label>
                             <input type="text" name="cpf_responsavel"
                                 class="form-control @error('cpf_responsavel') is-invalid @enderror" placeholder="000.000.000-00"
                                 maxlength="14" required value="{{ old('cpf_responsavel') }}">
                             @error('cpf_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">RG do Responsável</label>
+                            <input type="text" name="rg_responsavel"
+                                class="form-control @error('rg_responsavel') is-invalid @enderror" placeholder="00.000.000-0"
+                                maxlength="12" value="{{ old('rg_responsavel') }}">
+                            @error('rg_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Telefone do Responsável</label>
+                            <input type="text" name="telefone_responsavel" class="form-control"
+                                placeholder="(11) 0000-0000" maxlength="20" value="{{ old('telefone_responsavel') }}">
+                        </div>
+
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold text-dark">WhatsApp</label>
+                            <input type="text" name="whatsapp_responsavel"
+                                class="form-control @error('whatsapp_responsavel') is-invalid @enderror" placeholder="(11) 99999-9999"
+                                required value="{{ old('whatsapp_responsavel') }}">
+                            <div class="form-text"><i class="bi bi-whatsapp text-success"></i> O link de assinatura será enviado aqui</div>
+                            @error('whatsapp_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+
+                    <hr class="my-1">
+
+                    <p class="text-uppercase text-primary fw-semibold small mb-3 mt-4" style="letter-spacing:.06em;">
+                        <i class="bi bi-geo-alt me-1"></i> Endereço do Responsável
+                    </p>
+
+                    <div class="row g-3 mb-2">
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold text-dark">CEP</label>
+                            <input type="text" name="cep_resp_endereco" class="form-control @error('cep_resp_endereco') is-invalid @enderror"
+                                placeholder="00000-000" maxlength="9" required value="{{ old('cep_resp_endereco') }}">
+                            @error('cep_resp_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold text-dark">Rua</label>
+                            <input type="text" name="rua_resp_endereco" class="form-control @error('rua_resp_endereco') is-invalid @enderror"
+                                placeholder="Nome da rua" required value="{{ old('rua_resp_endereco') }}">
+                            @error('rua_resp_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold text-dark">Número</label>
+                            <input type="text" name="numero_resp_endereco" class="form-control @error('numero_resp_endereco') is-invalid @enderror"
+                                placeholder="123" required value="{{ old('numero_resp_endereco') }}">
+                            @error('numero_resp_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Bairro</label>
+                            <input type="text" name="bairro_resp_endereco" class="form-control @error('bairro_resp_endereco') is-invalid @enderror"
+                                placeholder="Nome do bairro" required value="{{ old('bairro_resp_endereco') }}">
+                            @error('bairro_resp_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label font-weight-bold text-dark">Cidade</label>
+                            <input type="text" name="cidade_resp_endereco" class="form-control @error('cidade_resp_endereco') is-invalid @enderror"
+                                placeholder="São Paulo" required value="{{ old('cidade_resp_endereco') }}">
+                            @error('cidade_resp_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold text-dark">Estado (UF)</label>
+                            <input type="text" name="estado_resp_endereco" class="form-control @error('estado_resp_endereco') is-invalid @enderror"
+                                placeholder="SP" maxlength="2" required value="{{ old('estado_resp_endereco') }}">
+                            @error('estado_resp_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>
 

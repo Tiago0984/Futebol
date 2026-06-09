@@ -16,6 +16,8 @@ class Atleta extends Authenticatable
         'rg_atleta',
         'cpf_atleta',
         'numero_atleta',
+        'posicao_atleta',
+        'telefone_atleta',
         'peso_atleta',
         'altura_atleta',
         'sexo_atleta',
