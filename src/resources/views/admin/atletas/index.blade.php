@@ -59,7 +59,9 @@
                             <thead class="table-dark">
                                 <tr>
                                     <th style="width: 70px;">Foto</th>
+                                    <th class="text-center" style="padding-left: 50px;">Matrícula</th>
                                     <th style="text-align: left; padding-left: 300px;">Nome</th>
+                                    <th>Time</th>
                                     <th>Responsável</th>
                                     <th>Categoria</th>
                                     <th>Posição</th>
@@ -108,6 +110,8 @@
                                         $corPosicao = '#0dcaf0';
 
                                         $idade = $atleta->data_nasc_atleta?->age;
+                                        $time = $atleta->times->first();
+                                        $nomeTime = $time->nome_time ?? null;
                                     @endphp
                                     <tr>
                                         <td>
@@ -122,11 +126,30 @@
                                                 </div>
                                             @endif
                                         </td>
+                                        <td class="text-center" style="padding-left: 50px;">
+                                            @if ($atleta->numero_matricula_atleta)
+                                                <span class="badge bg-secondary text-white fw-bold"
+                                                    style="font-size:13px; padding:4px 10px;">{{ $atleta->numero_matricula_atleta }}</span>
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
+                                        </td>
                                         <td style="text-align: left; padding-left: 300px;">
+                                            @php $camisa = $time?->pivot->camisa_atleta_time ?: null; @endphp
                                             <strong class="text-dark">{{ $atleta->nome_atleta }}</strong>
                                             <div class="text-muted" style="font-size:0.78rem; line-height: 1.5;">
-                                                {!! implode(' &nbsp;·&nbsp; ', array_filter([$atleta->numero_atleta ? 'Nº ' . $atleta->numero_atleta : null])) !!}
+                                                {!! $camisa ? 'Camisa Nº ' . $camisa : '' !!}
                                             </div>
+                                        </td>
+                                        <td>
+                                            @if ($nomeTime)
+                                                <span class="badge bg-dark text-white"
+                                                    style="font-size: 12px; padding: 5px 10px;">
+                                                    {{ $nomeTime }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted small">—</span>
+                                            @endif
                                         </td>
                                         <td>
                                             @if ($nomeResponsavel)
@@ -178,7 +201,7 @@
                                                     data-bs-toggle="modal" data-bs-target="#modalEditarAtleta"
                                                     data-id="{{ $atleta->id_atleta }}"
                                                     data-nome="{{ $atleta->nome_atleta }}"
-                                                    data-numero="{{ $atleta->numero_atleta }}"
+                                                    data-matricula="{{ $atleta->numero_matricula_atleta }}"
                                                     data-data-nasc="{{ $atleta->data_nasc_atleta ? $atleta->data_nasc_atleta->format('Y-m-d') : '' }}"
                                                     data-cpf="{{ $atleta->cpf_atleta }}"
                                                     data-rg="{{ $atleta->rg_atleta }}"
@@ -194,6 +217,8 @@
                                                     data-telefone="{{ $atleta->telefone_atleta }}"
                                                     data-sala="{{ $atleta->sala_atleta }}"
                                                     data-email="{{ $atleta->email_atleta }}"
+                                                    data-time="{{ $time->id_time ?? '' }}"
+                                                    data-camisa="{{ $time?->pivot->camisa_atleta_time ?? '' }}"
                                                     data-cep="{{ $atleta->endereco->cep_endereco ?? '' }}"
                                                     data-rua="{{ $atleta->endereco->rua_endereco ?? '' }}"
                                                     data-numero-end="{{ $atleta->endereco->numero_endereco ?? '' }}"
@@ -231,7 +256,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="7" class="text-center text-muted py-5">
+                                        <td colspan="9" class="text-center text-muted py-5">
                                             <i class="bi bi-person-x fs-2 d-block mb-2"></i>
                                             Nenhum atleta cadastrado ainda.
                                         </td>
@@ -266,8 +291,8 @@
 
                     document.getElementById('edit_nome').value = this.getAttribute('data-nome') ??
                         '';
-                    document.getElementById('edit_numero').value = this.getAttribute(
-                        'data-numero') ?? '';
+                    document.getElementById('edit_matricula').value = this.getAttribute(
+                        'data-matricula') ?? '';
                     document.getElementById('edit_data_nasc').value = this.getAttribute(
                         'data-data-nasc') ?? '';
                     document.getElementById('edit_cpf').value = this.getAttribute('data-cpf') ?? '';
@@ -294,6 +319,11 @@
                     if (categoriaSelect) categoriaSelect.value = this.getAttribute(
                         'data-categoria') ?? '';
 
+                    const timeSelect = document.getElementById('edit_time');
+                    if (timeSelect) timeSelect.value = this.getAttribute('data-time') ?? '';
+
+                    document.getElementById('edit_camisa').value = this.getAttribute('data-camisa') ?? '';
+
                     const posicaoSelect = document.getElementById('edit_posicao');
                     if (posicaoSelect) posicaoSelect.value = this.getAttribute('data-posicao') ??
                         '';
@@ -307,7 +337,7 @@
 
                     document.getElementById('edit_cep').value = this.getAttribute('data-cep') ?? '';
                     document.getElementById('edit_rua').value = this.getAttribute('data-rua') ?? '';
-                    document.getElementById('edit_numero_end').value = this.getAttribute(
+                    document.getElementById('edit_matricula_end').value = this.getAttribute(
                         'data-numero-end') ?? '';
                     document.getElementById('edit_bairro').value = this.getAttribute(
                         'data-bairro') ?? '';

@@ -31,7 +31,6 @@
             <i class="nav-icon bi bi-newspaper"></i>
             <p>
               Notícias
-              <span class="badge text-bg-warning ms-1 me-auto" style="font-size:0.65rem;">pendente</span>
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
@@ -43,26 +42,20 @@
               </a>
           </ul>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item {{ request()->routeIs('admin.banners.*') ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-image"></i>
             <p>
               Banners
-              <span class="badge text-bg-warning ms-1 me-auto" style="font-size:0.65rem;">pendente</span>
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.banners.index') }}"
+                class="nav-link {{ request()->routeIs('admin.banners.index') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Listar banners</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Adicionar banner</p>
               </a>
             </li>
           </ul>
@@ -72,7 +65,6 @@
             <i class="nav-icon bi bi-images"></i>
             <p>
               Galeria
-              <span class="badge text-bg-warning ms-1 me-auto" style="font-size:0.65rem;">pendente</span>
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
@@ -203,24 +195,35 @@
             </li> --}}
           </ul>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        @php $pendentes = \App\Models\Atleta::whereIn('status_atleta', ['PENDENTE', 'pendente'])->count(); @endphp
+        <li class="nav-item {{ request()->routeIs('admin.matriculas.*') ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs('admin.matriculas.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-clipboard-check"></i>
             <p>
               Matrículas
+              @if ($pendentes > 0)
+                <span class="badge text-bg-danger ms-1 me-auto" style="font-size:0.65rem;">{{ $pendentes }}</span>
+              @endif
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.matriculas.index') }}"
+                class="nav-link {{ request()->routeIs('admin.matriculas.index') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Listar matrículas</p>
               </a>
             </li>
+            <li class="nav-item">
+              <a href="{{ route('admin.matriculas.rejeitadas') }}"
+                class="nav-link {{ request()->routeIs('admin.matriculas.rejeitadas') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle"></i>
+                <p>Matrículas Rejeitadas</p>
+              </a>
+            </li>
           </ul>
         </li>
-
         <li class="nav-header">SISTEMA</li>
         <li class="nav-item">
           <a href="{{ url('/') }}" class="nav-link" target="_blank">

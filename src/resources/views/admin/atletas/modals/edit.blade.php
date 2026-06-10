@@ -41,7 +41,7 @@
                                 placeholder="00.000.000-0" maxlength="12" required>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Categoria</label>
                             <select name="id_categoria" id="edit_categoria" class="form-select">
                                 <option value="">— Selecionar —</option>
@@ -50,7 +50,21 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold text-dark">Time</label>
+                            <select name="id_time" id="edit_time" class="form-select">
+                                <option value="">— Sem time —</option>
+                                @foreach ($times as $t)
+                                    <option value="{{ $t->id_time }}">{{ $t->nome_time }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold text-dark">Nº Camisa</label>
+                            <input type="text" name="camisa_atleta_time" id="edit_camisa" class="form-control"
+                                placeholder="Ex: 10" maxlength="5">
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Posição</label>
                             <select name="posicao_atleta" id="edit_posicao" class="form-select">
                                 <option value="">— Selecionar —</option>
@@ -60,9 +74,9 @@
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">Nº Camisa / Matrícula</label>
-                            <input type="text" name="numero_atleta" id="edit_numero" class="form-control"
-                                placeholder="Ex: 10" maxlength="10">
+                            <label class="form-label font-weight-bold text-dark">Matrícula</label>
+                            <input type="text" name="numero_matricula_atleta" id="edit_matricula" class="form-control"
+                                placeholder="Gerada automaticamente" maxlength="10">
                         </div>
 
                         <div class="col-md-4">
@@ -161,7 +175,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Número</label>
-                            <input type="text" name="numero_endereco" id="edit_numero_end" class="form-control"
+                            <input type="text" name="numero_endereco" id="edit_matricula_end" class="form-control"
                                 placeholder="123">
                         </div>
                         <div class="col-md-3">

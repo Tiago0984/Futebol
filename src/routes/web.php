@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
 use App\Http\Controllers\Admin\AtletasController;
 use App\Http\Controllers\Admin\InscricoesController;
+use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
@@ -85,5 +86,13 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');
     Route::get('inscricoes/{id}',     [InscricoesController::class, 'show'])->name('inscricoes.show');
     Route::delete('inscricoes/{id}',  [InscricoesController::class, 'destroy'])->name('inscricoes.destroy');
+
+    // Matrículas (cadastros vindos do site aguardando aprovação)
+    Route::get('matriculas',                      [MatriculasController::class, 'index'])->name('matriculas.index');
+    Route::get('matriculas/rejeitadas',           [MatriculasController::class, 'rejeitadas'])->name('matriculas.rejeitadas');
+    Route::get('matriculas/{id}',                 [MatriculasController::class, 'show'])->name('matriculas.show');
+    Route::patch('matriculas/{id}/aprovar',       [MatriculasController::class, 'aprovar'])->name('matriculas.aprovar');
+    Route::patch('matriculas/{id}/rejeitar',      [MatriculasController::class, 'rejeitar'])->name('matriculas.rejeitar');
+    Route::delete('matriculas/{id}/deletar',      [MatriculasController::class, 'deletar'])->name('matriculas.deletar');
 
 });

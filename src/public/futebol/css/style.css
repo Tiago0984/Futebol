@@ -1175,11 +1175,23 @@ td.tw10{
 	position: relative;
 	overflow: hidden;
 	width:100%;
+	height: 260px;
 	margin-bottom:10px;
 }
-.w-item a, .w-item a img{
+.w-item a{
 	display: block;
-	max-width: 100%;
+	width: 100%;
+	height: 100%;
+	cursor: pointer;
+	-webkit-transition: 0.4s all linear;
+	        transition: 0.4s all linear;
+}
+.w-item a img{
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	object-position: center;
 	-webkit-transform: scale(1,1);
 	-ms-transform: scale(1,1);
 	        transform: scale(1,1);

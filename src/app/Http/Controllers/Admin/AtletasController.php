@@ -7,6 +7,7 @@ use App\Models\Atleta;
 use App\Models\Responsavel;
 use App\Models\Endereco;
 use App\Models\Categoria;
+use App\Models\Time;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -19,11 +20,13 @@ class AtletasController extends Controller
             'responsaveis',
             'endereco',
             'times',
-        ])->orderBy('nome_atleta')->get();
+        ])->whereIn('status_atleta', ['ATIVO', 'Ativo', 'ativo', 'INATIVO', 'Inativo', 'inativo'])
+          ->orderBy('nome_atleta')->get();
 
         $categorias = Categoria::orderBy('nome_categoria')->get();
+        $times = Time::orderBy('nome_time')->get();
 
-        return view('admin.atletas.index', compact('atletas', 'categorias'));
+        return view('admin.atletas.index', compact('atletas', 'categorias', 'times'));
     }
 
     public function create()
@@ -39,7 +42,7 @@ class AtletasController extends Controller
             'data_nasc_atleta'            => 'required|date',
             'cpf_atleta'                  => 'required|string|max:14|unique:tbl_atletas,cpf_atleta',
             'rg_atleta'                   => 'required|string|max:20',
-            'numero_atleta'               => 'nullable|string|max:20|unique:tbl_atletas,numero_atleta',
+            'numero_matricula_atleta'               => 'nullable|string|max:20|unique:tbl_atletas,numero_matricula_atleta',
             'escola_atleta'               => 'required|string|max:255',
             'email_atleta'                => 'nullable|email|max:255|unique:tbl_atletas,email_atleta',
             'password'                    => 'nullable|string|min:8|confirmed',
@@ -112,7 +115,7 @@ class AtletasController extends Controller
                 'data_nasc_atleta'       => $request->data_nasc_atleta,
                 'cpf_atleta'             => $request->cpf_atleta,
                 'rg_atleta'              => $request->rg_atleta,
-                'numero_atleta'          => $request->numero_atleta,
+                'numero_matricula_atleta'          => $request->numero_matricula_atleta,
                 'escola_atleta'          => $request->escola_atleta,
                 'foto_atleta'            => $fotoPath,
                 'email_atleta'           => $request->email_atleta,
@@ -168,7 +171,7 @@ class AtletasController extends Controller
             'cpf_atleta'             => 'required|string|max:14',
             'rg_atleta'              => 'required|string|max:20',
             'escola_atleta'          => 'required|string|max:255',
-            'numero_atleta'          => 'nullable|string|max:20',
+            'numero_matricula_atleta'          => 'nullable|string|max:20',
             'posicao_atleta'         => 'nullable|string|max:50',
             'sexo_atleta'            => 'nullable|in:M,F',
             'peso_atleta'            => 'nullable|numeric|min:0',
@@ -200,7 +203,7 @@ class AtletasController extends Controller
             'data_nasc_atleta'       => $request->data_nasc_atleta,
             'cpf_atleta'             => $request->cpf_atleta,
             'rg_atleta'              => $request->rg_atleta,
-            'numero_atleta'          => $request->numero_atleta,
+            'numero_matricula_atleta'          => $request->numero_matricula_atleta,
             'posicao_atleta'         => $request->posicao_atleta,
             'telefone_atleta'        => $request->telefone_atleta,
             'sala_atleta'            => $request->sala_atleta,
@@ -228,6 +231,22 @@ class AtletasController extends Controller
                     'status_categoria_atleta'      => 'Ativo',
                 ]);
             }
+        }
+
+        if ($request->filled('id_time')) {
+            $timeAtual = $atleta->times->where('id_time', $request->id_time)->first();
+            $atleta->times()->sync([
+                $request->id_time => [
+                    'camisa_atleta_time'     => $request->camisa_atleta_time ?? '',
+                    'posicao_atleta_time'    => $timeAtual?->pivot->posicao_atleta_time ?? '',
+                    'jogos_atleta_time'      => $timeAtual?->pivot->jogos_atleta_time ?? 0,
+                    'convocacao_atleta_time' => $timeAtual?->pivot->convocacao_atleta_time ?? 0,
+                    'gols_atleta_time'       => $timeAtual?->pivot->gols_atleta_time ?? 0,
+                    'defesas_atleta_time'    => $timeAtual?->pivot->defesas_atleta_time ?? 0,
+                ],
+            ]);
+        } else {
+            $atleta->times()->detach();
         }
 
         return redirect()->route('admin.atletas.index')

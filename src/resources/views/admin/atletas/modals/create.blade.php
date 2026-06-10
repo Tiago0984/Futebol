@@ -85,8 +85,8 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Nº Camisa / Matrícula</label>
-                            <input type="text" name="numero_atleta" class="form-control" placeholder="Ex: 10"
-                                maxlength="10" value="{{ old('numero_atleta') }}">
+                            <input type="text" name="numero_matricula_atleta" class="form-control" placeholder="Ex: 10"
+                                maxlength="10" value="{{ old('numero_matricula_atleta') }}">
                         </div>
 
                         <div class="col-md-4">

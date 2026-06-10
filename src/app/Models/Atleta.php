@@ -15,7 +15,7 @@ class Atleta extends Authenticatable
         'data_nasc_atleta',
         'rg_atleta',
         'cpf_atleta',
-        'numero_atleta',
+        'numero_matricula_atleta',
         'posicao_atleta',
         'telefone_atleta',
         'peso_atleta',

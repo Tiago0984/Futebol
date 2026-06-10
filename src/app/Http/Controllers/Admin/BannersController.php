@@ -37,7 +37,10 @@ class BannersController extends Controller
             'status_banner',
         ]);
 
-        $dados['foto_banner'] = $request->file('foto_banner')->store('banners', 'public');
+        $arquivo = $request->file('foto_banner');
+        $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+        $arquivo->move(public_path('futebol/images/banner'), $nomeArquivo);
+        $dados['foto_banner'] = $nomeArquivo;
 
         Banner::create($dados);
 
@@ -71,7 +74,10 @@ class BannersController extends Controller
         ]);
 
         if ($request->hasFile('foto_banner')) {
-            $dados['foto_banner'] = $request->file('foto_banner')->store('banners', 'public');
+            $arquivo = $request->file('foto_banner');
+            $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+            $arquivo->move(public_path('futebol/images/banner'), $nomeArquivo);
+            $dados['foto_banner'] = $nomeArquivo;
         }
 
         $banner->update($dados);
@@ -82,8 +88,17 @@ class BannersController extends Controller
     public function destroy($id)
     {
         $banner = Banner::findOrFail($id);
-        $banner->delete();
 
-        return redirect()->route('admin.banners.index')->with('sucesso', 'Banner removido com sucesso.');
+        if (strtolower($banner->status_banner) === 'ativo') {
+            $banner->status_banner = 'inativo';
+            $mensagem = 'Banner inativado com sucesso!';
+        } else {
+            $banner->status_banner = 'ativo';
+            $mensagem = 'Banner reativado com sucesso!';
+        }
+
+        $banner->save();
+
+        return redirect()->route('admin.banners.index')->with('sucesso', $mensagem);
     }
 }
