@@ -28,9 +28,9 @@
 			@endforelse
 		</div>
 
-		<div class="loadmore">
+		{{-- <div class="loadmore">
 			<a href="#" title="">See More</a>
-		</div>
+		</div> --}}
 
 	</div>
 </div>

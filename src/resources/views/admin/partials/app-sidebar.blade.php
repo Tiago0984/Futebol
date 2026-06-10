@@ -78,17 +78,18 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.galeria.index') }}"
+                class="nav-link {{ request()->routeIs('admin.galeria.index') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Listar fotos</p>
               </a>
             </li>
-            <li class="nav-item">
+            {{-- <li class="nav-item">
               <a href="#" class="nav-link">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Adicionar foto</p>
               </a>
-            </li>
+            </li> --}}
           </ul>
         </li>
 
@@ -206,7 +207,7 @@
           <a href="#" class="nav-link">
             <i class="nav-icon bi bi-clipboard-check"></i>
             <p>
-              Inscrições
+              Matrículas
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
@@ -214,7 +215,7 @@
             <li class="nav-item">
               <a href="#" class="nav-link">
                 <i class="nav-icon bi bi-circle"></i>
-                <p>Listar inscrições</p>
+                <p>Listar matrículas</p>
               </a>
             </li>
           </ul>

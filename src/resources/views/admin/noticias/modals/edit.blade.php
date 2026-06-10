@@ -3,7 +3,8 @@
         <div class="modal-content text-start">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title" id="modalEditarNoticiaLabel"><i class="bi bi-pencil"></i> Editar Notícia</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background: transparent; border: 0; font-size: 20px;">&times;</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
+                    style="background: transparent; border: 0; font-size: 20px;">&times;</button>
             </div>
             <form id="formEditarNoticia" method="POST" enctype="multipart/form-data">
                 @csrf
@@ -16,7 +17,8 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label font-weight-bold text-dark">Categoria</label>
-                            <input type="text" name="categoria_noticia" id="edit_categoria" class="form-control" required>
+                            <input type="text" name="categoria_noticia" id="edit_categoria" class="form-control"
+                                required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label font-weight-bold text-dark">Autor</label>
@@ -24,7 +26,8 @@
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label font-weight-bold text-dark">Data de Publicação</label>
-                            <input type="datetime-local" name="data_publicacao_noticia" id="edit_data" class="form-control" required>
+                            <input type="datetime-local" name="data_publicacao_noticia" id="edit_data"
+                                class="form-control" required>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label font-weight-bold text-dark">Alterar Foto de Capa (Opcional)</label>

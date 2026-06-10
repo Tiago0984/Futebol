@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 
 class GaleriaController extends Controller
 {
+    // 1. Carrega a listagem e os modais estruturados nela
     public function index()
     {
         $fotos = Galeria::orderBy('ordem_galeria')->get();
@@ -15,11 +16,7 @@ class GaleriaController extends Controller
         return view('admin.galeria.index', compact('fotos'));
     }
 
-    public function create()
-    {
-        return view('admin.galeria.create');
-    }
-
+    // 2. Salva os dados enviados pelo modal de criação
     public function store(Request $request)
     {
         $request->validate([
@@ -35,20 +32,17 @@ class GaleriaController extends Controller
             'status_galeria',
         ]);
 
-        $dados['foto_galeria'] = $request->file('foto_galeria')->store('galeria', 'public');
+        $arquivo = $request->file('foto_galeria');
+        $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+        $arquivo->move(public_path('futebol/images/galeria'), $nomeArquivo);
+        $dados['foto_galeria'] = $nomeArquivo;
 
         Galeria::create($dados);
 
         return redirect()->route('admin.galeria.index')->with('sucesso', 'Foto adicionada com sucesso.');
     }
 
-    public function edit($id)
-    {
-        $foto = Galeria::findOrFail($id);
-
-        return view('admin.galeria.edit', compact('foto'));
-    }
-
+    // 3. Processa a atualização dos dados vindos do modal de edição
     public function update(Request $request, $id)
     {
         $foto = Galeria::findOrFail($id);
@@ -67,7 +61,10 @@ class GaleriaController extends Controller
         ]);
 
         if ($request->hasFile('foto_galeria')) {
-            $dados['foto_galeria'] = $request->file('foto_galeria')->store('galeria', 'public');
+            $arquivo = $request->file('foto_galeria');
+            $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+            $arquivo->move(public_path('futebol/images/galeria'), $nomeArquivo);
+            $dados['foto_galeria'] = $nomeArquivo;
         }
 
         $foto->update($dados);
@@ -75,11 +72,21 @@ class GaleriaController extends Controller
         return redirect()->route('admin.galeria.index')->with('sucesso', 'Foto atualizada com sucesso.');
     }
 
+    // 4. Alterna o status entre ativo e inativo
     public function destroy($id)
     {
         $foto = Galeria::findOrFail($id);
-        $foto->delete();
 
-        return redirect()->route('admin.galeria.index')->with('sucesso', 'Foto removida com sucesso.');
+        if (strtolower($foto->status_galeria) === 'ativo') {
+            $foto->status_galeria = 'inativo';
+            $mensagem = 'Foto inativada com sucesso!';
+        } else {
+            $foto->status_galeria = 'ativo';
+            $mensagem = 'Foto reativada com sucesso!';
+        }
+
+        $foto->save();
+
+        return redirect()->route('admin.galeria.index')->with('sucesso', $mensagem);
     }
 }

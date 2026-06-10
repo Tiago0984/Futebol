@@ -237,7 +237,7 @@ class AtletasController extends Controller
     public function toggleStatus($id)
     {
         $atleta = Atleta::findOrFail($id);
-        $novoStatus =($atleta->status_atleta) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+        $novoStatus = strtoupper($atleta->status_atleta) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
         $atleta->update(['status_atleta' => $novoStatus]);
 
         return back()->with('sucesso', "Atleta {$novoStatus} com sucesso.");
