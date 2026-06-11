@@ -23,7 +23,7 @@
                 @if(session('sucesso'))
                 <div class="alert alert-success alert-dismissible fade show m-3" role="alert" style="text-align: left;">
                     <strong>Sucesso!</strong> {{ session('sucesso') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0; background: transparent;"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0;"></button>
                 </div>
                 @endif
 
@@ -35,7 +35,7 @@
                             <li>{{ $error }}</li>
                         @endforeach
                     </ul>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0; background: transparent;"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" style="position: absolute; top: 0; right: 0; padding: 1.25rem 1rem; border: 0;"></button>
                 </div>
                 @endif
 

@@ -8,7 +8,6 @@ use App\Models\Responsavel;
 use App\Models\Endereco;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class AtletasController extends Controller
 {
@@ -55,7 +54,7 @@ class AtletasController extends Controller
             'estado_endereco'             => 'required|string|max:2',
         ]);
 
-        DB::transaction(function () use ($request) {
+        Atleta::transaction(function () use ($request) {
 
             // 1. Endereço do atleta
             $endereco = Endereco::create([
@@ -76,7 +75,7 @@ class AtletasController extends Controller
                 'telefone_responsavel'   => $request->whatsapp_responsavel,
                 'whatsapp_responsavel'   => $request->whatsapp_responsavel,
                 'assinatura_responsavel' => '',
-                'aceite_responsavel'     => 'pendente',
+                'aceite_responsavel'     => 'pendente', // Mantido conforme escopo original
                 'id_endereco'            => $endereco->id_endereco,
             ]);
 
@@ -94,7 +93,7 @@ class AtletasController extends Controller
                 'numero_atleta'          => $request->numero_atleta,
                 'escola_atleta'          => $request->escola_atleta,
                 'foto_atleta'            => $fotoPath,
-                'status_atleta'          => 'Ativo',
+                'status_atleta'          => 'ATIVO', // Padronizado para MAIÚSCULO
                 'id_endereco'            => $endereco->id_endereco,
                 'sexo_atleta'            => $request->sexo_atleta ?? 'M',
                 'peso_atleta'            => $request->peso_atleta ?? 0,
@@ -114,7 +113,7 @@ class AtletasController extends Controller
             if ($request->filled('id_categoria')) {
                 $atleta->categorias()->attach($request->id_categoria, [
                     'data_inicio_categoria_atleta' => now(),
-                    'status_categoria_atleta'      => 'Ativo',
+                    'status_categoria_atleta'      => 'ATIVO', // Padronizado para MAIÚSCULO
                 ]);
             }
         });
@@ -143,7 +142,7 @@ class AtletasController extends Controller
             'cpf_atleta'                  => 'required|string|max:14',
             'rg_atleta'                   => 'required|string|max:20',
             'escola_atleta'               => 'required|string|max:255',
-            'status_atleta'               => 'required|in:Ativo,Inativo',
+            'status_atleta'               => 'required|in:ATIVO,INATIVO', // Padronizado na validação
             'numero_atleta'               => 'nullable|string|max:20',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
@@ -158,7 +157,7 @@ class AtletasController extends Controller
             'estado_endereco'             => 'required|string|max:2',
         ]);
 
-        DB::transaction(function () use ($request, $atleta) {
+        $atleta->transaction(function () use ($request, $atleta) {
 
             // 1. Atualiza atleta
             $fotoPath = $atleta->foto_atleta;
@@ -173,7 +172,7 @@ class AtletasController extends Controller
                 'rg_atleta'        => $request->rg_atleta,
                 'numero_atleta'    => $request->numero_atleta,
                 'escola_atleta'    => $request->escola_atleta,
-                'status_atleta'    => $request->status_atleta,
+                'status_atleta'    => strtoupper($request->status_atleta), // Força a gravação em maiúsculo
                 'foto_atleta'      => $fotoPath,
             ]);
 
@@ -216,26 +215,28 @@ class AtletasController extends Controller
                     if ($categoriaAtual->id_categoria != $request->id_categoria) {
                         $atleta->categorias()->sync([$request->id_categoria => [
                             'data_inicio_categoria_atleta' => now(),
-                            'status_categoria_atleta'      => 'Ativo',
+                            'status_categoria_atleta'      => 'ATIVO', // Padronizado para MAIÚSCULO
                         ]]);
                     }
                 } else {
                     $atleta->categorias()->attach($request->id_categoria, [
                         'data_inicio_categoria_atleta' => now(),
-                        'status_categoria_atleta'      => 'Ativo',
+                        'status_categoria_atleta'      => 'ATIVO', // Padronizado para MAIÚSCULO
                     ]);
                 }
             }
         });
 
         return redirect()->route('admin.atletas.index')
-            ->with('sucesso', 'Atleta atualizado com sucesso.');
+            ->with('sucesso', 'Atleta updated com sucesso.');
     }
 
     public function toggleStatus($id)
     {
         $atleta = Atleta::findOrFail($id);
-        $novoStatus = strtolower($atleta->status_atleta) === 'ativo' ? 'Inativo' : 'Ativo';
+
+        // Garante a comparação e atribuição estritamente em maiúsculo
+        $novoStatus = strtoupper($atleta->status_atleta) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
         $atleta->update(['status_atleta' => $novoStatus]);
 
         return back()->with('sucesso', "Atleta {$novoStatus} com sucesso.");
@@ -245,7 +246,7 @@ class AtletasController extends Controller
     {
         $atleta = Atleta::findOrFail($id);
 
-        DB::transaction(function () use ($atleta) {
+        $atleta->transaction(function () use ($atleta) {
             $atleta->responsaveis()->detach();
             $atleta->categorias()->detach();
             $atleta->times()->detach();

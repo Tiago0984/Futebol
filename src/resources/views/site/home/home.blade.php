@@ -10,7 +10,7 @@
 
     @include('site.home.video')
 
-    @include('site.home.our-player')
+    @include('site.home.our-teams')
 
     @include('site.home.gallery')
 

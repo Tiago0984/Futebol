@@ -3,7 +3,7 @@
         <div class="modal-content text-start">
             <div class="modal-header bg-warning text-dark">
                 <h5 class="modal-title" id="modalEditarNoticiaLabel"><i class="bi bi-pencil"></i> Editar Notícia</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="background: transparent; border: 0; font-size: 20px;">&times;</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" style="border: 0; font-size: 20px;">&times;</button>
             </div>
             <form id="formEditarNoticia" method="POST" enctype="multipart/form-data">
                 @csrf

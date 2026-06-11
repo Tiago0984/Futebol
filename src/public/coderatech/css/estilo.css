@@ -67,6 +67,71 @@ html {
     background-size: cover;
 }
 
+/* Alinhamento global para os menus do topo conversarem na mesma linha horizontal */
+@media (min-width: 768px) {
+    .navbar-nav {
+        display: flex !important;
+        align-items: center !important;
+    }
+}
+
+.navbar-nav .submenu-listras {
+    margin-right: 5px; /* Cria um pequeno respiro antes do ícone de usuário */
+}
+
+/* Estilização para o item das três listras originais */
+.navbar-nav .submenu-listras .dropdown-menu {
+    background-color: #111111;
+    border: none;
+    min-width: 180px;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
+    border-radius: 4px;
+}
+
+/* Cor do ícone em repouso e transição */
+.navbar-nav .submenu-listras > a {
+    color: #ffffff !important;
+    transition: color 0.3s ease;
+}
+
+/* Destaque sutil ao passar o mouse ou manter aberto */
+.navbar-nav .submenu-listras > a:hover,
+.navbar-nav .submenu-listras.open > a {
+    color: #ffcc00 !important; /* Cor padrão de destaque do seu site */
+}
+
+/* Itens internos do menu abre/fecha */
+.navbar-nav .submenu-listras .dropdown-menu li a {
+    color: #ffffff !important;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    transition:
+        background 0.2s ease,
+        color 0.2s ease;
+}
+
+/* Efeito Hover nos links internos */
+.navbar-nav .submenu-listras .dropdown-menu li a:hover {
+    background-color: #ffcc00 !important;
+    color: #000000 !important;
+}
+
+/* Ajuste fino para não quebrar em layouts mobiles antigos */
+@media (max-width: 767px) {
+    .navbar-nav {
+        display: block !important;
+    }
+    .navbar-nav .submenu-listras .dropdown-menu {
+        float: none;
+        position: relative;
+        background-color: transparent;
+        box-shadow: none;
+        padding-left: 15px;
+    }
+}
+
 /* ==========================================================================
     1. CONFIGURAÇÕES DE RITMO VISUAL, CORES E ESPAÇAMENTO (RESET & UTILS)
    ========================================================================== */
@@ -2521,6 +2586,10 @@ html {
     }
 }
 
+/* ==========================================================================
+   30. PÁGINA DE MATRÍCULA: DESIGN DE INTERFACE E USABILIDADE
+   ========================================================================== */
+
 /* Submenu Campeonatos ao hover */
 .navbar .dropdown:hover .dropdown-menu {
     display: block;
@@ -2690,9 +2759,6 @@ html {
     }
 }
 
-
-
-
 /* Estilo Autorização de Matricula */
 * {
     box-sizing: border-box;
@@ -2838,4 +2904,1037 @@ body {
     border-radius: 4px;
     text-align: center;
     color: #0c5460;
+}
+
+/* ==========================================================================
+   31. ESTILO DO NOVO FOOTER - PALETA: VERMELHO, PRETO E BRANCO
+   ========================================================================== */
+.novo-footer {
+    background-color: #141619; /* Fundo grafite escuro moderno */
+    color: #ced4da;
+    font-family: "Open Sans", sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.footer-principal {
+    padding: 60px 0 40px 0;
+    border-bottom: 1px solid #212529; /* Divisor em tom de preto fosco */
+}
+
+.bloco-footer {
+    margin-bottom: 30px;
+}
+
+/* Logotipo e Descrição */
+.footer-logo img {
+    max-height: 65px;
+    margin-bottom: 20px;
+}
+
+.footer-texto-sobre {
+    color: #adb5bd;
+    font-size: 13px;
+    text-align: justify;
+}
+
+/* Títulos das Colunas */
+.titulo-bloco {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 25px;
+    position: relative;
+    text-transform: uppercase;
+}
+
+/* Detalhe abaixo do título mudado para Vermelho */
+.titulo-bloco::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: -8px;
+    width: 40px;
+    height: 2px;
+    background-color: #e60000;
+}
+
+/* Links Rápidos */
+.links-rapidos {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.links-rapidos li {
+    margin-bottom: 10px;
+}
+
+.links-rapidos li a {
+    color: #adb5bd;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    display: inline-block;
+}
+
+/* Setas indicadoras mudadas para Vermelho */
+.links-rapidos li a i {
+    font-size: 12px;
+    margin-right: 4px;
+    color: #e60000;
+}
+
+.links-rapidos li a:hover {
+    color: #ffffff;
+    transform: translateX(4px);
+}
+
+/* Botão de Matrícula mudado para Vermelho com texto Branco */
+.btn-matricula-footer {
+    background-color: #e60000;
+    color: #ffffff !important;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+    padding: 10px 15px;
+    border-radius: 4px;
+    display: inline-block;
+    margin-top: 15px;
+    width: 100%;
+    text-align: center;
+    transition: background 0.2s ease;
+    border: none;
+}
+
+.btn-matricula-footer:hover {
+    background-color: #b30000; /* Vermelho mais escuro no hover */
+}
+
+/* Mini posts / Notícias */
+.mini-post-footer {
+    margin-bottom: 18px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed #2b3035;
+}
+
+.mini-post-footer:last-of-type {
+    border-bottom: none;
+    margin-bottom: 10px;
+}
+
+.post-titulo {
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 13px;
+    text-decoration: none;
+    display: block;
+    line-height: 1.4;
+    transition: color 0.2s ease;
+}
+
+.post-titulo:hover {
+    color: #e60000; /* Destaque da notícia em vermelho ao passar o mouse */
+    text-decoration: none;
+}
+
+.post-data {
+    font-size: 11px;
+    color: #6c757d;
+    display: block;
+    margin-top: 4px;
+}
+
+/* Redes Sociais com Fundo Preto e Hover Vermelho */
+.novas-redes-sociais {
+    margin-top: 20px;
+}
+
+.rede-link {
+    display: inline-block;
+    width: 36px;
+    height: 36px;
+    background-color: #212529; /* Fundo preto/cinza escuro */
+    color: #ffffff !important;
+    text-align: center;
+    line-height: 36px;
+    border-radius: 50%;
+    margin-right: 8px;
+    transition: all 0.3s ease;
+}
+
+.rede-link:hover {
+    background-color: #e60000; /* Muda para vermelho */
+    color: #ffffff !important;
+    transform: translateY(-3px);
+}
+
+/* Formulário de Newsletter */
+.newsletter-clean {
+    margin-top: 20px;
+}
+
+.newsletter-clean .input-group {
+    width: 100%;
+}
+
+.input-news {
+    background-color: #212529 !important; /* Entrada de texto escura */
+    border: 1px solid #2b3035 !important;
+    color: #ffffff !important;
+    height: 40px;
+    border-radius: 4px 0 0 4px !important;
+}
+
+.input-news::placeholder {
+    color: #6c757d;
+}
+
+/* Botão de envio da newsletter em Vermelho */
+.btn-enviar-news {
+    background-color: #e60000;
+    color: #ffffff;
+    height: 40px;
+    padding: 0 15px;
+    border: none;
+    border-radius: 0 4px 4px 0 !important;
+    transition: background 0.2s ease;
+}
+
+.btn-enviar-news:hover {
+    background-color: #b30000;
+}
+
+/* Faixa Final Absoluta (Preto Puro) */
+.footer-copyright {
+    background-color: #0b0c10;
+    padding: 20px 0;
+    font-size: 12px;
+    color: #6c757d;
+}
+
+.texto-copy,
+.texto-desenvolvedor {
+    margin: 0;
+    padding: 5px 0;
+}
+
+.text-danger {
+    color: #e60000 !important; /* Coração do "Desenvolvido com amor" em vermelho */
+}
+
+/* Classes Auxiliares */
+.mt-3 {
+    margin-top: 15px;
+}
+
+@media (min-width: 992px) {
+    .text-right-desktop {
+        text-align: right;
+    }
+}
+
+@media (max-width: 767px) {
+    .text-right-desktop {
+        text-align: left;
+    }
+}
+
+/* ==========================================================================
+   32. ESTILIZAÇÃO DO PREVIEW DE NOTÍCIAS (HOME)
+   ========================================================================== */
+.nova-secao-noticias {
+    padding: 60px 0;
+    background-color: #ffffff;
+}
+
+/* Título da Seção */
+.page-title-moderno {
+    margin-bottom: 45px;
+}
+
+.page-title-moderno h2.lead {
+    color: #111111 !important;
+    font-weight: 800 !important;
+    font-size: 28px !important;
+    letter-spacing: 1px;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+}
+
+.linha-detalhe-vermelha {
+    width: 60px;
+    height: 3px;
+    background-color: #e60000;
+    margin: 0 auto;
+}
+
+/* Estrutura do Card de Notícias */
+.bloco-cards-noticias {
+    margin-top: 20px;
+}
+
+.card-noticia-item {
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    overflow: hidden;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.card-noticia-item:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+}
+
+/* Imagem com efeito Hover */
+.container-imagem {
+    position: relative;
+    overflow: hidden;
+    background-color: #000000;
+    aspect-ratio: 16 / 10; /* Mantém a proporção padrão das fotos de futebol */
+}
+
+.imagem-noticia {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition:
+        transform 0.5s ease,
+        opacity 0.3s ease;
+}
+
+.card-noticia-item:hover .imagem-noticia {
+    transform: scale(1.08);
+    opacity: 0.9;
+}
+
+/* Badge de Data com fundo Preto e detalhe Vermelho */
+.tag-data-moderna {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    background-color: rgba(17, 17, 17, 0.9);
+    color: #ffffff;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-left: 5px solid #e60000;
+    border-radius: 2px;
+    z-index: 2;
+}
+
+.tag-data-moderna i {
+    margin-right: 10px;
+}
+
+/* Corpo do Card */
+.corpo-noticia-item {
+    padding: 20px;
+    background-color: #ffffff;
+}
+
+.titulo-noticia-link {
+    margin: 0 0 15px 0;
+    font-size: 16px;
+    line-height: 1.4;
+    font-weight: 700;
+    height: 45px; /* Limita a altura para os cards ficarem alinhados */
+    overflow: hidden;
+}
+
+.titulo-noticia-link a {
+    color: #111111;
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.card-noticia-item:hover .titulo-noticia-link a {
+    color: #e60000; /* Muda o título para vermelho no hover do card */
+}
+
+/* Botão Leia Mais Interno */
+.rodape-card-noticia {
+    border-top: 1px solid #f1f3f5;
+    padding-top: 15px;
+    margin-top: 5px;
+}
+
+.btn-leia-mais-moderno {
+    color: #111111;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: color 0.2s ease;
+    display: inline-block;
+}
+
+.btn-leia-mais-moderno i {
+    font-size: 11px;
+    margin-left: 5px;
+    transition: transform 0.2s ease;
+}
+
+.btn-leia-mais-moderno:hover {
+    color: #e60000;
+    text-decoration: none;
+}
+
+.btn-leia-mais-moderno:hover i {
+    transform: translateX(4px);
+}
+
+.btn-ver-todas-noticias {
+    display: inline-block;
+    background-color: #111111; /* Fundo Preto */
+    color: #ffffff !important;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    padding: 12px 35px;
+    border-radius: 4px;
+    border: 2px solid #111111;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-ver-todas-noticias:hover {
+    background-color: #e60000; /* Transiciona para Vermelho */
+    border-color: #e60000;
+    color: #ffffff !important;
+    text-decoration: none;
+    box-shadow: 0 4px 15px rgba(230, 0, 0, 0.3);
+}
+
+.aviso-vazio {
+    color: #6c757d;
+    font-size: 15px;
+    padding: 30px 0;
+}
+
+.mt-4 {
+    margin-top: 25px;
+}
+
+/* ==========================================================================
+   33. SEÇÃO NOSSOS TIMES - SÓ INTERNOS (FUNDO BRANCO CLEAN)
+   ========================================================================== */
+
+/* Layout da Ficha Técnica Expandida */
+.player-profile-showcase {
+    align-items: flex-start !important; /* Alinha o conteúdo pelo topo */
+}
+
+.player-avatar-box {
+    position: relative;
+    text-align: center;
+}
+
+.player-main-badge {
+    margin-top: 10px;
+    font-size: 18px;
+    font-weight: 800;
+    color: #ff4a17;
+    background-color: #fff4f0;
+    padding: 4px 10px;
+    border-radius: 6px;
+    display: inline-block;
+    border: 1px dashed rgba(255, 74, 23, 0.3);
+}
+
+.modal-inner-line {
+    border: 0;
+    border-top: 1px solid #eef0f4;
+    margin: 15px 0;
+}
+
+/* Grids de Informações Alinhados */
+.player-bio-grid,
+.player-stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 15px;
+}
+
+.player-description-box h6 {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #95a5a6;
+    margin: 0 0 6px 0;
+    letter-spacing: 0.5px;
+}
+
+.player-description-box p {
+    font-size: 12.5px;
+    color: #555555;
+    line-height: 1.5;
+    margin: 0;
+    font-style: italic;
+    background: #fcfdfd;
+    padding: 10px;
+    border-radius: 6px;
+    border-left: 2px solid #bdc3c7;
+}
+
+.section-teams-clean {
+    background-color: #ffffff;
+    padding: 60px 0;
+}
+
+.teams-clean-header {
+    text-align: center;
+    margin-bottom: 45px;
+}
+
+.teams-clean-header h2 {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111111;
+    margin: 0;
+    letter-spacing: -0.5px;
+}
+
+.teams-clean-header .clean-divider {
+    width: 50px;
+    height: 4px;
+    background-color: #ff4a17;
+    margin: 12px auto 0;
+    border-radius: 2px;
+}
+
+/* --- CARD SLIDER CLEAN --- */
+.team-clean-card {
+    background-color: #ffffff;
+    border: 1px solid #eef0f4;
+    border-radius: 12px;
+    padding: 35px 20px 25px;
+    text-align: center;
+    position: relative;
+    transition: all 0.3s cubic-bezier(0.215, 0.61, 0.355, 1);
+    margin: 15px 10px;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+}
+
+.team-clean-card:hover {
+    transform: translateY(-6px);
+    border-color: #ff4a17;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.06);
+}
+
+/* Badge Verde para o Time Interno */
+.type-clean-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+.type-clean-badge.interno {
+    background-color: #eafaf1;
+    color: #2ecc71;
+}
+
+/* Escudos dos Times */
+.team-clean-logo {
+    width: 90px;
+    height: 90px;
+    margin: 0 auto 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.team-clean-card:hover .team-clean-logo {
+    transform: scale(1.08);
+}
+
+.team-clean-logo img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+}
+
+/* Informações */
+.team-clean-info h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin: 0 0 5px 0;
+}
+
+.category-clean-id {
+    font-size: 11px;
+    color: #95a5a6;
+    display: block;
+}
+
+/* Ação inferior do card */
+.team-clean-footer {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px solid #f8f9fa;
+    font-size: 11px;
+    font-weight: 700;
+    color: #ff4a17;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   INTERFACE DO MODAL ESPORTIVO - BLACK, WHITE & RED EDITION
+   ========================================================================== */
+
+/* Container Principal do Modal (Fundo Preto com Texturas Escuras) */
+.sport-premium-modal .modal-content {
+    background: #0b0c10; /* Preto absoluto de fundo */
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+}
+
+.sport-modal-wrapper {
+    padding: 0 !important;
+    position: relative;
+    background: radial-gradient(
+        circle at top right,
+        #1f2128,
+        #0b0c10
+    ); /* Gradiente preto/grafite */
+}
+
+/* Botão de Fechar */
+.sport-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: rgba(255, 255, 255, 0.05);
+    border: none;
+    color: #a0a5b5;
+    font-size: 24px;
+    width: 36px;
+    height: 36px;
+    line-height: 34px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    z-index: 10;
+}
+.sport-close-btn:hover {
+    background: #e31b23; /* Vermelho hover */
+    color: #ffffff;
+}
+
+/* Cabeçalho */
+.sport-modal-header {
+    padding: 28px 28px 0 28px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sport-brand-flex {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.sport-logo-wrapper img {
+    height: 54px;
+    width: auto;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.5));
+}
+
+.sport-title-meta h2 {
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 800;
+    margin: 0 0 4px 0;
+    letter-spacing: -0.5px;
+}
+
+/* Badge de Regime do Time (Interno) */
+.sport-badge-type {
+    font-size: 10px;
+    font-weight: 700;
+    color: #ffffff;
+    background: #e31b23; /* Vermelho Sólido */
+    padding: 3px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    display: inline-block;
+}
+
+/* Abas Minimalistas */
+.sport-minimal-tabs {
+    border-bottom: none !important;
+}
+.sport-minimal-tabs li a {
+    color: #8a8f9d !important;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 10px 0 !important;
+    margin-right: 28px !important;
+    background: transparent !important;
+    border: none !important;
+    position: relative;
+    transition: color 0.2s ease;
+}
+.sport-minimal-tabs li.active a,
+.sport-minimal-tabs li a:hover {
+    color: #ffffff !important;
+}
+.sport-minimal-tabs li.active a::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: #e31b23; /* Linha de Ativo Vermelha */
+    border-radius: 2px;
+}
+
+/* Layout Split (Esquerda / Direita) */
+@media (min-width: 768px) {
+    .sport-split-pane {
+        display: flex !important;
+    }
+    .sport-athletes-sidebar {
+        flex: 0 0 38%;
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .sport-player-showcase {
+        flex: 0 0 62%;
+    }
+}
+
+/* Barra Lateral de Jogadores */
+.sport-sidebar-scroll {
+    max-height: 480px;
+    overflow-y: auto;
+    padding: 15px;
+}
+
+/* Linha do Jogador (Item Interativo) */
+.sport-player-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.04);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sport-player-row:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateX(3px);
+}
+
+/* 🌟 ESTADO ATIVO DO JOGADOR CLICADO (Preto + Vermelho) */
+.sport-player-row.active {
+    background: #16171b; /* Fundo cinza-escuro/preto fosco */
+    border-color: #e31b23; /* Borda Vermelha */
+    box-shadow: 0 4px 15px rgba(227, 27, 35, 0.15);
+}
+
+/* Indicador luminoso esquerdo na linha ativa */
+.sport-player-row.active::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 15%;
+    height: 70%;
+    width: 4px;
+    background: #e31b23; /* Traço Vertical Vermelho */
+    border-radius: 0 4px 4px 0;
+}
+
+.player-row-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.sport-row-number {
+    color: #8a8f9d;
+    font-weight: 700;
+    font-size: 13px;
+    min-width: 24px;
+}
+.sport-player-row.active .sport-row-number {
+    color: #e31b23; /* Número fica vermelho ao selecionar */
+}
+
+.sport-row-name {
+    color: #e2e8f0;
+    font-size: 14px;
+    font-weight: 600;
+}
+.sport-player-row.active .sport-row-name {
+    color: #ffffff; /* Nome ganha brilho total */
+}
+
+.sport-row-arrow {
+    color: #2a2d37;
+    font-size: 11px;
+    transition: transform 0.2s ease;
+}
+.sport-player-row.active .sport-row-arrow {
+    color: #e31b23;
+    transform: translateX(2px);
+}
+
+/* Badges de Posição Neutras/Escuras (Casando com o visual Vermelho/Preto) */
+.sport-pos-badge {
+    font-size: 10px;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #ffffff;
+    min-width: 28px;
+    text-align: center;
+    background: #23252e; /* Fundo grafite padrão */
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+/* Sutil variação de borda ou tom para não quebrar a identidade de cores do site */
+.sport-pos-badge.gk {
+    border-color: #e31b23;
+    color: #e31b23;
+} /* Goleiro ganha contorno vermelho */
+.sport-pos-badge.cb,
+.sport-pos-badge.le,
+.sport-pos-badge.ld {
+    background: #1c1d24;
+}
+.sport-pos-badge.at,
+.sport-pos-badge.cf {
+    background: #323543;
+}
+
+/* Ficha do Jogador Showcase (Direita) */
+.sport-player-showcase {
+    padding: 24px;
+}
+
+.sport-card-premium {
+    background: transparent;
+}
+
+/* Perfil superior */
+.sport-profile-top {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+.sport-avatar-container {
+    position: relative;
+    width: 90px;
+    height: 115px;
+    background: #16171b;
+    border-radius: 6px;
+    border: 2px solid rgba(255, 255, 255, 0.05);
+    overflow: hidden;
+}
+
+.sport-avatar-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.sport-floating-number {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background: #e31b23; /* Vermelho */
+    color: #ffffff;
+    font-weight: 900;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-top-left-radius: 6px;
+}
+
+.sport-identity-box h3 {
+    color: #ffffff;
+    font-size: 24px;
+    font-weight: 800;
+    margin: 0 0 6px 0;
+}
+
+.sport-pos-label {
+    color: #8a8f9d;
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Grid de Dados Biométricos */
+.sport-metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.03);
+    margin-bottom: 24px;
+}
+
+.metric-item {
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+}
+
+.metric-label {
+    font-size: 9px;
+    color: #6a6f7d;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+}
+
+.metric-value {
+    color: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+/* Títulos de Seções */
+.sport-section-title {
+    color: #6a6f7d;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin: 0 0 12px 0;
+    text-transform: uppercase;
+}
+
+/* Dashboard de Estatísticas */
+.sport-stats-dashboard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.stat-box-mini {
+    background: #16171b;
+    padding: 14px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border: 1px solid rgba(255, 255, 255, 0.02);
+}
+
+.stat-title {
+    font-size: 9px;
+    color: #8a8f9d;
+    font-weight: 700;
+    margin-bottom: 6px;
+    text-align: center;
+}
+
+.stat-counter {
+    font-size: 24px;
+    font-weight: 800;
+    color: #ffffff;
+}
+
+/* Destaque Vermelho/Branco para as Caixas Principais de Gols ou Defesas */
+/* Destaque VERDE para as Caixas Principais de Golos e Defesas */
+.stat-box-mini.highlight-stat {
+    /* Gradiente suave: começa com um verde esmeralda translúcido no canto e termina no fundo preto fosco */
+    background: linear-gradient(
+        135deg,
+        rgba(16, 185, 129, 0.12) 0%,
+        #16171b 100%
+    );
+    border-color: rgba(16, 185, 129, 0.25); /* Borda em verde sutil */
+    transition: all 0.3s ease;
+}
+
+/* Cor do número/contador de golos e defesas */
+.stat-box-mini.highlight-stat .stat-counter {
+    color: #10b981; /* Verde Esmeralda vibrante e de alta legibilidade (estilo SofaScore) */
+    text-shadow: 0 0 12px rgba(16, 185, 129, 0.3); /* Efeito luminoso sutil no número */
+}
+
+/* Opcional: Se quiser dar um tom ligeiramente diferente para o Guarda-redes (Defesas) mas ainda assim positivo */
+.stat-box-mini.highlight-stat.goalie {
+    background: linear-gradient(
+        135deg,
+        rgba(5, 150, 105, 0.12) 0%,
+        #16171b 100%
+    );
+    border-color: rgba(5, 150, 105, 0.25);
+}
+
+.stat-box-mini.highlight-stat.goalie .stat-counter {
+    color: #34d399; /* Um verde menta ligeiramente diferente para diferenciar de golos */
+    text-shadow: 0 0 12px rgba(52, 211, 153, 0.3); /* Efeito luminoso sutil no número */
+}
+
+/* Área de Texto Histórico */
+.sport-bio-history p {
+    color: #a0a5b5;
+    font-size: 13px;
+    line-height: 1.6;
+    background: rgba(255, 255, 255, 0.02);
+    padding: 12px 16px;
+    border-radius: 8px;
+    border-left: 3px solid #e31b23; /* Detalhe em Vermelho */
+    margin: 0;
+}
+
+/* Força o Bootstrap a sumir totalmente com a aba inativa e aplicar o Flexbox na ativa */
+.sport-content-layout .tab-pane {
+    display: none !important;
+}
+
+.sport-content-layout .tab-pane.active {
+    display: flex !important;
+}
+
+/* Scrollbar Customizada */
+.sport-sidebar-scroll::-webkit-scrollbar {
+    width: 6px;
+}
+.sport-sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
+}
+.sport-sidebar-scroll::-webkit-scrollbar-thumb {
+    background: #23252e;
+    border-radius: 10px;
+}
+.sport-sidebar-scroll::-webkit-scrollbar-thumb:hover {
+    background: #323543;
 }

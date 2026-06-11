@@ -8,7 +8,7 @@
                     <i class="bi bi-person-plus me-2"></i>Cadastrar novo atleta
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fechar"
-                    style="background: transparent; border: 0; font-size: 20px; color: white;">&times;</button>
+                    style="border: 0; font-size: 20px; color: white;">&times;</button>
             </div>
 
             <form action="{{ route('admin.atletas.store') }}" method="POST" enctype="multipart/form-data" novalidate>
@@ -52,9 +52,9 @@
                             <select name="id_categoria" class="form-select">
                                 <option value="">— Selecionar —</option>
                                 @foreach($categorias as $cat)
-                                    <option value="{{ $cat->id_categoria }}" {{ old('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
-                                        {{ $cat->nome_categoria }}
-                                    </option>
+                                <option value="{{ $cat->id_categoria }}" {{ old('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
+                                    {{ $cat->nome_categoria }}
+                                </option>
                                 @endforeach
                             </select>
                         </div>
@@ -63,7 +63,7 @@
                             <select name="posicao" class="form-select">
                                 <option value="">— Selecionar —</option>
                                 @foreach(['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'] as $pos)
-                                    <option value="{{ $pos }}" {{ old('posicao') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                                <option value="{{ $pos }}" {{ old('posicao') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -108,7 +108,7 @@
                             <select name="periodo_escolar_atleta" class="form-select">
                                 <option value="">— Selecionar —</option>
                                 @foreach(['MANHÃ', 'TARDE', 'NOITE'] as $per)
-                                    <option value="{{ $per }}" {{ old('periodo_escolar_atleta') == $per ? 'selected' : '' }}>{{ $per }}</option>
+                                <option value="{{ $per }}" {{ old('periodo_escolar_atleta') == $per ? 'selected' : '' }}>{{ $per }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -144,7 +144,7 @@
                                 class="form-select @error('grau_parentesco_responsavel') is-invalid @enderror" required>
                                 <option value="">— Selecionar —</option>
                                 @foreach(['Pai', 'Mãe', 'Avô', 'Avó', 'Tio', 'Tia', 'Responsável Legal', 'Outro'] as $grau)
-                                    <option value="{{ $grau }}" {{ old('grau_parentesco_responsavel') == $grau ? 'selected' : '' }}>{{ $grau }}</option>
+                                <option value="{{ $grau }}" {{ old('grau_parentesco_responsavel') == $grau ? 'selected' : '' }}>{{ $grau }}</option>
                                 @endforeach
                             </select>
                             @error('grau_parentesco_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
