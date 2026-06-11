@@ -49,32 +49,34 @@ class Atleta extends Authenticatable
     public function responsaveis()
     {
         return $this->belongsToMany(Responsavel::class, 'tbl_atleta_responsavel', 'id_atleta', 'id_responsavel')
-                    ->withPivot('grau_parentesco_responsavel');
+            ->withPivot('grau_parentesco_responsavel');
     }
 
+    // Define que um Atleta pertence a muitos Times
     public function times()
     {
         return $this->belongsToMany(Time::class, 'tbl_atleta_time', 'id_atleta', 'id_time')
-                    ->withPivot([
-                        'camisa_atleta_time',
-                        'posicao_atleta_time',
-                        'jogos_atleta_time',
-                        'convocacao_atleta_time',
-                        'gols_atleta_time',
-                        'defesas_atleta_time',
-                    ]);
+            ->withPivot([
+                'status_atleta_time',
+                'posicao_atleta_time',
+                'camisa_atleta_time',
+                'gols_atleta_time',
+                'defesas_atleta_time',
+                'jogos_atleta_time',
+                'convocacao_atleta_time'
+            ]);
     }
 
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class, 'tbl_categoria_atleta', 'id_atleta', 'id_categoria')
-                    ->withPivot([
-                        'data_inicio_categoria_atleta',
-                        'data_fim_categoria_atleta',
-                        'data_atualizacao_categoria_atleta',
-                        'status_categoria_atleta',
-                        'observacao_categoria_atleta',
-                    ]);
+            ->withPivot([
+                'data_inicio_categoria_atleta',
+                'data_fim_categoria_atleta',
+                'data_atualizacao_categoria_atleta',
+                'status_categoria_atleta',
+                'observacao_categoria_atleta',
+            ]);
     }
 
     public function inscricoes()

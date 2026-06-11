@@ -3,8 +3,7 @@
         <div class="modal-content text-start">
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="modalCriarNoticiaLabel"><i class="bi bi-plus-circle"></i> Nova Notícia</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"
-                    style="background: transparent; border: 0; font-size: 20px; color: white;">&times;</button>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close" style="border: 0; font-size: 20px; color: white;">&times;</button>x
             </div>
             <form action="{{ route('admin.noticias.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf

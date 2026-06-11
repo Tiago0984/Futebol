@@ -27,16 +27,18 @@ class Time extends Model
         return $this->belongsToMany(Campeonato::class, 'tbl_campeonato_time', 'id_time', 'id_campeonato');
     }
 
+    // Define que um Time tem muitos Atletas através da tabela pivô
     public function atletas()
     {
         return $this->belongsToMany(Atleta::class, 'tbl_atleta_time', 'id_time', 'id_atleta')
-                    ->withPivot([
-                        'camisa_atleta_time',
-                        'posicao_atleta_time',
-                        'jogos_atleta_time',
-                        'convocacao_atleta_time',
-                        'gols_atleta_time',
-                        'defesas_atleta_time',
-                    ]);
+            ->withPivot([
+                'status_atleta_time',
+                'posicao_atleta_time',
+                'camisa_atleta_time',
+                'gols_atleta_time',
+                'defesas_atleta_time',
+                'jogos_atleta_time',
+                'convocacao_atleta_time'
+            ]);
     }
 }

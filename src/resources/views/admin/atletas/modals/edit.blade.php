@@ -6,8 +6,7 @@
                 <h5 class="modal-title fw-semibold" id="modalEditarAtletaLabel">
                     <i class="bi bi-pencil me-2"></i>Editar Atleta
                 </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"
-                    style="background: transparent; border: 0; font-size: 20px;">&times;</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar" style="background: transparent; border: 0; font-size: 20px;">&times;</button>
             </div>
 
             <form id="formEditarAtleta" method="POST" enctype="multipart/form-data">
@@ -26,186 +25,146 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label font-weight-bold text-dark">Data de Nascimento</label>
-                            <input type="date" name="data_nasc_atleta" id="edit_data_nasc" class="form-control"
-                                required>
+                            <input type="date" name="data_nasc_atleta" id="edit_data_nasc" class="form-control" required>
                         </div>
-
                         <div class="col-md-6">
                             <label class="form-label font-weight-bold text-dark">CPF</label>
-                            <input type="text" name="cpf_atleta" id="edit_cpf" class="form-control"
-                                placeholder="000.000.000-00" maxlength="14" required>
+                            <input type="text" name="cpf_atleta" id="edit_cpf" class="form-control" placeholder="000.000.000-00" maxlength="14" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label font-weight-bold text-dark">RG</label>
-                            <input type="text" name="rg_atleta" id="edit_rg" class="form-control"
-                                placeholder="00.000.000-0" maxlength="12" required>
+                            <input type="text" name="rg_atleta" id="edit_rg" class="form-control" placeholder="00.000.000-0" maxlength="12" required>
                         </div>
-
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Categoria</label>
                             <select name="id_categoria" id="edit_categoria" class="form-select">
                                 <option value="">— Selecionar —</option>
-                                @foreach ($categorias as $cat)
-                                    <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
+                                @foreach($categorias as $cat)
+                                <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label font-weight-bold text-dark">Nº Camisa</label>
-                            <input type="text" name="camisa_atleta_time" id="edit_camisa" class="form-control"
-                                placeholder="Ex: 10" maxlength="5">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label font-weight-bold text-dark">Posição</label>
-                            <select name="posicao_atleta" id="edit_posicao" class="form-select">
-                                <option value="">— Selecionar —</option>
-                                @foreach (['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'] as $pos)
-                                    <option value="{{ $pos }}">{{ $pos }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="col-md-12">
-                            <label class="form-label font-weight-bold text-dark">Times</label>
-                            <div class="d-flex flex-wrap gap-3">
-                                @foreach ($times as $t)
-                                    <label for="edit_time_{{ $t->id_time }}"
-                                        class="d-flex align-items-center gap-2 border rounded-3 px-3 py-2 edit-time-card"
-                                        style="cursor:pointer; min-width:150px; transition: background .15s, border-color .15s;">
-                                        <input class="form-check-input mt-0 edit-time-checkbox" type="checkbox"
-                                            name="id_time[]" id="edit_time_{{ $t->id_time }}"
-                                            value="{{ $t->id_time }}">
-                                        @if ($t->logo_time)
-                                            <img src="{{ asset('futebol/images/team/' . $t->logo_time) }}"
-                                                alt="{{ $t->nome_time }}"
-                                                style="width:38px;height:38px;object-fit:contain;">
-                                        @else
-                                            <span class="bi bi-shield-fill text-secondary" style="font-size:28px;"></span>
-                                        @endif
-                                        <span class="fw-semibold small">{{ $t->nome_time }}</span>
-                                    </label>
-                                @endforeach
-                            </div>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">Matrícula</label>
-                            <input type="text" name="numero_matricula_atleta" id="edit_matricula" class="form-control"
-                                placeholder="Gerada automaticamente" maxlength="10">
+                            <label class="form-label font-weight-bold text-dark">Nº Camisa / Matrícula</label>
+                            <input type="text" name="numero_atleta" id="edit_numero" class="form-control" placeholder="Ex: 10" maxlength="10">
                         </div>
-
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Status</label>
+                            <select name="status_atleta" id="edit_status" class="form-select" required>
+                                <option value="ATIVO">ATIVO</option>
+                                <option value="INATIVO">INATIVO</option>
+                            </select>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Sexo</label>
                             <select name="sexo_atleta" id="edit_sexo" class="form-select" required>
-                                <option value="">— Selecionar —</option>
                                 <option value="M">Masculino</option>
                                 <option value="F">Feminino</option>
                             </select>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Peso (kg)</label>
-                            <input type="number" name="peso_atleta" id="edit_peso" class="form-control" step="0.01"
-                                min="0">
+                            <input type="number" name="peso_atleta" id="edit_peso" class="form-control" step="0.01" min="0">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Altura (m)</label>
-                            <input type="number" name="altura_atleta" id="edit_altura" class="form-control"
-                                step="0.01" min="0">
+                            <input type="number" name="altura_atleta" id="edit_altura" class="form-control" step="0.01" min="0">
                         </div>
-
                         <div class="col-md-5">
                             <label class="form-label font-weight-bold text-dark">Escola</label>
-                            <input type="text" name="escola_atleta" id="edit_escola" class="form-control"
-                                placeholder="Nome da escola" required>
+                            <input type="text" name="escola_atleta" id="edit_escola" class="form-control" placeholder="Nome da escola" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Série</label>
-                            <input type="text" name="serie_atleta" id="edit_serie" class="form-control"
-                                placeholder="Ex: 7º Ano">
+                            <input type="text" name="serie_atleta" id="edit_serie" class="form-control" placeholder="Ex: 7º Ano">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Período</label>
                             <select name="periodo_escolar_atleta" id="edit_periodo" class="form-select">
                                 <option value="">— Selecionar —</option>
-                                @foreach (['MANHÃ', 'TARDE', 'NOITE'] as $per)
-                                    <option value="{{ $per }}">{{ $per }}</option>
-                                @endforeach
+                                <option value="MANHÃ">MANHÃ</option>
+                                <option value="TARDE">TARDE</option>
+                                <option value="NOITE">NOITE</option>
                             </select>
                         </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">Telefone</label>
-                            <input type="text" name="telefone_atleta" id="edit_telefone" class="form-control"
-                                placeholder="(11) 99999-9999" maxlength="20">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">Sala</label>
-                            <input type="text" name="sala_atleta" id="edit_sala" class="form-control"
-                                placeholder="Ex: Sala 3">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">E-mail</label>
-                            <input type="email" name="email_atleta" id="edit_email" class="form-control"
-                                placeholder="email@exemplo.com">
-                        </div>
-
                         <div class="col-md-6">
                             <label class="form-label font-weight-bold text-dark">Alterar Foto (Opcional)</label>
                             <input type="file" name="foto_atleta" class="form-control" accept="image/*">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label font-weight-bold text-dark">Descrição / Observações</label>
-                            <input type="text" name="descricao_atleta" id="edit_descricao" class="form-control"
-                                placeholder="Observações opcionais">
+                            <input type="text" name="descricao_atleta" id="edit_descricao" class="form-control" placeholder="Observações opcionais">
                         </div>
                     </div>
 
-                    <hr class="my-1">
+                    <hr class="my-3">
 
-                    <p class="text-uppercase text-primary fw-semibold small mb-3 mt-4" style="letter-spacing:.06em;">
-                        <i class="bi bi-geo-alt me-1"></i> Endereço
+                    <p class="text-uppercase text-primary fw-semibold small mb-3" style="letter-spacing:.06em;">
+                        <i class="bi bi-person-check me-1"></i> Responsável
                     </p>
 
                     <div class="row g-3 mb-4">
-                        <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">CEP</label>
-                            <input type="text" name="cep_endereco" id="edit_cep" class="form-control"
-                                placeholder="00000-000" maxlength="9">
-                        </div>
-                        <div class="col-md-5">
-                            <label class="form-label font-weight-bold text-dark">Cidade</label>
-                            <input type="text" name="cidade_endereco" id="edit_cidade" class="form-control"
-                                placeholder="São Paulo">
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label font-weight-bold text-dark">Estado (UF)</label>
-                            <input type="text" name="estado_endereco" id="edit_estado" class="form-control"
-                                placeholder="SP" maxlength="2">
-                        </div>
-
                         <div class="col-md-6">
-                            <label class="form-label font-weight-bold text-dark">Rua</label>
-                            <input type="text" name="rua_endereco" id="edit_rua" class="form-control"
-                                placeholder="Nome da rua">
+                            <label class="form-label font-weight-bold text-dark">Nome do Responsável</label>
+                            <input type="text" name="nome_responsavel" id="edit_nome_responsavel" class="form-control" required>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label font-weight-bold text-dark">Número</label>
-                            <input type="text" name="numero_endereco" id="edit_matricula_end" class="form-control"
-                                placeholder="123">
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold text-dark">Grau de Parentesco</label>
+                            <select name="grau_parentesco_responsavel" id="edit_grau_responsavel" class="form-select" required>
+                                <option value="">— Selecionar —</option>
+                                @foreach(['Pai', 'Mãe', 'Avô', 'Avó', 'Tio', 'Tia', 'Responsável Legal', 'Outro'] as $grau)
+                                <option value="{{ $grau }}">{{ $grau }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label font-weight-bold text-dark">Bairro</label>
-                            <input type="text" name="bairro_endereco" id="edit_bairro" class="form-control"
-                                placeholder="Nome do bairro">
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold text-dark">WhatsApp</label>
+                            <input type="text" name="whatsapp_responsavel" id="edit_whatsapp_responsavel" class="form-control" required>
                         </div>
-
-                        <div class="col-md-12">
-                            <label class="form-label font-weight-bold text-dark">Complemento</label>
-                            <input type="text" name="complemento_endereco" id="edit_complemento"
-                                class="form-control" placeholder="Apto, bloco... (opcional)">
+                        <div class="col-md-6">
+                            <label class="form-label font-weight-bold text-dark">CPF do Responsável</label>
+                            <input type="text" name="cpf_responsavel" id="edit_cpf_responsavel" class="form-control" maxlength="14" required>
                         </div>
                     </div>
 
-                </div>{{-- /modal-body --}}
+                    <hr class="my-3">
+
+                    <p class="text-uppercase text-primary fw-semibold small mb-3" style="letter-spacing:.06em;">
+                        <i class="bi bi-geo-alt me-1"></i> Endereço
+                    </p>
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">CEP</label>
+                            <input type="text" name="cep_endereco" id="edit_cep_endereco" class="form-control" maxlength="9" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label font-weight-bold text-dark">Rua / Logradouro</label>
+                            <input type="text" name="rua_endereco" id="edit_rua_endereco" class="form-control" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold text-dark">Número</label>
+                            <input type="text" name="numero_endereco" id="edit_numero_endereco" class="form-control" required>
+                        </div>
+                        <div class="col-md-5">
+                            <label class="form-label font-weight-bold text-dark">Bairro</label>
+                            <input type="text" name="bairro_endereco" id="edit_bairro_endereco" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Complemento</label>
+                            <input type="text" name="complemento_endereco" id="edit_complemento_endereco" class="form-control">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label font-weight-bold text-dark">Cidade</label>
+                            <input type="text" name="cidade_endereco" id="edit_cidade_endereco" class="form-control" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label font-weight-bold text-dark">Estado (UF)</label>
+                            <input type="text" name="estado_endereco" id="edit_estado_endereco" class="form-control" maxlength="2" required>
+                        </div>
+                    </div>
+
+                </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>

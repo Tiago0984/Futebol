@@ -14,7 +14,6 @@ class HomeController extends Controller
 {
     public function home()
     {
-
         $banners = Banner::where('status_banner', 'ATIVO')
             ->orderBy('ordem_banner')
             ->get();
@@ -26,14 +25,15 @@ class HomeController extends Controller
             ->inRandomOrder()
             ->limit(8)
             ->get();
-        $noticias = Noticia::orderBy('data_publicacao_noticia', 'desc')
-            ->limit(3)
-            ->get();
 
-        $noticias = Noticia::where('status_noticia', 'ATIVO') // Me dê as 3 notícias mais recentes, mas apenas se a coluna status_noticia for exatamente igual a 'ATIVO'
+        $noticias = Noticia::where('status_noticia', 'ATIVO')
             ->orderBy('data_publicacao_noticia', 'desc')
             ->take(3)
             ->get();
+
+        // NOVA LINHA: Busca todos os times do banco usando Eloquent
+        // Busca os times cadastrados já trazendo os atletas vinculados de forma performática
+        $times = Time::with('atletas')->get();
 
         // Calcular classificação
         $classificacao = [];
@@ -81,6 +81,7 @@ class HomeController extends Controller
         // Ordena por pontos
         usort($classificacao, fn($a, $b) => $b['pontos'] - $a['pontos']);
 
-        return view('site.home.home', compact('jogos', 'classificacao', 'galerias', 'banners', 'noticias'));
+        // ALTERAÇÃO: Adicionado 'times' ao compact para enviar a variável à view
+        return view('site.home.home', compact('jogos', 'classificacao', 'galerias', 'banners', 'noticias', 'times'));
     }
 }
