@@ -197,6 +197,21 @@
                                     </td>
                                 </tr>
                                 <tr><td class="text-muted">Data</td><td>{{ $autorizacao->data_assinatura_autorizacao?->format('d/m/Y H:i') ?? '—' }}</td></tr>
+                                @if ($autorizacao->status_autorizacao === 'ASSINADO' && $autorizacao->responsavel?->assinatura_responsavel)
+                                <tr>
+                                    <td class="text-muted align-top">Assinatura</td>
+                                    <td>
+                                        <div class="border rounded p-2 d-inline-block bg-white">
+                                            <img src="{{ asset($autorizacao->responsavel->assinatura_responsavel) }}"
+                                                alt="Assinatura do Responsável"
+                                                style="max-width:300px; max-height:120px; object-fit:contain; display:block;">
+                                        </div>
+                                        <div class="text-muted mt-1" style="font-size:0.78rem;">
+                                            {{ $autorizacao->responsavel->nome_responsavel }}
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endif
                                 @if ($autorizacao->status_autorizacao !== 'ASSINADO' && $autorizacao->token_assinatura)
                                 <tr>
                                     <td class="text-muted" style="width:45%">Link de Autorização</td>

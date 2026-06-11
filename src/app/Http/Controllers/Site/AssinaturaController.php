@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Site;
 use App\Http\Controllers\Controller;
 use App\Models\Autorizacao;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 
 class AssinaturaController extends Controller
 {
@@ -42,8 +41,8 @@ class AssinaturaController extends Controller
         $imagemBase64 = preg_replace('/^data:image\/\w+;base64,/', '', $imagemBase64);
         $imagemBinaria = base64_decode($imagemBase64);
 
-        $nomeArquivo = 'assinaturas/assinatura_' . $autorizacao->id_responsavel . '_' . time() . '.png';
-        Storage::disk('public')->put($nomeArquivo, $imagemBinaria);
+        $nomeArquivo = 'futebol/images/Assinaturas/assinatura_' . $autorizacao->id_responsavel . '_' . time() . '.png';
+        file_put_contents(public_path($nomeArquivo), $imagemBinaria);
 
         // Atualiza o responsável com a assinatura e aceite
         $autorizacao->responsavel->update([
