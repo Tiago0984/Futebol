@@ -35,6 +35,7 @@
                                     <th>Responsável</th>
                                     <th>Escola</th>
                                     <th>Data do Cadastro</th>
+                                    <th class="text-center">Autorização</th>
                                     <th class="text-center" style="width: 150px;">Ações</th>
                                 </tr>
                             </thead>
@@ -48,7 +49,9 @@
                                         );
                                         $paleta = ['#4361ee','#3a0ca3','#7209b7','#f72585','#4cc9f0','#2ec4b6','#e76f51','#457b9d'];
                                         $corAvatar = $paleta[abs(crc32($atleta->nome_atleta)) % count($paleta)];
-                                        $responsavel = $atleta->responsaveis->first();
+                                        $responsavel  = $atleta->responsaveis->first();
+                                        $autorizacao  = $atleta->autorizacoes->first();
+                                        $autPendente  = !$autorizacao || $autorizacao->status_autorizacao !== 'ASSINADO';
                                     @endphp
                                     <tr>
                                         <td>
@@ -92,6 +95,17 @@
                                             </span>
                                         </td>
                                         <td class="text-center">
+                                            @if (!$autPendente)
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-pen me-1"></i> Assinada
+                                                </span>
+                                            @else
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-hourglass-split me-1"></i> Pendente
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <a href="{{ route('admin.matriculas.show', $atleta->id_atleta) }}"
                                                     class="btn btn-sm btn-primary" title="Ver detalhes"
@@ -103,8 +117,9 @@
                                                     method="POST" style="display:inline;"
                                                     onsubmit="return confirm('Aprovar matrícula de {{ $atleta->nome_atleta }}?')">
                                                     @csrf @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-success" title="Aprovar"
-                                                        style="padding:.25rem .5rem;">
+                                                    <button type="submit" class="btn btn-sm btn-success"
+                                                        style="padding:.25rem .5rem;"
+                                                        @if ($autPendente) disabled title="Aguardando assinatura da autorização" @else title="Aprovar" @endif>
                                                         <i class="bi bi-check-lg" style="font-size:13px;"></i>
                                                     </button>
                                                 </form>
@@ -123,7 +138,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-5">
+                                        <td colspan="7" class="text-center text-muted py-5">
                                             <i class="bi bi-clipboard-check fs-2 d-block mb-2"></i>
                                             Nenhuma matrícula pendente no momento.
                                         </td>

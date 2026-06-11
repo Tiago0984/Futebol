@@ -233,18 +233,22 @@ class AtletasController extends Controller
             }
         }
 
-        if ($request->filled('id_time')) {
-            $timeAtual = $atleta->times->where('id_time', $request->id_time)->first();
-            $atleta->times()->sync([
-                $request->id_time => [
-                    'camisa_atleta_time'     => $request->camisa_atleta_time ?? '',
-                    'posicao_atleta_time'    => $timeAtual?->pivot->posicao_atleta_time ?? '',
-                    'jogos_atleta_time'      => $timeAtual?->pivot->jogos_atleta_time ?? 0,
-                    'convocacao_atleta_time' => $timeAtual?->pivot->convocacao_atleta_time ?? 0,
-                    'gols_atleta_time'       => $timeAtual?->pivot->gols_atleta_time ?? 0,
-                    'defesas_atleta_time'    => $timeAtual?->pivot->defesas_atleta_time ?? 0,
-                ],
-            ]);
+        $selectedTimeIds = array_filter((array) $request->input('id_time', []));
+        if (!empty($selectedTimeIds)) {
+            $atleta->load('times');
+            $syncData = [];
+            foreach ($selectedTimeIds as $timeId) {
+                $existingTime = $atleta->times->find($timeId);
+                $syncData[$timeId] = [
+                    'camisa_atleta_time'     => $request->camisa_atleta_time ?? $existingTime?->pivot->camisa_atleta_time ?? '',
+                    'posicao_atleta_time'    => $existingTime?->pivot->posicao_atleta_time ?? '',
+                    'jogos_atleta_time'      => $existingTime?->pivot->jogos_atleta_time ?? 0,
+                    'convocacao_atleta_time' => $existingTime?->pivot->convocacao_atleta_time ?? 0,
+                    'gols_atleta_time'       => $existingTime?->pivot->gols_atleta_time ?? 0,
+                    'defesas_atleta_time'    => $existingTime?->pivot->defesas_atleta_time ?? 0,
+                ];
+            }
+            $atleta->times()->sync($syncData);
         } else {
             $atleta->times()->detach();
         }

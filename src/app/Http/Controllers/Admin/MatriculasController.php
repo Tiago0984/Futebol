@@ -10,7 +10,7 @@ class MatriculasController extends Controller
 {
     public function index()
     {
-        $matriculas = Atleta::with(['responsaveis', 'endereco'])
+        $matriculas = Atleta::with(['responsaveis', 'endereco', 'autorizacoes'])
             ->whereIn('status_atleta', ['PENDENTE', 'pendente'])
             ->orderBy('nome_atleta')
             ->get();
@@ -63,12 +63,21 @@ class MatriculasController extends Controller
 
     public function rejeitadas()
     {
-        $rejeitadas = Atleta::with(['responsaveis', 'endereco'])
+        $rejeitadas = Atleta::with(['responsaveis', 'endereco', 'autorizacoes'])
             ->whereIn('status_atleta', ['REJEITADO', 'rejeitado'])
             ->orderBy('nome_atleta')
             ->get();
 
         return view('admin.matriculas.rejeitadas', compact('rejeitadas'));
+    }
+
+    public function reativar($id)
+    {
+        $atleta = Atleta::findOrFail($id);
+        $atleta->update(['status_atleta' => 'PENDENTE']);
+
+        return redirect()->route('admin.matriculas.index')
+            ->with('sucesso', "Matrícula de {$atleta->nome_atleta} reativada. Agora é possível aprovar na seção de pendentes.");
     }
 
     public function deletar($id)

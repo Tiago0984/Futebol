@@ -33,6 +33,7 @@
                         $paleta = ['#4361ee','#3a0ca3','#7209b7','#f72585','#4cc9f0','#2ec4b6','#e76f51','#457b9d'];
                         $corAvatar = $paleta[abs(crc32($atleta->nome_atleta)) % count($paleta)];
                         $autorizacao = $atleta->autorizacoes->first();
+                        $autorizacaoPendente = !$autorizacao || $autorizacao->status_autorizacao !== 'ASSINADO';
                     @endphp
                     @if ($atleta->foto_atleta)
                         <img src="{{ asset('storage/' . $atleta->foto_atleta) }}"
@@ -56,21 +57,30 @@
                             @endif
                         @endif
                     </div>
-                    <div class="ms-auto d-flex gap-2">
-                        <form action="{{ route('admin.matriculas.aprovar', $atleta->id_atleta) }}" method="POST"
-                            onsubmit="return confirm('Aprovar matrícula de {{ $atleta->nome_atleta }}?')">
-                            @csrf @method('PATCH')
-                            <button type="submit" class="btn btn-success px-4">
-                                <i class="bi bi-check-lg"></i> Aprovar
-                            </button>
-                        </form>
-                        <form action="{{ route('admin.matriculas.rejeitar', $atleta->id_atleta) }}" method="POST"
-                            onsubmit="return confirm('Rejeitar matrícula de {{ $atleta->nome_atleta }}?')">
-                            @csrf @method('PATCH')
-                            <button type="submit" class="btn btn-danger px-4">
-                                <i class="bi bi-x-lg"></i> Rejeitar
-                            </button>
-                        </form>
+                    <div class="ms-auto d-flex flex-column align-items-end gap-2">
+                        <div class="d-flex gap-2">
+                            <form action="{{ route('admin.matriculas.aprovar', $atleta->id_atleta) }}" method="POST"
+                                onsubmit="return confirm('Aprovar matrícula de {{ $atleta->nome_atleta }}?')">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn btn-success px-4"
+                                    @if ($autorizacaoPendente) disabled title="Aguardando assinatura da autorização pelo responsável" @endif>
+                                    <i class="bi bi-check-lg"></i> Aprovar
+                                </button>
+                            </form>
+                            <form action="{{ route('admin.matriculas.rejeitar', $atleta->id_atleta) }}" method="POST"
+                                onsubmit="return confirm('Rejeitar matrícula de {{ $atleta->nome_atleta }}?')">
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn btn-danger px-4">
+                                    <i class="bi bi-x-lg"></i> Rejeitar
+                                </button>
+                            </form>
+                        </div>
+                        @if ($autorizacaoPendente)
+                            <small class="text-warning fw-semibold">
+                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                Aprovação bloqueada — aguardando assinatura da autorização.
+                            </small>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -187,6 +197,28 @@
                                     </td>
                                 </tr>
                                 <tr><td class="text-muted">Data</td><td>{{ $autorizacao->data_assinatura_autorizacao?->format('d/m/Y H:i') ?? '—' }}</td></tr>
+                                @if ($autorizacao->status_autorizacao !== 'ASSINADO' && $autorizacao->token_assinatura)
+                                <tr>
+                                    <td class="text-muted" style="width:45%">Link de Autorização</td>
+                                    <td>
+                                        <div class="input-group input-group-sm">
+                                            <input type="text" class="form-control" readonly
+                                                id="linkAutorizacao"
+                                                value="{{ route('assinar.show', $autorizacao->token_assinatura) }}">
+                                            <button class="btn btn-outline-secondary" type="button"
+                                                id="btnCopiarLink"
+                                                onclick="navigator.clipboard.writeText(document.getElementById('linkAutorizacao').value).then(function(){ var btn = document.getElementById('btnCopiarLink'); btn.innerHTML = '<i class=\'bi bi-check-lg\'></i>'; btn.classList.replace('btn-outline-secondary','btn-outline-success'); setTimeout(function(){ btn.innerHTML = '<i class=\'bi bi-clipboard\'></i>'; btn.classList.replace('btn-outline-success','btn-outline-secondary'); }, 2000); })"
+                                                title="Copiar link">
+                                                <i class="bi bi-clipboard"></i>
+                                            </button>
+                                        </div>
+                                        <div class="text-muted mt-1" style="font-size:0.78rem;">
+                                            <i class="bi bi-info-circle me-1"></i>
+                                            Envie ao responsável caso tenha perdido o link original.
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endif
                             </table>
                         </div>
                     </div>

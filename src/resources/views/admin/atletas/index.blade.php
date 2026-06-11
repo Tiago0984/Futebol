@@ -11,7 +11,34 @@
                     <h1 class="m-0 text-dark" style="font-size: 24px; font-weight: 700; text-align: left;">Gerenciar Atletas
                     </h1>
                 </div>
-                <div class="col-sm-6 text-end pr-4" style="text-align: right;">
+                <div class="col-sm-6 text-end pr-4 d-flex align-items-center justify-content-end gap-2" style="text-align: right;">
+
+                    {{-- Seletor de colunas --}}
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary px-3 dropdown-toggle" type="button"
+                            id="dropdownColunas" data-bs-toggle="dropdown" data-bs-auto-close="outside"
+                            aria-expanded="false">
+                            <i class="bi bi-funnel me-1"></i> Colunas
+                        </button>
+                        <div class="dropdown-menu p-2 shadow" aria-labelledby="dropdownColunas"
+                            style="min-width:200px; z-index:1055;">
+                            <input type="text" id="searchColuna" class="form-control form-control-sm mb-2"
+                                placeholder="Pesquisar...">
+                            <div class="dropdown-divider my-1"></div>
+                            <label class="dropdown-item d-flex align-items-center gap-2 py-1 rounded" style="cursor:pointer;">
+                                <input type="checkbox" id="col_todos" checked> <strong>Todos</strong>
+                            </label>
+                            <div class="dropdown-divider my-1"></div>
+                            @foreach ([0 => 'Foto', 1 => 'Matrícula', 2 => 'Nome', 3 => 'Time', 4 => 'Responsável', 5 => 'Categoria', 6 => 'Posição', 7 => 'Status'] as $idx => $label)
+                                <label class="dropdown-item d-flex align-items-center gap-2 py-1 rounded col-item"
+                                    data-col="{{ $idx }}" style="cursor:pointer;">
+                                    <input type="checkbox" class="col-check" data-col="{{ $idx }}" checked>
+                                    {{ $label }}
+                                </label>
+                            @endforeach
+                        </div>
+                    </div>
+
                     <button type="button" class="btn btn-success px-3" data-bs-toggle="modal"
                         data-bs-target="#modalNovoAtleta">
                         <i class="bi bi-person-plus"></i> Novo Atleta
@@ -111,7 +138,6 @@
 
                                         $idade = $atleta->data_nasc_atleta?->age;
                                         $time = $atleta->times->first();
-                                        $nomeTime = $time->nome_time ?? null;
                                     @endphp
                                     <tr>
                                         <td>
@@ -142,11 +168,15 @@
                                             </div>
                                         </td>
                                         <td>
-                                            @if ($nomeTime)
-                                                <span class="badge bg-dark text-white"
-                                                    style="font-size: 12px; padding: 5px 10px;">
-                                                    {{ $nomeTime }}
-                                                </span>
+                                            @if ($atleta->times->isNotEmpty())
+                                                <div class="d-flex flex-column gap-1">
+                                                    @foreach ($atleta->times as $t)
+                                                        <span class="badge bg-dark text-white"
+                                                            style="font-size: 12px; padding: 5px 10px; white-space: nowrap; text-transform: uppercase;">
+                                                            {{ $t->nome_time }}
+                                                        </span>
+                                                    @endforeach
+                                                </div>
                                             @else
                                                 <span class="text-muted small">—</span>
                                             @endif
@@ -217,7 +247,7 @@
                                                     data-telefone="{{ $atleta->telefone_atleta }}"
                                                     data-sala="{{ $atleta->sala_atleta }}"
                                                     data-email="{{ $atleta->email_atleta }}"
-                                                    data-time="{{ $time->id_time ?? '' }}"
+                                                    data-times="{{ json_encode($atleta->times->pluck('id_time')->toArray()) }}"
                                                     data-camisa="{{ $time?->pivot->camisa_atleta_time ?? '' }}"
                                                     data-cep="{{ $atleta->endereco->cep_endereco ?? '' }}"
                                                     data-rua="{{ $atleta->endereco->rua_endereco ?? '' }}"
@@ -280,6 +310,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Realça visualmente o card do time ao marcar/desmarcar
+            document.querySelectorAll('.edit-time-checkbox').forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    const card = this.closest('label');
+                    if (this.checked) {
+                        card.style.background = '#fff3cd';
+                        card.style.borderColor = '#ffc107';
+                    } else {
+                        card.style.background = '';
+                        card.style.borderColor = '';
+                    }
+                });
+            });
+
             const botoesEditar = document.querySelectorAll('.btn-editar');
             const formEditar = document.getElementById('formEditarAtleta');
 
@@ -319,8 +363,21 @@
                     if (categoriaSelect) categoriaSelect.value = this.getAttribute(
                         'data-categoria') ?? '';
 
-                    const timeSelect = document.getElementById('edit_time');
-                    if (timeSelect) timeSelect.value = this.getAttribute('data-time') ?? '';
+                    // Desmarca todos os checkboxes de time e marca os do atleta
+                    document.querySelectorAll('.edit-time-checkbox').forEach(cb => {
+                        cb.checked = false;
+                        cb.closest('label').style.background = '';
+                        cb.closest('label').style.borderColor = '';
+                    });
+                    const atletaTimes = JSON.parse(this.getAttribute('data-times') || '[]');
+                    atletaTimes.forEach(function(timeId) {
+                        const cb = document.getElementById('edit_time_' + timeId);
+                        if (cb) {
+                            cb.checked = true;
+                            cb.closest('label').style.background = '#fff3cd';
+                            cb.closest('label').style.borderColor = '#ffc107';
+                        }
+                    });
 
                     document.getElementById('edit_camisa').value = this.getAttribute('data-camisa') ?? '';
 
@@ -347,6 +404,46 @@
                         'data-cidade') ?? '';
                     document.getElementById('edit_estado').value = this.getAttribute(
                         'data-estado') ?? '';
+                });
+            });
+
+            // --- Seletor de colunas ---
+            const table        = document.querySelector('.table');
+            const colChecks    = document.querySelectorAll('.col-check');
+            const todosCheck   = document.getElementById('col_todos');
+            const searchColuna = document.getElementById('searchColuna');
+
+            function toggleColumn(index, show) {
+                table.querySelectorAll('tr').forEach(function(row) {
+                    const cells = row.querySelectorAll('th, td');
+                    if (cells[index]) cells[index].style.display = show ? '' : 'none';
+                });
+            }
+
+            function syncTodos() {
+                const checked = Array.from(colChecks).filter(cb => cb.checked).length;
+                todosCheck.checked       = checked === colChecks.length;
+                todosCheck.indeterminate = checked > 0 && checked < colChecks.length;
+            }
+
+            colChecks.forEach(function(cb) {
+                cb.addEventListener('change', function() {
+                    toggleColumn(parseInt(this.dataset.col), this.checked);
+                    syncTodos();
+                });
+            });
+
+            todosCheck.addEventListener('change', function() {
+                colChecks.forEach(function(cb) {
+                    cb.checked = todosCheck.checked;
+                    toggleColumn(parseInt(cb.dataset.col), todosCheck.checked);
+                });
+            });
+
+            searchColuna.addEventListener('input', function() {
+                const q = this.value.toLowerCase();
+                document.querySelectorAll('.col-item').forEach(function(item) {
+                    item.style.display = item.textContent.trim().toLowerCase().includes(q) ? '' : 'none';
                 });
             });
         });

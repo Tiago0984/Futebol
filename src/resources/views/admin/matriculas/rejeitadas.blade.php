@@ -34,6 +34,7 @@
                                     <th>Nome do Atleta</th>
                                     <th>Responsável</th>
                                     <th>Escola</th>
+                                    <th class="text-center">Autorização</th>
                                     <th class="text-center" style="width: 160px;">Ações</th>
                                 </tr>
                             </thead>
@@ -48,6 +49,8 @@
                                         $paleta = ['#4361ee','#3a0ca3','#7209b7','#f72585','#4cc9f0','#2ec4b6','#e76f51','#457b9d'];
                                         $corAvatar = $paleta[abs(crc32($atleta->nome_atleta)) % count($paleta)];
                                         $responsavel = $atleta->responsaveis->first();
+                                        $autorizacao = $atleta->autorizacoes->first();
+                                        $autPendente = !$autorizacao || $autorizacao->status_autorizacao !== 'ASSINADO';
                                     @endphp
                                     <tr>
                                         <td>
@@ -82,16 +85,35 @@
                                             </div>
                                         </td>
                                         <td class="text-center">
+                                            @if (!$autPendente)
+                                                <span class="badge bg-success">
+                                                    <i class="bi bi-pen me-1"></i> Assinada
+                                                </span>
+                                            @else
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="bi bi-hourglass-split me-1"></i> Pendente
+                                                </span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
 
-                                                {{-- Aprovar --}}
-                                                <form action="{{ route('admin.matriculas.aprovar', $atleta->id_atleta) }}"
+                                                {{-- Visualizar --}}
+                                                <a href="{{ route('admin.matriculas.show', $atleta->id_atleta) }}"
+                                                    class="btn btn-sm btn-primary" title="Ver detalhes"
+                                                    style="padding:.25rem .5rem;">
+                                                    <i class="bi bi-eye" style="font-size:13px;"></i>
+                                                </a>
+
+                                                {{-- Reativar (volta para pendentes para aprovação) --}}
+                                                <form action="{{ route('admin.matriculas.reativar', $atleta->id_atleta) }}"
                                                     method="POST" style="display:inline;"
-                                                    onsubmit="return confirm('Aprovar matrícula de {{ $atleta->nome_atleta }}?')">
+                                                    onsubmit="return confirm('Reativar matrícula de {{ $atleta->nome_atleta }}? Ela voltará para a lista de pendentes.')">
                                                     @csrf @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-success" title="Aprovar"
-                                                        style="padding:.25rem .5rem;">
-                                                        <i class="bi bi-check-lg" style="font-size:13px;"></i> Aprovar
+                                                    <button type="submit" class="btn btn-sm btn-success"
+                                                        style="padding:.25rem .5rem;"
+                                                        @if ($autPendente) disabled title="Aguardando assinatura da autorização" @else title="Reativar para pendentes" @endif>
+                                                        <i class="bi bi-arrow-counterclockwise" style="font-size:13px;"></i> Reativar
                                                     </button>
                                                 </form>
 
@@ -111,7 +133,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-5">
+                                        <td colspan="6" class="text-center text-muted py-5">
                                             <i class="bi bi-clipboard-x fs-2 d-block mb-2"></i>
                                             Nenhuma matrícula rejeitada.
                                         </td>

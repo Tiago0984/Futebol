@@ -51,15 +51,6 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label font-weight-bold text-dark">Time</label>
-                            <select name="id_time" id="edit_time" class="form-select">
-                                <option value="">— Sem time —</option>
-                                @foreach ($times as $t)
-                                    <option value="{{ $t->id_time }}">{{ $t->nome_time }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
                             <label class="form-label font-weight-bold text-dark">Nº Camisa</label>
                             <input type="text" name="camisa_atleta_time" id="edit_camisa" class="form-control"
                                 placeholder="Ex: 10" maxlength="5">
@@ -72,6 +63,29 @@
                                     <option value="{{ $pos }}">{{ $pos }}</option>
                                 @endforeach
                             </select>
+                        </div>
+
+                        <div class="col-md-12">
+                            <label class="form-label font-weight-bold text-dark">Times</label>
+                            <div class="d-flex flex-wrap gap-3">
+                                @foreach ($times as $t)
+                                    <label for="edit_time_{{ $t->id_time }}"
+                                        class="d-flex align-items-center gap-2 border rounded-3 px-3 py-2 edit-time-card"
+                                        style="cursor:pointer; min-width:150px; transition: background .15s, border-color .15s;">
+                                        <input class="form-check-input mt-0 edit-time-checkbox" type="checkbox"
+                                            name="id_time[]" id="edit_time_{{ $t->id_time }}"
+                                            value="{{ $t->id_time }}">
+                                        @if ($t->logo_time)
+                                            <img src="{{ asset('futebol/images/team/' . $t->logo_time) }}"
+                                                alt="{{ $t->nome_time }}"
+                                                style="width:38px;height:38px;object-fit:contain;">
+                                        @else
+                                            <span class="bi bi-shield-fill text-secondary" style="font-size:28px;"></span>
+                                        @endif
+                                        <span class="fw-semibold small">{{ $t->nome_time }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Matrícula</label>
