@@ -108,19 +108,22 @@
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-1">
                                                 <a href="{{ route('admin.matriculas.show', $atleta->id_atleta) }}"
-                                                    class="btn btn-sm btn-primary" title="Ver detalhes"
-                                                    style="padding:.25rem .5rem;">
-                                                    <i class="bi bi-eye" style="font-size:13px;"></i>
+                                                    class="btn btn-sm btn-primary d-flex flex-column align-items-center justify-content-center"
+                                                    title="Ver detalhes"
+                                                    style="width:70px; height:50px; padding:.25rem .3rem; font-size:11px; gap:2px;">
+                                                    <i class="bi bi-eye" style="font-size:14px;"></i>
+                                                    Visualizar
                                                 </a>
 
                                                 <form action="{{ route('admin.matriculas.aprovar', $atleta->id_atleta) }}"
                                                     method="POST" style="display:inline;"
                                                     onsubmit="return confirm('Aprovar matrícula de {{ $atleta->nome_atleta }}?')">
                                                     @csrf @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-success"
-                                                        style="padding:.25rem .5rem;"
+                                                    <button type="submit" class="btn btn-sm btn-success d-flex flex-column align-items-center justify-content-center"
+                                                        style="width:70px; height:50px; padding:.25rem .3rem; font-size:11px; gap:2px;"
                                                         @if ($autPendente) disabled title="Aguardando assinatura da autorização" @else title="Aprovar" @endif>
-                                                        <i class="bi bi-check-lg" style="font-size:13px;"></i>
+                                                        <i class="bi bi-check-lg" style="font-size:14px;"></i>
+                                                        Aprovar
                                                     </button>
                                                 </form>
 
@@ -128,9 +131,11 @@
                                                     method="POST" style="display:inline;"
                                                     onsubmit="return confirm('Rejeitar matrícula de {{ $atleta->nome_atleta }}?')">
                                                     @csrf @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-danger" title="Rejeitar"
-                                                        style="padding:.25rem .5rem;">
-                                                        <i class="bi bi-x-lg" style="font-size:13px;"></i>
+                                                    <button type="submit" class="btn btn-sm btn-danger d-flex flex-column align-items-center justify-content-center"
+                                                        title="Rejeitar"
+                                                        style="width:70px; height:50px; padding:.25rem .3rem; font-size:11px; gap:2px;">
+                                                        <i class="bi bi-x-lg" style="font-size:14px;"></i>
+                                                        Rejeitar
                                                     </button>
                                                 </form>
                                             </div>

@@ -99,10 +99,13 @@
                                             <div class="d-flex justify-content-center gap-1">
 
                                                 {{-- Visualizar --}}
+                                                {{-- Visualizar --}}
                                                 <a href="{{ route('admin.matriculas.show', $atleta->id_atleta) }}"
-                                                    class="btn btn-sm btn-primary" title="Ver detalhes"
-                                                    style="padding:.25rem .5rem;">
-                                                    <i class="bi bi-eye" style="font-size:13px;"></i>
+                                                    class="btn btn-sm btn-primary d-flex flex-column align-items-center justify-content-center"
+                                                    title="Ver detalhes"
+                                                    style="width:70px; height:50px; padding:.25rem .3rem; font-size:11px; gap:2px;">
+                                                    <i class="bi bi-eye" style="font-size:14px;"></i>
+                                                    Visualizar
                                                 </a>
 
                                                 {{-- Reativar (volta para pendentes para aprovação) --}}
@@ -110,10 +113,11 @@
                                                     method="POST" style="display:inline;"
                                                     onsubmit="return confirm('Reativar matrícula de {{ $atleta->nome_atleta }}? Ela voltará para a lista de pendentes.')">
                                                     @csrf @method('PATCH')
-                                                    <button type="submit" class="btn btn-sm btn-success"
-                                                        style="padding:.25rem .5rem;"
+                                                    <button type="submit" class="btn btn-sm btn-success d-flex flex-column align-items-center justify-content-center"
+                                                        style="width:70px; height:50px; padding:.25rem .3rem; font-size:11px; gap:2px;"
                                                         @if ($autPendente) disabled title="Aguardando assinatura da autorização" @else title="Reativar para pendentes" @endif>
-                                                        <i class="bi bi-arrow-counterclockwise" style="font-size:13px;"></i> Reativar
+                                                        <i class="bi bi-arrow-counterclockwise" style="font-size:14px;"></i>
+                                                        Reativar
                                                     </button>
                                                 </form>
 
@@ -122,9 +126,11 @@
                                                     method="POST" style="display:inline;"
                                                     onsubmit="return confirm('Excluir permanentemente o cadastro de {{ $atleta->nome_atleta }}? Esta ação não pode ser desfeita.')">
                                                     @csrf @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger" title="Excluir permanentemente"
-                                                        style="padding:.25rem .5rem;">
-                                                        <i class="bi bi-trash" style="font-size:13px;"></i> Excluir
+                                                    <button type="submit" class="btn btn-sm btn-danger d-flex flex-column align-items-center justify-content-center"
+                                                        title="Excluir permanentemente"
+                                                        style="width:70px; height:50px; padding:.25rem .3rem; font-size:11px; gap:2px;">
+                                                        <i class="bi bi-trash" style="font-size:14px;"></i>
+                                                        Excluir
                                                     </button>
                                                 </form>
 
