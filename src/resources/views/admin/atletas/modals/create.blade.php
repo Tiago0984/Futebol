@@ -60,17 +60,17 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Posição</label>
-                            <select name="posicao" class="form-select">
+                            <select name="posicao_atleta" class="form-select">
                                 <option value="">— Selecionar —</option>
                                 @foreach(['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'] as $pos)
-                                <option value="{{ $pos }}" {{ old('posicao') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
+                                <option value="{{ $pos }}" {{ old('posicao_atleta') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">Nº Camisa / Matrícula</label>
-                            <input type="text" name="numero_atleta" class="form-control" placeholder="Ex: 10" maxlength="10"
-                                value="{{ old('numero_atleta') }}">
+                            <label class="form-label font-weight-bold text-dark">Nº Camisa</label>
+                            <input type="text" name="camisa_atleta_time" class="form-control" placeholder="Ex: 10" maxlength="10"
+                                value="{{ old('camisa_atleta_time') }}">
                         </div>
 
                         <div class="col-md-4">
@@ -92,13 +92,13 @@
                                 step="0.01" min="0" value="{{ old('altura_atleta') }}">
                         </div>
 
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Escola</label>
                             <input type="text" name="escola_atleta" class="form-control @error('escola_atleta') is-invalid @enderror"
                                 placeholder="Nome da escola" required value="{{ old('escola_atleta') }}">
                             @error('escola_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Série</label>
                             <input type="text" name="serie_atleta" class="form-control" placeholder="Ex: 7º Ano"
                                 value="{{ old('serie_atleta') }}">
@@ -111,6 +111,11 @@
                                 <option value="{{ $per }}" {{ old('periodo_escolar_atleta') == $per ? 'selected' : '' }}>{{ $per }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold text-dark">Sala</label>
+                            <input type="text" name="sala_atleta" class="form-control" placeholder="Ex: A1"
+                                value="{{ old('sala_atleta') }}">
                         </div>
 
                         <div class="col-md-6">

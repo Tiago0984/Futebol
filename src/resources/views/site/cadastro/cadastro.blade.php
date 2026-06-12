@@ -103,7 +103,7 @@
                 </div>
 
                 <div class="row">
-                    <div class="col-sm-5">
+                    <div class="col-sm-4">
                         <div class="mat-group">
                             <label class="mat-label">Escola *</label>
                             <input type="text" name="escola_atleta" value="{{ old('escola_atleta') }}" required class="mat-input">
@@ -115,7 +115,7 @@
                             <input type="text" name="serie_atleta" value="{{ old('serie_atleta') }}" required class="mat-input" placeholder="Ex: 7º Ano">
                         </div>
                     </div>
-                    <div class="col-sm-4">
+                    <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">Período *</label>
                             <select name="periodo_escolar_atleta" required class="mat-input">
@@ -124,6 +124,12 @@
                                 <option value="Tarde" {{ old('periodo_escolar_atleta')=='Tarde'?'selected':'' }}>Tarde</option>
                                 <option value="Noite" {{ old('periodo_escolar_atleta')=='Noite'?'selected':'' }}>Noite</option>
                             </select>
+                        </div>
+                    </div>
+                    <div class="col-sm-2">
+                        <div class="mat-group">
+                            <label class="mat-label">Sala</label>
+                            <input type="text" name="sala_atleta" value="{{ old('sala_atleta') }}" class="mat-input" placeholder="Ex: A1">
                         </div>
                     </div>
                 </div>

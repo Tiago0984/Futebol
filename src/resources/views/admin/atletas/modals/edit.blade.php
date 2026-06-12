@@ -35,7 +35,7 @@
                             <label class="form-label font-weight-bold text-dark">RG</label>
                             <input type="text" name="rg_atleta" id="edit_rg" class="form-control" placeholder="00.000.000-0" maxlength="12" required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Categoria</label>
                             <select name="id_categoria" id="edit_categoria" class="form-select">
                                 <option value="">— Selecionar —</option>
@@ -44,11 +44,20 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label font-weight-bold text-dark">Nº Camisa / Matrícula</label>
-                            <input type="text" name="numero_atleta" id="edit_numero" class="form-control" placeholder="Ex: 10" maxlength="10">
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold text-dark">Posição</label>
+                            <select name="posicao_atleta" id="edit_posicao" class="form-select">
+                                <option value="">— Selecionar —</option>
+                                @foreach(['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'] as $pos)
+                                <option value="{{ $pos }}">{{ $pos }}</option>
+                                @endforeach
+                            </select>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
+                            <label class="form-label font-weight-bold text-dark">Nº Camisa</label>
+                            <input type="text" name="camisa_atleta_time" id="edit_numero" class="form-control" placeholder="Ex: 10" maxlength="10">
+                        </div>
+                        <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Status</label>
                             <select name="status_atleta" id="edit_status" class="form-select" required>
                                 <option value="ATIVO">ATIVO</option>
@@ -70,11 +79,11 @@
                             <label class="form-label font-weight-bold text-dark">Altura (m)</label>
                             <input type="number" name="altura_atleta" id="edit_altura" class="form-control" step="0.01" min="0">
                         </div>
-                        <div class="col-md-5">
+                        <div class="col-md-4">
                             <label class="form-label font-weight-bold text-dark">Escola</label>
                             <input type="text" name="escola_atleta" id="edit_escola" class="form-control" placeholder="Nome da escola" required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label class="form-label font-weight-bold text-dark">Série</label>
                             <input type="text" name="serie_atleta" id="edit_serie" class="form-control" placeholder="Ex: 7º Ano">
                         </div>
@@ -87,6 +96,10 @@
                                 <option value="NOITE">NOITE</option>
                             </select>
                         </div>
+                        <div class="col-md-2">
+                            <label class="form-label font-weight-bold text-dark">Sala</label>
+                            <input type="text" name="sala_atleta" id="edit_sala" class="form-control" placeholder="Ex: A1">
+                        </div>
                         <div class="col-md-6">
                             <label class="form-label font-weight-bold text-dark">Alterar Foto (Opcional)</label>
                             <input type="file" name="foto_atleta" class="form-control" accept="image/*">
@@ -95,6 +108,38 @@
                             <label class="form-label font-weight-bold text-dark">Descrição / Observações</label>
                             <input type="text" name="descricao_atleta" id="edit_descricao" class="form-control" placeholder="Observações opcionais">
                         </div>
+                    </div>
+
+                    <hr class="my-3">
+
+                    <p class="text-uppercase text-primary fw-semibold small mb-3" style="letter-spacing:.06em;">
+                        <i class="bi bi-shield-fill me-1"></i> Times
+                    </p>
+
+                    <div class="row g-2 mb-4" id="edit-times-list">
+                        @foreach($times as $t)
+                        <div class="col-md-6">
+                            <label class="d-flex align-items-center gap-2 p-2 border rounded w-100" style="cursor:pointer;">
+                                <input type="checkbox"
+                                       name="times[]"
+                                       value="{{ $t->id_time }}"
+                                       class="form-check-input mt-0 time-checkbox"
+                                       style="width:18px;height:18px;flex-shrink:0;">
+                                @if($t->logo_time)
+                                    <img src="{{ asset('futebol/images/team/' . $t->logo_time) }}"
+                                         width="32" height="32"
+                                         class="rounded-circle object-fit-cover"
+                                         style="flex-shrink:0;">
+                                @else
+                                    <div class="d-flex align-items-center justify-content-center rounded-circle bg-secondary text-white"
+                                         style="width:32px;height:32px;flex-shrink:0;font-size:0.75rem;">
+                                        <i class="bi bi-shield-fill"></i>
+                                    </div>
+                                @endif
+                                <span class="small fw-semibold text-dark">{{ $t->nome_time }}</span>
+                            </label>
+                        </div>
+                        @endforeach
                     </div>
 
                     <hr class="my-3">

@@ -47,15 +47,16 @@
                 @endif
 
                 <div class="table-responsive">
-                    <table class="table table-striped table-hover align-middle mb-0">
+                    <table class="table table-striped table-hover align-middle mb-0 table-atletas">
                         <thead class="table-dark">
                             <tr>
-                                <th style="width: 70px;">Foto</th>
-                                <th style="text-align: left; padding-left: 300px;">Nome</th>
+                                <th style="width: 60px;">Foto</th>
+                                <th>Matrícula</th>
+                                <th style="text-align: left;">Nome</th>
                                 <th>Responsável</th>
                                 <th>Categoria</th>
                                 <th>Posição</th>
-                                <th style="font-size: 14px;">Status</th>
+                                <th>Status</th>
                                 <th style="width: 130px;" class="text-center">Ações</th>
                             </tr>
                         </thead>
@@ -75,7 +76,9 @@
                                 $nomeResponsavel = $responsavel->nome_responsavel ?? null;
                                 $grauParentesco = $responsavel?->pivot->grau_parentesco_responsavel ?? null;
                                 $time = $atleta->times->first();
-                                $posicao = $time?->pivot->posicao_atleta_time ?? null;
+                                $posicao = $time?->pivot->posicao_atleta_time ?: ($atleta->posicao_atleta ?: null);
+                                $nomeTime = $time->nome_time ?? null;
+                                $camisa = ($time?->pivot->camisa_atleta_time > 0) ? $time->pivot->camisa_atleta_time : null;
 
                                 $corCategoria = match (true) {
                                     str_contains($nomeCategoria ?? '', '11') => 'secondary',
@@ -85,25 +88,39 @@
                                     str_contains($nomeCategoria ?? '', '19') => 'info',
                                     default => 'secondary',
                                 };
+
+                                $posicaoUpper = strtoupper($posicao ?? '');
                             @endphp
                             <tr>
                                 <td>
-                                    @if($atleta->foto_atleta)
-                                        <img src="{{ asset('futebol/images/atleta/' . $atleta->foto_atleta) }}"
-                                            alt="{{ $atleta->nome_atleta }}" class="rounded-circle object-fit-cover"
-                                            style="width:42px;height:42px;">
-                                    @else
-                                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                            style="width:42px;height:42px;background:{{ $corAvatar }};font-size:0.8rem;flex-shrink:0;">
+                                    <div style="position:relative;width:42px;height:42px;flex-shrink:0;">
+                                        <div class="avatar-iniciais rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                            style="width:42px;height:42px;background:{{ $corAvatar }};font-size:0.8rem;position:absolute;top:0;left:0;">
                                             {{ $iniciais }}
                                         </div>
+                                        @if($atleta->foto_atleta)
+                                        <img src="{{ asset('storage/' . $atleta->foto_atleta) }}"
+                                            alt="{{ $atleta->nome_atleta }}"
+                                            class="rounded-circle object-fit-cover"
+                                            style="width:42px;height:42px;position:absolute;top:0;left:0;"
+                                            onerror="this.style.display='none'">
+                                        @endif
+                                    </div>
+                                </td>
+                                <td>
+                                    @if($atleta->numero_matricula_atleta)
+                                        <span class="fw-semibold text-dark" style="font-size:0.85rem;">{{ $atleta->numero_matricula_atleta }}</span>
+                                    @else
+                                        <span class="text-muted small">—</span>
                                     @endif
                                 </td>
-                                <td style="text-align: left; padding-left: 300px;">
+                                <td style="text-align: left;">
                                     <strong class="text-dark">{{ $atleta->nome_atleta }}</strong>
-                                    @if($atleta->numero_atleta)
-                                        <div class="text-muted" style="font-size:0.78rem;">Nº {{ $atleta->numero_atleta }}</div>
-                                    @endif
+                                    @foreach($atleta->times->unique('id_time') as $t)
+                                        @if((int)$t->pivot->camisa_atleta_time > 0)
+                                            <div class="text-muted" style="font-size:0.78rem;">Camisa Nº {{ $t->pivot->camisa_atleta_time }}</div>
+                                        @endif
+                                    @endforeach
                                 </td>
                                 <td>
                                     @if($nomeResponsavel)
@@ -118,14 +135,20 @@
                                 <td>
                                     @if($nomeCategoria)
                                         <span class="badge bg-{{ $corCategoria }} text-white" style="font-size: 13px; padding: 5px 10px;">
-                                            {{ $nomeCategoria }}
+                                            {{ strtoupper($nomeCategoria) }}
                                         </span>
                                     @else
                                         <span class="badge bg-secondary text-white" style="font-size: 13px; padding: 5px 10px;">—</span>
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="text-muted small">{{ $posicao ?? '—' }}</span>
+                                    @if($posicao)
+                                        <span class="badge text-white" style="background:#0dcaf0; font-size: 13px; padding: 5px 10px;">
+                                            {{ strtoupper($posicao) }}
+                                        </span>
+                                    @else
+                                        <span class="badge text-white" style="background:#0dcaf0; font-size: 13px; padding: 5px 10px;">—</span>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($ativo)
@@ -145,18 +168,33 @@
                                                 data-bs-target="#modalEditarAtleta"
                                                 data-id="{{ $atleta->id_atleta }}"
                                                 data-nome="{{ $atleta->nome_atleta }}"
-                                                data-numero="{{ $atleta->numero_atleta }}"
-                                                data-data-nasc="{{ $atleta->data_nasc_atleta }}"
+                                                data-numero="{{ $camisa > 0 ? $camisa : '' }}"
+                                                data-times="{{ $atleta->times->unique('id_time')->pluck('id_time')->values()->toJson() }}"
+                                                data-posicao-atleta="{{ $time?->pivot->posicao_atleta_time ?: $atleta->posicao_atleta }}"
+                                                data-data-nasc="{{ $atleta->data_nasc_atleta?->format('Y-m-d') }}"
                                                 data-cpf="{{ $atleta->cpf_atleta }}"
                                                 data-rg="{{ $atleta->rg_atleta }}"
+                                                data-status="{{ $atleta->status_atleta }}"
                                                 data-sexo="{{ $atleta->sexo_atleta }}"
                                                 data-peso="{{ $atleta->peso_atleta }}"
                                                 data-altura="{{ $atleta->altura_atleta }}"
                                                 data-escola="{{ $atleta->escola_atleta }}"
                                                 data-serie="{{ $atleta->serie_atleta }}"
                                                 data-periodo="{{ $atleta->periodo_escolar_atleta }}"
+                                                data-sala="{{ $atleta->sala_atleta }}"
                                                 data-descricao="{{ $atleta->descricao_atleta }}"
-                                                data-categoria="{{ $idCategoria }}">
+                                                data-categoria="{{ $idCategoria }}"
+                                                data-nome-responsavel="{{ $responsavel->nome_responsavel ?? '' }}"
+                                                data-grau-responsavel="{{ $grauParentesco ?? '' }}"
+                                                data-whatsapp-responsavel="{{ $responsavel->whatsapp_responsavel ?? '' }}"
+                                                data-cpf-responsavel="{{ $responsavel->cpf_responsavel ?? '' }}"
+                                                data-cep="{{ $atleta->endereco->cep_endereco ?? '' }}"
+                                                data-rua="{{ $atleta->endereco->rua_endereco ?? '' }}"
+                                                data-numero-endereco="{{ $atleta->endereco->numero_endereco ?? '' }}"
+                                                data-bairro="{{ $atleta->endereco->bairro_endereco ?? '' }}"
+                                                data-complemento="{{ $atleta->endereco->complemento_endereco ?? '' }}"
+                                                data-cidade="{{ $atleta->endereco->cidade_endereco ?? '' }}"
+                                                data-estado="{{ $atleta->endereco->estado_endereco ?? '' }}">
                                             <i class="bi bi-pencil" style="font-size: 13px;"></i>
                                         </button>
 
@@ -180,7 +218,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="7" class="text-center text-muted py-5">
+                                <td colspan="8" class="text-center text-muted py-5">
                                     <i class="bi bi-person-x fs-2 d-block mb-2"></i>
                                     Nenhum atleta cadastrado ainda.
                                 </td>
@@ -213,27 +251,57 @@
 
                 formEditar.action = `/admin/atletas/${id}`;
 
-                document.getElementById('edit_nome').value            = this.getAttribute('data-nome') ?? '';
-                document.getElementById('edit_numero').value          = this.getAttribute('data-numero') ?? '';
-                document.getElementById('edit_data_nasc').value       = this.getAttribute('data-data-nasc') ?? '';
-                document.getElementById('edit_cpf').value             = this.getAttribute('data-cpf') ?? '';
-                document.getElementById('edit_rg').value              = this.getAttribute('data-rg') ?? '';
-                document.getElementById('edit_peso').value            = this.getAttribute('data-peso') ?? '';
-                document.getElementById('edit_altura').value          = this.getAttribute('data-altura') ?? '';
-                document.getElementById('edit_escola').value          = this.getAttribute('data-escola') ?? '';
-                document.getElementById('edit_serie').value           = this.getAttribute('data-serie') ?? '';
-                document.getElementById('edit_descricao').value       = this.getAttribute('data-descricao') ?? '';
+                const g = attr => this.getAttribute(attr) ?? '';
 
-                const sexoSelect = document.getElementById('edit_sexo');
-                if (sexoSelect) sexoSelect.value = this.getAttribute('data-sexo') ?? '';
+                // Dados do atleta
+                document.getElementById('edit_nome').value      = g('data-nome');
+                document.getElementById('edit_numero').value    = g('data-numero');
+                document.getElementById('edit_data_nasc').value = g('data-data-nasc');
+                document.getElementById('edit_cpf').value       = g('data-cpf');
+                document.getElementById('edit_rg').value        = g('data-rg');
+                document.getElementById('edit_peso').value      = g('data-peso');
+                document.getElementById('edit_altura').value    = g('data-altura');
+                document.getElementById('edit_escola').value    = g('data-escola');
+                document.getElementById('edit_serie').value     = g('data-serie');
+                document.getElementById('edit_sala').value      = g('data-sala');
+                document.getElementById('edit_descricao').value = g('data-descricao');
 
-                const periodoSelect = document.getElementById('edit_periodo');
-                if (periodoSelect) periodoSelect.value = this.getAttribute('data-periodo') ?? '';
+                document.getElementById('edit_sexo').value      = g('data-sexo');
+                document.getElementById('edit_periodo').value   = g('data-periodo');
+                document.getElementById('edit_categoria').value = g('data-categoria');
+                document.getElementById('edit_status').value    = g('data-status');
+                document.getElementById('edit_posicao').value   = g('data-posicao-atleta');
 
-                const categoriaSelect = document.getElementById('edit_categoria');
-                if (categoriaSelect) categoriaSelect.value = this.getAttribute('data-categoria') ?? '';
+                // Responsável
+                document.getElementById('edit_nome_responsavel').value    = g('data-nome-responsavel');
+                document.getElementById('edit_grau_responsavel').value    = g('data-grau-responsavel');
+                document.getElementById('edit_whatsapp_responsavel').value = g('data-whatsapp-responsavel');
+                document.getElementById('edit_cpf_responsavel').value     = g('data-cpf-responsavel');
+
+                // Endereço
+                document.getElementById('edit_cep_endereco').value         = g('data-cep');
+                document.getElementById('edit_rua_endereco').value         = g('data-rua');
+                document.getElementById('edit_numero_endereco').value      = g('data-numero-endereco');
+                document.getElementById('edit_bairro_endereco').value      = g('data-bairro');
+                document.getElementById('edit_complemento_endereco').value = g('data-complemento');
+                document.getElementById('edit_cidade_endereco').value      = g('data-cidade');
+                document.getElementById('edit_estado_endereco').value      = g('data-estado');
+
+                // Times — pré-marca checkboxes
+                const atletaTimes = JSON.parse(g('data-times') || '[]');
+                document.querySelectorAll('.time-checkbox').forEach(cb => {
+                    cb.checked = atletaTimes.includes(parseInt(cb.value));
+                });
             });
         });
     });
 </script>
+
+<style>
+    .table-atletas th,
+    .table-atletas td {
+        padding-left: 1.25rem;
+        padding-right: 1.25rem;
+    }
+</style>
 @endsection

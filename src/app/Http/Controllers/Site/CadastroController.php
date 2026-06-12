@@ -93,6 +93,7 @@ class CadastroController extends Controller
             'escola_atleta'          => $request->escola_atleta,
             'serie_atleta'           => $request->serie_atleta,
             'periodo_escolar_atleta' => $request->periodo_escolar_atleta,
+            'sala_atleta'            => $request->sala_atleta,
             'descricao_atleta'       => $request->descricao_atleta,
             'foto_atleta'            => $fotoNome,
             'email_atleta'           => $request->email_atleta,
