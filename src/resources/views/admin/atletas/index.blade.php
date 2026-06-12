@@ -10,10 +10,68 @@
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark" style="font-size: 24px; font-weight: 700; text-align: left;">Gerenciar Atletas</h1>
             </div>
-            <div class="col-sm-6 text-end pr-4" style="text-align: right;">
+            <div class="col-sm-6 text-end pr-4" style="text-align: right; display: flex; justify-content: flex-end; gap: 8px;">
+                <button type="button" class="btn btn-outline-secondary px-3" id="btnFiltros"
+                        data-bs-toggle="collapse" data-bs-target="#filtroPanel" aria-expanded="false">
+                    <i class="bi bi-funnel"></i> Filtrar
+                </button>
                 <button type="button" class="btn btn-success px-3" data-bs-toggle="modal" data-bs-target="#modalNovoAtleta">
                     <i class="bi bi-person-plus"></i> Novo Atleta
                 </button>
+            </div>
+        </div>
+
+        {{-- Painel de filtros --}}
+        <div class="collapse mb-3" id="filtroPanel">
+            <div class="card card-body py-3 px-4" style="text-align:left;">
+                <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-semibold mb-1">Nome</label>
+                        <input type="text" id="filtroNome" class="form-control form-control-sm" placeholder="Buscar por nome...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold mb-1">Matrícula</label>
+                        <input type="text" id="filtroMatricula" class="form-control form-control-sm" placeholder="Ex: A001">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold mb-1">Responsável</label>
+                        <input type="text" id="filtroResponsavel" class="form-control form-control-sm" placeholder="Nome do responsável...">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-semibold mb-1">Categoria</label>
+                        <select id="filtroCategoria" class="form-select form-select-sm">
+                            <option value="">Todas</option>
+                            @foreach($categorias as $cat)
+                            <option value="{{ strtoupper($cat->nome_categoria) }}">{{ strtoupper($cat->nome_categoria) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small fw-semibold mb-1">Posição</label>
+                        <select id="filtroPosicao" class="form-select form-select-sm">
+                            <option value="">Todas</option>
+                            @foreach(['Goleiro','Zagueiro','Lateral','Volante','Meia','Atacante'] as $pos)
+                            <option value="{{ strtoupper($pos) }}">{{ strtoupper($pos) }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <label class="form-label small fw-semibold mb-1">Status</label>
+                        <select id="filtroStatus" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            <option value="ATIVO">ATIVO</option>
+                            <option value="INATIVO">INATIVO</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button class="btn btn-sm btn-outline-danger w-100" id="btnLimparFiltros">
+                            <i class="bi bi-x-circle"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small class="text-muted" id="filtroContador"></small>
+                </div>
             </div>
         </div>
 
@@ -91,7 +149,13 @@
 
                                 $posicaoUpper = strtoupper($posicao ?? '');
                             @endphp
-                            <tr>
+                            <tr class="linha-atleta"
+                                data-nome="{{ strtolower($atleta->nome_atleta) }}"
+                                data-matricula="{{ strtolower($atleta->numero_matricula_atleta ?? '') }}"
+                                data-responsavel="{{ strtolower($nomeResponsavel ?? '') }}"
+                                data-categoria="{{ strtoupper($nomeCategoria ?? '') }}"
+                                data-posicao="{{ strtoupper($posicao ?? '') }}"
+                                data-status="{{ strtoupper($atleta->status_atleta ?? '') }}">
                                 <td>
                                     <div style="position:relative;width:42px;height:42px;flex-shrink:0;">
                                         <div class="avatar-iniciais rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
@@ -294,6 +358,48 @@
                 });
             });
         });
+    });
+
+    // ── Filtros ──────────────────────────────────────────────────────────────
+    function aplicarFiltros() {
+        const nome       = document.getElementById('filtroNome').value.toLowerCase().trim();
+        const matricula  = document.getElementById('filtroMatricula').value.toLowerCase().trim();
+        const responsavel= document.getElementById('filtroResponsavel').value.toLowerCase().trim();
+        const categoria  = document.getElementById('filtroCategoria').value.toUpperCase();
+        const posicao    = document.getElementById('filtroPosicao').value.toUpperCase();
+        const status     = document.getElementById('filtroStatus').value.toUpperCase();
+
+        const linhas = document.querySelectorAll('.linha-atleta');
+        let visiveis = 0;
+
+        linhas.forEach(row => {
+            const match =
+                (!nome       || row.dataset.nome.includes(nome)) &&
+                (!matricula  || row.dataset.matricula.includes(matricula)) &&
+                (!responsavel|| row.dataset.responsavel.includes(responsavel)) &&
+                (!categoria  || row.dataset.categoria === categoria) &&
+                (!posicao    || row.dataset.posicao.includes(posicao)) &&
+                (!status     || row.dataset.status === status);
+
+            row.style.display = match ? '' : 'none';
+            if (match) visiveis++;
+        });
+
+        const contador = document.getElementById('filtroContador');
+        if (nome || matricula || responsavel || categoria || posicao || status) {
+            contador.textContent = `${visiveis} atleta(s) encontrado(s)`;
+        } else {
+            contador.textContent = '';
+        }
+    }
+
+    ['filtroNome','filtroMatricula','filtroResponsavel','filtroCategoria','filtroPosicao','filtroStatus']
+        .forEach(id => document.getElementById(id)?.addEventListener('input', aplicarFiltros));
+
+    document.getElementById('btnLimparFiltros')?.addEventListener('click', function () {
+        ['filtroNome','filtroMatricula','filtroResponsavel'].forEach(id => document.getElementById(id).value = '');
+        ['filtroCategoria','filtroPosicao','filtroStatus'].forEach(id => document.getElementById(id).value = '');
+        aplicarFiltros();
     });
 </script>
 
