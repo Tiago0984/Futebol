@@ -18,7 +18,7 @@ class AtletasController extends Controller
             ->when($request->time, function ($q) use ($request) { // Se o usuário não selecionou nenhum time no filtro (o valor está vazio), o Laravel simplesmente pula todo esse bloco e segue em frente. Se o usuário selecionou um time (o valor existe), ele executa a função anônima interna.
                 
                 return $q->whereHas('times', function ($sq) use ($request) { // Filtra por time usando a relação / sq = subquery td o que escrever dentro dessa função vai rodar olhando diretamente para a tabela de times 
-                    $sq->where('tbl_times.id_time', $request->time);
+                    $sq->where('id_time', $request->time);
                 });
             })
             ->when($request->posicao, function ($q) use ($request) {
@@ -32,7 +32,7 @@ class AtletasController extends Controller
         $times = \App\Models\Time::orderBy('nome_time')->get();
 
         // Lista de posições fixa ou vinda de outra model
-        $posicoes = ['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'];
+        $posicoes = ['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'CENTROAVANTE'];
 
         return view('site.jogadores.index', compact('atletas', 'times', 'posicoes'));
     }

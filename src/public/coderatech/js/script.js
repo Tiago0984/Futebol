@@ -88,8 +88,9 @@ $(document).ready(function () {
             termoPosicao.includes("gk") ||
             termoPosicao.includes("goleiro")
         ) {
+            // Goleiros mostram defesas E gols
             $contextoAba.find(".js-box-defesas").show();
-            $contextoAba.find(".js-box-gols").hide();
+            $contextoAba.find(".js-box-gols").show();
         } else {
             $contextoAba.find(".js-box-defesas").hide();
             $contextoAba.find(".js-box-gols").show();

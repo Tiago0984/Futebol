@@ -4651,11 +4651,12 @@ body {
 }
 
 .perf-stat-box.highlight-stat {
-    background: #1c1018;
-    border-color: #3a1218;
+    background: rgba(16, 185, 129, 0.08);
+    border-color: rgba(16, 185, 129, 0.22);
 }
 .perf-stat-box.highlight-stat .perf-value {
-    color: #e20e0e;
+    color: #10b981;
+    text-shadow: 0 0 10px rgba(16, 185, 129, 0.25);
 }
 
 .perf-stat-box.defensive-stat {

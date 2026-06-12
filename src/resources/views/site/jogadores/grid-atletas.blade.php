@@ -1,30 +1,36 @@
 <main class="scout-deck-content">
     @php
     $posicaoInfo = [
-        'goleiro'  => ['sigla' => 'GL',  'nome' => 'Goleiro'],
-        'zagueiro' => ['sigla' => 'ZAG', 'nome' => 'Zagueiro'],
-        'lateral'  => ['sigla' => 'LAT', 'nome' => 'Lateral'],
-        'volante'  => ['sigla' => 'VOL', 'nome' => 'Volante'],
-        'meia'     => ['sigla' => 'MEI', 'nome' => 'Meia'],
-        'atacante' => ['sigla' => 'ATA', 'nome' => 'Atacante'],
-        // aliases do banco
-        'cb'  => ['sigla' => 'ZAG', 'nome' => 'Zagueiro'],
-        'am'  => ['sigla' => 'MEI', 'nome' => 'Meia'],
-        'dm'  => ['sigla' => 'VOL', 'nome' => 'Volante'],
-        'at'  => ['sigla' => 'ATA', 'nome' => 'Atacante'],
-        'fw'  => ['sigla' => 'ATA', 'nome' => 'Atacante'],
-        'lb'  => ['sigla' => 'LAT', 'nome' => 'Lateral'],
-        'rb'  => ['sigla' => 'LAT', 'nome' => 'Lateral'],
-        'gk'  => ['sigla' => 'GL',  'nome' => 'Goleiro'],
+        // Nomes canônicos (salvos no banco em maiúsculo)
+        'goleiro'      => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
+        'zagueiro'     => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
+        'lateral'      => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
+        'volante'      => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
+        'meia'         => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+        'atacante'     => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+        'centroavante' => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+        // Aliases internacionais vindos do banco (posicao_atleta_time)
+        'gr'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
+        'gk'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
+        'cb'  => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
+        'lb'  => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
+        'rb'  => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
+        'dm'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
+        'am'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+        'mc'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+        'at'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+        'fw'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+        'cf'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+        'vo'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
     ];
     @endphp
     <div class="player-grid-container">
         @forelse($atletas as $atleta)
         @php
-            $posKey  = strtolower($atleta->posicao_atleta ?? '');
+            $posKey  = strtolower(trim($atleta->posicao_atleta ?? ''));
             $posData = $posicaoInfo[$posKey] ?? [
-                'sigla' => $atleta->posicao_atleta ? strtoupper(substr($atleta->posicao_atleta, 0, 3)) : 'ATL',
-                'nome'  => $atleta->posicao_atleta ?? 'Atleta',
+                'sigla' => $atleta->posicao_atleta ? strtoupper(substr(trim($atleta->posicao_atleta), 0, 3)) : 'ATL',
+                'nome'  => ucfirst(strtolower(trim($atleta->posicao_atleta ?? 'Atleta'))),
             ];
         @endphp
 

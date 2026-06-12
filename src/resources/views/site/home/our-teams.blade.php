@@ -42,6 +42,34 @@
 	</div>
 </section>
 
+@php
+$posicaoInfo = [
+    'goleiro'      => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
+    'zagueiro'     => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
+    'lateral'      => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
+    'volante'      => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
+    'meia'         => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+    'centroavante' => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+    'atacante'     => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+    // Aliases / abreviações que possam existir no banco
+    'gr'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
+    'gk'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
+    'cb'  => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
+    'zag' => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
+    'lb'  => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
+    'rb'  => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
+    'lat' => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
+    'dm'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
+    'vo'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
+    'am'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+    'mc'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+    'mei' => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+    'at'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+    'fw'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+    'cf'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+];
+@endphp
+
 @foreach($times as $time)
 @if(strtolower($time->tipo_time) === 'interno')
 <div class="modal fade sport-premium-modal" id="modalTime{{ $time->id_time }}" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{ $time->id_time }}">
@@ -89,6 +117,12 @@
 								$idade = \Carbon\Carbon::parse($atleta->data_nasc_atleta)->age . ' anos';
 								} catch(\Exception $e) { $idade = 'Inválida'; }
 								}
+
+								$posKeyTime  = strtolower(trim($atleta->pivot->posicao_atleta_time ?? ''));
+								$posDataTime = $posicaoInfo[$posKeyTime] ?? [
+								    'sigla' => $atleta->pivot->posicao_atleta_time ? strtoupper(substr(trim($atleta->pivot->posicao_atleta_time), 0, 3)) : 'ND',
+								    'nome'  => ucfirst(strtolower(trim($atleta->pivot->posicao_atleta_time ?? 'ND'))),
+								];
 								@endphp
 
 								@if($status === 'TITULAR' || $status === '')
@@ -109,8 +143,8 @@
 									data-descricao="{{ $atleta->descricao_atleta ?? 'Sem histórico cadastrado profissionalmente no clube.' }}">
 
 									<div class="player-row-content">
-										<span class="sport-pos-badge {{ strtolower(substr($atleta->pivot->posicao_atleta_time ?? 'ND', 0, 2)) }}">
-											{{ strtoupper(substr($atleta->pivot->posicao_atleta_time ?? 'ND', 0, 2)) }}
+										<span class="sport-pos-badge {{ strtolower($posDataTime['sigla']) }}">
+											{{ $posDataTime['sigla'] }}
 										</span>
 										<span class="sport-row-number">#{{ $atleta->pivot->camisa_atleta_time ?? '00' }}</span>
 										<span class="sport-row-name">{{ $atleta->nome_atleta ?? 'Sem nome' }}</span>
@@ -181,6 +215,12 @@
 								$idade = \Carbon\Carbon::parse($atleta->data_nasc_atleta)->age . ' anos';
 								} catch(\Exception $e) { $idade = 'Inválida'; }
 								}
+
+								$posKeyTime  = strtolower(trim($atleta->pivot->posicao_atleta_time ?? ''));
+								$posDataTime = $posicaoInfo[$posKeyTime] ?? [
+								    'sigla' => $atleta->pivot->posicao_atleta_time ? strtoupper(substr(trim($atleta->pivot->posicao_atleta_time), 0, 3)) : 'ND',
+								    'nome'  => ucfirst(strtolower(trim($atleta->pivot->posicao_atleta_time ?? 'ND'))),
+								];
 								@endphp
 
 								@if($status === 'RESERVA')
@@ -201,8 +241,8 @@
 									data-descricao="{{ $atleta->descricao_atleta ?? 'Sem histórico cadastrado profissionalmente no clube.' }}">
 
 									<div class="player-row-content">
-										<span class="sport-pos-badge {{ strtolower(substr($atleta->pivot->posicao_atleta_time ?? 'ND', 0, 2)) }}">
-											{{ strtoupper(substr($atleta->pivot->posicao_atleta_time ?? 'ND', 0, 2)) }} {{-- exibe as primeiras 2 letras da posição ou 'ND' se não definido /// substr Corta o texto para pegar apenas os primeiros caracteres. strtoupper transforma todas as letras em MAIÚSCULAS. --}}
+										<span class="sport-pos-badge {{ strtolower($posDataTime['sigla']) }}">
+											{{ $posDataTime['sigla'] }} {{-- Sigla da posição traduzida pelo mapa $posicaoInfo /// exibe GR, ZAG, LAT, VO, MEI ou CF --}}
 										</span>
 										<span class="sport-row-number">#{{ $atleta->pivot->camisa_atleta_time ?? '00' }}</span>
 										<span class="sport-row-name">{{ $atleta->nome_atleta ?? 'Sem nome' }}</span>
