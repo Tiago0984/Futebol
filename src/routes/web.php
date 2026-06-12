@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Site\HomeController;
 use App\Http\Controllers\Site\SobreController;
 use App\Http\Controllers\Site\CalendarioController;
+use App\Http\Controllers\Site\AtletasController;
 use App\Http\Controllers\Site\CampeonatoController;
 use App\Http\Controllers\Site\NoticiasController;
 use App\Http\Controllers\Site\ShoppingController;
@@ -22,7 +23,7 @@ use App\Http\Controllers\Admin\CampeonatosController;
 use App\Http\Controllers\Admin\TimesController;
 use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
-use App\Http\Controllers\Admin\AtletasController;
+use App\Http\Controllers\Admin\AtletasController as AdminAtletasController;
 use App\Http\Controllers\Admin\InscricoesController;
 use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
@@ -32,6 +33,8 @@ Route::get('/', [HomeController::class, 'home'])->name('home');
 Route::get('/sobre', [SobreController::class, 'sobre'])->name('sobre');
 
 Route::get('/calendario', [CalendarioController::class, 'calendario'])->name('calendario');
+
+Route::get('/jogadores', [AtletasController::class, 'vitrine'])->name('jogadores.vitrine');
 
 Route::get('/campeonato', [CampeonatoController::class, 'campeonato'])->name('campeonato');
 Route::get('/campeonato/{id}', [CampeonatoController::class, 'show'])->name('campeonato.show');
@@ -60,7 +63,7 @@ Route::post('/assinar/{token}', [AssinaturaController::class, 'store'])->name('a
 Route::prefix('admin')->name('admin.')->group(function () {
     Route::get('/login',  [LoginController::class, 'showLogin'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.post');
-    Route::post('/logout',[LoginController::class, 'logout'])->name('logout');
+    Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
 
 // Rotas protegidas da área admin
@@ -81,8 +84,10 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::resource('categorias',  CategoriasController::class);
 
     // Pessoas
-    Route::resource('atletas',    AtletasController::class);
-    Route::patch('atletas/{id}/toggle-status', [AtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
+    // Pessoas (Corrigido para usar o alias AdminAtletasController)
+    
+    Route::resource('atletas', AdminAtletasController::class);
+    Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
     Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');
     Route::get('inscricoes/{id}',     [InscricoesController::class, 'show'])->name('inscricoes.show');
     Route::delete('inscricoes/{id}',  [InscricoesController::class, 'destroy'])->name('inscricoes.destroy');

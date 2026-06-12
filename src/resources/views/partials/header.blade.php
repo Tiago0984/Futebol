@@ -48,23 +48,30 @@
                 <li><a href="{{ route('home') }}">HOME</a></li>
                 <li><a href="{{ route('sobre') }}">SOBRE</a></li>
                 <li><a href="{{ route('calendario') }}">CALENDÁRIO</a></li>
+
+                <li class="nav-highlight-scout">
+                    <a href="{{ route('jogadores.vitrine') }}">
+                        <span class="fa fa-search-plus" style="margin-right: 4px; font-size: 11px;"></span> JOGADORES
+                    </a>
+                </li>
+
                 <li class="dropdown">
                     <a href="{{ route('campeonato') }}" class="dropdown-toggle" data-toggle="dropdown">
                         CAMPEONATOS <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
                         @isset($campeonatosMenu)
-                            <li>
-                                <a href="{{ route('campeonato') }}">Ver Todos</a>
-                            </li>
-                            <li class="divider"></li>
-                            @foreach ($campeonatosMenu as $camp)
-                                <li>
-                                    <a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
-                                        {{ $camp->nome_campeonato }}
-                                    </a>
-                                </li>
-                            @endforeach
+                        <li>
+                            <a href="{{ route('campeonato') }}">Ver Todos</a>
+                        </li>
+                        <li class="divider"></li>
+                        @foreach ($campeonatosMenu as $camp)
+                        <li>
+                            <a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
+                                {{ $camp->nome_campeonato }}
+                            </a>
+                        </li>
+                        @endforeach
                         @endisset
                     </ul>
                 </li>

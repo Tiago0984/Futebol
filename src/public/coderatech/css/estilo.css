@@ -132,6 +132,35 @@ html {
     }
 }
 
+/* Destaque para a página de Olheiros/Jogadores no Menu */
+.nav-highlight-scout {
+    margin: 0 5px;
+}
+
+.nav-highlight-scout > a {
+    font-weight: 800 !important;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    transition: all 0.2s ease-in-out;
+}
+
+.nav-highlight-scout > a:hover {
+    background-color: #e20e0e !important; /* Inverte a cor no hover */
+    color: #ffffff !important;
+    box-shadow: 0 0 8px rgba(226, 14, 14, 0.4);
+}
+
+/* Ajuste responsivo para telas menores */
+@media (max-width: 991px) {
+    .nav-highlight-scout {
+        margin: 10px 0;
+        width: 100%;
+    }
+    .nav-highlight-scout > a {
+        display: inline-block !important;
+    }
+}
+
 /* ==========================================================================
     1. CONFIGURAÇÕES DE RITMO VISUAL, CORES E ESPAÇAMENTO (RESET & UTILS)
    ========================================================================== */
@@ -3937,4 +3966,896 @@ body {
 }
 .sport-sidebar-scroll::-webkit-scrollbar-thumb:hover {
     background: #323543;
+}
+
+/* ==========================================================================
+   34. PÁGINA DE JOGADORES - MÓDULO DE DECK DE ATLETAS - PREMIUM SIDEBAR LAYOUT
+   ========================================================================== */
+
+/* ==========================================================================
+   ARQUITETURA DE LAYOUT E PROTEÇÃO DO TOPO (SCOUT COMPONENT)
+   ========================================================================== */
+
+/* Garante o recuo seguro para o conteúdo não sumir debaixo do cabeçalho fixo */
+.scout-page-shift {
+    padding-top: 95px;
+    background-color: #ffffff;
+    display: block;
+    width: 100%;
+}
+
+/* Container que centraliza o corpo do painel na tela */
+.scout-page-container {
+    background-color: #ffffff;
+    padding: 40px 15px 80px 15px;
+    min-height: 100vh;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    max-width: 1200px;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+
+/* Layout de duas colunas: Filtros na esquerda, Cards na direita */
+.scout-layout-wrapper {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+}
+
+/* ÁREA DO GRIDS DE CARDS (COLUNA DIREITA) */
+.scout-deck-content {
+    flex: 1;
+}
+
+/* ==========================================================================
+   COMPONENTE DO BANNER HERO HORIZONTAL (1905x300)
+   ========================================================================== */
+.scout-hero-banner {
+    position: relative;
+    width: 100%;
+    height: 300px; /* Altura exata da sua demanda padrão */
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #111111;
+}
+
+.scout-banner-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.scout-banner-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        90deg,
+        rgba(11, 11, 11, 0.9) 0%,
+        rgba(11, 11, 11, 0.3) 100%
+    );
+    display: flex;
+    align-items: center;
+}
+
+.scout-banner-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 15px;
+    box-sizing: border-box;
+}
+
+.scout-badge-restricted {
+    display: inline-block;
+    background-color: #e20e0e;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 3px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+}
+
+.scout-banner-title {
+    font-size: 42px;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    margin: 0 0 8px 0;
+    letter-spacing: -1px;
+    line-height: 1;
+}
+
+.scout-banner-subtitle {
+    font-size: 16px;
+    color: #dddddd;
+    margin: 0;
+    max-width: 650px;
+    line-height: 1.4;
+}
+
+/* ==========================================================================
+   CABEÇALHO INTERNO E CORREÇÃO DO CONTADOR (SEM QUEBRAS)
+   ========================================================================== */
+.scout-main-header {
+    width: 100%;
+    margin-bottom: 35px;
+    display: block;
+    clear: both;
+}
+
+.scout-header-content {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.title-scout {
+    font-size: 26px;
+    font-weight: 800;
+    color: #111111;
+    letter-spacing: -0.5px;
+    margin: 0 0 5px 0;
+    text-transform: uppercase;
+}
+
+.subtitle-scout {
+    font-size: 14px;
+    color: #666666;
+    margin: 0;
+}
+
+/* Bloco Corrigido usando Flexbox para travar o layout */
+.scout-quick-stats {
+    display: flex !important;
+    align-items: center;
+    background-color: #ffffff;
+    border: 1px solid #eef0f2;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    padding: 10px 5px;
+}
+
+.stat-counter-pill {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 20px;
+    min-width: 110px;
+    text-align: center;
+}
+
+.stat-counter-pill:first-child {
+    border-right: 1px solid #eaeaea;
+}
+
+.counter-number {
+    font-size: 28px;
+    font-weight: 800;
+    color: #e20e0e;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.counter-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #888888;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+}
+
+/* Divisor estético inferior */
+.header-luxury-divider {
+    width: 100%;
+    height: 1px;
+    background-color: #eaeaea;
+    margin: 20px 0 0 0;
+    position: relative;
+}
+
+.luxury-marker {
+    width: 50px;
+    height: 3px;
+    background-color: #e20e0e;
+    position: absolute;
+    top: -1px;
+    left: 0;
+}
+
+/* ==========================================================================
+   REPRESENTAÇÃO VISUAL DE FILTROS ATIVOS (TAGS)
+   ========================================================================== */
+.active-filters-wrapper {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 20px;
+    background-color: #f9fafb;
+    padding: 10px 15px;
+    border-radius: 4px;
+    border: 1px dashed #e1e4e6;
+}
+
+.active-filters-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #777777;
+    letter-spacing: 0.3px;
+}
+
+.active-filters-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.filter-tag {
+    display: inline-flex;
+    align-items: center;
+    background-color: #111111;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 3px;
+    gap: 8px;
+}
+
+.remove-filter-btn {
+    color: #aaaaaa;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1;
+    transition: color 0.15s ease;
+}
+
+.remove-filter-btn:hover {
+    color: #e20e0e;
+    text-decoration: none;
+}
+
+.clear-all-tag-btn {
+    font-size: 11px;
+    color: #e20e0e;
+    font-weight: 700;
+    text-transform: uppercase;
+    text-decoration: none;
+    margin-left: 5px;
+    transition: opacity 0.15s ease;
+}
+
+.clear-all-tag-btn:hover {
+    opacity: 0.8;
+    text-decoration: none;
+}
+
+/* ==========================================================================
+   BARRA LATERAL DE FILTROS (ASIDE)
+   ========================================================================== */
+.scout-sidebar-filters {
+    flex: 0 0 280px;
+    width: 280px;
+    background-color: #fafafa;
+    border: 1px solid #eef0f2;
+    padding: 24px;
+    border-radius: 6px;
+    position: sticky;
+    top: 115px; /* Trava elegantemente ao rolar a página */
+}
+
+.sidebar-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #111111;
+    text-transform: uppercase;
+    margin: 0 0 20px 0;
+    padding-bottom: 10px;
+    border-bottom: 2px solid #111111;
+}
+
+.filter-group {
+    margin-bottom: 18px;
+}
+
+.filter-field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #555555;
+    margin-bottom: 6px;
+}
+
+.form-control-scout {
+    background-color: #ffffff;
+    border: 1px solid #dcdcdc;
+    color: #222222;
+    border-radius: 4px;
+    padding: 10px 12px;
+    width: 100%;
+    font-size: 13px;
+    height: 40px;
+    box-sizing: border-box;
+    transition: all 0.2s ease;
+}
+
+.form-control-scout:focus {
+    border-color: #e20e0e;
+    outline: 0;
+    box-shadow: 0 0 5px rgba(226, 14, 14, 0.1);
+}
+
+.select-scout {
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23777777' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 12px;
+    padding-right: 30px;
+}
+
+.search-box-component {
+    position: relative;
+}
+
+.search-inline-btn {
+    position: absolute;
+    right: 2px;
+    top: 2px;
+    height: 36px;
+    width: 36px;
+    background: transparent;
+    border: none;
+    color: #e20e0e;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.sidebar-actions {
+    margin-top: 25px;
+    text-align: center;
+    border-top: 1px dashed #e5e5e5;
+    padding-top: 15px;
+}
+
+.btn-sidebar-clear {
+    display: inline-block;
+    color: #666666;
+    font-size: 12px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.btn-sidebar-clear:hover {
+    color: #e20e0e;
+    text-decoration: none;
+}
+
+/* ==========================================================================
+   GRID E VISUAL PREMIUM DOS CARDS DE ATLETAS (ESTILO ÁLBUM)
+   ========================================================================== */
+.player-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 25px;
+    width: 100%;
+}
+
+.player-sticker-card {
+    background-color: #ffffff;
+    cursor: pointer;
+    outline: none;
+    border: none;
+}
+
+/* Moldura externa refinada do Card */
+.sticker-inner-frame {
+    background: #ffffff;
+    border: 1px solid #e2e5e8;
+    padding: 0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+    position: relative;
+}
+
+/* Efeito Hover do Card (Elevação e Sombra Vermelha Discreta) */
+.player-sticker-card:hover .sticker-inner-frame {
+    transform: translateY(-6px);
+    border-color: #e20e0e;
+    box-shadow: 0 12px 24px rgba(226, 14, 14, 0.12);
+}
+
+/* Caixa da Imagem */
+.sticker-photo-box {
+    margin: 0;
+    position: relative;
+    aspect-ratio: 4/5; /* Formarto clássico de card de jogador */
+    overflow: hidden;
+    background-color: #f8f9fa;
+}
+
+.sticker-photo-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+}
+
+/* Zoom elegante na foto ao passar o mouse */
+.player-sticker-card:hover .sticker-photo-box img {
+    transform: scale(1.04);
+}
+
+/* Tag de Posição flutuando no card */
+.sticker-pos-tag {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    background-color: #e20e0e;
+    color: #ffffff;
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    border-radius: 4px;
+    letter-spacing: 0.5px;
+    box-shadow: 0 2px 6px rgba(226, 14, 14, 0.3);
+    z-index: 2;
+}
+
+/* Base de dados interna do Card (Dados alinhados) */
+.sticker-meta-data {
+    background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);
+    border-top: 1px solid #eeeff1;
+    padding: 16px 14px;
+    text-align: left;
+}
+
+.sticker-player-name {
+    font-size: 15px;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 6px 0;
+    text-transform: uppercase;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    letter-spacing: -0.3px;
+}
+
+.sticker-player-age {
+    display: inline-block;
+    color: #555555;
+    font-weight: 700;
+    font-size: 11px;
+    background-color: #ebedf0;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+/* Detalhe técnico da borda inferior ativa */
+.sticker-inner-frame::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+}
+
+.player-sticker-card:hover .sticker-inner-frame::after {
+    background-color: #e20e0e;
+}
+
+/* ==========================================================================
+   MODAL INTERNO DE VISUALIZAÇÃO DO ATLETA (DETALHES)
+   ========================================================================== */
+
+/* Wrapper do modal com tema escuro */
+.modal-scout-premium .modal-content {
+    background: #111318;
+    border: 1px solid #1f2230;
+    border-radius: 14px;
+    color: #e8eaf0;
+    overflow: hidden;
+}
+.modal-scout-premium .modal-body {
+    padding: 0;
+}
+
+/* Botão fechar */
+.close-premium-modal {
+    position: absolute;
+    right: 14px;
+    top: 12px;
+    font-size: 22px;
+    line-height: 1;
+    border: none;
+    background: rgba(255,255,255,0.07);
+    color: #8892a4;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+    cursor: pointer;
+    transition: background 0.2s, color 0.2s;
+}
+.close-premium-modal:hover {
+    background: rgba(226,14,14,0.15);
+    color: #e20e0e;
+}
+
+/* Body interno */
+.custom-modal-body {
+    padding: 0;
+}
+
+/* Painel esquerdo — foto */
+.modal-avatar-frame {
+    background: linear-gradient(160deg, #0d0f14 0%, #161a24 100%);
+    border-right: 1px solid #1f2230;
+    padding: 30px 20px 24px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.profile-picture {
+    width: 100%;
+    max-width: 180px;
+    border-radius: 10px;
+    object-fit: cover;
+    aspect-ratio: 3/4;
+    border: 2px solid #2a2d3a;
+    display: block;
+    margin: 0 auto;
+}
+
+.scout-registration-badge {
+    background: #1a1d27;
+    border: 1px solid #2a2d3a;
+    color: #f0f4ff;
+    margin-top: 14px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    width: 100%;
+    text-align: center;
+}
+.scout-registration-badge small {
+    display: block;
+    font-size: 9px;
+    color: #5a6480;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 2px;
+}
+.scout-registration-badge strong {
+    font-size: 15px;
+    font-weight: 800;
+    color: #e20e0e;
+    letter-spacing: 0.04em;
+}
+
+/* Painel direito — dados */
+.col-md-8 > * {
+    /* herda o padding do row */
+}
+.custom-modal-body .row {
+    margin: 0;
+}
+.custom-modal-body .col-md-4 {
+    padding: 0;
+}
+.custom-modal-body .col-md-8 {
+    padding: 28px 28px 24px 24px;
+}
+
+/* Cabeçalho do perfil */
+.profile-header {
+    margin-bottom: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #1f2230;
+}
+
+.profile-badge-pos {
+    display: inline-block;
+    background-color: #e20e0e;
+    color: #ffffff;
+    padding: 4px 14px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 8px;
+}
+
+.profile-main-title {
+    font-size: 22px;
+    font-weight: 900;
+    color: #f0f4ff;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+}
+
+/* Títulos de seção */
+.scout-block-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: #5a6480;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 20px 0 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.scout-block-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #1f2230;
+}
+.scout-block-title i {
+    color: #e20e0e;
+    font-size: 11px;
+}
+
+/* Grid de estatísticas acumuladas */
+.performance-stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.perf-stat-box {
+    background: #1a1d27;
+    border: 1px solid #1f2230;
+    text-align: center;
+    padding: 10px 6px;
+    border-radius: 8px;
+    transition: border-color 0.2s;
+}
+.perf-stat-box:hover {
+    border-color: #2a2d3a;
+}
+
+.perf-stat-box.highlight-stat {
+    background: #1c1018;
+    border-color: #3a1218;
+}
+.perf-stat-box.highlight-stat .perf-value {
+    color: #e20e0e;
+}
+
+.perf-stat-box.defensive-stat {
+    background: #101928;
+    border-color: #162540;
+}
+.perf-stat-box.defensive-stat .perf-value {
+    color: #4da3ff;
+}
+
+.perf-value {
+    display: block;
+    font-size: 22px;
+    font-weight: 900;
+    color: #f0f4ff;
+    line-height: 1;
+    margin-bottom: 4px;
+}
+
+.perf-label {
+    font-size: 8px;
+    text-transform: uppercase;
+    color: #5a6480;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+}
+
+/* Ficha Antropométrica */
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+}
+
+.stat-item-box {
+    background: #1a1d27;
+    border: 1px solid #1f2230;
+    padding: 10px 14px;
+    border-radius: 8px;
+}
+
+.stat-label {
+    display: block;
+    font-size: 9px;
+    text-transform: uppercase;
+    color: #5a6480;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin-bottom: 3px;
+}
+
+.stat-value {
+    display: block;
+    font-size: 13px;
+    color: #e8eaf0;
+    font-weight: 600;
+}
+
+/* Times vinculados */
+.profile-linked-teams {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid #1f2230;
+}
+
+.linked-teams-title {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #5a6480;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.linked-teams-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: #1f2230;
+}
+.linked-teams-title i {
+    color: #e20e0e;
+    font-size: 11px;
+}
+
+.team-badges-flex {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.badge-team-action-btn {
+    display: inline-flex;
+    align-items: center;
+    background: #1a1d27;
+    border: 1px solid #1f2230;
+    padding: 8px 14px;
+    border-radius: 8px;
+    flex: 1;
+    min-width: 160px;
+    gap: 10px;
+    transition: border-color 0.2s;
+}
+.badge-team-action-btn:hover {
+    border-color: #e20e0e44;
+}
+
+.team-crest-mini {
+    width: 30px;
+    height: 30px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.team-meta-inline {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.team-name-span {
+    font-size: 12px;
+    font-weight: 700;
+    color: #e8eaf0;
+}
+
+.team-pivot-status {
+    font-size: 10px;
+    color: #5a6480;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Estado vazio */
+.no-records-text {
+    color: #5a6480;
+    font-size: 13px;
+    font-style: italic;
+    margin: 0;
+}
+
+/* Estado sem resultados no grid */
+.no-results-box {
+    grid-column: 1 / -1;
+    padding: 60px 0;
+    color: #5a6480;
+}
+
+/* Truncar texto longo */
+.text-truncate-custom {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;
+    display: block;
+}
+
+/* ==========================================================================
+   REGRAS DE RESPONSIVIDADE (MOBILE & TABLET ADJUSTMENTS)
+   ========================================================================== */
+@media (max-width: 991px) {
+    .scout-layout-wrapper {
+        flex-direction: column;
+    }
+
+    .scout-sidebar-filters {
+        flex: 1;
+        width: 100%;
+        position: relative;
+        top: 0;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 767px) {
+    .scout-page-shift {
+        padding-top: 75px; /* Recuo menor para menus mobiles compactados */
+    }
+    .scout-hero-banner {
+        height: 200px;
+    }
+    .scout-banner-title {
+        font-size: 28px;
+    }
+    .scout-banner-subtitle {
+        font-size: 13px;
+    }
+    .scout-header-content {
+        text-align: center;
+        justify-content: center;
+    }
+    .performance-stats-row {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .profile-stats-grid {
+        grid-template-columns: 1fr;
+    }
+    .mb-4-mobile {
+        margin-bottom: 20px;
+    }
 }

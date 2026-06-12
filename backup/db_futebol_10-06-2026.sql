@@ -236,3 +236,6 @@ SET @atleta_id = LAST_INSERT_ID();
 INSERT INTO `tbl_atleta_time` (`id_time`, `id_atleta`, `camisa_atleta_time`, `posicao_atleta_time`, `jogos_atleta_time`, `convocacao_atleta_time`, `gols_atleta_time`, `defesas_atleta_time`)
 VALUES (4, @atleta_id, 17, 'AM', 5, 10, 1, 0);
 
+ALTER TABLE tbl_atleta_time 
+ADD COLUMN status_atleta_time VARCHAR(20) NOT NULL DEFAULT 'TITULAR';
+
