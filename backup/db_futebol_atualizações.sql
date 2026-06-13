@@ -267,3 +267,10 @@ VALUES
     ('Foto 6', 'foto6.jpg', 6, 'ATIVO'),
     ('Foto 7', 'foto7.jpg', 7, 'ATIVO'),
     ('Foto 8', 'foto8.jpg', 8, 'ATIVO');
+
+    -- ===========================================================
+-- Atualização: nova coluna status_atleta_time em tbl_atleta_time
+-- 2026-06-09
+-- ============================================================
+ALTER TABLE tbl_atleta_time
+ADD COLUMN status_atleta_time VARCHAR(20) NOT NULL DEFAULT 'ATIVO';
