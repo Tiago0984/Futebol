@@ -33,7 +33,9 @@ class HomeController extends Controller
 
         // NOVA LINHA: Busca todos os times do banco usando Eloquent
         // Busca os times cadastrados já trazendo os atletas vinculados de forma performática
-        $times = Time::with('atletas')->get();
+        // atletas.cartoes.jogo carrega os cartões de cada atleta junto com o jogo associado,
+        // necessário para filtrar cartões por time no modal de elenco (partials/modal-times).
+        $times = Time::with(['atletas.cartoes.jogo'])->get();
 
         // Calcular classificação
         $classificacao = [];

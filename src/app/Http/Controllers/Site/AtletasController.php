@@ -8,28 +8,18 @@ use App\Models\Atleta;
 
 class AtletasController extends Controller
 {
-    public function vitrine(Request $request)
+    public function vitrine()
     {
-        // Buscamos atletas com as relações necessárias
-        $atletas = Atleta::with(['times', 'categorias'])
-            ->when($request->nome, function ($q) use ($request) {
-                return $q->where('nome_atleta', 'like', '%' . $request->nome . '%');
-            })
-            ->when($request->time, function ($q) use ($request) { // Se o usuário não selecionou nenhum time no filtro (o valor está vazio), o Laravel simplesmente pula todo esse bloco e segue em frente. Se o usuário selecionou um time (o valor existe), ele executa a função anônima interna.
-                
-                return $q->whereHas('times', function ($sq) use ($request) { // Filtra por time usando a relação / sq = subquery td o que escrever dentro dessa função vai rodar olhando diretamente para a tabela de times 
-                    $sq->where('id_time', $request->time);
-                });
-            })
-            ->when($request->posicao, function ($q) use ($request) {
-                return $q->where('posicao_atleta', $request->posicao);
-            })
+        // Buscamos todos os atletas ativos — filtragem por nome, posição e clube é feita
+        // no client-side via JavaScript para suportar busca em tempo real sem reload de página.
+        // 'cartoes' carregado para exibir total de cartões no modal detalhado do atleta.
+        $atletas = Atleta::with(['times', 'categorias', 'cartoes'])
             ->where('status_atleta', 'ATIVO')
             ->orderBy('nome_atleta')
             ->get();
 
-        // Dados para os selects dos filtros
-        $times = \App\Models\Time::orderBy('nome_time')->get();
+        // atletas.cartoes.jogo necessário para filtrar cartões por time no modal de elenco.
+        $times = \App\Models\Time::with(['atletas.cartoes.jogo'])->orderBy('nome_time')->get();
 
         // Lista de posições fixa ou vinda de outra model
         $posicoes = ['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'CENTROAVANTE'];

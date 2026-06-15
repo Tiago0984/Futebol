@@ -3932,6 +3932,26 @@ body {
     text-shadow: 0 0 12px rgba(52, 211, 153, 0.3); /* Efeito luminoso sutil no número */
 }
 
+/* Cartão Amarelo — disciplina no modal de time (por vínculo) */
+.stat-box-mini.cartao-amarelo {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.12) 0%, #16171b 80%);
+    border-color: rgba(245, 158, 11, 0.3);
+}
+.stat-box-mini.cartao-amarelo .stat-counter {
+    color: #f59e0b;
+    text-shadow: 0 0 10px rgba(245, 158, 11, 0.3);
+}
+
+/* Cartão Vermelho — disciplina no modal de time (por vínculo) */
+.stat-box-mini.cartao-vermelho {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, #16171b 80%);
+    border-color: rgba(239, 68, 68, 0.3);
+}
+.stat-box-mini.cartao-vermelho .stat-counter {
+    color: #ef4444;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
 /* Área de Texto Histórico */
 .sport-bio-history p {
     color: #a0a5b5;
@@ -4444,6 +4464,40 @@ body {
     letter-spacing: -0.3px;
 }
 
+/* Strip de times vinculados ao atleta no card da vitrine */
+.sticker-teams-strip {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #eeeff1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.sticker-team-item {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.sticker-team-crest {
+    width: 18px;
+    height: 18px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.sticker-team-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: #777777;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
 .sticker-player-age {
     display: inline-block;
     color: #555555;
@@ -4667,6 +4721,24 @@ body {
     color: #4da3ff;
 }
 
+/* Cartão Amarelo — disciplina no modal de jogador (total, todos os times) */
+.perf-stat-box.cartao-amarelo-perf {
+    background: rgba(245, 158, 11, 0.07);
+    border-color: rgba(245, 158, 11, 0.25);
+}
+.perf-stat-box.cartao-amarelo-perf .perf-value {
+    color: #f59e0b;
+}
+
+/* Cartão Vermelho — disciplina no modal de jogador (total, todos os times) */
+.perf-stat-box.cartao-vermelho-perf {
+    background: rgba(239, 68, 68, 0.07);
+    border-color: rgba(239, 68, 68, 0.25);
+}
+.perf-stat-box.cartao-vermelho-perf .perf-value {
+    color: #ef4444;
+}
+
 .perf-value {
     display: block;
     font-size: 22px;
@@ -4750,6 +4822,7 @@ body {
     gap: 8px;
 }
 
+/* Badge de time — agora é um <button> clicável que abre o modal de elenco do time */
 .badge-team-action-btn {
     display: inline-flex;
     align-items: center;
@@ -4760,10 +4833,30 @@ body {
     flex: 1;
     min-width: 160px;
     gap: 10px;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    text-align: left;
+    width: 100%;
 }
 .badge-team-action-btn:hover {
     border-color: #e20e0e44;
+    background: #1f2333;
+}
+.badge-team-action-btn:focus {
+    outline: none;
+    border-color: #e20e0e88;
+}
+
+/* Seta indicativa de ação ao lado direito do badge de time */
+.badge-team-arrow {
+    margin-left: auto;
+    color: #5a6480;
+    font-size: 13px;
+    transition: color 0.2s, transform 0.2s;
+}
+.badge-team-action-btn:hover .badge-team-arrow {
+    color: #e20e0e;
+    transform: translateX(3px);
 }
 
 .team-crest-mini {
@@ -4814,6 +4907,47 @@ body {
     text-overflow: ellipsis;
     max-width: 200px;
     display: block;
+}
+
+/* Botão "ver informações completas sobre esse atleta..." no modal de elenco do time.
+   Aparece no showcase do modal após as estatísticas de desempenho.
+   Na página /jogadores fecha o modal de time e abre o modal detalhado do atleta.
+   Na home redireciona para a página /jogadores. */
+.sport-ver-completo-wrapper {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #1f2230;
+}
+
+.btn-ver-atleta-completo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px 16px;
+    background: transparent;
+    border: 1px solid #2a2d3a;
+    border-radius: 8px;
+    color: #7a84a0;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+    cursor: pointer;
+}
+
+.btn-ver-atleta-completo:hover {
+    border-color: #e20e0e55;
+    color: #e20e0e;
+    background: #1a1d27;
+    text-decoration: none;
+}
+
+.btn-ver-atleta-completo .fa {
+    font-size: 13px;
+    flex-shrink: 0;
 }
 
 /* ==========================================================================
