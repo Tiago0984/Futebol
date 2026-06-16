@@ -103,8 +103,9 @@ html {
 /* Itens internos do menu abre/fecha */
 .navbar-nav .submenu-listras .dropdown-menu li a {
     color: #ffffff !important;
-    padding: 12px 20px;
+    padding: 12px 20px 12px 20px;
     font-size: 13px;
+    position: relative;
     font-weight: 600;
     letter-spacing: 0.5px;
     transition:
@@ -114,8 +115,26 @@ html {
 
 /* Efeito Hover nos links internos */
 .navbar-nav .submenu-listras .dropdown-menu li a:hover {
-    background-color: #ffcc00 !important;
-    color: #000000 !important;
+    background-color: #e20e0e !important;
+    color: #fff !important;
+}
+
+/* Estado ativo: bolinha vermelha antes do texto — fundo transparente */
+.navbar-nav .submenu-listras .dropdown-menu li.active > a {
+    color: #fff !important;
+    background-color: transparent !important;
+    padding-left: 30px !important;
+}
+.navbar-nav .submenu-listras .dropdown-menu li.active > a::before {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #e20e0e;
 }
 
 /* Ajuste fino para não quebrar em layouts mobiles antigos */
@@ -132,25 +151,141 @@ html {
     }
 }
 
-/* Destaque para a página de Olheiros/Jogadores no Menu */
+/* ==========================================================================
+   HEADER — PADRONIZAÇÃO COMPLETA (paleta: vermelho, branco, preto)
+   ========================================================================== */
+
+/* Links do navbar: branco uniforme, uppercase, fonte padronizada */
+.navbar-main .navbar-nav > li > a {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.7px;
+    color: #fff;
+    text-transform: uppercase;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s, background-color 0.2s, border-color 0.2s;
+}
+
+/* Hover e foco: só sublinhado branco, sem caixa de fundo */
+.navbar-main .navbar-nav > li > a:hover,
+.navbar-main .navbar-nav > li > a:focus {
+    color: #fff !important;
+    background-color: transparent !important;
+    border-bottom: 3px solid #fff !important;
+}
+
+/* Estado ativo: mesmo sublinhado branco */
+.navbar-main .navbar-nav > li.active > a,
+.navbar-main .navbar-nav > li.active > a:hover,
+.navbar-main .navbar-nav > li.active > a:focus {
+    color: #fff !important;
+    background-color: transparent !important;
+    border-bottom: 3px solid #fff !important;
+}
+
+/* Dropdown toggle ativo: sem borda inferior para não criar linha entre o toggle e o submenu */
+.navbar-main .navbar-nav > li.dropdown.active > a,
+.navbar-main .navbar-nav > li.dropdown.active > a:hover,
+.navbar-main .navbar-nav > li.dropdown.active > a:focus {
+    border-bottom: 3px solid transparent !important;
+    background-color: transparent !important;
+}
+
+/* Link de notícias no header-top (substitui inline style) */
+.header-news-link {
+    color: #fff;
+    text-decoration: none;
+    margin-left: 10px;
+}
+.header-news-link:hover {
+    color: #ffcccc;
+    text-decoration: underline;
+}
+
+/* Alinhamento do nav principal (substitui inline style da ul) */
+@media (min-width: 768px) {
+    .nav-main-list {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap;
+    }
+}
+
+/* JOGADORES — pill de destaque sempre visível (branco sobre vermelho) */
 .nav-highlight-scout {
-    margin: 0 5px;
+    margin: 0 6px;
 }
-
-.nav-highlight-scout > a {
+.nav-highlight-scout > a,
+.nav-highlight-scout > a:focus {
+    background-color: #fff !important;
+    color: #e20e0e !important;
+    border-radius: 20px !important;
+    padding: 7px 16px !important;
+    min-height: auto !important;
     font-weight: 800 !important;
-    border-radius: 4px;
-    letter-spacing: 0.5px;
-    transition: all 0.2s ease-in-out;
+    font-size: 12px !important;
+    letter-spacing: 0.8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    border-bottom: none !important;
+    transition: box-shadow 0.2s, transform 0.15s;
 }
-
 .nav-highlight-scout > a:hover {
-    background-color: #e20e0e !important; /* Inverte a cor no hover */
-    color: #ffffff !important;
-    box-shadow: 0 0 8px rgba(226, 14, 14, 0.4);
+    background-color: #f5f5f5 !important;
+    color: #c00 !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
+    transform: translateY(-1px);
+    border-bottom: none !important;
+}
+.nav-highlight-scout.active > a {
+    background-color: #fff !important;
+    color: #e20e0e !important;
+    border-bottom: none !important;
+    box-shadow: 0 0 0 3px rgba(255,255,255,0.4), 0 2px 8px rgba(0,0,0,0.25);
 }
 
-/* Ajuste responsivo para telas menores */
+/* Ícone do JOGADORES — tamanho padronizado (substitui inline style) */
+.nav-scout-icon {
+    margin-right: 4px;
+    font-size: 11px;
+}
+
+/* MATRICULE-SE — mesmo padrão visual dos outros links do nav */
+
+/* Hamburger (três listras) — substitui inline style */
+.nav-link-bars {
+    font-size: 16px !important;
+    padding: 15px 12px !important;
+    display: flex !important;
+    align-items: center !important;
+}
+
+/* Admin icon — substitui inline style */
+.nav-link-admin {
+    color: #fff !important;
+    padding: 15px 12px !important;
+    font-size: 18px !important;
+    display: flex !important;
+    align-items: center !important;
+    border-bottom: none !important;
+}
+.nav-link-admin:hover {
+    color: #ffcccc !important;
+    background-color: rgba(0, 0, 0, 0.18) !important;
+    border-bottom: none !important;
+}
+
+/* Ícones dentro do submenu hamburger (substitui inline style margin-right) */
+.nav-submenu-icon {
+    margin-right: 8px;
+}
+
+/* Hamburger hover: ícone das três listras permanece branco */
+.navbar-nav .submenu-listras > a:hover,
+.navbar-nav .submenu-listras.open > a {
+    color: #fff !important;
+}
+
+/* Ajuste responsivo do JOGADORES em mobile */
 @media (max-width: 991px) {
     .nav-highlight-scout {
         margin: 10px 0;
@@ -2624,21 +2759,66 @@ html {
     display: block;
 }
 
-.dropdown-menu {
-    background-color: #f00;
-    border: none;
-    border-radius: 0;
+/* Padronização dos dropdowns — especificidade .navbar-main garante sobrescrita do style.css */
+.navbar-main .dropdown-menu {
+    background-color: #111111 !important;
+    border: none !important;
+    border-radius: 4px !important;
+    min-width: 180px;
     margin-top: 0;
+    box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.3);
 }
 
-.dropdown-menu li a {
+.navbar-main .dropdown-menu li a {
     color: #fff !important;
-    padding: 10px 20px;
+    padding: 12px 20px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    position: relative;
+    transition: background 0.2s ease, color 0.2s ease;
 }
 
-.dropdown-menu li a:hover {
-    background-color: #a93226 !important;
+.navbar-main .dropdown-menu li a:hover {
+    background-color: #e20e0e !important;
     color: #fff !important;
+}
+
+/* Estado ativo: bolinha vermelha — fundo transparente para não sujar o preto */
+.navbar-main .dropdown-menu li.active > a {
+    color: #fff !important;
+    background-color: transparent !important;
+    padding-left: 30px !important;
+}
+.navbar-main .dropdown-menu li.active > a::before {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #e20e0e;
+}
+
+.navbar-main .dropdown-menu .divider {
+    background-color: #2a2a2a;
+    margin: 4px 0;
+}
+
+/* Rótulo de seção dentro do dropdown (ex: "EDIÇÕES" no menu de campeonatos) */
+.navbar-main .dropdown-menu .dropdown-section-label {
+    color: #e20e0e;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 10px 20px 4px;
+    pointer-events: none;
+    border-top: 1px solid #2a2a2a;
+    margin-top: 2px;
 }
 
 /* Estilo da pagina Matricule-se */

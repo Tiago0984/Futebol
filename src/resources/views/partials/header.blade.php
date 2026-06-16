@@ -9,7 +9,7 @@
                             @if(isset($noticiasRecentes) && $noticiasRecentes->count() > 0)
                             @foreach($noticiasRecentes as $recente)
                             <div>
-                                <a href="{{ route('site.noticias.show-noticia', $recente->id_noticia) }}" style="margin-left: 10px;color: #ffffff;text-decoration: none;">
+                                <a href="{{ route('site.noticias.show-noticia', $recente->id_noticia) }}" class="header-news-link">
                                     {{ \Illuminate\Support\Str::limit($recente->titulo_noticia, 47, '...') }}
                                 </a>
                             </div>
@@ -20,7 +20,7 @@
                         </div>
                     </div>
                 </div>
-                <div class=" col-xs-12 col-sm-5 col-md-5 col-lg-5">
+                <div class="col-xs-12 col-sm-5 col-md-5 col-lg-5">
                     <div class="top-sosmed pull-right">
                         <a href="#" title=""><span class="fa fa-facebook"></span></a>
                         <a href="#" title=""><span class="fa fa-twitter"></span></a>
@@ -28,7 +28,6 @@
                         <a href="#" title=""><span class="fa fa-pinterest"></span></a>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>
@@ -44,54 +43,75 @@
             </a>
         </div>
         <nav class="navbar-collapse collapse">
-            <ul class="nav navbar-nav navbar-right" style="display: flex; align-items: center; flex-wrap: wrap;">
-                <li><a href="{{ route('home') }}">HOME</a></li>
-                <li><a href="{{ route('sobre') }}">SOBRE</a></li>
-                <li><a href="{{ route('calendario') }}">CALENDÁRIO</a></li>
+            <ul class="nav navbar-nav navbar-right nav-main-list">
+                <li class="{{ request()->routeIs('home') ? 'active' : '' }}">
+                    <a href="{{ route('home') }}">HOME</a>
+                </li>
+                <li class="{{ request()->routeIs('sobre') ? 'active' : '' }}">
+                    <a href="{{ route('sobre') }}">SOBRE</a>
+                </li>
+                <li class="{{ request()->routeIs('calendario') ? 'active' : '' }}">
+                    <a href="{{ route('calendario') }}">CALENDÁRIO</a>
+                </li>
 
-                <li class="nav-highlight-scout">
+                <li class="nav-highlight-scout {{ request()->routeIs('jogadores.vitrine') ? 'active' : '' }}">
                     <a href="{{ route('jogadores.vitrine') }}">
-                        <span class="fa fa-search-plus" style="margin-right: 4px; font-size: 11px;"></span> JOGADORES
+                        <span class="fa fa-search-plus nav-scout-icon"></span> JOGADORES
                     </a>
                 </li>
 
-                <li class="dropdown">
+                <li class="dropdown {{ request()->routeIs('campeonato*') ? 'active' : '' }}">
                     <a href="{{ route('campeonato') }}" class="dropdown-toggle" data-toggle="dropdown">
                         CAMPEONATOS <span class="caret"></span>
                     </a>
                     <ul class="dropdown-menu">
                         @isset($campeonatosMenu)
-                        <li>
-                            <a href="{{ route('campeonato') }}">Ver Todos</a>
+                        <li class="{{ request()->routeIs('campeonato') ? 'active' : '' }}">
+                            <a href="{{ route('campeonato') }}">
+                                <span class="fa fa-list nav-submenu-icon"></span> VER TODOS
+                            </a>
                         </li>
-                        <li class="divider"></li>
+                        @if($campeonatosMenu->count() > 0)
+                        <li class="dropdown-section-label">EDIÇÕES</li>
                         @foreach ($campeonatosMenu as $camp)
-                        <li>
+                        <li class="{{ url()->current() == route('campeonato.show', $camp->id_campeonato) ? 'active' : '' }}">
                             <a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
-                                {{ $camp->nome_campeonato }}
+                                <span class="fa fa-trophy nav-submenu-icon"></span> {{ $camp->nome_campeonato }}
                             </a>
                         </li>
                         @endforeach
+                        @endif
                         @endisset
                     </ul>
                 </li>
-                <li><a href="{{ route('cadastro.index') }}" style="color:#fff; font-weight:bold;">MATRICULE-SE</a></li>
-                <li><a href="{{ route('contato') }}">CONTATO</a></li>
+
+                <li class="nav-item-matricula {{ request()->routeIs('cadastro*') ? 'active' : '' }}">
+                    <a href="{{ route('cadastro.index') }}">MATRICULE-SE</a>
+                </li>
+
+                <li class="{{ request()->routeIs('contato') ? 'active' : '' }}">
+                    <a href="{{ route('contato') }}">CONTATO</a>
+                </li>
 
                 <li class="dropdown submenu-listras">
-                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false" style="font-size: 16px; padding: 15px 12px; display: flex; align-items: center;">
+                    <a href="#" class="dropdown-toggle nav-link-bars" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
                         <span class="fa fa-bars"></span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-right">
-                        <li><a href="{{ route('noticias.index') }}"><span class="fa fa-newspaper-o" style="margin-right: 8px;"></span> NOTÍCIAS</a></li>
-                        <li><a href="{{ route('shopping') }}"><span class="fa fa-shopping-cart" style="margin-right: 8px;"></span> SHOPPING</a></li>
-                        <li><a href="{{ route('parcerias') }}"><span class="fa fa-handshake-o" style="margin-right: 8px;"></span> PARCERIAS</a></li>
+                        <li class="{{ request()->routeIs('noticias*') ? 'active' : '' }}">
+                            <a href="{{ route('noticias.index') }}"><span class="fa fa-newspaper-o nav-submenu-icon"></span> NOTÍCIAS</a>
+                        </li>
+                        <li class="{{ request()->routeIs('shopping*') ? 'active' : '' }}">
+                            <a href="{{ route('shopping') }}"><span class="fa fa-shopping-cart nav-submenu-icon"></span> SHOPPING</a>
+                        </li>
+                        <li class="{{ request()->routeIs('parcerias*') ? 'active' : '' }}">
+                            <a href="{{ route('parcerias') }}"><span class="fa fa-handshake-o nav-submenu-icon"></span> PARCERIAS</a>
+                        </li>
                     </ul>
                 </li>
 
                 <li>
-                    <a href="{{ url('/admin') }}" title="Área Admin"
-                        style="color:#fff; padding: 15px 12px; font-size:18px; display: flex; align-items: center;">
+                    <a href="{{ url('/admin') }}" title="Área Admin" class="nav-link-admin">
                         <span class="fa fa-user"></span>
                     </a>
                 </li>
