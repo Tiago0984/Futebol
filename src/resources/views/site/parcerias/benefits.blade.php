@@ -7,25 +7,25 @@
 
         <div class="benefits-grid">
             <div class="benefit-card">
-                <div class="benefit-icon">📢</div>
+                <div class="benefit-icon"><i class="fa fa-bullhorn"></i></div>
                 <h4>Visibilidade da Marca</h4>
                 <p>Sua marca em nossos uniformes, materiais esportivos, site e redes sociais oficiais.</p>
             </div>
 
             <div class="benefit-card">
-                <div class="benefit-icon">🌱</div>
+                <div class="benefit-icon"><i class="fa fa-leaf"></i></div>
                 <h4>Impacto Social</h4>
                 <p>Contribua diretamente para tirar crianças e jovens de situações de vulnerabilidade social.</p>
             </div>
 
             <div class="benefit-card">
-                <div class="benefit-icon">🏆</div>
+                <div class="benefit-icon"><i class="fa fa-trophy"></i></div>
                 <h4>Presença em Eventos</h4>
                 <p>Destaque exclusivo em campeonatos, festivais esportivos e ações comunitárias realizadas.</p>
             </div>
 
             <div class="benefit-card">
-                <div class="benefit-icon">🤝</div>
+                <div class="benefit-icon"><i class="fa fa-shield"></i></div>
                 <h4>Fortalecimento</h4>
                 <p>Associe sua empresa a valores como disciplina, trabalho em equipe e saúde.</p>
             </div>

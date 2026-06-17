@@ -13,6 +13,7 @@ use App\Http\Controllers\Site\ParceriasController;
 use App\Http\Controllers\Site\ContatoController;
 use App\Http\Controllers\Site\CadastroController;
 use App\Http\Controllers\Site\AssinaturaController;
+use App\Http\Controllers\Site\GaleriaController as SiteGaleriaController;
 
 //Dashboard
 use App\Http\Controllers\Admin\DashController;
@@ -44,6 +45,8 @@ Route::get('/noticias/categoria/{categoria}', [NoticiasController::class, 'filtr
 Route::get('/noticias/post/{id}', [NoticiasController::class, 'show'])->name('site.noticias.show-noticia');
 
 Route::get('/shopping', [ShoppingController::class, 'shopping'])->name('shopping');
+
+Route::get('/galeria', [SiteGaleriaController::class, 'index'])->name('galeria.index');
 
 Route::get('/parcerias', [ParceriasController::class, 'parcerias'])->name('parcerias');
 Route::post('/parcerias', [ParceriasController::class, 'form'])->name('parcerias.form');

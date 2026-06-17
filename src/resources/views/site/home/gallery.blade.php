@@ -1,36 +1,51 @@
 <!-- GALLERY SECTION -->
-<div class="section gallery bg-section">
-	<div class="container">
-		<div class="row">
-			<div class="col-sm-12 col-md-12">
-				<div class="page-title">
-					<h2 class="lead">GALERIA</h2>
-					<div class="border-style"></div>
-				</div>
-			</div>
-		</div>
-		<div class="row popup-gallery">
-			@forelse ($galerias as $foto)
-			<div class="col-xs-4 col-sm-3 col-md-3">
-				<div class="w-item">
-					<a href="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}" title="{{ $foto->titulo_galeria }}">
-						<img src="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}" alt="" class="img-responsive" />
-						<div class="project-info">
-							<div class="project-icon">
-								<span class="fa fa-search"></span>
-							</div>
-						</div>
-					</a>
-				</div>
-			</div>
-			@empty
-			<p class="text-center">Nenhuma foto cadastrada.</p>
-			@endforelse
-		</div>
+<div class="home-gallery-section">
+    <div class="home-gallery-bg-overlay">
+        <div class="container">
 
-		{{-- <div class="loadmore">
-			<a href="#" title="">See More</a>
-		</div> --}}
+            <div class="row">
+                <div class="col-sm-12">
+                    <div class="home-gallery-header">
+                        <h2 class="home-gallery-title">GALERIA</h2>
+                        <div class="home-gallery-divider"></div>
+                    </div>
+                </div>
+            </div>
 
-	</div>
+            <div class="row popup-gallery home-gallery-grid">
+
+                @forelse ($galerias as $foto)
+                <div class="col-xs-6 col-sm-4 col-md-3 home-gallery-col">
+                    <a href="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}"
+                       title="{{ $foto->titulo_galeria }}"
+                       class="home-gallery-item">
+                        <img src="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}"
+                             alt="{{ $foto->titulo_galeria }}"
+                             class="home-gallery-img" />
+                        <div class="home-gallery-hover">
+                            <div class="home-gallery-hover-icon">
+                                <i class="fa fa-search-plus"></i>
+                            </div>
+                            @if($foto->titulo_galeria)
+                            <div class="home-gallery-hover-title">{{ $foto->titulo_galeria }}</div>
+                            @endif
+                        </div>
+                    </a>
+                </div>
+                @empty
+                <div class="col-xs-12">
+                    <p class="text-center home-gallery-empty">Nenhuma foto cadastrada.</p>
+                </div>
+                @endforelse
+
+            </div>
+
+            <div class="home-gallery-cta">
+                <a href="{{ route('galeria.index') }}" class="btn-home-gallery-more">
+                    <i class="fa fa-th"></i> VER GALERIA COMPLETA
+                </a>
+            </div>
+
+        </div>
+    </div>
 </div>

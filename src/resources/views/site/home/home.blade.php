@@ -16,6 +16,6 @@
 
     @include('site.home.news')
 
-    @include('site.home.client')
+    @include('site.home.parceiros')
 
 @endsection

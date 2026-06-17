@@ -23,7 +23,7 @@ html {
 
 /** Arrumando BANNER da sessão de VÍDEO */
 .bg-section {
-    background: url("/futebol/images/video/banner-video.jpg") no-repeat center
+    background: url("/futebol/images/galeria/banner-galeria.jpg") no-repeat center
         center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -33,12 +33,21 @@ html {
 
 /** Arrumando BANNER da sessão de CLIENTES */
 .bg-client {
-    background: url("/futebol/images/client/banner-client.jpg") no-repeat center
+    background: url("/futebol/images/parcerias/banner-parcerias.jpg") no-repeat center
         center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
     background-size: cover;
+}
+
+/* Remove o contorno padrão estranho ao clicar no logo ou links do menu */
+a:focus,
+a:active,
+.navbar-brand:focus,
+img:focus {
+    outline: none !important;
+    /* box-shadow: none !important; */
 }
 
 .tab-team-bg {
@@ -191,23 +200,39 @@ html {
     background-color: transparent !important;
 }
 
-/* Link de notícias no header-top (substitui inline style) */
+/* Link de notícias no ticker da barra preta */
 .header-news-link {
-    color: #fff;
+    display: block;
+    color: #ccc;
+    font-size: 11px;
     text-decoration: none;
-    margin-left: 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 24px;
+    height: 24px;
 }
 .header-news-link:hover {
-    color: #ffcccc;
+    color: #fff;
     text-decoration: underline;
 }
 
-/* Alinhamento do nav principal (substitui inline style da ul) */
+/* Alinhamento do nav principal — distribui os menus na barra vermelha */
 @media (min-width: 768px) {
+    .navbar-main .navbar-collapse {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: flex-end !important;
+        padding: 0 !important;
+    }
     .nav-main-list {
         display: flex !important;
         align-items: center !important;
-        flex-wrap: wrap;
+        flex-wrap: nowrap !important;
+        float: none !important;
+        margin: 0 !important;
+        width: calc(100% - 200px) !important;
+        justify-content: space-evenly !important;
     }
 }
 
@@ -4172,10 +4197,6 @@ body {
    34. PÁGINA DE JOGADORES - MÓDULO DE DECK DE ATLETAS - PREMIUM SIDEBAR LAYOUT
    ========================================================================== */
 
-/* ==========================================================================
-   ARQUITETURA DE LAYOUT E PROTEÇÃO DO TOPO (SCOUT COMPONENT)
-   ========================================================================== */
-
 /* Garante o recuo seguro para o conteúdo não sumir debaixo do cabeçalho fixo */
 .scout-page-shift {
     padding-top: 95px;
@@ -4282,7 +4303,7 @@ body {
 }
 
 /* ==========================================================================
-   CABEÇALHO INTERNO E CORREÇÃO DO CONTADOR (SEM QUEBRAS)
+   35. CABEÇALHO INTERNO E CORREÇÃO DO CONTADOR (SEM QUEBRAS)
    ========================================================================== */
 .scout-main-header {
     width: 100%;
@@ -4375,7 +4396,7 @@ body {
 }
 
 /* ==========================================================================
-   REPRESENTAÇÃO VISUAL DE FILTROS ATIVOS (TAGS)
+   36. REPRESENTAÇÃO VISUAL DE FILTROS ATIVOS (TAGS)
    ========================================================================== */
 .active-filters-wrapper {
     display: flex;
@@ -4446,7 +4467,7 @@ body {
 }
 
 /* ==========================================================================
-   BARRA LATERAL DE FILTROS (ASIDE)
+   37. BARRA LATERAL DE FILTROS (ASIDE)
    ========================================================================== */
 .scout-sidebar-filters {
     flex: 0 0 280px;
@@ -4551,7 +4572,7 @@ body {
 }
 
 /* ==========================================================================
-   GRID E VISUAL PREMIUM DOS CARDS DE ATLETAS (ESTILO ÁLBUM)
+   38. GRID E VISUAL PREMIUM DOS CARDS DE ATLETAS (ESTILO ÁLBUM)
    ========================================================================== */
 .player-grid-container {
     display: grid;
@@ -4705,7 +4726,7 @@ body {
 }
 
 /* ==========================================================================
-   MODAL INTERNO DE VISUALIZAÇÃO DO ATLETA (DETALHES)
+   39. MODAL INTERNO DE VISUALIZAÇÃO DO ATLETA (DETALHES)
    ========================================================================== */
 
 /* Wrapper do modal com tema escuro */
@@ -5173,4 +5194,2571 @@ body {
     .mb-4-mobile {
         margin-bottom: 20px;
     }
+}
+
+/* ==========================================================================
+   40. HOME — LIGA PREMIERE (stat-facts redesenhado)
+   ========================================================================== */
+.lp-section {
+    background: url('/futebol/images/stat/banner-estatisticas.jpg') no-repeat center center;
+    background-size: cover;
+    position: relative;
+}
+
+.lp-overlay {
+    background: rgba(0, 0, 0, 0.55);
+    padding: 70px 0 60px;
+}
+
+.lp-header {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.lp-label {
+    display: inline-block;
+    background: #e20e0e;
+    color: #fff;
+    font-family: 'bebas_neue', sans-serif;
+    font-size: 18px;
+    letter-spacing: 3px;
+    padding: 6px 24px;
+    border-radius: 2px;
+}
+
+.lp-label .fa {
+    margin-right: 8px;
+}
+
+.lp-match-row {
+    align-items: center;
+}
+
+.lp-team {
+    text-align: center;
+    padding: 10px 0;
+}
+
+.lp-team-logo-wrap {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 110px;
+    height: 110px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 50%;
+    border: 2px solid rgba(255,255,255,0.15);
+    margin-bottom: 14px;
+}
+
+.lp-team-logo {
+    max-width: 80px;
+    max-height: 80px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 6px rgba(0,0,0,0.5));
+}
+
+.lp-team-name {
+    font-family: 'bebas_neue', sans-serif;
+    font-size: 22px;
+    color: #fff;
+    letter-spacing: 2px;
+}
+
+.lp-team-name--red {
+    color: #ff4444;
+}
+
+.lp-team-badge {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    margin-top: 4px;
+}
+
+.lp-team-badge--away {
+    color: rgba(255,100,100,0.7);
+}
+
+.lp-center {
+    text-align: center;
+    padding: 0 10px;
+}
+
+.lp-vs {
+    font-family: 'bebas_neue', sans-serif;
+    font-size: 60px;
+    color: #fff;
+    line-height: 1;
+    text-shadow: 0 0 30px rgba(226,14,14,0.6);
+}
+
+.lp-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.lp-score-num {
+    font-family: 'bebas_neue', sans-serif;
+    font-size: 64px;
+    color: #fff;
+    line-height: 1;
+}
+
+.lp-score-sep {
+    font-family: 'bebas_neue', sans-serif;
+    font-size: 48px;
+    color: #e20e0e;
+    line-height: 1;
+}
+
+.lp-result-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #e20e0e;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+}
+
+.lp-divider {
+    width: 40px;
+    height: 2px;
+    background: rgba(255,255,255,0.2);
+    margin: 12px auto;
+}
+
+.lp-date {
+    font-family: 'bebas_neue', sans-serif;
+    font-size: 18px;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 1.5px;
+}
+
+.lp-date .fa {
+    color: #e20e0e;
+    margin-right: 6px;
+}
+
+.lp-location {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,0.5);
+    text-transform: uppercase;
+    margin-top: 8px;
+}
+
+.lp-location .fa {
+    color: #e20e0e;
+    margin-right: 4px;
+}
+
+.lp-empty {
+    text-align: center;
+    color: rgba(255,255,255,0.5);
+    padding: 20px 0;
+}
+
+.lp-empty .fa {
+    font-size: 32px;
+    margin-bottom: 10px;
+    display: block;
+}
+
+@media (max-width: 767px) {
+    .lp-overlay {
+        padding: 50px 0 40px;
+    }
+    .lp-team-logo-wrap {
+        width: 80px;
+        height: 80px;
+    }
+    .lp-team-logo {
+        max-width: 55px;
+        max-height: 55px;
+    }
+    .lp-vs {
+        font-size: 40px;
+        padding: 10px 0;
+    }
+    .lp-score-num {
+        font-size: 48px;
+    }
+    .lp-team-name {
+        font-size: 16px;
+    }
+}
+
+/* ==========================================================================
+   41. HOME — VIDEO SECTION (redesenhado)
+   ========================================================================== */
+.home-video-section {
+    position: relative;
+    background: url('/futebol/images/video/banner-video.jpg') no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+.home-video-overlay {
+    background: linear-gradient(180deg, rgba(0,0,0,0.80) 0%, rgba(10,10,10,0.90) 100%);
+    padding: 80px 0;
+}
+
+.home-video-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.home-video-sup {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: #e20e0e;
+    margin-bottom: 10px;
+}
+
+.home-video-title {
+    font-size: 36px;
+    color: #fff;
+    letter-spacing: 4px;
+    margin: 0 0 14px 0;
+    line-height: 1;
+}
+
+.home-video-divider {
+    width: 60px;
+    height: 3px;
+    background: #e20e0e;
+    margin: 0 auto;
+}
+
+.home-video-frame-wrap {
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+    border: 2px solid rgba(255,255,255,0.08);
+}
+
+@media (max-width: 767px) {
+    .home-video-section {
+        background-attachment: scroll;
+    }
+    .home-video-overlay {
+        padding: 60px 0;
+    }
+    .home-video-title {
+        font-size: 36px;
+    }
+}
+
+/* ==========================================================================
+   42. HOME — GALERIA (redesenhada)
+   ========================================================================== */
+.home-gallery-section {
+    background: url('/futebol/images/galeria/banner-galeria.jpg') no-repeat center center;
+    background-size: cover;
+    background-attachment: fixed;
+}
+
+.home-gallery-bg-overlay {
+    background: rgba(0, 0, 0, 0.72);
+    padding: 60px 0 50px;
+}
+
+/* Header da seção */
+.home-gallery-header {
+    text-align: center;
+    margin-bottom: 36px;
+}
+
+.home-gallery-title {
+    font-size: 28px;
+    color: #fff;
+    letter-spacing: 5px;
+    margin: 0 0 10px 0;
+    line-height: 1;
+}
+
+.home-gallery-divider {
+    width: 50px;
+    height: 3px;
+    background: #e20e0e;
+    margin: 0 auto;
+}
+
+/* Grid */
+.home-gallery-grid {
+    margin: 0 -4px 0 -4px;
+}
+
+.home-gallery-col {
+    padding: 4px !important;
+}
+
+.home-gallery-item {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 4 / 3;
+    background: #1a1a1a;
+    border-radius: 3px;
+}
+
+.home-gallery-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+}
+
+.home-gallery-hover {
+    position: absolute;
+    inset: 0;
+    background: rgba(226,14,14,0.78);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    gap: 8px;
+    padding: 10px;
+}
+
+.home-gallery-hover-icon {
+    color: #fff;
+    font-size: 28px;
+    line-height: 1;
+}
+
+.home-gallery-hover-title {
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-align: center;
+    text-transform: uppercase;
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.home-gallery-item:hover .home-gallery-img {
+    transform: scale(1.08);
+}
+
+.home-gallery-item:hover .home-gallery-hover {
+    opacity: 1;
+}
+
+/* CTA */
+.home-gallery-cta {
+    text-align: center;
+    margin-top: 32px;
+}
+
+.btn-home-gallery-more {
+    display: inline-block;
+    padding: 12px 36px;
+    background: transparent;
+    border: 2px solid #e20e0e;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border-radius: 2px;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+}
+
+.btn-home-gallery-more .fa {
+    margin-right: 8px;
+}
+
+.btn-home-gallery-more:hover {
+    background: #e20e0e;
+    color: #fff;
+    text-decoration: none;
+}
+
+.home-gallery-empty {
+    color: rgba(255,255,255,0.4);
+    padding: 40px 0;
+}
+
+@media (max-width: 767px) {
+    .home-gallery-section {
+        background-attachment: scroll;
+    }
+    .home-gallery-title {
+        font-size: 34px;
+    }
+    .home-gallery-item {
+        aspect-ratio: 1 / 1;
+    }
+}
+
+/* ==========================================================================
+   43. HEADER TOP BAR — REESTRUTURAÇÃO COMPLETA (FLEXBOX)
+   ========================================================================== */
+
+/* Faz o container virar flex e usar toda a altura da barra preta */
+.header-top .container {
+    display: flex;
+    align-items: stretch;
+    padding-top: 0;
+    padding-bottom: 0;
+    height: 40px;
+}
+
+/* Linha interna: news à esquerda, nav à direita */
+.top-bar-inner {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    gap: 0;
+    overflow: hidden;
+}
+
+/* Bloco de notícias: offset de 180px para não sobrepor a logo (que tem margin-top:-60px) */
+.top-bar-news {
+    display: flex;
+    align-items: center;
+    flex: 1 1 auto;
+    overflow: hidden;
+    gap: 10px;
+    min-width: 0;
+    margin-left: 180px;
+}
+
+/* Rótulo "NEWS" em vermelho */
+.top-bar-news-label {
+    color: #e20e0e;
+    font-size: 10px;
+    font-weight: 900;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-style: normal;
+    font-family: 'Open Sans', sans-serif;
+    line-height: 1;
+}
+
+/* Caixa do ticker — mesmas dimensões que o script.js espera */
+.top-bar-ticker {
+    flex: 1 1 auto;
+    overflow: hidden;
+    height: 24px;
+    min-width: 0;
+}
+
+.top-bar-ticker div {
+    display: block;
+    height: 24px;
+    line-height: 24px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    -webkit-transition: margin-top 0.5s ease-in-out;
+    -moz-transition: margin-top 0.5s ease-in-out;
+    -ms-transition: margin-top 0.5s ease-in-out;
+    -o-transition: margin-top 0.5s ease-in-out;
+    transition: margin-top 0.5s ease-in-out;
+}
+
+/* Bloco de ícones: não cresce, fica grudado à direita */
+.top-bar-nav {
+    display: flex;
+    align-items: stretch;
+    flex-shrink: 0;
+}
+
+/* Cada ícone de navegação */
+.top-bar-nav-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #aaa;
+    font-size: 14px;
+    width: 38px;
+    height: 40px;
+    text-decoration: none;
+    border-left: 1px solid rgba(255,255,255,0.07);
+    transition: color 0.2s, background 0.2s;
+}
+
+.top-bar-nav-icon:hover,
+.top-bar-nav-icon.active {
+    color: #e20e0e;
+    background: rgba(255,255,255,0.04);
+    text-decoration: none;
+}
+
+/* Separador vertical entre grupos de ícones */
+.top-bar-nav-sep {
+    display: flex;
+    align-self: center;
+    width: 1px;
+    height: 16px;
+    background: rgba(255,255,255,0.18);
+    margin: 0 2px;
+    flex-shrink: 0;
+}
+
+/* ==========================================================================
+   44. PÁGINA GALERIA — GRID DE FOTOS
+   ========================================================================== */
+
+.galeria-grid {
+    margin-top: 20px;
+    margin-bottom: 10px;
+}
+
+.galeria-grid-col {
+    padding: 6px;
+    margin-bottom: 0;
+}
+
+.galeria-grid-item {
+    display: block;
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1 / 1;
+    background: #111;
+}
+
+.galeria-grid-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.35s ease, opacity 0.3s ease;
+}
+
+.galeria-grid-item:hover .galeria-grid-img {
+    transform: scale(1.07);
+    opacity: 0.6;
+}
+
+.galeria-grid-hover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    padding: 12px;
+}
+
+.galeria-grid-hover-icon {
+    font-size: 26px;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+.galeria-grid-hover-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    line-height: 1.3;
+}
+
+.galeria-grid-item:hover .galeria-grid-hover {
+    opacity: 1;
+}
+
+@media (max-width: 767px) {
+    .galeria-grid-item {
+        aspect-ratio: 1 / 1;
+    }
+}
+
+/* ==========================================================================
+   45. INTRO — PÁGINA MATRICULE-SE (abaixo do banner padrão)
+   ========================================================================== */
+.matricula-intro-section {
+    padding: 60px 0;
+    background: #ffffff;
+    border-bottom: 1px solid #eaeaea;
+}
+.matricula-intro-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 48px;
+    align-items: center;
+}
+.matricula-intro-text {
+    flex: 12;
+    min-width: 300px;
+}
+.matricula-intro-text h2 {
+    font-size: 2.2rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    color: #111111;
+    margin: 12px 0 16px 0;
+    line-height: 1.2;
+}
+.matricula-intro-text p {
+    font-size: 1.05rem;
+    color: #555555;
+    line-height: 1.65;
+    margin: 0;
+}
+.matricula-intro-checklist {
+    flex: 10;
+    min-width: 280px;
+    background: #f9f9f9;
+    border-left: 4px solid #e31c1c;
+    border-radius: 8px;
+    padding: 28px 32px;
+}
+.matricula-intro-checklist h4 {
+    font-size: 1rem;
+    font-weight: 800;
+    color: #111111;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 18px 0;
+}
+.matricula-intro-checklist h4 .fa {
+    color: #e31c1c;
+    margin-right: 6px;
+}
+.matricula-intro-checklist ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.matricula-intro-checklist ul li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.95rem;
+    color: #444444;
+    padding: 7px 0;
+    border-bottom: 1px solid #eeeeee;
+    line-height: 1.45;
+}
+.matricula-intro-checklist ul li:last-child {
+    border-bottom: none;
+}
+.matricula-intro-checklist ul li .fa {
+    color: #e31c1c;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-size: 0.9rem;
+}
+.matricula-intro-checklist ul li strong {
+    color: #111111;
+}
+@media (max-width: 767px) {
+    .matricula-intro-text h2 { font-size: 1.7rem; }
+}
+
+/* ==========================================================================
+   46. PARCERIAS — SEÇÃO TIPOS DE PARCERIA
+   ========================================================================== */
+.partner-types-section {
+    padding: 100px 0;
+    background: #f4f4f4;
+    border-top: 1px solid #eaeaea;
+    border-bottom: 1px solid #eaeaea;
+}
+.partner-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 28px;
+}
+.partner-type-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 36px 28px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.04);
+    border-top: 4px solid #e31c1c;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+.partner-type-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 14px 35px rgba(0,0,0,0.08);
+}
+.partner-type-level-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 30px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 1px;
+    margin-bottom: 18px;
+    align-self: flex-start;
+}
+.badge-master   { background: #111111; color: #ffd700; }
+.badge-oficial  { background: #e31c1c; color: #ffffff; }
+.badge-comercial{ background: #1a6b3c; color: #ffffff; }
+.badge-social   { background: #2b5797; color: #ffffff; }
+.partner-type-icon {
+    font-size: 2rem;
+    color: #e31c1c;
+    margin-bottom: 14px;
+}
+.partner-type-card h4 {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 10px 0;
+}
+.partner-type-desc {
+    font-size: 0.95rem;
+    color: #555555;
+    line-height: 1.6;
+    margin-bottom: 20px;
+    flex: 1;
+}
+.partner-type-perks {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    border-top: 1px solid #eeeeee;
+    padding-top: 16px;
+}
+.partner-type-perks li {
+    font-size: 0.88rem;
+    color: #444444;
+    padding: 5px 0;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.4;
+}
+.partner-type-perks li::before {
+    content: '✓';
+    color: #e31c1c;
+    font-weight: 900;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+/* ==========================================================================
+   47. PARCERIAS — SEÇÃO COMO SER PARCEIRO (TIMELINE VERTICAL)
+   ========================================================================== */
+.partner-steps-section {
+    padding: 100px 0;
+    background: #ffffff;
+}
+.steps-timeline {
+    margin-top: 56px;
+    display: flex;
+    flex-direction: column;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.step-item {
+    display: flex;
+    gap: 28px;
+    align-items: flex-start;
+    padding-bottom: 40px;
+}
+.step-item:last-child {
+    padding-bottom: 0;
+}
+.step-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+}
+.step-number {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #e31c1c;
+    color: #ffffff;
+    font-size: 1.35rem;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(227, 28, 28, 0.35);
+}
+.step-line {
+    width: 2px;
+    flex: 1;
+    background: #e8e8e8;
+    margin-top: 10px;
+    min-height: 36px;
+}
+.step-item:last-child .step-line {
+    display: none;
+}
+.step-content {
+    flex: 1;
+    padding-top: 10px;
+    min-width: 0;
+}
+.step-content h4 {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 8px 0;
+    text-transform: uppercase;
+    letter-spacing: -0.2px;
+}
+.step-content p {
+    font-size: 1rem;
+    color: #555555;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* ==========================================================================
+   48. PÁGINA CAMPEONATOS — LISTAGEM E DETALHE
+   ========================================================================== */
+
+.camp-listing-container,
+.camp-show-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
+    box-sizing: border-box;
+}
+.camp-empty-msg {
+    text-align: center;
+    color: #888;
+    font-size: 1rem;
+    padding: 40px 0;
+}
+
+/* --- Listagem: grid de cards --- */
+.camp-listing-section {
+    padding: 90px 0;
+    background: #f4f4f4;
+}
+.camp-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 28px;
+}
+.camp-card {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+}
+.camp-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.12);
+}
+.camp-card-banner-link { display: block; text-decoration: none; }
+.camp-card-banner {
+    position: relative;
+    height: 220px;
+    background-size: cover;
+    background-position: center;
+}
+.camp-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.1) 60%, transparent 100%);
+}
+.camp-card-type-badge {
+    position: absolute;
+    top: 14px;
+    left: 14px;
+    background: #e31c1c;
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.camp-card-body {
+    padding: 24px;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+.camp-card-title {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #111111;
+    margin: 0 0 12px 0;
+    line-height: 1.3;
+    text-transform: uppercase;
+}
+.camp-card-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    margin-bottom: 20px;
+    flex: 1;
+}
+.camp-meta-item {
+    font-size: 0.9rem;
+    color: #555555;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+.camp-meta-item .fa {
+    color: #e31c1c;
+    flex-shrink: 0;
+    margin-top: 2px;
+    width: 14px;
+}
+.btn-camp-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #111111;
+    color: #ffffff;
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 0.88rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: background 0.2s ease;
+    align-self: flex-start;
+}
+.btn-camp-card:hover {
+    background: #e31c1c;
+    color: #fff;
+    text-decoration: none;
+}
+
+/* --- Detalhe: hero do campeonato --- */
+.camp-hero-section {
+    position: relative;
+    /* padding-top compensa o navbar fixo (~130px) + respiro generoso */
+    padding: 160px 0 90px;
+    min-height: 65vh;
+    background-color: #0a0a0a;
+    background-size: cover;
+    background-position: center top;
+    color: #ffffff;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+}
+.camp-hero-overlay {
+    position: absolute;
+    inset: 0;
+    /* gradiente direcional: mais escuro à esquerda para legibilidade do texto */
+    background: linear-gradient(
+        105deg,
+        rgba(0,0,0,0.88) 0%,
+        rgba(0,0,0,0.70) 50%,
+        rgba(0,0,0,0.45) 100%
+    );
+    z-index: 1;
+}
+/* Linha vermelha decorativa no rodapé do hero */
+.camp-hero-section::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: #e31c1c;
+    z-index: 3;
+}
+.camp-hero-inner {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 52px;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 40px;
+    box-sizing: border-box;
+}
+
+/* Logo: escudo grande com borda sutil */
+.camp-hero-logo-wrap {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(6px);
+}
+.camp-hero-logo {
+    width: 160px;
+    height: 160px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 20px rgba(0,0,0,0.6));
+}
+
+/* Bloco de informações */
+.camp-hero-info {
+    flex: 1;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+.camp-hero-badge {
+    display: inline-block;
+    background: #e31c1c;
+    color: #fff;
+    padding: 5px 16px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 18px;
+    align-self: flex-start;
+}
+.camp-hero-title {
+    font-size: 3.4rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1.05;
+    margin: 0 0 28px 0;
+    color: #ffffff;
+    letter-spacing: -0.5px;
+}
+
+/* Meta-info: chips em linha horizontal */
+.camp-hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 24px;
+    margin-bottom: 24px;
+}
+.camp-hero-meta-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    color: #cccccc;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 7px 14px;
+    border-radius: 30px;
+    white-space: nowrap;
+}
+.camp-hero-meta-row .fa {
+    color: #e31c1c;
+    font-size: 0.9rem;
+}
+
+/* Descrição: bloco com linha vermelha */
+.camp-hero-desc {
+    font-size: 1rem;
+    color: #bbbbbb;
+    line-height: 1.65;
+    margin: 0;
+    max-width: 560px;
+    border-left: 3px solid #e31c1c;
+    padding-left: 16px;
+}
+
+@media (max-width: 991px) {
+    .camp-hero-section { padding: 140px 0 80px; min-height: auto; }
+    .camp-hero-title { font-size: 2.6rem; }
+    .camp-hero-inner { padding: 0 24px; gap: 36px; }
+}
+@media (max-width: 600px) {
+    .camp-hero-logo { width: 110px; height: 110px; }
+    .camp-hero-title { font-size: 2rem; }
+    .camp-hero-meta { gap: 8px; }
+    .camp-hero-meta-row { font-size: 0.85rem; padding: 6px 10px; }
+}
+
+/* --- Detalhe: times participantes --- */
+.camp-teams-section { padding: 90px 0; background: #ffffff; }
+.camp-teams-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 20px;
+}
+.camp-team-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 24px 12px;
+    border: 1px solid #eeeeee;
+    border-radius: 10px;
+    background: #fafafa;
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.camp-team-card:hover {
+    box-shadow: 0 8px 20px rgba(0,0,0,0.07);
+    transform: translateY(-3px);
+}
+.camp-team-logo { width: 72px; height: 72px; object-fit: contain; }
+.camp-team-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #111111;
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0;
+    line-height: 1.3;
+}
+
+/* --- Detalhe: jogos/resultados --- */
+.camp-matches-section {
+    padding: 90px 0;
+    background: #f4f4f4;
+    border-top: 1px solid #eaeaea;
+    border-bottom: 1px solid #eaeaea;
+}
+.camp-matches-list {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+}
+@media (max-width: 767px) {
+    .camp-matches-list {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Card: layout em dois blocos — data | corpo */
+.match-card {
+    background: #ffffff;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+    transition: box-shadow 0.25s ease, transform 0.25s ease;
+}
+.match-card:hover {
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+/* Coluna de data: barra lateral escura */
+.match-date-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 68px;
+    background: #111111;
+    color: #ffffff;
+    padding: 20px 12px;
+    flex-shrink: 0;
+    gap: 2px;
+}
+.match-day {
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+    color: #ffffff;
+}
+.match-month {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #e31c1c;
+    font-weight: 700;
+}
+.match-year {
+    font-size: 0.62rem;
+    color: #666666;
+    margin-top: 2px;
+}
+
+/* Corpo: grid 1fr / placar / 1fr garante metades iguais */
+.match-body {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 90px 1fr;
+    align-items: center;
+    padding: 16px 18px;
+    gap: 10px;
+}
+
+/* Time genérico — layout vertical: logo acima, nome abaixo */
+.match-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.match-team-home {
+    text-align: center;
+}
+.match-team-away {
+    text-align: center;
+}
+.match-team-logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.match-team-name {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #111111;
+    text-transform: uppercase;
+    line-height: 1.25;
+    text-align: center;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+}
+
+/* Placar central */
+.match-score {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: #f4f4f4;
+    border-radius: 10px;
+    padding: 12px 8px;
+}
+.score-value {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #111111;
+    line-height: 1;
+    min-width: 28px;
+    text-align: center;
+}
+.score-sep {
+    font-size: 1.1rem;
+    color: #bbbbbb;
+    font-weight: 400;
+}
+.score-tbd {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #bbbbbb;
+    letter-spacing: 3px;
+}
+
+@media (max-width: 640px) {
+    .match-body {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        padding: 16px;
+    }
+    .match-score { order: -1; width: 100%; }
+    .match-team-home { flex-direction: row; justify-content: flex-start; text-align: left; }
+    .match-date-col { min-width: 56px; }
+}
+
+/* --- Detalhe: tabela de classificacao --- */
+.camp-table-section { padding: 90px 0; background: #ffffff; }
+.camp-table-wrapper {
+    overflow-x: auto;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.camp-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 600px;
+}
+.camp-table thead th {
+    background: #111111;
+    color: #ffffff;
+    padding: 14px 16px;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-align: center;
+    font-weight: 700;
+    white-space: nowrap;
+}
+.camp-table thead th.col-team { text-align: left; }
+.camp-table thead th.col-pos { width: 52px; }
+.camp-table tbody td {
+    padding: 13px 16px;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 0.95rem;
+    color: #333333;
+    text-align: center;
+    vertical-align: middle;
+}
+.camp-table tbody td.col-team {
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.camp-table tbody tr:last-child td { border-bottom: none; }
+.camp-table tbody tr:hover { background: #fafafa; }
+.camp-pos-1 { background: rgba(255, 215, 0, 0.07) !important; }
+.camp-pos-2 { background: rgba(192, 192, 192, 0.07) !important; }
+.camp-pos-3 { background: rgba(205, 127, 50, 0.07) !important; }
+.camp-medal {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    font-size: 0.78rem;
+    font-weight: 900;
+    color: #ffffff;
+}
+.camp-medal-gold   { background: #d4ac0d; }
+.camp-medal-silver { background: #9e9e9e; }
+.camp-medal-bronze { background: #a0522d; }
+.camp-pos-num { font-size: 0.9rem; font-weight: 700; color: #888; }
+.camp-table-logo { width: 30px; height: 30px; object-fit: contain; flex-shrink: 0; }
+.camp-table-team-name {
+    font-weight: 700;
+    font-size: 0.92rem;
+    color: #111111;
+    text-transform: uppercase;
+}
+.stat-v { color: #27ae60; font-weight: 700; }
+.stat-d { color: #e31c1c; font-weight: 700; }
+
+/* ==========================================================================
+   49. CAMPEONATOS — TIMES CLICÁVEIS + MODAL EXTERNO
+   ========================================================================== */
+
+/* Card clicável: cursor + hover reforçado */
+.camp-team-clickable {
+    cursor: pointer;
+}
+.camp-team-clickable:hover {
+    border-color: #e31c1c;
+    box-shadow: 0 10px 28px rgba(227,28,28,0.15);
+    transform: translateY(-4px);
+}
+
+/* Tag embaixo do nome do time */
+.camp-team-type-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 4px;
+}
+.tag-interno {
+    background: rgba(39,174,96,0.1);
+    color: #27ae60;
+    border: 1px solid rgba(39,174,96,0.25);
+}
+.tag-externo {
+    background: rgba(0,0,0,0.06);
+    color: #888888;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Logo de time externo levemente opaca para diferenciar */
+.camp-team-logo-externo {
+    opacity: 0.75;
+    filter: grayscale(20%);
+    transition: opacity 0.2s ease;
+}
+.camp-team-clickable:hover .camp-team-logo-externo {
+    opacity: 1;
+    filter: none;
+}
+
+/* --- Modal de time externo --- */
+.camp-ext-modal-header {
+    background: #111111;
+    padding: 36px 24px 28px;
+    text-align: center;
+    position: relative;
+}
+.camp-ext-modal-logo {
+    width: 80px;
+    height: 80px;
+    object-fit: contain;
+    margin-bottom: 14px;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.4));
+}
+.camp-ext-modal-nome {
+    font-size: 1.3rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin: 0 0 10px 0;
+    letter-spacing: -0.3px;
+}
+.camp-ext-modal-badge {
+    display: inline-block;
+    background: rgba(255,255,255,0.1);
+    color: #aaaaaa;
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 3px 12px;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+.camp-ext-modal-body {
+    background: #ffffff;
+    padding: 32px 28px 28px;
+    text-align: center;
+}
+.camp-ext-icon-block {
+    width: 56px;
+    height: 56px;
+    background: #f4f4f4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 18px auto;
+    font-size: 1.4rem;
+    color: #bbbbbb;
+}
+.camp-ext-modal-text {
+    font-size: 0.95rem;
+    color: #555555;
+    line-height: 1.65;
+    margin: 0 0 24px 0;
+}
+.camp-ext-modal-text strong {
+    color: #111111;
+}
+.camp-ext-modal-btn {
+    display: inline-block;
+    background: #111111;
+    color: #ffffff;
+    border: none;
+    padding: 12px 32px;
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.camp-ext-modal-btn:hover {
+    background: #e31c1c;
+}
+
+/* ==========================================================================
+   50. STAT-FACTS (LIGA PREMIERE) — BOTÃO CTA CAMPEONATO
+   ========================================================================== */
+
+.lp-cta-wrap {
+    text-align: center;
+    margin-top: 32px;
+}
+.lp-cta-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #e31c1c;
+    color: #ffffff;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 12px 28px;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+    border: 2px solid rgba(255,255,255,0.15);
+}
+.lp-cta-btn:hover {
+    background: #ffffff;
+    color: #111111;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   51. HOME — SOBRE OS JOGOS (redesign)
+   ========================================================================== */
+
+.home-matches-section {
+    padding: 80px 0 90px;
+    background: #f7f7f7;
+}
+.home-matches-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+.home-matches-title {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #111111;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+    margin: 8px 0 0 0;
+}
+
+/* --- Card destaque (coluna esquerda) --- */
+.home-featured-match {
+    background: #111111;
+    border-radius: 14px;
+    padding: 28px 20px 24px;
+    text-align: center;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+}
+.home-featured-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    background: #e31c1c;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+}
+.home-featured-teams {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    flex: 1;
+    margin-bottom: 24px;
+}
+.home-feat-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+}
+.home-feat-logo {
+    width: 60px;
+    height: 60px;
+    object-fit: contain;
+    filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+}
+.home-feat-name {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #ffffff;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.25;
+}
+.home-feat-role {
+    font-size: 0.62rem;
+    font-weight: 600;
+    color: #666666;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+.home-feat-vs {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+    padding: 0 8px;
+}
+.home-feat-score {
+    font-size: 2rem;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1;
+    letter-spacing: -1px;
+}
+.home-feat-score em {
+    font-style: normal;
+    color: #e31c1c;
+    margin: 0 2px;
+}
+.home-feat-result-label {
+    font-size: 0.58rem;
+    font-weight: 700;
+    color: #555555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.home-feat-vslabel {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #333333;
+    letter-spacing: 3px;
+}
+.home-feat-date-small {
+    font-size: 0.65rem;
+    color: #555555;
+    font-weight: 600;
+}
+.btn-home-camp {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #e31c1c;
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 11px 24px;
+    border-radius: 6px;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.2s ease;
+    width: 100%;
+    justify-content: center;
+}
+.btn-home-camp:hover {
+    background: #c01515;
+    color: #ffffff;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+.home-featured-empty {
+    background: #f0f0f0;
+    border-radius: 14px;
+    padding: 48px 20px;
+    text-align: center;
+    color: #aaaaaa;
+    font-size: 0.9rem;
+}
+.home-featured-empty i {
+    font-size: 2rem;
+    display: block;
+    margin-bottom: 12px;
+}
+
+/* --- Tabs (coluna direita) --- */
+.home-tabs-wrap {
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+}
+.home-tabs-nav {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-bottom: 2px solid #f0f0f0;
+}
+.home-tabs-nav li {
+    flex: 1;
+}
+.home-tabs-nav li a {
+    display: block;
+    text-align: center;
+    padding: 16px 12px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888888;
+    text-decoration: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+.home-tabs-nav li a i {
+    margin-right: 5px;
+}
+.home-tabs-nav li.active a,
+.home-tabs-nav li a:hover {
+    color: #e31c1c;
+    border-bottom-color: #e31c1c;
+    text-decoration: none;
+}
+.home-tab-content {
+    padding: 0;
+}
+
+/* Linha de jogo */
+.home-match-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f5f5f5;
+    transition: background 0.15s ease;
+}
+.home-match-row:last-child {
+    border-bottom: none;
+}
+.home-match-row:hover {
+    background: #fafafa;
+}
+.home-match-date {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #aaaaaa;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    min-width: 44px;
+    flex-shrink: 0;
+}
+.home-match-teams {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.home-match-home {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #111111;
+    text-align: right;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.home-match-sep {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #ffffff;
+    background: #111111;
+    border-radius: 6px;
+    padding: 4px 10px;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+.home-match-away {
+    flex: 1;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #e31c1c;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.home-tab-empty {
+    padding: 32px 20px;
+    text-align: center;
+    color: #aaaaaa;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* Tabela de classificação */
+.home-class-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.home-class-table thead tr {
+    background: #111111;
+    color: #ffffff;
+}
+.home-class-table thead th {
+    padding: 12px 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.5px;
+    text-align: left;
+    border: none;
+}
+.home-class-table tbody tr {
+    border-bottom: 1px solid #f0f0f0;
+    transition: background 0.15s ease;
+}
+.home-class-table tbody tr:last-child {
+    border-bottom: none;
+}
+.home-class-table tbody tr:hover {
+    background: #fafafa;
+}
+.home-class-table tbody td {
+    padding: 12px 14px;
+    color: #444444;
+    border: none;
+}
+.home-class-table .stat-v { color: #27ae60; font-weight: 700; }
+.home-class-table .stat-d { color: #e31c1c; font-weight: 700; }
+.home-class-pos {
+    color: #aaaaaa;
+    font-weight: 700;
+    font-size: 0.78rem;
+}
+.home-class-name {
+    font-weight: 700;
+    color: #111111;
+}
+.home-class-leader {
+    background: rgba(227,28,28,0.04);
+}
+.home-class-leader .home-class-pos {
+    color: #e31c1c;
+}
+
+/* ==========================================================================
+   52. STAT-FACTS — badge clicável do campeonato
+   ========================================================================== */
+
+.lp-label--link {
+    text-decoration: none;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+.lp-label--link:hover {
+    background: #ffffff;
+    color: #e31c1c;
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+/* ==========================================================================
+   53. HOME MATCHES — card destaque (layout horizontal / largura total)
+   ========================================================================== */
+
+/* Aumenta o respiro geral da seção */
+.home-matches-section {
+    padding: 100px 0 110px !important;
+}
+.home-matches-header {
+    margin-bottom: 56px !important;
+}
+
+/* Card principal */
+.home-feat-card {
+    background: #111111;
+    border-radius: 16px;
+    padding: 32px 40px 36px;
+    margin-bottom: 40px;
+    text-align: center;
+}
+
+/* Badge / link do campeonato */
+.home-feat-card-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #e31c1c;
+    color: #ffffff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 6px 18px;
+    border-radius: 20px;
+    margin-bottom: 32px;
+    text-decoration: none;
+    transition: background 0.2s ease, transform 0.15s ease;
+}
+.home-feat-card-badge--link:hover {
+    background: #c01515;
+    text-decoration: none;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+.home-feat-badge-arrow {
+    font-size: 0.65rem;
+    opacity: 0.8;
+}
+
+/* Corpo horizontal: casa | centro | visitante */
+.home-feat-card-body {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+}
+
+/* Coluna de time */
+.home-feat-card-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    flex: 1;
+    min-width: 0;
+}
+.home-feat-card-logo {
+    width: 90px;
+    height: 90px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 14px rgba(0,0,0,0.45));
+}
+.home-feat-card-name {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    text-align: center;
+    line-height: 1.2;
+    letter-spacing: -0.2px;
+}
+.home-feat-card-name--red {
+    color: #e31c1c;
+}
+.home-feat-card-role {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #555555;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Centro: placar / VS / meta */
+.home-feat-card-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    min-width: 160px;
+}
+.home-feat-card-score {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 3.2rem;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1;
+    letter-spacing: -2px;
+}
+.home-feat-card-score em {
+    font-style: normal;
+    color: #e31c1c;
+    font-size: 2.4rem;
+}
+.home-feat-card-result {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #555555;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+.home-feat-card-vs {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: #333333;
+    letter-spacing: 4px;
+    line-height: 1;
+}
+.home-feat-card-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    margin-top: 6px;
+}
+.home-feat-card-meta span {
+    font-size: 0.72rem;
+    color: #666666;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.home-feat-card-meta i {
+    color: #e31c1c;
+    font-size: 0.7rem;
+}
+
+/* Mais respiro nas linhas de jogo */
+.home-match-row {
+    padding: 18px 28px !important;
+}
+.home-tabs-wrap {
+    margin-top: 0;
+}
+
+/* ==========================================================================
+   54. RESPIRO ENTRE SEÇÕES — overrides de padding para toda a home
+   ========================================================================== */
+@media (max-width: 767px) {
+    .lp-overlay { padding: 60px 0 50px; }
+}
+
+/* Nossos Times */
+.section-teams-clean {
+    padding: 90px 0;
+}
+
+/* Vídeo */
+.home-video-overlay {
+    padding: 100px 0;
+}
+@media (max-width: 767px) {
+    .home-video-overlay { padding: 70px 0; }
+}
+
+/* Galeria */
+.home-gallery-bg-overlay {
+    padding: 90px 0 80px;
+}
+
+/* Jogos & Classificação */
+.home-matches-section {
+    padding: 100px 0 110px;
+}
+
+/* ==========================================================================
+   55. HOME — SELETOR DINÂMICO DE CAMPEONATO (Jogos & Classificação)
+   ========================================================================== */
+
+.home-camp-picker {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+/* --- Lista de campeonatos (esquerda) --- */
+.home-camp-list {
+    flex-shrink: 0;
+    width: 260px;
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+}
+.home-camp-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 18px;
+    cursor: pointer;
+    border-bottom: 1px solid #f3f3f3;
+    border-left: 3px solid transparent;
+    transition: background 0.18s ease, border-color 0.18s ease;
+    position: relative;
+}
+.home-camp-card:last-child {
+    border-bottom: none;
+}
+.home-camp-card:hover {
+    background: #fafafa;
+}
+.home-camp-card.is-active {
+    background: #fff5f5;
+    border-left-color: #e31c1c;
+}
+.home-camp-logo {
+    width: 44px;
+    height: 44px;
+    object-fit: contain;
+    flex-shrink: 0;
+    border-radius: 6px;
+}
+.home-camp-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+.home-camp-type {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: #aaaaaa;
+}
+.home-camp-name {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #111111;
+    line-height: 1.25;
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.home-camp-card.is-active .home-camp-name {
+    color: #e31c1c;
+}
+.home-camp-arrow {
+    font-size: 0.65rem;
+    color: #cccccc;
+    flex-shrink: 0;
+    transition: color 0.18s ease, transform 0.18s ease;
+}
+.home-camp-card.is-active .home-camp-arrow {
+    color: #e31c1c;
+    transform: translateX(2px);
+}
+
+/* --- Área de conteúdo (direita) --- */
+.home-camp-content {
+    flex: 1;
+    min-width: 0;
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+}
+
+/* Painel por campeonato */
+.home-camp-panel {
+    display: none;
+}
+.home-camp-panel.is-active {
+    display: block;
+    animation: campFadeIn 0.25s ease;
+}
+@keyframes campFadeIn {
+    from { opacity: 0; transform: translateX(10px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Cabeçalho do painel */
+.home-camp-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid #f3f3f3;
+    gap: 16px;
+}
+.home-camp-panel-title {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+.home-camp-panel-type {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #aaaaaa;
+}
+.home-camp-panel-name {
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: #111111;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: -0.3px;
+}
+.btn-home-camp-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #111111;
+    color: #ffffff;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 9px 18px;
+    border-radius: 6px;
+    text-decoration: none;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: background 0.2s ease;
+}
+.btn-home-camp-link:hover {
+    background: #e31c1c;
+    color: #ffffff;
+    text-decoration: none;
+}
+
+/* Botões de aba */
+.home-camp-tabs {
+    display: flex;
+    border-bottom: 2px solid #f3f3f3;
+}
+.home-camp-tab-btn {
+    flex: 1;
+    padding: 14px 12px;
+    background: none;
+    border: none;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #999999;
+    cursor: pointer;
+    transition: color 0.18s ease, border-color 0.18s ease;
+}
+.home-camp-tab-btn i {
+    margin-right: 5px;
+}
+.home-camp-tab-btn:hover {
+    color: #e31c1c;
+}
+.home-camp-tab-btn.is-active {
+    color: #e31c1c;
+    border-bottom-color: #e31c1c;
+}
+
+/* Painéis de aba */
+.home-camp-tab-panel {
+    display: none;
+}
+.home-camp-tab-panel.is-active {
+    display: block;
+}
+
+/* Responsivo: empilha em mobile */
+@media (max-width: 767px) {
+    .home-camp-picker {
+        flex-direction: column;
+    }
+    .home-camp-list {
+        width: 100%;
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        border-radius: 10px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .home-camp-card {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        padding: 12px 16px;
+        min-width: 120px;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+    }
+    .home-camp-card.is-active {
+        border-bottom-color: #e31c1c;
+        border-left-color: transparent;
+    }
+    .home-camp-arrow { display: none; }
+    .home-camp-panel-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+}
+
+/* Lista de campeonatos: scroll interno quando houver muitos itens */
+.home-camp-list {
+    max-height: 480px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+.home-camp-list::-webkit-scrollbar {
+    width: 4px;
+}
+.home-camp-list::-webkit-scrollbar-track {
+    background: #f5f5f5;
+}
+.home-camp-list::-webkit-scrollbar-thumb {
+    background: #dddddd;
+    border-radius: 4px;
+}
+.home-camp-list::-webkit-scrollbar-thumb:hover {
+    background: #e31c1c;
+}
+
+/* Link "Ver todos" no rodapé das abas de prévia */
+.home-tab-ver-mais {
+    padding: 14px 20px;
+    border-top: 1px solid #f3f3f3;
+    text-align: right;
+}
+.home-tab-ver-mais a {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #e31c1c;
+    text-decoration: none;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: gap 0.18s ease;
+}
+.home-tab-ver-mais a:hover {
+    gap: 10px;
+    text-decoration: none;
+    color: #c01515;
+}
+
+/* ==========================================================================
+   56. PARCERIAS — imagens e ícones
+   ========================================================================== */
+
+/* Imagem institucional da seção "O Impacto de uma Parceria" */
+.partnership-about-img {
+    width: 100%;
+    height: 360px;
+    object-fit: cover;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.14);
+    display: block;
+}
+
+/* Logo dos parceiros no history-slider */
+.partner-logo-img {
+    width: 100%;
+    max-width: 160px;
+    height: auto;
+    object-fit: contain;
+    display: block;
+    margin: 0 auto;
+}
+
+/* Ícones nos cards de benefícios */
+.benefit-icon i {
+    font-size: 2rem;
+    color: #e31c1c;
+}
+
+/* Ícone de seta no botão CTA */
+.btn-partnership-action .btn-icon-arrow {
+    margin-left: 6px;
+    transition: transform 0.2s ease;
+}
+.btn-partnership-action:hover .btn-icon-arrow {
+    transform: translateX(4px);
+}
+
+/* ==========================================================================
+   57. SEÇÃO DE PARCEIROS — redesign com hover
+   ========================================================================== */
+
+.partners-section-overlay {
+    background: rgba(0, 0, 0, 0.68);
+    padding: 80px 0 90px;
+}
+
+/* Cabeçalho da seção */
+.partners-header {
+    text-align: center;
+    margin-bottom: 52px;
+}
+.partners-header-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #e31c1c;
+    margin-bottom: 10px;
+}
+.partners-header-title {
+    font-size: 1.9rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: -0.3px;
+    margin: 0;
+}
+
+/* Grade de logos */
+.partners-logos-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Card individual de logo */
+.client-logo-card {
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 24px 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 110px;
+    margin-bottom: 20px;
+    transition: background 0.25s ease, border-color 0.25s ease, transform 0.25s ease;
+    cursor: default;
+}
+.client-logo-card:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.28);
+    transform: translateY(-4px);
+}
+
+/* Logo dentro do card */
+.client-logo-card img {
+    max-height: 56px;
+    width: auto;
+    max-width: 100%;
+    object-fit: contain;
+    display: block;
+    filter: grayscale(100%) brightness(10);
+    opacity: 0.55;
+    transition: filter 0.3s ease, opacity 0.3s ease;
+}
+.client-logo-card:hover img {
+    filter: grayscale(0%) brightness(1);
+    opacity: 1;
+}
+
+/* Remove o padding do p-main na seção de parceiros para o overlay cobrir tudo */
+.stat-client.p-main.bg-client {
+    padding: 0;
+}
+
+/* ==========================================================================
+   PARCERIAS — grid de histórias dos parceiros
+   ========================================================================== */
+
+.partners-stories-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 28px;
+}
+
+@media (max-width: 991px) {
+    .partners-stories-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 600px) {
+    .partners-stories-grid { grid-template-columns: 1fr; }
+}
+
+/* Card */
+.partner-story-card {
+    background: #ffffff;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+.partner-story-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 36px rgba(0,0,0,0.12);
+}
+
+/* Cabeçalho do card: fundo escuro + logo + badge */
+.partner-story-header {
+    background: #111111;
+    padding: 28px 24px 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+}
+.partner-story-logo-wrap {
+    width: 80px;
+    height: 80px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px;
+}
+.partner-story-logo {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    display: block;
+}
+
+/* Badges por tipo */
+.partner-type-badge {
+    display: inline-block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+.ptype-master   { background: #c9a227; color: #111111; }
+.ptype-social   { background: #2980b9; color: #ffffff; }
+.ptype-comercial{ background: #27ae60; color: #ffffff; }
+
+/* Corpo do card */
+.partner-story-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    flex: 1;
+}
+.partner-story-name {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #111111;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: -0.2px;
+}
+.partner-story-text {
+    font-size: 0.88rem;
+    color: #555555;
+    line-height: 1.65;
+    margin: 0;
+}
+
+/* Citação */
+.partner-quote {
+    border-left: 3px solid #e31c1c;
+    margin: 4px 0 0 0;
+    padding: 8px 0 8px 14px;
+    font-size: 0.82rem;
+    color: #444444;
+    font-style: italic;
+    line-height: 1.55;
+}
+.partner-quote cite {
+    display: block;
+    margin-top: 6px;
+    font-size: 0.72rem;
+    font-style: normal;
+    font-weight: 700;
+    color: #999999;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
 }

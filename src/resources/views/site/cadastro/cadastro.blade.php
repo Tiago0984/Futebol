@@ -2,7 +2,10 @@
 
 @section('content')
 
-<section style="padding: 150px 0 60px; background: #f5f5f5;">
+@include('site.cadastro.banner')
+@include('site.cadastro.intro')
+
+<section id="form-matricula" style="padding: 40px 0 60px; background: #f5f5f5;">
     <div class="container">
 
         @if(session('sucesso'))

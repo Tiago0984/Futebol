@@ -1,33 +1,38 @@
 <div class="navbar navbar-main navbar-fixed-top">
     <div class="header-top">
         <div class="container">
-            <div class="row">
-                <div class="col-xs-12 col-sm-7 col-md-7 col-lg-7">
-                    <div class="info">
-                        <h3>News : </h3>
-                        <div class="info-item">
-                            @if(isset($noticiasRecentes) && $noticiasRecentes->count() > 0)
-                            @foreach($noticiasRecentes as $recente)
-                            <div>
-                                <a href="{{ route('site.noticias.show-noticia', $recente->id_noticia) }}" class="header-news-link">
-                                    {{ \Illuminate\Support\Str::limit($recente->titulo_noticia, 47, '...') }}
-                                </a>
-                            </div>
-                            @endforeach
-                            @else
-                            <div>Nenhuma notícia recente publicada.</div>
-                            @endif
+            <div class="top-bar-inner">
+
+                {{-- NEWS TICKER --}}
+                <div class="top-bar-news">
+                    <span class="top-bar-news-label">NEWS:</span>
+                    <div class="info-item top-bar-ticker">
+                        @if(isset($noticiasRecentes) && $noticiasRecentes->count() > 0)
+                        @foreach($noticiasRecentes as $recente)
+                        <div>
+                            <a href="{{ route('site.noticias.show-noticia', $recente->id_noticia) }}" class="header-news-link">
+                                {{ \Illuminate\Support\Str::limit($recente->titulo_noticia, 70, '...') }}
+                            </a>
                         </div>
+                        @endforeach
+                        @else
+                        <div>Nenhuma notícia recente publicada.</div>
+                        @endif
                     </div>
                 </div>
-                <div class="col-xs-12 col-sm-5 col-md-5 col-lg-5">
-                    <div class="top-sosmed pull-right">
-                        <a href="#" title=""><span class="fa fa-facebook"></span></a>
-                        <a href="#" title=""><span class="fa fa-twitter"></span></a>
-                        <a href="#" title=""><span class="fa fa-instagram"></span></a>
-                        <a href="#" title=""><span class="fa fa-pinterest"></span></a>
-                    </div>
-                </div>
+
+                {{-- ÍCONES DE NAVEGAÇÃO --}}
+                <nav class="top-bar-nav">
+                    <a href="{{ route('home') }}"          class="top-bar-nav-icon {{ request()->routeIs('home') ? 'active' : '' }}"          title="Home"><i class="fa fa-home"></i></a>
+                    <a href="{{ route('sobre') }}"         class="top-bar-nav-icon {{ request()->routeIs('sobre') ? 'active' : '' }}"         title="Sobre"><i class="fa fa-info-circle"></i></a>
+                    <a href="{{ route('calendario') }}"    class="top-bar-nav-icon {{ request()->routeIs('calendario') ? 'active' : '' }}"    title="Calendário"><i class="fa fa-calendar"></i></a>
+                    <a href="{{ route('contato') }}"       class="top-bar-nav-icon {{ request()->routeIs('contato') ? 'active' : '' }}"       title="Contato"><i class="fa fa-envelope-o"></i></a>
+                    <a href="{{ route('noticias.index') }}" class="top-bar-nav-icon {{ request()->routeIs('noticias*') ? 'active' : '' }}"    title="Notícias"><i class="fa fa-file-text-o"></i></a>
+                    <a href="{{ route('shopping') }}"      class="top-bar-nav-icon {{ request()->routeIs('shopping*') ? 'active' : '' }}"     title="Shopping"><i class="fa fa-shopping-cart"></i></a>
+                    <a href="{{ route('galeria.index') }}" class="top-bar-nav-icon {{ request()->routeIs('galeria*') ? 'active' : '' }}"      title="Galeria"><i class="fa fa-picture-o"></i></a>
+                    <a href="{{ url('/admin') }}"           class="top-bar-nav-icon"                                                           title="Login / Área Admin"><i class="fa fa-user"></i></a>
+                </nav>
+
             </div>
         </div>
     </div>
@@ -44,20 +49,8 @@
         </div>
         <nav class="navbar-collapse collapse">
             <ul class="nav navbar-nav navbar-right nav-main-list">
-                <li class="{{ request()->routeIs('home') ? 'active' : '' }}">
-                    <a href="{{ route('home') }}">HOME</a>
-                </li>
-                <li class="{{ request()->routeIs('sobre') ? 'active' : '' }}">
-                    <a href="{{ route('sobre') }}">SOBRE</a>
-                </li>
-                <li class="{{ request()->routeIs('calendario') ? 'active' : '' }}">
-                    <a href="{{ route('calendario') }}">CALENDÁRIO</a>
-                </li>
-
-                <li class="nav-highlight-scout {{ request()->routeIs('jogadores.vitrine') ? 'active' : '' }}">
-                    <a href="{{ route('jogadores.vitrine') }}">
-                        <span class="fa fa-search-plus nav-scout-icon"></span> JOGADORES
-                    </a>
+                <li class="{{ request()->routeIs('jogadores.vitrine') ? 'active' : '' }}">
+                    <a href="{{ route('jogadores.vitrine') }}">JOGADORES</a>
                 </li>
 
                 <li class="dropdown {{ request()->routeIs('campeonato*') ? 'active' : '' }}">
@@ -89,31 +82,8 @@
                     <a href="{{ route('cadastro.index') }}">MATRICULE-SE</a>
                 </li>
 
-                <li class="{{ request()->routeIs('contato') ? 'active' : '' }}">
-                    <a href="{{ route('contato') }}">CONTATO</a>
-                </li>
-
-                <li class="dropdown submenu-listras">
-                    <a href="#" class="dropdown-toggle nav-link-bars" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">
-                        <span class="fa fa-bars"></span>
-                    </a>
-                    <ul class="dropdown-menu dropdown-menu-right">
-                        <li class="{{ request()->routeIs('noticias*') ? 'active' : '' }}">
-                            <a href="{{ route('noticias.index') }}"><span class="fa fa-newspaper-o nav-submenu-icon"></span> NOTÍCIAS</a>
-                        </li>
-                        <li class="{{ request()->routeIs('shopping*') ? 'active' : '' }}">
-                            <a href="{{ route('shopping') }}"><span class="fa fa-shopping-cart nav-submenu-icon"></span> SHOPPING</a>
-                        </li>
-                        <li class="{{ request()->routeIs('parcerias*') ? 'active' : '' }}">
-                            <a href="{{ route('parcerias') }}"><span class="fa fa-handshake-o nav-submenu-icon"></span> PARCERIAS</a>
-                        </li>
-                    </ul>
-                </li>
-
-                <li>
-                    <a href="{{ url('/admin') }}" title="Área Admin" class="nav-link-admin">
-                        <span class="fa fa-user"></span>
-                    </a>
+                <li class="{{ request()->routeIs('parcerias*') ? 'active' : '' }}">
+                    <a href="{{ route('parcerias') }}">PARCERIAS</a>
                 </li>
             </ul>
         </nav>

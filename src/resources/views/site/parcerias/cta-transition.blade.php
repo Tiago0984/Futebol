@@ -9,7 +9,7 @@
         <div class="cta-action-block">
             <a href="#fazer-parceria" class="btn-partnership-action">
                 Quero Ser Parceiro
-                <span class="btn-icon-arrow">→</span>
+                <i class="fa fa-arrow-right btn-icon-arrow"></i>
             </a>
         </div>
 

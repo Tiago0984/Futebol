@@ -1,151 +1,178 @@
-<!-- ABOUT SECTION -->
-<div class="section about">
-	<div class="container">
+<!-- JOGOS & CLASSIFICAÇÃO — seletor dinâmico por campeonato -->
+<section class="home-matches-section">
+    <div class="container">
 
-		<div class="row">
-			<div class="col-sm-12 col-md-12">
-				<div class="page-title">
-					<h2 class="lead">SOBRE OS JOGOS</h2>
-					<div class="border-style"></div>
-				</div>
-			</div>
-		</div>
+        <div class="home-matches-header">
+            <span class="section-subtitle-tag">Competições</span>
+            <h2 class="home-matches-title">Jogos &amp; Classificação</h2>
+        </div>
 
-		<div class="row">
+        @if($campeonatos->isEmpty())
+        <p class="home-tab-empty">Nenhum campeonato cadastrado.</p>
+        @else
+        <div class="home-camp-picker">
 
-			<div class="col-sm-12 col-md-4">
-				<div id="shop-caro" class="owl-carousel owl-theme">
-					<div class="item shop-item">
-						<div class="img">
-							<img src="{{asset('futebol/images/about/item1.jpg')}}" alt="" class="img-responsive" />
-						</div>
-						<div class="description">
-							<div class="collection-name">
-								<strong>NEW</strong> COLLECTIONS
-								<div class="category">T-shirts</div>
-							</div>
-							<div class="collection-callout">
-								<a href="#" title=""><span class="fa fa-facebook"></span>SHOP NOW</a>
-							</div>
-						</div>
-					</div>
-					<div class="item shop-item">
-						<div class="img">
-							<img src="{{asset('futebol/images/about/item2.jpg')}}" alt="" class="img-responsive" />
-						</div>
-						<div class="description">
-							<div class="collection-name">
-								<strong>NEW</strong> COLLECTIONS
-								<div class="category">Pin</div>
-							</div>
-							<div class="collection-callout">
-								<a href="#" title=""><span class="fa fa-facebook"></span>SHOP NOW</a>
-							</div>
-						</div>
-					</div>
+            {{-- Seletor de campeonatos (esquerda) --}}
+            <div class="home-camp-list">
+                @foreach($campeonatos as $camp)
+                <div class="home-camp-card {{ $loop->first ? 'is-active' : '' }}"
+                     data-camp-id="{{ $camp->id_campeonato }}">
+                    <img src="{{ asset('futebol/images/campeonatos/' . $camp->logo_evento) }}"
+                         alt="{{ $camp->nome_campeonato }}"
+                         class="home-camp-logo">
+                    <div class="home-camp-info">
+                        <span class="home-camp-type">{{ $camp->tipo_campeonato }}</span>
+                        <strong class="home-camp-name">{{ $camp->nome_campeonato }}</strong>
+                    </div>
+                    <i class="fa fa-chevron-right home-camp-arrow"></i>
+                </div>
+                @endforeach
+            </div>
 
-				</div>
+            {{-- Painéis de conteúdo (direita) --}}
+            <div class="home-camp-content">
+                @foreach($campeonatos as $camp)
+                <div class="home-camp-panel {{ $loop->first ? 'is-active' : '' }}"
+                     data-camp-id="{{ $camp->id_campeonato }}">
 
-			</div>
+                    {{-- Cabeçalho do painel com link para o campeonato --}}
+                    <div class="home-camp-panel-header">
+                        <div class="home-camp-panel-title">
+                            <span class="home-camp-panel-type">{{ $camp->tipo_campeonato }}</span>
+                            <h3 class="home-camp-panel-name">{{ $camp->nome_campeonato }}</h3>
+                        </div>
+                        <a href="{{ route('campeonato.show', $camp->id_campeonato) }}"
+                           class="btn-home-camp-link">
+                            Ver campeonato <i class="fa fa-arrow-right"></i>
+                        </a>
+                    </div>
 
-			<div class="col-sm-12 col-md-8">
+                    {{-- Botões de aba --}}
+                    <div class="home-camp-tabs">
+                        <button class="home-camp-tab-btn is-active"
+                                data-target="jogos-{{ $camp->id_campeonato }}">
+                            <i class="fa fa-futbol-o"></i> Jogos
+                        </button>
+                        <button class="home-camp-tab-btn"
+                                data-target="class-{{ $camp->id_campeonato }}">
+                            <i class="fa fa-list-ol"></i> Classificação
+                        </button>
+                    </div>
 
-				<div class="bs-example bs-example-tabs" data-example-id="togglable-tabs">
-					<ul id="myTabs" class="nav nav-tabs" role="tablist">
-						<li class="active"><a href="#match" id="match-tab" role="tab" data-toggle="tab" aria-controls="match" aria-expanded="true">JOGOS</a></li>
-						<li><a href="#training" role="tab" id="training-tab" data-toggle="tab" aria-controls="training">TREINAMENTOS</a></li>
-						<li><a href="#league" role="tab" id="league-tab" data-toggle="tab" aria-controls="league">CLASSIFICAÇÃO</a></li>
-					</ul>
-					<div id="myTabContent" class="tab-content tab-content-bg">
-						<div role="tabpanel" class="tab-pane fade in active" id="match" aria-labelledBy="match-tab">
-							<div class="table-responsive">
-								<table class="table table-striped">
-									<tbody>
-										@foreach($jogos as $jogo)
-										<tr>
-											<td class="tw40">
-												<div class="match-date">
-													{{ $jogo->data_jogo ? \Carbon\Carbon::parse($jogo->data_jogo)->format('d M H:i') : '-' }}
-												</div>
-											</td>
-											<td>
-												<div class="match-title text-right">{{ $jogo->timeCasa->nome_time ?? '-' }}</div>
-											</td>
-											<td>
-												<div class="text-center">VS</div>
-											</td>
-											<td>
-												<div class="match-title color-red">{{ $jogo->timeVisitante->nome_time ?? '-' }}</div>
-											</td>
-										</tr>
-										@endforeach
-									</tbody>
-								</table>
+                    {{-- Aba: Jogos (prévia — 4 mais recentes) --}}
+                    <div class="home-camp-tab-panel is-active" id="jogos-{{ $camp->id_campeonato }}">
+                        @php $jogosPrevia = $camp->jogos->sortByDesc('data_jogo')->take(4); @endphp
+                        @forelse($jogosPrevia as $jogo)
+                        <div class="home-match-row">
+                            <span class="home-match-date">
+                                {{ $jogo->data_jogo ? \Carbon\Carbon::parse($jogo->data_jogo)->format('d M') : '-' }}
+                            </span>
+                            <div class="home-match-teams">
+                                <span class="home-match-home">{{ $jogo->timeCasa->nome_time ?? '-' }}</span>
+                                <span class="home-match-sep">
+                                    @if($jogo->placar_time_casa_jogos !== null && $jogo->placar_time_visitante_jogos !== null)
+                                        {{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}
+                                    @else
+                                        VS
+                                    @endif
+                                </span>
+                                <span class="home-match-away">{{ $jogo->timeVisitante->nome_time ?? '-' }}</span>
+                            </div>
+                        </div>
+                        @empty
+                        <p class="home-tab-empty">Nenhum jogo registrado neste campeonato.</p>
+                        @endforelse
+                        @if($camp->jogos->count() > 4)
+                        <div class="home-tab-ver-mais">
+                            <a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
+                                Ver todos os {{ $camp->jogos->count() }} jogos <i class="fa fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        @endif
+                    </div>
 
-							</div>
-						</div>
-						<div role="tabpanel" class="tab-pane fade" id="training" aria-labelledBy="training-tab">
-							<div class="table-responsive">
-								<table class="table table-striped">
-									<tbody>
-										@foreach($jogos as $jogo)
-										<tr>
-											<td class="tw40">
-												<div class="match-date">{{ $jogo->data_jogo ? \Carbon\Carbon::parse($jogo->data_jogo)->format('d M H:i') : '-' }}</div>
-											</td>
-											<td>
-												<div class="match-title text-right">{{ $jogo->timeCasa->nome_time ?? '-' }}</div>
-											</td>
-											<td>
-												<div class="text-center">VS</div>
-											</td>
-											<td>
-												<div class="match-title color-red">{{ $jogo->timeVisitante->nome_time ?? '-' }}</div>
-											</td>
-										</tr>
-										@endforeach
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<div role="tabpanel" class="tab-pane fade" id="league" aria-labelledBy="league-tab">
-							<div class="table-responsive">
-								<table class="table table-striped">
-									<thead>
-										<tr>
-											<td class="tw50">TEAM</td>
-											<td class="tw10">W</td>
-											<td class="tw10">D</td>
-											<td class="tw10">L</td>
-											<td>POINT</td>
-										</tr>
-									</thead>
-									<tbody>
-										@foreach($classificacao as $i => $time)
-										<tr>
-											<td>
-												<div class="match-title">{{ $i+1 }}. {{ $time['nome'] }}</div>
-											</td>
-											<td>{{ $time['v'] }}</td>
-											<td>{{ $time['e'] }}</td>
-											<td>{{ $time['d'] }}</td>
-											<td>
-												<div class="match-title">{{ $time['pontos'] }}</div>
-											</td>
-										</tr>
-										@endforeach
-									</tbody>
-								</table>
-							</div>
-						</div>
+                    {{-- Aba: Classificação (prévia — top 4) --}}
+                    <div class="home-camp-tab-panel" id="class-{{ $camp->id_campeonato }}">
+                        @php
+                            $classif      = $classificacaoPorCampeonato[$camp->id_campeonato] ?? [];
+                            $classifPrevia = array_slice($classif, 0, 4);
+                        @endphp
+                        @if(empty($classifPrevia))
+                        <p class="home-tab-empty">Nenhum dado de classificação ainda.</p>
+                        @else
+                        <table class="home-class-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Time</th>
+                                    <th title="Vitórias">V</th>
+                                    <th title="Empates">E</th>
+                                    <th title="Derrotas">D</th>
+                                    <th title="Pontos">PTS</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($classifPrevia as $i => $time)
+                                <tr class="{{ $i === 0 ? 'home-class-leader' : '' }}">
+                                    <td class="home-class-pos">{{ $i + 1 }}</td>
+                                    <td class="home-class-name">{{ $time['nome'] }}</td>
+                                    <td class="stat-v">{{ $time['v'] }}</td>
+                                    <td>{{ $time['e'] }}</td>
+                                    <td class="stat-d">{{ $time['d'] }}</td>
+                                    <td><strong>{{ $time['pontos'] }}</strong></td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                        @if(count($classif) > 4)
+                        <div class="home-tab-ver-mais">
+                            <a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
+                                Ver classificação completa ({{ count($classif) }} times) <i class="fa fa-arrow-right"></i>
+                            </a>
+                        </div>
+                        @endif
+                        @endif
+                    </div>
 
-					</div>
-				</div>
-				<!-- /example -->
+                </div>
+                @endforeach
+            </div>
 
-			</div>
+        </div>
+        @endif
 
+    </div>
+</section>
 
-		</div>
-	</div>
-</div>
+<script>
+(function () {
+    // Troca o campeonato ativo
+    document.querySelectorAll('.home-camp-card').forEach(function (card) {
+        card.addEventListener('click', function () {
+            var id = this.dataset.campId;
+
+            document.querySelectorAll('.home-camp-card').forEach(function (c) { c.classList.remove('is-active'); });
+            document.querySelectorAll('.home-camp-panel').forEach(function (p) { p.classList.remove('is-active'); });
+
+            this.classList.add('is-active');
+            var panel = document.querySelector('.home-camp-panel[data-camp-id="' + id + '"]');
+            if (panel) panel.classList.add('is-active');
+        });
+    });
+
+    // Troca a aba dentro do painel ativo
+    document.querySelectorAll('.home-camp-tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var target = this.dataset.target;
+            var panel  = this.closest('.home-camp-panel');
+
+            panel.querySelectorAll('.home-camp-tab-btn').forEach(function (b) { b.classList.remove('is-active'); });
+            panel.querySelectorAll('.home-camp-tab-panel').forEach(function (p) { p.classList.remove('is-active'); });
+
+            this.classList.add('is-active');
+            var tabPanel = document.getElementById(target);
+            if (tabPanel) tabPanel.classList.add('is-active');
+        });
+    });
+})();
+</script>

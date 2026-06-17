@@ -26,25 +26,25 @@
 
                 <div class="col-xs-6 col-sm-4 col-md-2">
                     <div class="client-logo-card">
-                        <img src="{{ asset('futebol/images/parcerias/arena-sports.png') }}" alt="Arena Sports" />
+                        <img src="{{ asset('futebol/images/parcerias/arena-sports.png') }}" alt="Parceiro 3" />
                     </div>
                 </div>
 
                 <div class="col-xs-6 col-sm-4 col-md-2">
                     <div class="client-logo-card">
-                        <img src="{{ asset('futebol/images/parcerias/sabor-e-gol.png') }}" alt="Sabor & Gol" />
+                        <img src="{{ asset('futebol/images/parcerias/sabor-e-gol.png') }}" alt="Parceiro 4" />
                     </div>
                 </div>
 
                 <div class="col-xs-6 col-sm-4 col-md-2">
                     <div class="client-logo-card">
-                        <img src="{{ asset('futebol/images/parcerias/vida-ativa.png') }}" alt="Vida Ativa" />
+                        <img src="{{ asset('futebol/images/parcerias/vida-ativa.png') }}" alt="Parceiro 5" />
                     </div>
                 </div>
 
                 <div class="col-xs-6 col-sm-4 col-md-2">
                     <div class="client-logo-card">
-                        <img src="{{ asset('futebol/images/parcerias/centro-educacional-futuro.png') }}" alt="Centro Educacional Futuro" />
+                        <img src="{{ asset('futebol/images/parcerias/centro-educacional-futuro.png') }}" alt="Parceiro 6" />
                     </div>
                 </div>
 

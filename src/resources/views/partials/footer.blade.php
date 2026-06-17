@@ -9,7 +9,7 @@
 							<img src="{{ asset('futebol/images/logo2.png') }}" alt="Logo AACJ" class="img-responsive">
 						</div>
 						<p class="footer-texto-sobre">
-							A Associação Atlético Clube Juvenil (AACJ) atua fortemente no desenvolvimento do esporte, promovendo a integração da comunidade através do futebol, torneios de alto nível e a formação cidadã de novos atletas.
+							A Associação Atlética Cohab Juscelino (AACJ) atua fortemente no desenvolvimento do esporte, promovendo a integração da comunidade através do futebol, torneios de alto nível e a formação cidadã de novos atletas.
 						</p>
 						<div class="novas-redes-sociais">
 							<a href="#" title="Facebook" class="rede-link"><i class="fa fa-facebook"></i></a>

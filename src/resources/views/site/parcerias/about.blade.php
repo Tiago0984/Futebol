@@ -5,9 +5,9 @@
             <p>Nossos parceiros fazem parte do crescimento da escolinha e ajudam diretamente no desenvolvimento esportivo, social e educacional dos nossos atletas. Acreditamos que o esporte é a ferramenta mais poderosa de transformação social, e cada apoiador é um camisa 10 nesse time.</p>
         </div>
         <div class="about-image-block">
-            <div class="placeholder-gray-box">
-                <span>[ Imagem Institucional / Esportiva ]</span>
-            </div>
+            <img src="{{ asset('futebol/images/parcerias/o-impacto-de-uma-parceria.jpg') }}"
+                 alt="Atletas AACJ Futebol em ação"
+                 class="partnership-about-img">
         </div>
     </div>
 </section>

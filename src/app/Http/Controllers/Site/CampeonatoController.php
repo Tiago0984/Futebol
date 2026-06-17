@@ -16,7 +16,7 @@ class CampeonatoController extends Controller
 
     public function show($id)
     {
-        $campeonato = Campeonato::with('times')->findOrFail($id);
+        $campeonato = Campeonato::with(['times.atletas.cartoes.jogo'])->findOrFail($id);
         $jogos = Jogo::with(['timeCasa', 'timeVisitante'])
                     ->where('id_campeonato', $id)
                     ->get();
@@ -65,6 +65,6 @@ class CampeonatoController extends Controller
 
         usort($classificacao, fn($a, $b) => $b['pontos'] - $a['pontos']);
 
-        return view('site.campeonatos.show', compact('campeonato', 'classificacao'));
+        return view('site.campeonatos.show', compact('campeonato', 'classificacao', 'jogos'));
     }
 }
