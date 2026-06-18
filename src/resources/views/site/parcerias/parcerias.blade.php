@@ -10,5 +10,6 @@
 @include('site.parcerias.benefits')
 @include('site.parcerias.history-slider')
 @include('site.parcerias.form')
+@include('site.parcerias.client')
 
 @endsection
