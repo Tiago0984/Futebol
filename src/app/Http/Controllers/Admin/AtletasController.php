@@ -270,7 +270,7 @@ class AtletasController extends Controller
                 if ($camisaValue > 0) {
                     $pivotUpdate['camisa_atleta_time'] = $camisaValue;
                 }
-                \DB::table('tbl_atleta_time')
+                DB::table('tbl_atleta_time')
                     ->where('id_atleta', $atleta->id_atleta)
                     ->whereIn('id_time', $novosTimeIds->toArray())
                     ->update($pivotUpdate);
