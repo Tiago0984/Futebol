@@ -8196,3 +8196,358 @@ body {
 .header-line {
     margin-bottom: 24px;
 }
+
+/* Coach cards — border-radius mais suave */
+.coach-card-item {
+    border-radius: 4px !important;
+}
+
+/* Elimina artefato preto nos cantos — força composição GPU */
+.coach-card-item {
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    isolation: isolate;
+    background: transparent !important;
+}
+
+/* Mensagem quando filtro não encontra resultados */
+.cal-no-results {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 60px 0;
+    color: #999;
+}
+.cal-no-results i {
+    font-size: 2.5rem;
+    color: #ddd;
+}
+.cal-no-results p {
+    font-size: 1rem;
+    margin: 0;
+}
+
+/* ==========================================================================
+   CALENDÁRIO — próximo evento em destaque + contadores + grade semanal
+   ========================================================================== */
+
+/* --- Próximo Evento --- */
+.cal-next-event {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    background: #111;
+    border-left: 5px solid #e31c1c;
+    border-radius: 4px;
+    padding: 28px 32px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+}
+
+.cal-next-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    min-width: 80px;
+}
+
+.cal-next-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #e31c1c;
+    white-space: nowrap;
+}
+
+.cal-next-date-block {
+    text-align: center;
+    line-height: 1;
+}
+
+.cal-next-day {
+    display: block;
+    font-size: 3rem;
+    font-weight: 900;
+    color: #fff;
+    font-family: 'bebas_neue', sans-serif;
+    line-height: 1;
+}
+
+.cal-next-month {
+    display: block;
+    font-size: 0.72rem;
+    color: #aaa;
+    letter-spacing: 1px;
+    font-weight: 600;
+    text-transform: uppercase;
+    margin-top: 2px;
+}
+
+.cal-next-right {
+    flex: 1;
+    min-width: 200px;
+}
+
+.cal-next-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #fff;
+    margin: 0 0 10px 0;
+    text-transform: uppercase;
+    letter-spacing: -0.3px;
+}
+
+.cal-next-meta {
+    font-size: 0.82rem;
+    color: #999;
+    margin: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+}
+
+.cal-next-meta i {
+    color: #e31c1c;
+    margin-right: 4px;
+}
+
+.cal-next-countdown {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    background: #e31c1c;
+    border-radius: 4px;
+    padding: 16px 22px;
+    min-width: 72px;
+}
+
+.cal-next-days-num {
+    font-size: 2.4rem;
+    font-weight: 900;
+    color: #fff;
+    font-family: 'bebas_neue', sans-serif;
+    line-height: 1;
+}
+
+.cal-next-days-label {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+/* --- Contadores rápidos --- */
+.cal-stats-strip {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 48px;
+    flex-wrap: wrap;
+}
+
+.cal-stat-item {
+    flex: 1;
+    min-width: 120px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 20px 16px;
+    border-radius: 4px;
+    border: 1px solid #eaeaea;
+    background: #fafafa;
+    text-align: center;
+}
+
+.cal-stat-item i {
+    font-size: 1.4rem;
+    margin-bottom: 4px;
+}
+
+.cal-stat-item strong {
+    font-size: 2rem;
+    font-weight: 900;
+    font-family: 'bebas_neue', sans-serif;
+    line-height: 1;
+}
+
+.cal-stat-item span {
+    font-size: 0.75rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-weight: 600;
+}
+
+.stat-jogo       { border-top: 3px solid #e31c1c; }
+.stat-jogo i, .stat-jogo strong { color: #e31c1c; }
+
+.stat-treino     { border-top: 3px solid #2980b9; }
+.stat-treino i, .stat-treino strong { color: #2980b9; }
+
+.stat-campeonato { border-top: 3px solid #c9a227; }
+.stat-campeonato i, .stat-campeonato strong { color: #c9a227; }
+
+.stat-total      { border-top: 3px solid #555; }
+.stat-total i, .stat-total strong { color: #555; }
+
+/* --- Grade de Treinos --- */
+.cal-schedule-section {
+    padding: 80px 0;
+    background: #f7f7f7;
+    border-top: 1px solid #eaeaea;
+}
+
+.cal-schedule-header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.cal-schedule-header h2 {
+    font-size: 1.9rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #111;
+    margin: 8px 0 12px;
+}
+
+.cal-schedule-header p {
+    color: #777;
+    font-size: 0.95rem;
+    max-width: 520px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+.cal-schedule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+}
+
+.cal-schedule-card {
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid #e8e8e8;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.cal-schedule-card--destaque {
+    border-color: #e31c1c;
+}
+
+.cal-schedule-day {
+    background: #111;
+    color: #fff;
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cal-schedule-card--destaque .cal-schedule-day {
+    background: #e31c1c;
+}
+
+.cal-schedule-day i { opacity: 0.7; }
+
+.cal-schedule-body {
+    padding: 4px 0;
+}
+
+.cal-schedule-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f3f3f3;
+    flex-wrap: wrap;
+}
+
+.cal-schedule-row:last-child { border-bottom: none; }
+
+.cal-schedule-cat {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-radius: 3px;
+    padding: 2px 8px;
+    color: #fff;
+    white-space: nowrap;
+}
+
+.cat-sub9       { background: #e31c1c; }
+.cat-sub11      { background: #c0392b; }
+.cat-sub13      { background: #2980b9; }
+.cat-sub15      { background: #1a5f8c; }
+.cat-sub17      { background: #27ae60; }
+.cat-integrado  { background: #8e44ad; }
+.cat-jogo       { background: #e31c1c; }
+.cat-livre      { background: #777; }
+
+.cal-schedule-time,
+.cal-schedule-local {
+    font-size: 0.78rem;
+    color: #666;
+    white-space: nowrap;
+}
+
+.cal-schedule-time i,
+.cal-schedule-local i {
+    color: #e31c1c;
+    margin-right: 3px;
+}
+
+.cal-schedule-obs {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #aaa;
+    margin: 0;
+}
+
+.cal-schedule-obs i {
+    color: #e31c1c;
+    margin-right: 4px;
+}
+
+/* Badge de contagem nos botões de filtro do calendário */
+.btn-cal-filter {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.filter-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 5px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    background: rgba(0, 0, 0, 0.12);
+    color: inherit;
+    line-height: 1;
+}
+
+.btn-cal-filter.is-active .filter-count {
+    background: rgba(255, 255, 255, 0.25);
+    color: #fff;
+}
+
+/* Remove os cards de stats separados (integrados nos botões agora) */
+.cal-stats-strip {
+    display: none !important;
+}

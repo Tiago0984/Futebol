@@ -23,6 +23,56 @@
 })();
 
 /* ==========================================================================
+   CONTAGEM REGRESSIVA — próximo evento do calendário
+   ========================================================================== */
+(function () {
+    var el = document.getElementById('cal-days-left');
+    if (!el) return;
+
+    var dateStr = el.dataset.date;
+    if (!dateStr) return;
+    var target  = new Date(dateStr + 'T00:00:00');
+    var today   = new Date();
+    today.setHours(0, 0, 0, 0);
+    var diff    = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    el.textContent = diff > 0 ? diff : '0';
+})();
+
+/* ==========================================================================
+   FILTRO DO CALENDÁRIO — página /calendario
+   ========================================================================== */
+(function () {
+    var filterBtns = document.querySelectorAll('.btn-cal-filter');
+    if (!filterBtns.length) return;
+
+    var cards     = document.querySelectorAll('.cal-event-card');
+    var noResults = document.getElementById('cal-no-results');
+
+    filterBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            filterBtns.forEach(function (b) { b.classList.remove('is-active'); });
+            this.classList.add('is-active');
+
+            var filter  = this.dataset.filter;
+            var visible = 0;
+
+            cards.forEach(function (card) {
+                if (filter === 'all' || card.classList.contains('event-' + filter)) {
+                    card.style.display = '';
+                    visible++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+
+            if (noResults) {
+                noResults.style.display = visible === 0 ? 'flex' : 'none';
+            }
+        });
+    });
+})();
+
+/* ==========================================================================
    SELETOR DE CAMPEONATO — seção Jogos & Classificação (home)
    ========================================================================== */
 (function () {
