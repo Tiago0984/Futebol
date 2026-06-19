@@ -13,28 +13,38 @@ class GaleriaController extends Controller
     {
         $fotos = Galeria::orderBy('ordem_galeria')->get();
 
-        return view('admin.galeria.index', compact('fotos'));
+        $categorias = Galeria::select('categoria_galeria')
+            ->distinct() // garante que só traga categorias únicas
+            ->orderBy('categoria_galeria')
+            ->pluck('categoria_galeria'); // pluck para obter apenas os valores da coluna
+
+        $proximaOrdem = ($fotos->max('ordem_galeria') ?? 0) + 1;
+
+        return view('admin.galeria.index', compact('fotos', 'categorias', 'proximaOrdem'));
     }
 
     // 2. Salva os dados enviados pelo modal de criação
     public function store(Request $request)
     {
         $request->validate([
-            'titulo_galeria' => 'required|string|max:255',
-            'ordem_galeria'  => 'required|integer|min:1',
-            'status_galeria' => 'required|in:ativo,inativo',
-            'foto_galeria'   => 'required|image|max:4096',
+            'titulo_galeria'         => 'required|string|max:255',
+            'categoria_galeria'      => 'required|string',
+            'nova_categoria_galeria' => 'required_if:categoria_galeria,__nova__|nullable|string|max:60',
+            'ordem_galeria'          => 'required|integer|min:1',
+            'status_galeria'         => 'required|in:ATIVO,INATIVO',
+            'foto_galeria'           => 'required|image|max:4096',
         ]);
 
-        $dados = $request->only([
-            'titulo_galeria',
-            'ordem_galeria',
-            'status_galeria',
-        ]);
+        $dados = $request->only(['titulo_galeria', 'ordem_galeria', 'status_galeria']);
+
+        $dados['categoria_galeria'] = $request->input('categoria_galeria') === '__nova__' // se for nova categoria, usa o campo de nova categoria, senão usa a selecionada
+            ? strtoupper(trim($request->input('nova_categoria_galeria')))
+            : $request->input('categoria_galeria');
+
 
         $arquivo = $request->file('foto_galeria');
-        $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
-        $arquivo->move(public_path('futebol/images/galeria'), $nomeArquivo);
+        $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName(); // prefixa o nome do arquivo com timestamp para evitar conflitos se o nome for igual.
+        $arquivo->move(public_path('futebol/images/galeria'), $nomeArquivo); // move o arquivo para a pasta pública e salva o nome no banco
         $dados['foto_galeria'] = $nomeArquivo;
 
         Galeria::create($dados);
@@ -48,17 +58,19 @@ class GaleriaController extends Controller
         $foto = Galeria::findOrFail($id);
 
         $request->validate([
-            'titulo_galeria' => 'required|string|max:255',
-            'ordem_galeria'  => 'required|integer|min:1',
-            'status_galeria' => 'required|in:ativo,inativo',
-            'foto_galeria'   => 'nullable|image|max:4096',
+            'titulo_galeria'         => 'required|string|max:255',
+            'categoria_galeria'      => 'required|string',
+            'nova_categoria_galeria' => 'required_if:categoria_galeria,__nova__|nullable|string|max:60',
+            'ordem_galeria'          => 'required|integer|min:1',
+            'status_galeria'         => 'required|in:ATIVO,INATIVO',
+            'foto_galeria'           => 'nullable|image|max:4096',
         ]);
 
-        $dados = $request->only([
-            'titulo_galeria',
-            'ordem_galeria',
-            'status_galeria',
-        ]);
+        $dados = $request->only(['titulo_galeria', 'ordem_galeria', 'status_galeria']);
+
+        $dados['categoria_galeria'] = $request->input('categoria_galeria') === '__nova__'
+            ? strtoupper(trim($request->input('nova_categoria_galeria')))
+            : $request->input('categoria_galeria');
 
         if ($request->hasFile('foto_galeria')) {
             $arquivo = $request->file('foto_galeria');
@@ -77,11 +89,11 @@ class GaleriaController extends Controller
     {
         $foto = Galeria::findOrFail($id);
 
-        if (strtolower($foto->status_galeria) === 'ativo') {
-            $foto->status_galeria = 'inativo';
+        if ($foto->status_galeria === 'ATIVO') {
+            $foto->status_galeria = 'INATIVO';
             $mensagem = 'Foto inativada com sucesso!';
         } else {
-            $foto->status_galeria = 'ativo';
+            $foto->status_galeria = 'ATIVO';
             $mensagem = 'Foto reativada com sucesso!';
         }
 

@@ -35,7 +35,7 @@
 
                     <a href="{{ route('galeria.index') }}" class="top-bar-nav-icon {{ request()->routeIs('galeria*') ? 'active' : '' }}" title="Galeria"><i class="fa fa-picture-o"></i></a>
 
-                    <a href="{{ route('contato') }}" class="top-bar-nav-icon {{ request()->routeIs('contato') ? 'active' : '' }}" title="Contato"><i class="fa fa-envelope-o"></i></a>
+                    <a href="{{ route('contato') }}" class="top-bar-nav-icon {{ request()->routeIs('contato') ? 'active' : '' }}" title="Contato"><i class="fa fa-paper-plane"></i></a>
 
                     <a href="{{ url('/admin') }}" class="top-bar-nav-icon" title="Login / Área Admin"><i class="fa fa-user"></i></a>
                 </nav>
