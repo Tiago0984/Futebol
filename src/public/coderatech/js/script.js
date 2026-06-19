@@ -187,6 +187,40 @@
 })();
 
 /* ==========================================================================
+   FILTRO DA GALERIA — página /galeria
+   ========================================================================== */
+(function () {
+    var filterBtns = document.querySelectorAll('.btn-gal-filter');
+    if (!filterBtns.length) return;
+
+    var items     = document.querySelectorAll('.gal-item');
+    var noResults = document.getElementById('gal-no-results');
+
+    filterBtns.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            filterBtns.forEach(function (b) { b.classList.remove('is-active'); });
+            this.classList.add('is-active');
+
+            var filter  = this.dataset.filter;
+            var visible = 0;
+
+            items.forEach(function (item) {
+                if (filter === 'all' || item.dataset.categoria === filter) {
+                    item.style.display = '';
+                    visible++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+
+            if (noResults) {
+                noResults.style.display = visible === 0 ? 'flex' : 'none';
+            }
+        });
+    });
+})();
+
+/* ==========================================================================
    SISTEMA DE ACCORDION FLUIDO (FAQ) - CODERATECH
    Calcula a altura real do conteúdo em pixels para uma transição suave.
    ========================================================================== */

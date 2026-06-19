@@ -89,3 +89,8 @@ ALTER TABLE tbl_evento_calendario
 ALTER TABLE tbl_grade_treino
     MODIFY tipo_grade_treino ENUM('TREINO', 'JOGO', 'LIVRE') NOT NULL DEFAULT 'TREINO'
 
+ALTER TABLE tbl_galeria
+ADD COLUMN categoria_galeria VARCHAR(60) NOT NULL DEFAULT 'GERAL' AFTER foto_galeria;
+
+UPDATE tbl_galeria SET categoria_galeria = 'JOGOS' WHERE id_galeria IN (1, 2);
+

@@ -13,6 +13,7 @@ class Galeria extends Model
     protected $fillable = [
         'titulo_galeria',
         'foto_galeria',
+        'categoria_galeria',
         'ordem_galeria',
         'status_galeria',
         'criado_em',

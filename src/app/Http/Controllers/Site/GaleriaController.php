@@ -13,6 +13,11 @@ class GaleriaController extends Controller
             ->orderBy('ordem_galeria')
             ->get();
 
-        return view('site.galeria.galeria', compact('galerias'));
+        $categorias = $galerias->pluck('categoria_galeria')
+            ->unique()
+            ->filter(fn($cat) => $cat !== 'GERAL')
+            ->values();
+
+        return view('site.galeria.galeria', compact('galerias', 'categorias'));
     }
 }

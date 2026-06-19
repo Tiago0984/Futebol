@@ -1,44 +1,54 @@
-<!-- GALERIA -->
-<div class="section singlepage">
+<section class="gal-section">
     <div class="container">
 
-        <div class="row">
-            <div class="col-sm-12">
-                <div class="page-title">
-                    <h2 class="lead">GALERIA DE FOTOS</h2>
-                    <div class="border-style"></div>
-                </div>
-            </div>
+        <div class="gal-header">
+            <span class="section-subtitle-tag">Momentos AACJ</span>
+            <h2>Galeria de Fotos</h2>
+            <p class="gal-count"><i class="fa fa-picture-o"></i> {{ $galerias->count() }} {{ $galerias->count() === 1 ? 'foto registrada' : 'fotos registradas' }}</p>
         </div>
 
-        <div class="row popup-gallery galeria-grid">
+        @if($categorias->count() >= 1)
+        <div class="gal-filter-bar">
+            <button class="btn-gal-filter is-active" data-filter="all">
+                <i class="fa fa-th"></i> Geral <span class="filter-count">{{ $galerias->count() }}</span>
+            </button>
+            @foreach($categorias as $cat)
+            <button class="btn-gal-filter" data-filter="{{ $cat }}">
+                <i class="fa fa-tag"></i> {{ $cat }} <span class="filter-count">{{ $galerias->where('categoria_galeria', $cat)->count() }}</span>
+            </button>
+            @endforeach
+        </div>
+        @endif
 
-            @forelse ($galerias as $foto)
-            <div class="col-xs-6 col-sm-4 col-md-3 galeria-grid-col">
-                <a href="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}"
-                   title="{{ $foto->titulo_galeria }}"
-                   class="galeria-grid-item">
-                    <img src="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}"
-                         alt="{{ $foto->titulo_galeria }}"
-                         class="img-responsive galeria-grid-img" />
-                    <div class="galeria-grid-hover">
-                        <div class="galeria-grid-hover-icon">
-                            <i class="fa fa-search-plus"></i>
-                        </div>
-                        @if($foto->titulo_galeria)
-                        <div class="galeria-grid-hover-title">{{ $foto->titulo_galeria }}</div>
-                        @endif
-                    </div>
-                </a>
-            </div>
+        <div class="gal-grid popup-gallery">
+            @forelse($galerias as $foto)
+            <a href="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}"
+               title="{{ $foto->titulo_galeria }}"
+               class="gal-item"
+               data-categoria="{{ $foto->categoria_galeria }}">
+                <img src="{{ asset('futebol/images/galeria/' . $foto->foto_galeria) }}"
+                     alt="{{ $foto->titulo_galeria }}"
+                     class="gal-img"
+                     loading="lazy" />
+                <div class="gal-overlay">
+                    <i class="fa fa-search-plus gal-zoom-icon"></i>
+                    @if($foto->titulo_galeria)
+                    <span class="gal-title">{{ $foto->titulo_galeria }}</span>
+                    @endif
+                </div>
+            </a>
             @empty
-            <div class="col-xs-12">
-                <p class="text-center" style="padding: 60px 0; color: #999;">Nenhuma foto cadastrada.</p>
+            <div class="gal-empty-state">
+                <i class="fa fa-picture-o"></i>
+                <p>Nenhuma foto cadastrada.</p>
             </div>
             @endforelse
+        </div>
 
+        <div class="gal-no-results" id="gal-no-results" style="display:none;">
+            <i class="fa fa-picture-o"></i>
+            <p>Nenhuma foto encontrada para esta categoria.</p>
         </div>
 
     </div>
-</div>
-<!-- FIM GALERIA -->
+</section>
