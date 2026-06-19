@@ -1,4 +1,28 @@
 /* ==========================================================================
+   SMART HEADER — esconde a barra preta ao rolar para baixo,
+   reaparece imediatamente ao rolar para cima (detecção por direção)
+   ========================================================================== */
+(function () {
+    var navbar = document.querySelector('.navbar-main');
+    if (!navbar) return;
+
+    var lastScrollY = window.scrollY || window.pageYOffset;
+    var THRESHOLD   = 80;
+
+    window.addEventListener('scroll', function () {
+        var currentY = window.scrollY || window.pageYOffset;
+
+        if (currentY < lastScrollY) {
+            navbar.classList.remove('top-hidden');
+        } else if (currentY > THRESHOLD) {
+            navbar.classList.add('top-hidden');
+        }
+
+        lastScrollY = currentY;
+    }, { passive: true });
+})();
+
+/* ==========================================================================
    SISTEMA DE ACCORDION FLUIDO (FAQ) - CODERATECH
    Calcula a altura real do conteúdo em pixels para uma transição suave.
    ========================================================================== */

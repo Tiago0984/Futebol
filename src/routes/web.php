@@ -42,6 +42,7 @@ Route::get('/campeonato/{id}', [CampeonatoController::class, 'show'])->name('cam
 
 Route::get('/noticias', [NoticiasController::class, 'index'])->name('noticias.index');
 Route::get('/noticias/categoria/{categoria}', [NoticiasController::class, 'filtrarPorCategoria'])->name('site.noticias.categoria');
+
 Route::get('/noticias/post/{id}', [NoticiasController::class, 'show'])->name('site.noticias.show-noticia');
 
 Route::get('/shopping', [ShoppingController::class, 'shopping'])->name('shopping');
