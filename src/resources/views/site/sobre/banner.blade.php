@@ -3,7 +3,7 @@
 		<div class="container">
 			<div class="row">
 				<div class="col-sm-12 col-md-12">
-					<div class="caption">ABOUT CLUB</div>
+					<div class="caption">SOBRE O CLUBE</div>
 				</div>
 			</div>
 		</div>

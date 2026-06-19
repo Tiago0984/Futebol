@@ -7648,7 +7648,7 @@ body {
 }
 
 /* ==========================================================================
-   PARCERIAS — grid de histórias dos parceiros
+   58. PARCERIAS — grid de histórias dos parceiros
    ========================================================================== */
 
 .partners-stories-grid {
@@ -7764,7 +7764,7 @@ body {
 }
 
 /* ==========================================================================
-   SMART HEADER — animação da barra preta ao rolar
+   59. SMART HEADER — animação da barra preta ao rolar
    ========================================================================== */
 
 .header-top {
@@ -7782,7 +7782,7 @@ body {
 }
 
 /* ==========================================================================
-   SMART HEADER — corrige conflito com classe .stiky do template original
+   59. SMART HEADER — corrige conflito com classe .stiky do template original
    e usa transição em height (valor fixo 40px já definido no style.css)
    ========================================================================== */
 
@@ -7804,4 +7804,395 @@ body {
     height: 0 !important;
     opacity: 0 !important;
     pointer-events: none;
+}
+
+/* ==========================================================================
+   60. TIMELINE INTERATIVA — sinais visuais de interatividade
+   ========================================================================== */
+
+/* Cursor e posição relativa para o ::after */
+.timeline-node {
+    cursor: pointer;
+    position: relative;
+}
+
+/* Pulsação no nó ativo */
+@keyframes timelinePulse {
+    0%   { box-shadow: 0 0 0 0   rgba(227, 28, 28, 0.55); }
+    70%  { box-shadow: 0 0 0 18px rgba(227, 28, 28, 0); }
+    100% { box-shadow: 0 0 0 0   rgba(227, 28, 28, 0); }
+}
+.timeline-node.is-active {
+    animation: timelinePulse 1.8s ease-out infinite;
+}
+
+/* Seta abaixo do nó ativo apontando para o card */
+.timeline-node.is-active::after {
+    content: '';
+    position: absolute;
+    bottom: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 9px solid transparent;
+    border-right: 9px solid transparent;
+    border-top: 11px solid #e31c1c;
+    pointer-events: none;
+}
+
+/* Label de instrução acima da linha do tempo */
+.timeline-hint {
+    text-align: center;
+    font-size: 0.82rem;
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+    color: #999;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.timeline-hint i {
+    color: #e31c1c;
+    font-size: 0.9rem;
+}
+
+/* Fade do card ao trocar de ano */
+.timeline-content-card {
+    transition: opacity 0.25s ease;
+}
+.timeline-content-card.is-fading {
+    opacity: 0;
+}
+
+/* ==========================================================================
+   61. COACHES CARDS — redesign overlay (foto preenche o card inteiro,
+   nome/cargo flutua sobre gradiente na base)
+   ========================================================================== */
+
+.coaches-cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 28px;
+}
+
+/* Card vira container relativo com proporção retrato 3:4 */
+.coach-card-item {
+    position: relative !important;
+    display: block !important;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 3 / 4;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22);
+    background: #111;
+    flex-direction: unset !important;
+}
+
+/* Área da imagem preenche todo o card */
+.coach-image-area {
+    position: absolute !important;
+    top: 0; left: 0;
+    width: 100% !important;
+    height: 100% !important;
+    display: block !important;
+    background: #222;
+}
+
+.coach-image-area img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: top center !important;   /* mantém rosto visível */
+    transition: transform 0.45s ease;
+    display: block;
+}
+
+/* Zoom suave no hover */
+.coach-card-item:hover .coach-image-area img {
+    transform: scale(1.06);
+}
+
+/* Rodapé posicionado sobre a imagem com gradiente */
+.coach-footer-info {
+    position: absolute !important;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(
+        to top,
+        rgba(0, 0, 0, 0.96) 0%,
+        rgba(0, 0, 0, 0.72) 50%,
+        transparent 100%
+    ) !important;
+    border-top: 3px solid #e31c1c !important;
+    padding: 56px 22px 22px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: flex-end !important;
+    transition: padding 0.3s ease;
+}
+
+.coach-card-item:hover .coach-footer-info {
+    padding-bottom: 28px !important;
+}
+
+/* Ícones sociais — círculo com borda */
+.social-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(255,255,255,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+.social-icon:hover {
+    border-color: #e31c1c;
+    background: #e31c1c;
+    color: #fff;
+    text-decoration: none;
+}
+
+/* Remove borda vermelha interna do rodapé (corta a foto no overlay) */
+.coach-footer-info {
+    border-top: none !important;
+}
+
+/* Traço vermelho na base do card — mantém identidade sem cortar a foto */
+.coach-card-item {
+    border-bottom: 3px solid #e31c1c;
+}
+
+/* ==========================================================================
+   62. COACHES — bio overlay ao hover
+   ========================================================================== */
+
+/* Lead da seção */
+.coaches-section-lead {
+    text-align: center;
+    color: #666;
+    font-size: 1rem;
+    max-width: 580px;
+    margin: 0 auto 48px;
+    line-height: 1.7;
+}
+
+/* Overlay de bio — cobre a foto ao hover */
+.coach-bio-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    bottom: 72px; /* não cobre o rodapé */
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 28px 24px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.35s ease, transform 0.35s ease;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.coach-card-item:hover .coach-bio-overlay {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Impede zoom excessivo da foto ao focar na bio */
+.coach-card-item:hover .coach-image-area img {
+    transform: scale(1.03);
+}
+
+/* Conteúdo interno da bio */
+.coach-bio-inner {
+    text-align: center;
+}
+
+.coach-bio-quote-icon {
+    color: #e31c1c;
+    font-size: 1.2rem;
+    margin-bottom: 14px;
+    display: block;
+    opacity: 0.8;
+}
+
+.coach-bio-text {
+    color: #e8e8e8;
+    font-size: 0.84rem;
+    line-height: 1.75;
+    margin: 0 0 18px 0;
+}
+
+/* Mini estatísticas na bio */
+.coach-bio-stats {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+    padding-top: 14px;
+}
+
+.coach-bio-stats li {
+    color: #aaa;
+    font-size: 0.78rem;
+    letter-spacing: 0.3px;
+}
+
+.coach-bio-stats li strong {
+    color: #e31c1c;
+    font-weight: 700;
+}
+
+/* Hint visual — pequeno ícone no canto superior direito */
+.coach-card-item::before {
+    content: '\f05a'; /* fa-info-circle */
+    font-family: FontAwesome;
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 1rem;
+    z-index: 4;
+    transition: color 0.25s ease;
+    pointer-events: none;
+}
+
+.coach-card-item:hover::before {
+    color: #e31c1c;
+}
+
+/* ==========================================================================
+   63. COACHES — correção de tamanho e borda
+   ========================================================================== */
+
+/* Grid com 3 colunas fixas e largura máxima centrada */
+.coaches-cards-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    max-width: 900px;
+    margin: 0 auto;
+    gap: 24px !important;
+}
+
+/* Cards menores: altura controlada, borda inset que segue o border-radius */
+.coach-card-item {
+    aspect-ratio: unset !important;
+    height: 340px !important;
+    border-bottom: none !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14),
+                inset 0 -4px 0 #e31c1c !important;
+}
+
+/* Bio overlay se ajusta à nova altura do rodapé */
+.coach-bio-overlay {
+    bottom: 68px !important;
+}
+
+/* Responsivo: 1 coluna em telas menores */
+@media (max-width: 700px) {
+    .coaches-cards-grid {
+        grid-template-columns: 1fr !important;
+        max-width: 360px;
+    }
+}
+
+/* ==========================================================================
+   64. COACHES — restaura tamanho original, mantém correção de borda
+   ========================================================================== */
+
+.coaches-cards-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+    max-width: unset !important;
+    margin: unset !important;
+    gap: 28px !important;
+}
+
+.coach-card-item {
+    height: unset !important;
+    aspect-ratio: 3 / 4 !important;
+    border-bottom: none !important;
+    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.22),
+                inset 0 -4px 0 #e31c1c !important;
+}
+
+@media (max-width: 700px) {
+    .coaches-cards-grid {
+        grid-template-columns: 1fr !important;
+        max-width: unset !important;
+    }
+}
+
+/* COACHES — overlay de bio menos escuro */
+.coach-bio-overlay {
+    background: rgba(0, 0, 0, 0.68) !important;
+}
+
+/* ==========================================================================
+   65. COACHES — corrige overlay cobrindo o nome e melhora layout interno
+   ========================================================================== */
+
+/* Garante que o rodapé fique sempre acima do overlay */
+.coach-footer-info {
+    z-index: 4 !important;
+}
+
+/* Overlay para de 74px antes do fim do card (altura do rodapé visível) */
+.coach-bio-overlay {
+    bottom: 74px !important;
+    padding: 20px 22px 16px !important;
+    align-items: flex-start !important;
+    /* Fade suave na borda inferior para não cortar abruptamente */
+    -webkit-mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+    mask-image: linear-gradient(to bottom, black 80%, transparent 100%);
+}
+
+/* Bio inner: scroll se o texto for longo */
+.coach-bio-inner {
+    width: 100%;
+    overflow-y: auto;
+    max-height: 100%;
+    scrollbar-width: none;
+}
+.coach-bio-inner::-webkit-scrollbar { display: none; }
+
+/* Ícone de aspas menor e mais discreto */
+.coach-bio-quote-icon {
+    font-size: 1rem !important;
+    margin-bottom: 10px !important;
+}
+
+/* Texto da bio levemente maior e com melhor espaçamento */
+.coach-bio-text {
+    font-size: 0.82rem !important;
+    line-height: 1.65 !important;
+    margin-bottom: 14px !important;
+    text-align: left !important;
+}
+
+/* Estatísticas em linha para economizar espaço vertical */
+.coach-bio-stats {
+    flex-direction: row !important;
+    flex-wrap: wrap;
+    gap: 4px 16px !important;
+    padding-top: 10px !important;
+    justify-content: flex-start;
+}
+
+.coach-bio-stats li {
+    font-size: 0.75rem !important;
+}
+
+/* Espaço abaixo da dupla barra vermelha para o ::after não sobrepor o texto seguinte */
+.header-line {
+    margin-bottom: 24px;
 }

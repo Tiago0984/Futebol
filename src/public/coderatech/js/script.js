@@ -23,6 +23,120 @@
 })();
 
 /* ==========================================================================
+   SELETOR DE CAMPEONATO — seção Jogos & Classificação (home)
+   ========================================================================== */
+(function () {
+    var campCards = document.querySelectorAll('.home-camp-card');
+    if (!campCards.length) return;
+
+    campCards.forEach(function (card) {
+        card.addEventListener('click', function () {
+            var id = this.dataset.campId;
+            document.querySelectorAll('.home-camp-card').forEach(function (c) { c.classList.remove('is-active'); });
+            document.querySelectorAll('.home-camp-panel').forEach(function (p) { p.classList.remove('is-active'); });
+            this.classList.add('is-active');
+            var panel = document.querySelector('.home-camp-panel[data-camp-id="' + id + '"]');
+            if (panel) panel.classList.add('is-active');
+        });
+    });
+
+    document.querySelectorAll('.home-camp-tab-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var target = this.dataset.target;
+            var panel  = this.closest('.home-camp-panel');
+            panel.querySelectorAll('.home-camp-tab-btn').forEach(function (b) { b.classList.remove('is-active'); });
+            panel.querySelectorAll('.home-camp-tab-panel').forEach(function (p) { p.classList.remove('is-active'); });
+            this.classList.add('is-active');
+            var tabPanel = document.getElementById(target);
+            if (tabPanel) tabPanel.classList.add('is-active');
+        });
+    });
+})();
+
+/* ==========================================================================
+   TIMELINE INTERATIVA — seção Nossa História (sobre)
+   Caminho base das imagens lido do atributo data-img-base da section,
+   evitando misturar Blade/PHP dentro do script.js.
+   ========================================================================== */
+(function () {
+    var section = document.querySelector('.about-history-section');
+    if (!section) return;
+
+    var BASE = section.dataset.imgBase || '/futebol/images/sobre/';
+    if (BASE.slice(-1) !== '/') BASE += '/';
+
+    var timelineData = {
+        '2010': {
+            title: 'Fundação — 2010',
+            img:   BASE + 'historia-2010.jpg',
+            alt:   'Primeiros treinos da AACJ Futebol em campo emprestado — 2010',
+            text:  'A <strong>AACJ Futebol</strong> deu seus primeiros passos em 2010, reunindo um grupo de pais, educadores e apaixonados pelo esporte com um sonho simples: dar às crianças da região um espaço seguro para jogar futebol e crescer. Com poucos recursos, mas muita determinação, os primeiros treinos aconteceram em um campo emprestado, e a semente de algo grande foi plantada.'
+        },
+        '2012': {
+            title: 'Primeiros Campeonatos — 2012',
+            img:   BASE + 'historia-2012.jpg',
+            alt:   'Equipe Sub-13 AACJ na final do torneio municipal — 2012',
+            text:  'Dois anos após a fundação, a <strong>AACJ Futebol</strong> disputou sua primeira competição oficial regional. A equipe Sub-13 surpreendeu ao chegar à final do torneio municipal, conquistando o respeito de clubes da região e atraindo novos atletas e parceiros para o projeto.'
+        },
+        '2015': {
+            title: 'Expansão das Categorias — 2015',
+            img:   BASE + 'historia-2015.jpg',
+            alt:   'Escolinha AACJ com múltiplas categorias treinando juntas — 2015',
+            text:  'Com a demanda crescendo, a associação expandiu suas categorias para Sub-9, Sub-11 e Sub-15, estruturando uma escolinha com metodologia própria. Mais de 80 atletas passaram a treinar regularmente, e o projeto social começou a ganhar visibilidade fora da comunidade.'
+        },
+        '2018': {
+            title: 'Nova Estrutura — 2018',
+            img:   BASE + 'historia-2018.jpg',
+            alt:   'Inauguração do campo próprio da AACJ Futebol — 2018',
+            text:  'Em 2018, com o apoio de patrocinadores e da prefeitura local, a <strong>AACJ Futebol</strong> inaugurou seu próprio campo com grama natural, vestiários e arquibancada para a torcida. Um marco que consolidou a associação como referência no desenvolvimento do futebol jovem na região.'
+        },
+        '2021': {
+            title: 'Liga Premiere — 2021',
+            img:   BASE + 'historia-2021.jpg',
+            alt:   'AACJ Futebol estreando na Liga Premiere — 2021',
+            text:  'O ano de 2021 marcou a entrada da <strong>AACJ Futebol</strong> na Liga Premiere, competição de maior prestígio do circuito regional. A participação elevou o nível técnico do clube, inspirou os jovens atletas a treinarem com mais dedicação e abriu portas para parcerias com clubes profissionais da região.'
+        },
+        '2024': {
+            title: 'Crescimento e Futuro — 2024',
+            img:   BASE + 'historia-2024.jpg',
+            alt:   'Mais de 120 atletas ativos na AACJ Futebol — 2024',
+            text:  'Em 2024, a <strong>AACJ Futebol</strong> atingiu a marca de mais de 120 atletas ativos, com programas de acompanhamento nutricional, reforço escolar e apoio psicológico. O clube segue firme no propósito de transformar o esporte em ponte para o futuro — dentro e fora dos campos.'
+        }
+    };
+
+    var nodes       = document.querySelectorAll('.timeline-node');
+    var textContent = document.getElementById('timeline-text-content');
+    var timelineImg = document.getElementById('timeline-img');
+    var card        = document.querySelector('.timeline-content-card');
+
+    nodes.forEach(function (node) {
+        node.addEventListener('click', function () {
+            if (this.classList.contains('is-active')) return;
+
+            nodes.forEach(function (n) { n.classList.remove('is-active'); });
+            this.classList.add('is-active');
+
+            var year = this.dataset.year;
+            var data = timelineData[year];
+            if (!data) return;
+
+            card.classList.add('is-fading');
+            setTimeout(function () {
+                if (textContent) {
+                    textContent.querySelector('h3').textContent = data.title;
+                    textContent.querySelector('p').innerHTML    = data.text;
+                }
+                if (timelineImg) {
+                    timelineImg.src = data.img;
+                    timelineImg.alt = data.alt;
+                }
+                card.classList.remove('is-fading');
+            }, 220);
+        });
+    });
+})();
+
+/* ==========================================================================
    SISTEMA DE ACCORDION FLUIDO (FAQ) - CODERATECH
    Calcula a altura real do conteúdo em pixels para uma transição suave.
    ========================================================================== */

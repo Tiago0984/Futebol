@@ -144,35 +144,3 @@
     </div>
 </section>
 
-<script>
-(function () {
-    // Troca o campeonato ativo
-    document.querySelectorAll('.home-camp-card').forEach(function (card) {
-        card.addEventListener('click', function () {
-            var id = this.dataset.campId;
-
-            document.querySelectorAll('.home-camp-card').forEach(function (c) { c.classList.remove('is-active'); });
-            document.querySelectorAll('.home-camp-panel').forEach(function (p) { p.classList.remove('is-active'); });
-
-            this.classList.add('is-active');
-            var panel = document.querySelector('.home-camp-panel[data-camp-id="' + id + '"]');
-            if (panel) panel.classList.add('is-active');
-        });
-    });
-
-    // Troca a aba dentro do painel ativo
-    document.querySelectorAll('.home-camp-tab-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var target = this.dataset.target;
-            var panel  = this.closest('.home-camp-panel');
-
-            panel.querySelectorAll('.home-camp-tab-btn').forEach(function (b) { b.classList.remove('is-active'); });
-            panel.querySelectorAll('.home-camp-tab-panel').forEach(function (p) { p.classList.remove('is-active'); });
-
-            this.classList.add('is-active');
-            var tabPanel = document.getElementById(target);
-            if (tabPanel) tabPanel.classList.add('is-active');
-        });
-    });
-})();
-</script>

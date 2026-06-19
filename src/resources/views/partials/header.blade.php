@@ -23,14 +23,21 @@
 
                 {{-- ÍCONES DE NAVEGAÇÃO --}}
                 <nav class="top-bar-nav">
-                    <a href="{{ route('home') }}"          class="top-bar-nav-icon {{ request()->routeIs('home') ? 'active' : '' }}"          title="Home"><i class="fa fa-home"></i></a>
-                    <a href="{{ route('sobre') }}"         class="top-bar-nav-icon {{ request()->routeIs('sobre') ? 'active' : '' }}"         title="Sobre"><i class="fa fa-info-circle"></i></a>
-                    <a href="{{ route('calendario') }}"    class="top-bar-nav-icon {{ request()->routeIs('calendario') ? 'active' : '' }}"    title="Calendário"><i class="fa fa-calendar"></i></a>
-                    <a href="{{ route('contato') }}"       class="top-bar-nav-icon {{ request()->routeIs('contato') ? 'active' : '' }}"       title="Contato"><i class="fa fa-envelope-o"></i></a>
-                    <a href="{{ route('noticias.index') }}" class="top-bar-nav-icon {{ request()->routeIs('noticias*') ? 'active' : '' }}"    title="Notícias"><i class="fa fa-file-text-o"></i></a>
-                    <a href="{{ route('shopping') }}"      class="top-bar-nav-icon {{ request()->routeIs('shopping*') ? 'active' : '' }}"     title="Shopping"><i class="fa fa-shopping-cart"></i></a>
-                    <a href="{{ route('galeria.index') }}" class="top-bar-nav-icon {{ request()->routeIs('galeria*') ? 'active' : '' }}"      title="Galeria"><i class="fa fa-picture-o"></i></a>
-                    <a href="{{ url('/admin') }}"           class="top-bar-nav-icon"                                                           title="Login / Área Admin"><i class="fa fa-user"></i></a>
+                    <a href="{{ route('home') }}" class="top-bar-nav-icon {{ request()->routeIs('home') ? 'active' : '' }}" title="Home"><i class="fa fa-home"></i></a>
+
+                    <a href="{{ route('sobre') }}" class="top-bar-nav-icon {{ request()->routeIs('sobre') ? 'active' : '' }}" title="Sobre"><i class="fa fa-info-circle"></i></a>
+
+                    <a href="{{ route('calendario') }}" class="top-bar-nav-icon {{ request()->routeIs('calendario') ? 'active' : '' }}" title="Calendário"><i class="fa fa-calendar"></i></a>
+
+                    <a href="{{ route('noticias.index') }}" class="top-bar-nav-icon {{ request()->routeIs('noticias*') ? 'active' : '' }}" title="Notícias"><i class="fa fa-file-text-o"></i></a>
+
+                    <!-- <a href="{{ route('shopping') }}"      class="top-bar-nav-icon {{ request()->routeIs('shopping*') ? 'active' : '' }}"     title="Shopping"><i class="fa fa-shopping-cart"></i></a> -->
+
+                    <a href="{{ route('galeria.index') }}" class="top-bar-nav-icon {{ request()->routeIs('galeria*') ? 'active' : '' }}" title="Galeria"><i class="fa fa-picture-o"></i></a>
+
+                    <a href="{{ route('contato') }}" class="top-bar-nav-icon {{ request()->routeIs('contato') ? 'active' : '' }}" title="Contato"><i class="fa fa-envelope-o"></i></a>
+
+                    <a href="{{ url('/admin') }}" class="top-bar-nav-icon" title="Login / Área Admin"><i class="fa fa-user"></i></a>
                 </nav>
 
             </div>

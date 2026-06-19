@@ -1,23 +1,25 @@
 <section class="about-welcome-section">
     <div class="container-about">
-        
+
         <div class="about-centered-header">
-            <h2>About Club</h2>
+            <h2>Sobre o Clube</h2>
             <div class="header-line"></div>
         </div>
 
         <div class="welcome-layout-grid">
             <div class="welcome-text-block">
                 <div class="welcome-highlight-badge">
-                    <h3>Welcome to Pro Soccer</h3>
+                    <h3>Bem-vindo à AACJ Futebol</h3>
                 </div>
-                <p class="welcome-lead"><strong>PRO SOCCER FC .inc</strong> Lorem ipsum dolor sit amet, libero turpis non cras ligula, id commodo, aenean est in volutpat amet sodales, porttitor bibendum facilisi suspendisse, aliquam ipsum ante morbi sed ipsum mollis. Sollicitudin viverra, vel varius eget sit mollis.</p>
-                <p>Commodo enim aliquam suspendisse tortor cum diam, commodo facilisis, rutrum et duis nisl porttitor, vel eleifend odio ultricies ut, orci in adipiscing felis velit nibh. Consectetur porttitor feugiat vestibulum sit feugiat, voluptates dui eros libero. Etiam vestibulum at lectus.</p>
+                <p class="welcome-lead"><strong>A AACJ Futebol</strong> nasceu do desejo de transformar o esporte em ferramenta de desenvolvimento humano. Fundada com o propósito de oferecer a crianças e jovens um ambiente seguro, estruturado e apaixonado pelo futebol, nossa associação cresceu com a força da comunidade e o compromisso com cada atleta que passa pelo nosso campo.</p>
+                <p>Acreditamos que o futebol vai muito além dos 90 minutos. Ele forma caráter, ensina disciplina, cria laços e abre portas. Por isso, cada treino, cada campeonato e cada conquista são celebrados não apenas como vitórias esportivas, mas como passos importantes na jornada de crescimento dos nossos jovens atletas.</p>
             </div>
 
             <div class="welcome-image-block">
                 <div class="welcome-img-wrapper">
-                    <div class="welcome-placeholder-graphic">[ IMAGEM DA ESTRUTURA / ESTÁDIO ]</div>
+                    <img src="{{ asset('futebol/images/sobre/estrutura-campo.jpg') }}"
+                         alt="Campo de treinamento AACJ Futebol"
+                         style="width:100%; height:100%; object-fit:cover; border-radius:4px;">
                 </div>
             </div>
         </div>
