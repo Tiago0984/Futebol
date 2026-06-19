@@ -56,7 +56,7 @@
     ></script>
 
     <!-- sortablejs -->
-    <script>
+    {{-- <script>
       new Sortable(document.querySelector('.connectedSortable'), {
         group: 'shared',
         handle: '.card-header',
@@ -66,17 +66,17 @@
       cardHeaders.forEach((cardHeader) => {
         cardHeader.style.cursor = 'move';
       });
-    </script>
+    </script> --}}
 
     <!-- apexcharts -->
-    <script
+    {{-- <script
       src="https://cdn.jsdelivr.net/npm/apexcharts@3.37.1/dist/apexcharts.min.js"
       integrity="sha256-+vh8GkaU7C9/wbSLIcwq82tQ2wTf44aOHA8HlBMwRI8="
       crossorigin="anonymous"
-    ></script>
+    ></script> --}}
 
     <!-- ChartJS -->
-    <script>
+    {{-- <script>
       // NOTICE!! DO NOT USE ANY OF THIS JAVASCRIPT
       // IT'S ALL JUST JUNK FOR DEMO
       // ++++++++++++++++++++++++++++++++++++++++++
@@ -133,111 +133,111 @@
         sales_chart_options,
       );
       sales_chart.render();
-    </script>
+    </script> --}}
 
     <!-- jsvectormap -->
-    <script
+    {{-- <script
       src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/js/jsvectormap.min.js"
       integrity="sha256-/t1nN2956BT869E6H4V1dnt0X5pAQHPytli+1nTZm2Y="
       crossorigin="anonymous"
-    ></script>
-    <script
+    ></script> --}}
+    {{-- <script
       src="https://cdn.jsdelivr.net/npm/jsvectormap@1.5.3/dist/maps/world.js"
       integrity="sha256-XPpPaZlU8S/HWf7FZLAncLg2SAkP8ScUTII89x9D3lY="
       crossorigin="anonymous"
-    ></script>
+    ></script> --}}
 
     <!-- jsvectormap -->
-    <script>
+    {{-- <script>
       // World map by jsVectorMap
-      new jsVectorMap({
-        selector: '#world-map',
-        map: 'world',
-      });
+      // new jsVectorMap({
+      //   selector: '#world-map',
+      //   map: 'world',
+      // });
 
       // Sparkline charts
-      const option_sparkline1 = {
-        series: [
-          {
-            data: [1000, 1200, 920, 927, 931, 1027, 819, 930, 1021],
-          },
-        ],
-        chart: {
-          type: 'area',
-          height: 50,
-          sparkline: {
-            enabled: true,
-          },
-        },
-        stroke: {
-          curve: 'straight',
-        },
-        fill: {
-          opacity: 0.3,
-        },
-        yaxis: {
-          min: 0,
-        },
-        colors: ['#DCE6EC'],
-      };
+    //   const option_sparkline1 = {
+    //     series: [
+    //       {
+    //         data: [1000, 1200, 920, 927, 931, 1027, 819, 930, 1021],
+    //       },
+    //     ],
+    //     chart: {
+    //       type: 'area',
+    //       height: 50,
+    //       sparkline: {
+    //         enabled: true,
+    //       },
+    //     },
+    //     stroke: {
+    //       curve: 'straight',
+    //     },
+    //     fill: {
+    //       opacity: 0.3,
+    //     },
+    //     yaxis: {
+    //       min: 0,
+    //     },
+    //     colors: ['#DCE6EC'],
+    //   };
 
-      const sparkline1 = new ApexCharts(document.querySelector('#sparkline-1'), option_sparkline1);
-      sparkline1.render();
+    //   const sparkline1 = new ApexCharts(document.querySelector('#sparkline-1'), option_sparkline1);
+    //   sparkline1.render();
 
-      const option_sparkline2 = {
-        series: [
-          {
-            data: [515, 519, 520, 522, 652, 810, 370, 627, 319, 630, 921],
-          },
-        ],
-        chart: {
-          type: 'area',
-          height: 50,
-          sparkline: {
-            enabled: true,
-          },
-        },
-        stroke: {
-          curve: 'straight',
-        },
-        fill: {
-          opacity: 0.3,
-        },
-        yaxis: {
-          min: 0,
-        },
-        colors: ['#DCE6EC'],
-      };
+    //   const option_sparkline2 = {
+    //     series: [
+    //       {
+    //         data: [515, 519, 520, 522, 652, 810, 370, 627, 319, 630, 921],
+    //       },
+    //     ],
+    //     chart: {
+    //       type: 'area',
+    //       height: 50,
+    //       sparkline: {
+    //         enabled: true,
+    //       },
+    //     },
+    //     stroke: {
+    //       curve: 'straight',
+    //     },
+    //     fill: {
+    //       opacity: 0.3,
+    //     },
+    //     yaxis: {
+    //       min: 0,
+    //     },
+    //     colors: ['#DCE6EC'],
+    //   };
 
-      const sparkline2 = new ApexCharts(document.querySelector('#sparkline-2'), option_sparkline2);
-      sparkline2.render();
+    //   const sparkline2 = new ApexCharts(document.querySelector('#sparkline-2'), option_sparkline2);
+    //   sparkline2.render();
 
-      const option_sparkline3 = {
-        series: [
-          {
-            data: [15, 19, 20, 22, 33, 27, 31, 27, 19, 30, 21],
-          },
-        ],
-        chart: {
-          type: 'area',
-          height: 50,
-          sparkline: {
-            enabled: true,
-          },
-        },
-        stroke: {
-          curve: 'straight',
-        },
-        fill: {
-          opacity: 0.3,
-        },
-        yaxis: {
-          min: 0,
-        },
-        colors: ['#DCE6EC'],
-      };
+    //   const option_sparkline3 = {
+    //     series: [
+    //       {
+    //         data: [15, 19, 20, 22, 33, 27, 31, 27, 19, 30, 21],
+    //       },
+    //     ],
+    //     chart: {
+    //       type: 'area',
+    //       height: 50,
+    //       sparkline: {
+    //         enabled: true,
+    //       },
+    //     },
+    //     stroke: {
+    //       curve: 'straight',
+    //     },
+    //     fill: {
+    //       opacity: 0.3,
+    //     },
+    //     yaxis: {
+    //       min: 0,
+    //     },
+    //     colors: ['#DCE6EC'],
+    //   };
 
-      const sparkline3 = new ApexCharts(document.querySelector('#sparkline-3'), option_sparkline3);
-      sparkline3.render();
-    </script>
+    //   const sparkline3 = new ApexCharts(document.querySelector('#sparkline-3'), option_sparkline3);
+    //   sparkline3.render();
+    </script> --}}
 <!--end::Script-->
