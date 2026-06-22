@@ -29,7 +29,9 @@
       <!-- ==============================================
 	Google Fonts
 	=============================================== -->
-      <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
+      <link rel="preconnect" href="https://fonts.googleapis.com">
+      <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+      <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
 
       <!-- ==============================================
 	Custom Stylesheet

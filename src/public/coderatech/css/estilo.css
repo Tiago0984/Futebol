@@ -1704,7 +1704,7 @@ img:focus {
     line-height: 0.8;
     margin-right: 12px;
     margin-top: 4px;
-    font-family: "Montserrat", sans-serif;
+    font-family: 'Oswald', sans-serif;
 }
 
 .page-show-premium .post-full-content br {
@@ -3000,7 +3000,7 @@ img:focus {
     padding: 0;
 }
 body {
-    font-family: Arial, sans-serif;
+    font-family: 'Open Sans', sans-serif;
     background: #f2f2f2;
     color: #333;
 }
@@ -4210,7 +4210,7 @@ body {
     background-color: #ffffff;
     padding: 40px 15px 80px 15px;
     min-height: 100vh;
-    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-family: 'Open Sans', sans-serif;
     max-width: 1200px;
     margin: 0 auto;
     box-sizing: border-box;
@@ -5219,7 +5219,7 @@ body {
     display: inline-block;
     background: #e20e0e;
     color: #fff;
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     font-size: 18px;
     letter-spacing: 3px;
     padding: 6px 24px;
@@ -5259,7 +5259,7 @@ body {
 }
 
 .lp-team-name {
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     font-size: 22px;
     color: #fff;
     letter-spacing: 2px;
@@ -5289,7 +5289,7 @@ body {
 }
 
 .lp-vs {
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     font-size: 60px;
     color: #fff;
     line-height: 1;
@@ -5305,14 +5305,14 @@ body {
 }
 
 .lp-score-num {
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     font-size: 64px;
     color: #fff;
     line-height: 1;
 }
 
 .lp-score-sep {
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     font-size: 48px;
     color: #e20e0e;
     line-height: 1;
@@ -5335,7 +5335,7 @@ body {
 }
 
 .lp-date {
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     font-size: 18px;
     color: rgba(255,255,255,0.85);
     letter-spacing: 1.5px;
@@ -8272,7 +8272,7 @@ body {
     font-size: 3rem;
     font-weight: 900;
     color: #fff;
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     line-height: 1;
 }
 
@@ -8329,7 +8329,7 @@ body {
     font-size: 2.4rem;
     font-weight: 900;
     color: #fff;
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     line-height: 1;
 }
 
@@ -8371,7 +8371,7 @@ body {
 .cal-stat-item strong {
     font-size: 2rem;
     font-weight: 900;
-    font-family: 'bebas_neue', sans-serif;
+    font-family: 'Oswald', sans-serif;
     line-height: 1;
 }
 
@@ -8727,5 +8727,597 @@ body {
     .gal-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 6px;
+    }
+}
+
+/* ==========================================================================
+   69. TEMA DO PAINEL ADMINISTRATIVO — AACJ FUTEBOL
+   ========================================================================== */
+
+/* ── 69.1 VARIÁVEIS — paleta e tipografia ── */
+:root {
+    /* Cores */
+    --aacj-red:        #e31c1c;
+    --aacj-red-dark:   #b51212;
+    --aacj-red-faint:  rgba(227, 28, 28, 0.08);
+    --aacj-black:      #0f0f0f;
+    --aacj-black-soft: #1a1a1a;
+    --aacj-black-card: #151515;
+    --aacj-white:      #ffffff;
+
+    /* Texto modo claro */
+    --aacj-text-primary:   #1a1a1a;
+    --aacj-text-secondary: #6b7280;
+    --aacj-text-muted:     #9ca3af;
+
+    /* Bordas modo claro */
+    --aacj-border: rgba(0, 0, 0, 0.08);
+
+    /* Tipografia */
+    --aacj-font: 'Open Sans', sans-serif;
+    --aacj-font-display: 'Oswald', sans-serif;
+    --aacj-font-size-base: 0.9rem;
+    --aacj-font-size-sm:   0.8rem;
+    --aacj-font-size-xs:   0.72rem;
+    --aacj-line-height:    1.55;
+}
+
+/* ── 69.2 BASE — aplicação da fonte e tamanho padrão ── */
+.app-wrapper,
+.app-wrapper * {
+    font-family: var(--aacj-font);
+}
+
+.app-wrapper {
+    font-size: var(--aacj-font-size-base);
+    line-height: var(--aacj-line-height);
+    color: var(--aacj-text-primary);
+}
+
+/* ── 69.3 NAVBAR ── */
+
+/* Barra principal — fundo branco + assinatura vermelha na base */
+.app-header.navbar {
+    background: #ffffff !important;
+    border-bottom: 3px solid var(--aacj-red) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+    font-family: var(--aacj-font);
+}
+
+/* Links do nav (hamburguer, Home, Contact, ícones) */
+.app-header .nav-link {
+    color: var(--aacj-text-secondary) !important;
+    font-size: var(--aacj-font-size-base);
+    transition: color 0.18s;
+}
+.app-header .nav-link:hover {
+    color: var(--aacj-red) !important;
+}
+
+/* Nome do usuário exibido ao lado do avatar no nav */
+.app-header .user-menu .nav-link span {
+    font-weight: 600;
+    font-size: var(--aacj-font-size-sm);
+    color: var(--aacj-text-primary) !important;
+}
+
+/* Badges — vermelho da AACJ */
+.app-header .navbar-badge.text-bg-danger  { background: var(--aacj-red) !important; }
+.app-header .navbar-badge.text-bg-warning { background: var(--aacj-red) !important; color: #fff !important; }
+
+/* ── Dropdown do perfil ── */
+
+/* Z-index garante que o dropdown fica acima da sidebar */
+.user-menu .dropdown-menu {
+    z-index: 1050 !important;
+}
+
+/* Transição suave ao abrir */
+.user-menu .dropdown-menu.show {
+    animation: navDropdownIn 0.18s ease forwards;
+}
+
+@keyframes navDropdownIn {
+    from {
+        opacity: 0;
+        transform: translateY(-6px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Cabeçalho do dropdown (era azul Bootstrap) */
+.user-header.text-bg-primary {
+    background: var(--aacj-black) !important;
+    border-bottom: 3px solid var(--aacj-red) !important;
+    padding: 20px 16px !important;
+    text-align: center;
+}
+.user-header.text-bg-primary img {
+    border: 3px solid var(--aacj-red);
+    border-radius: 50% !important;
+}
+.user-header.text-bg-primary p {
+    font-family: var(--aacj-font);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #ffffff !important;
+    margin-top: 8px;
+    margin-bottom: 0;
+}
+.user-header.text-bg-primary p small {
+    display: block;
+    font-size: var(--aacj-font-size-xs);
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.55) !important;
+    margin-top: 3px;
+}
+
+/* Rodapé do dropdown (botões Perfil e Sair) */
+.user-footer {
+    background: #f9f9f9 !important;
+    border-top: 1px solid var(--aacj-border) !important;
+    padding: 10px 16px !important;
+}
+.user-footer .btn-outline-secondary {
+    color: var(--aacj-text-secondary);
+    border-color: #d1d5db;
+    font-size: var(--aacj-font-size-sm);
+    font-weight: 600;
+}
+.user-footer .btn-outline-secondary:hover {
+    background: var(--aacj-black);
+    color: #fff;
+    border-color: var(--aacj-black);
+}
+.user-footer .btn-outline-danger {
+    color: var(--aacj-red);
+    border-color: var(--aacj-red);
+    font-size: var(--aacj-font-size-sm);
+    font-weight: 600;
+}
+.user-footer .btn-outline-danger:hover {
+    background: var(--aacj-red);
+    color: #fff;
+    border-color: var(--aacj-red);
+}
+
+/* ==========================================================================
+   68. PÁGINA DE LOGIN ADMIN — SPLIT-SCREEN (PAINEL ESQUERDO + FORMULÁRIO)
+   Paleta: preto (#0f0f0f / #111111), vermelho (#e31c1c), branco (#ffffff)
+   ========================================================================== */
+
+/* --- Reset mínimo para a página standalone --- */
+.lp-wrapper *,
+.lp-wrapper *::before,
+.lp-wrapper *::after {
+    box-sizing: border-box;
+}
+
+body.lp-body {
+    background: #0f0f0f;
+    margin: 0;
+    padding: 0;
+    height: 100%;
+}
+
+/* --- Wrapper principal (flex row) --- */
+.lp-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+/* ==========================================================================
+   68.1 PAINEL ESQUERDO — BRANDING COM IMAGEM DE FUNDO
+   ========================================================================== */
+.lp-brand {
+    flex: 1;
+    position: relative;
+    background: #111111 url('/futebol/images/login/campo-login.jpg') no-repeat center center;
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 48px;
+    overflow: hidden;
+}
+
+/* Overlay escuro + gradiente vermelho sutil */
+.lp-brand-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        150deg,
+        rgba(10, 10, 10, 0.93) 0%,
+        rgba(227, 28, 28, 0.20) 55%,
+        rgba(10, 10, 10, 0.88) 100%
+    );
+    z-index: 1;
+}
+
+/* Brilho radial vermelho no canto inferior esquerdo */
+.lp-brand-overlay::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at 20% 78%,
+        rgba(227, 28, 28, 0.16) 0%,
+        transparent 65%
+    );
+}
+
+/* Container interno acima do overlay */
+.lp-brand-inner {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    min-height: calc(100vh - 96px);
+}
+
+/* Logo + nome da escola */
+.lp-logo-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.lp-logo-row img {
+    height: 56px;
+    width: auto;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.6));
+}
+
+.lp-logo-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.lp-logo-text .lp-school-name {
+    font-size: 1rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    line-height: 1.2;
+}
+
+.lp-logo-text .lp-school-sub {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Bloco hero (título + descrição) */
+.lp-hero { padding-bottom: 8px; }
+
+.lp-line {
+    width: 44px;
+    height: 3px;
+    background: #e31c1c;
+    margin-bottom: 24px;
+}
+
+.lp-badge-brand {
+    display: inline-block;
+    background: #e31c1c;
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    padding: 5px 12px;
+    border-radius: 3px;
+    margin-bottom: 20px;
+}
+
+.lp-title {
+    font-size: 3rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    line-height: 1.1;
+    letter-spacing: -1px;
+    margin-bottom: 20px;
+}
+
+.lp-title em {
+    font-style: normal;
+    color: #e31c1c;
+}
+
+.lp-desc {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.52);
+    line-height: 1.65;
+    max-width: 400px;
+}
+
+/* Linha de estatísticas no rodapé do painel esquerdo */
+.lp-stats {
+    display: flex;
+    gap: 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    padding-top: 28px;
+}
+
+.lp-stat-value {
+    font-size: 1.9rem;
+    font-weight: 900;
+    color: #ffffff;
+    line-height: 1;
+}
+
+.lp-stat-label {
+    font-size: 0.72rem;
+    color: rgba(255, 255, 255, 0.38);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 4px;
+}
+
+/* ==========================================================================
+   68.2 PAINEL DIREITO — FORMULÁRIO DE ACESSO
+   ========================================================================== */
+.lp-form-panel {
+    width: 460px;
+    flex-shrink: 0;
+    background: #0f0f0f;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 56px 48px;
+    position: relative;
+    min-height: 100vh;
+}
+
+/* Faixa vermelha decorativa no topo do painel */
+.lp-form-panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #e31c1c 0%, #ff5555 60%, transparent 100%);
+}
+
+/* Cabeçalho do formulário */
+.lp-form-header {
+    margin-bottom: 36px;
+}
+
+.lp-restricted-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(227, 28, 28, 0.10);
+    border: 1px solid rgba(227, 28, 28, 0.28);
+    color: #e31c1c;
+    font-size: 0.65rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 24px;
+}
+
+/* Ponto piscante no badge de área restrita */
+.lp-pulse {
+    width: 6px;
+    height: 6px;
+    background: #e31c1c;
+    border-radius: 50%;
+    animation: lpPulse 1.8s infinite ease-in-out;
+}
+
+@keyframes lpPulse {
+    0%, 100% { opacity: 0.35; transform: scale(0.8); }
+    50%       { opacity: 1;    transform: scale(1.2); }
+}
+
+.lp-form-header h1 {
+    font-size: 2.1rem;
+    font-weight: 900;
+    color: #ffffff;
+    text-transform: uppercase;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    margin-bottom: 10px;
+}
+
+.lp-form-header p {
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.38);
+    line-height: 1.5;
+}
+
+/* Caixa de alerta de erro */
+.lp-alert {
+    background: rgba(227, 28, 28, 0.10);
+    border: 1px solid rgba(227, 28, 28, 0.28);
+    border-left: 3px solid #e31c1c;
+    color: #ff8888;
+    padding: 12px 16px;
+    border-radius: 4px;
+    font-size: 0.88rem;
+    line-height: 1.45;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.lp-alert .bi { flex-shrink: 0; margin-top: 1px; }
+
+/* ==========================================================================
+   68.3 CAMPOS DO FORMULÁRIO
+   ========================================================================== */
+.lp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.lp-field {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.lp-field label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: rgba(255, 255, 255, 0.38);
+}
+
+.lp-input-wrap { position: relative; }
+
+.lp-input-icon {
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: rgba(255, 255, 255, 0.22);
+    font-size: 0.95rem;
+    pointer-events: none;
+    transition: color 0.2s;
+    z-index: 1;
+}
+
+.lp-input {
+    width: 100%;
+    background: #181818;
+    border: 1px solid #282828;
+    color: #ffffff;
+    padding: 15px 44px 15px 42px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-family: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    outline: none;
+}
+
+.lp-input::placeholder { color: rgba(255, 255, 255, 0.17); }
+
+.lp-input:focus {
+    border-color: #e31c1c;
+    box-shadow: 0 0 0 3px rgba(227, 28, 28, 0.10);
+}
+
+/* Ícone muda de cor quando o campo está em foco */
+.lp-input-wrap:focus-within .lp-input-icon { color: #e31c1c; }
+
+/* Botão olho (mostrar/ocultar senha) */
+.lp-eye-btn {
+    position: absolute;
+    right: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.25);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 4px;
+    transition: color 0.2s;
+    line-height: 1;
+}
+
+.lp-eye-btn:hover { color: rgba(255, 255, 255, 0.6); }
+
+/* ==========================================================================
+   68.4 BOTÃO ENTRAR E LINK DE RETORNO
+   ========================================================================== */
+.lp-btn-submit {
+    background: #e31c1c;
+    color: #ffffff;
+    border: none;
+    padding: 16px;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.lp-btn-submit:hover {
+    background: #c01515;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(227, 28, 28, 0.28);
+}
+
+.lp-btn-submit:active { transform: translateY(0); }
+
+.lp-btn-arrow { transition: transform 0.2s; }
+.lp-btn-submit:hover .lp-btn-arrow { transform: translateX(4px); }
+
+/* Link "Voltar ao site" */
+.lp-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.28);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 36px;
+    transition: color 0.2s;
+}
+
+.lp-back:hover { color: rgba(255, 255, 255, 0.6); }
+
+.lp-back-arrow { transition: transform 0.2s; }
+.lp-back:hover .lp-back-arrow { transform: translateX(-4px); }
+
+/* ==========================================================================
+   68.5 RESPONSIVIDADE — LOGIN
+   ========================================================================== */
+@media (max-width: 900px) {
+    .lp-title { font-size: 2.2rem; }
+    .lp-form-panel { width: 400px; padding: 48px 36px; }
+}
+
+@media (max-width: 680px) {
+    .lp-wrapper { flex-direction: column; }
+
+    .lp-brand {
+        min-height: 300px;
+        padding: 32px 24px;
+    }
+
+    .lp-brand-inner { min-height: 236px; }
+
+    .lp-title { font-size: 1.9rem; }
+
+    /* Oculta estatísticas em telas pequenas */
+    .lp-stats { display: none; }
+
+    .lp-form-panel {
+        width: 100%;
+        min-height: auto;
+        padding: 40px 24px 48px;
     }
 }

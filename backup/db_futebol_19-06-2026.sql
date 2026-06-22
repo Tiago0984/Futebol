@@ -87,7 +87,7 @@ ALTER TABLE tbl_evento_calendario
     MODIFY tipo_evento_calendario ENUM('JOGO', 'TREINO', 'CAMPEONATO') NOT NULL;
 
 ALTER TABLE tbl_grade_treino
-    MODIFY tipo_grade_treino ENUM('TREINO', 'JOGO', 'LIVRE') NOT NULL DEFAULT 'TREINO'
+    MODIFY tipo_grade_treino ENUM('TREINO', 'JOGO', 'LIVRE') NOT NULL DEFAULT 'TREINO';
 
 ALTER TABLE tbl_galeria
 ADD COLUMN categoria_galeria VARCHAR(60) NOT NULL DEFAULT 'GERAL' AFTER foto_galeria;

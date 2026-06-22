@@ -30,14 +30,9 @@
     <!--end::Accessibility Features-->
 
     <!--begin::Fonts-->
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@fontsource/source-sans-3@5.0.12/index.css"
-      integrity="sha256-tXJfXfp6Ewt1ilPzLDtQnJV4hclT9XuaZUKyUvmyr+Q="
-      crossorigin="anonymous"
-      media="print"
-      onload="this.media = 'all'"
-    />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
     <!--end::Fonts-->
 
     <!--begin::Third Party Plugin(OverlayScrollbars)-->
@@ -59,6 +54,10 @@
     <!--begin::Required Plugin(AdminLTE)-->
     <link rel="stylesheet" href="{{asset('dash/css/adminlte.css')}}" />
     <!--end::Required Plugin(AdminLTE)-->
+
+    <!--begin::Tema AACJ-->
+    <link rel="stylesheet" href="{{asset('coderatech/css/estilo.css')}}" />
+    <!--end::Tema AACJ-->
 
     <!-- apexcharts -->
     <link

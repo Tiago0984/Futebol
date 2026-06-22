@@ -3,8 +3,8 @@
   <!--begin::Sidebar Brand-->
   <div class="sidebar-brand">
     <a href="{{ route('admin.dashboard') }}" class="brand-link">
-      <img src="{{ asset('dash/assets/img/AdminLTELogo.png') }}" alt="Logo" class="brand-image opacity-75 shadow" />
-      <span class="brand-text fw-light">Futebol Admin</span>
+      <img src="{{ asset('futebol/images/logo2.png') }}" alt="AACJ Futebol" class="brand-image shadow" style="width:33px;height:33px;object-fit:contain;" />
+      <span class="brand-text fw-bold">AACJ Futebol</span>
     </a>
   </div>
   <!--end::Sidebar Brand-->
@@ -240,12 +240,6 @@
             </p>
           </a>
         </li>
-        {{-- <li class="nav-item">
-          <a href="#" class="nav-link" style="color: #dc3545;">
-            <i class="nav-icon bi bi-box-arrow-right" style="color: #dc3545;"></i>
-            <p>Sair</p>
-          </a>
-        </li> --}}
 
       </ul>
       <!--end::Sidebar Menu-->
@@ -254,16 +248,23 @@
   <!--end::Sidebar Wrapper-->
 
   <!--begin::Sidebar User-->
-  <div
-    style="position: absolute; bottom: 0; left: 0; right: 0; padding: 0.75rem 1rem; border-top: 1px solid rgba(255,255,255,0.1); background: inherit;">
+  @php
+    $sidebarUser = auth()->user();
+    $sidebarInitials = 'AD';
+    if ($sidebarUser) {
+      $parts = explode(' ', trim($sidebarUser->nome_usuario));
+      $sidebarInitials = strtoupper(
+        substr($parts[0], 0, 1) .
+        (isset($parts[1]) ? substr($parts[1], 0, 1) : substr($parts[0], 1, 1))
+      );
+    }
+  @endphp
+  <div class="sidebar-user-wrap">
     <div class="d-flex align-items-center gap-2">
-      <div
-        class="rounded-circle bg-success d-flex align-items-center justify-content-center fw-bold text-white flex-shrink-0"
-        style="width:36px;height:36px;font-size:0.8rem;">AD</div>
+      <div class="user-avatar">{{ $sidebarInitials }}</div>
       <div style="min-width:0;">
-        <div class="text-white fw-semibold" style="font-size:0.875rem;line-height:1.3;">Admin</div>
-        <div style="font-size:0.7rem;color:#6c757d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          admin@futebol.com</div>
+        <div class="user-name">{{ $sidebarUser?->nome_usuario ?? 'Admin' }}</div>
+        <div class="user-email">{{ $sidebarUser?->email_usuario ?? '' }}</div>
       </div>
     </div>
   </div>

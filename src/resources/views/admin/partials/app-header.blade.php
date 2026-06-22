@@ -179,7 +179,7 @@
                   <p>
                     {{ $adminUser->nome_usuario }}
                     <small>{{ $adminUser->email_usuario }}</small>
-                    <small>Membro desde {{ \Carbon\Carbon::parse($adminUser->criado_em_usuarios)->format('M. Y') }}</small>
+                    <small>Membro desde {{ \Carbon\Carbon::parse($adminUser->criado_em_usuarios)->format('d/m/Y') }}</small>
                   </p>
                 </li>
                 <!--end::User Image-->
