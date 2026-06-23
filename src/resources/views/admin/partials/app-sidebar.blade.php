@@ -1,10 +1,10 @@
 <!--begin::Sidebar-->
-<aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+<aside class="app-sidebar shadow">
   <!--begin::Sidebar Brand-->
   <div class="sidebar-brand">
     <a href="{{ route('admin.dashboard') }}" class="brand-link">
-      <img src="{{ asset('futebol/images/logo2.png') }}" alt="AACJ Futebol" class="brand-image shadow" style="width:33px;height:33px;object-fit:contain;" />
-      <span class="brand-text fw-bold">AACJ Futebol</span>
+      <img src="{{ asset('futebol/images/logo2.png') }}" alt="AACJ Futebol" class="brand-image" style="width:36px;height:36px;object-fit:contain;" />
+      <span class="brand-text"><span class="brand-aacj">AACJ</span> <span class="brand-futebol">Futebol</span></span>
     </a>
   </div>
   <!--end::Sidebar Brand-->
