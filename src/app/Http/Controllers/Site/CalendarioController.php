@@ -14,7 +14,10 @@ class CalendarioController extends Controller
             ->orderBy('data_evento_calendario')
             ->get();
 
-        $proximoEvento = $eventos->firstWhere('destaque_evento_calendario', 'SIM');
+        $proximoEvento = EventoCalendario::where('status_evento_calendario', 'ATIVO')
+            ->where('data_evento_calendario', '>=', now()->toDateString()) // Filtra eventos futuros ou do dia atual
+            ->orderBy('data_evento_calendario')
+            ->first();
 
         $gradeTreinos = GradeTreino::where('status_grade_treino', 'ATIVO')
             ->orderByRaw("FIELD(dia_semana_grade_treino, 'segunda_quarta', 'terca_quinta', 'sexta', 'sabado')")

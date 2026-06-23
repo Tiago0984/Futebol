@@ -1,20 +1,19 @@
 /* ==========================================================================
-   SMART HEADER — esconde a barra preta ao rolar para baixo,
-   reaparece imediatamente ao rolar para cima (detecção por direção)
+   SMART HEADER — dois estados: completo (topo ou rolando para cima)
+   e compacto (rolando para baixo). Barra preta reaparece ao subir.
    ========================================================================== */
 (function () {
     var navbar = document.querySelector('.navbar-main');
     if (!navbar) return;
 
     var lastScrollY = window.scrollY || window.pageYOffset;
-    var THRESHOLD   = 80;
 
     window.addEventListener('scroll', function () {
         var currentY = window.scrollY || window.pageYOffset;
 
-        if (currentY < lastScrollY) {
+        if (currentY <= 0 || currentY < lastScrollY) {
             navbar.classList.remove('top-hidden');
-        } else if (currentY > THRESHOLD) {
+        } else if (currentY > lastScrollY) {
             navbar.classList.add('top-hidden');
         }
 

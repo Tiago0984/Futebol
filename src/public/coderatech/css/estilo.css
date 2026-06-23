@@ -6,9 +6,29 @@ html {
     scroll-behavior: smooth;
 }
 
-/** Arrumando tamanho da logo no header */
+/** Logo no header — dois estados: completo (topo) e compacto (qualquer scroll) */
+.navbar-main .navbar-brand {
+    transition: margin-top 0.25s ease;
+}
 .navbar-main .navbar-brand > img {
     width: 90%;
+    transition: width 0.25s ease;
+}
+
+/* Estado compacto: logo e barra vermelha encolhem juntos — sem estados intermediários */
+.navbar-main.top-hidden .navbar-brand,
+.navbar-main.stiky .navbar-brand {
+    margin-top: -20px !important;
+}
+.navbar-main.top-hidden .navbar-brand > img,
+.navbar-main.stiky .navbar-brand > img {
+    width: 60% !important;
+}
+/* Neutraliza o stiky: reduz altura dos links já no top-hidden para os dois estados ficarem idênticos */
+.navbar-main.top-hidden .navbar-nav > li > a,
+.navbar-main.stiky .navbar-nav > li > a {
+    padding-top: 20px !important;
+    min-height: 60px !important;
 }
 
 /** Arrumando BANNER da sessão de ESTATÍSTICAS */
