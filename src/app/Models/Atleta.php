@@ -18,8 +18,6 @@ class Atleta extends Authenticatable
         'numero_matricula_atleta',
         'posicao_atleta',
         'telefone_atleta',
-        'numero_atleta',
-        'posicao_atleta',
         'peso_atleta',
         'altura_atleta',
         'sexo_atleta',
