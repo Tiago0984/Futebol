@@ -1,26 +1,22 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 
-<head>
-    @include('partials.head')
+@include('partials.head')
 
-    <head>
+<body>
 
-    <body>
+    @include('partials.header')
 
-        @include('partials.header')
+    <main>
+        @yield('content')
+    </main>
 
-        <main>
-            @yield('content')
-        </main>
+    @include('partials.script')
 
-        @include('partials.script')
+    @include('partials.footer')
 
-        @include('partials.footer')
+    <script src="{{ asset('coderatech/js/script.js') }}"></script>
 
-        <script src="{{ asset('coderatech/js/script.js') }}"></script>
-
-
-    </body>
+</body>
 
 </html>

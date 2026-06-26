@@ -33,7 +33,7 @@ html {
 
 /** Arrumando BANNER da sessão de ESTATÍSTICAS */
 .stat-facts {
-    background: url("/futebol/images/stat/banner-estatisticas.jpg") no-repeat
+    background: url("../../futebol/images/stat/banner-estatisticas.jpg") no-repeat
         center center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -43,7 +43,7 @@ html {
 
 /** Arrumando BANNER da sessão de VÍDEO */
 .bg-section {
-    background: url("/futebol/images/galeria/banner-galeria.jpg") no-repeat center
+    background: url("../../futebol/images/galeria/banner-galeria.jpg") no-repeat center
         center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -53,7 +53,7 @@ html {
 
 /** Arrumando BANNER da sessão de CLIENTES */
 .bg-client {
-    background: url("/futebol/images/parcerias/banner-parcerias.jpg") no-repeat center
+    background: url("../../futebol/images/parcerias/banner-parcerias.jpg") no-repeat center
         center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -71,7 +71,7 @@ img:focus {
 }
 
 .tab-team-bg {
-    background: url("/futebol/images/team/banner-estatisticas-jogadores.jpg")
+    background: url("../../futebol/images/team/banner-estatisticas-jogadores.jpg")
         top center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -80,7 +80,7 @@ img:focus {
 }
 
 .ytmVideoCoverThumbnail {
-    background-image: url("/futebol/images/video/banner-video.jpg");
+    background-image: url("../../futebol/images/video/banner-video.jpg");
 }
 
 .carousel-inner .item {
@@ -88,7 +88,7 @@ img:focus {
     background-repeat: no-repeat;
 }
 .tab-team-bg {
-    background: url("/futebol/images/team/banner-estatisticas-jogadores.jpg")
+    background: url("../../futebol/images/team/banner-estatisticas-jogadores.jpg")
         top center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
@@ -5237,7 +5237,7 @@ body {
    40. HOME — LIGA PREMIERE (stat-facts redesenhado)
    ========================================================================== */
 .lp-section {
-    background: url('/futebol/images/stat/banner-estatisticas.jpg') no-repeat center center;
+    background: url('../../futebol/images/stat/banner-estatisticas.jpg') no-repeat center center;
     background-size: cover;
     position: relative;
 }
@@ -5438,7 +5438,7 @@ body {
    ========================================================================== */
 .home-video-section {
     position: relative;
-    background: url('/futebol/images/video/banner-video.jpg') no-repeat center center;
+    background: url('../../futebol/images/video/banner-video.jpg') no-repeat center center;
     background-size: cover;
     background-attachment: fixed;
 }
@@ -5501,7 +5501,7 @@ body {
    42. HOME — GALERIA (redesenhada)
    ========================================================================== */
 .home-gallery-section {
-    background: url('/futebol/images/galeria/banner-galeria.jpg') no-repeat center center;
+    background: url('../../futebol/images/galeria/banner-galeria.jpg') no-repeat center center;
     background-size: cover;
     background-attachment: fixed;
 }
@@ -9754,7 +9754,7 @@ body.lp-body {
 .lp-brand {
     flex: 1;
     position: relative;
-    background: #111111 url('/futebol/images/login/campo-login.jpg') no-repeat center center;
+    background: #111111 url('../../futebol/images/login/campo-login.jpg') no-repeat center center;
     -webkit-background-size: cover;
     -moz-background-size: cover;
     -o-background-size: cover;
