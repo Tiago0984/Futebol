@@ -100,6 +100,7 @@
                         @if(empty($classifPrevia))
                         <p class="home-tab-empty">Nenhum dado de classificação ainda.</p>
                         @else
+                        <div style="overflow-x:auto;">
                         <table class="home-class-table">
                             <thead>
                                 <tr>
@@ -124,6 +125,7 @@
                                 @endforeach
                             </tbody>
                         </table>
+                        </div>
                         @if(count($classif) > 4)
                         <div class="home-tab-ver-mais">
                             <a href="{{ route('campeonato.show', $camp->id_campeonato) }}">

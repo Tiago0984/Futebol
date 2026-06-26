@@ -1278,6 +1278,23 @@ img:focus {
     color: #888888;
     font-weight: 700;
 }
+@media (max-width: 768px) {
+    .form-map-flex {
+        flex-direction: column;
+        gap: 32px;
+    }
+    .form-side-container,
+    .map-side-container {
+        flex: 1;
+        min-width: 0;
+    }
+    .map-wrapper-box {
+        min-height: 250px;
+    }
+    .map-wrapper-box .placeholder-map-box {
+        min-height: 250px;
+    }
+}
 
 /* ==========================================================================
    14. LAYOUT SHOPPING: PÁGINA SHOPPING / LOJA OFICIAL - ARQUITETURA DE DESIGN
