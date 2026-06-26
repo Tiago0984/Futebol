@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.addEventListener('click', function () {
             const id        = this.dataset.id;
             const categoria = this.dataset.categoria ?? 'GERAL';
-            formEditar.action = `/admin/galeria/${id}`;
+            formEditar.action = `{{ url('admin/galeria') }}/${id}`;
             document.getElementById('edit_id_foto').value = id;
 
             const ordemAtual  = this.dataset.ordem ?? '';

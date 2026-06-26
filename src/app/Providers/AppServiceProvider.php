@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use App\Models\Campeonato;
 use App\Models\Noticia;
@@ -30,5 +31,7 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('noticiasRecentes', $noticiasRecentes);
         });
+
+        URL::forceRootUrl(config('app.url'));
     }
 }

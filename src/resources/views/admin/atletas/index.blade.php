@@ -292,7 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-editar').forEach(btn => {
         btn.addEventListener('click', function () {
             const g = attr => this.getAttribute(attr) ?? '';
-            formEditar.action = `/admin/atletas/${g('data-id')}`;
+            formEditar.action = `{{ url('admin/atletas') }}/${g('data-id')}`;
 
             document.getElementById('edit_nome').value      = g('data-nome');
             document.getElementById('edit_numero').value    = g('data-numero');

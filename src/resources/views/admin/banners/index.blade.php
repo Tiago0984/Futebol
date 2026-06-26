@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const formEditar = document.getElementById('formEditarBanner');
     document.querySelectorAll('.btn-editar').forEach(btn => {
         btn.addEventListener('click', function () {
-            formEditar.action = `/admin/banners/${this.dataset.id}`;
+            formEditar.action = `{{ url('admin/banners') }}/${this.dataset.id}`;
             document.getElementById('edit_titulo').value    = this.dataset.titulo ?? '';
             document.getElementById('edit_subtitulo').value = this.dataset.subtitulo ?? '';
             document.getElementById('edit_ordem').value     = this.dataset.ordem ?? '';

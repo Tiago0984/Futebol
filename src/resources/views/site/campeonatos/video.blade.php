@@ -13,7 +13,7 @@
 				<div class="col-sm-12 col-md-8 col-md-offset-2">
 					<!-- 16:9 aspect ratio -->
 					<div class="embed-responsive embed-responsive-16by9">
-					  <iframe class="embed-responsive-item" src="http://www.youtube.com/embed/8F5V7RkZDbw"></iframe>
+					  <iframe class="embed-responsive-item" src="https://www.youtube.com/embed/8F5V7RkZDbw"></iframe>
 					</div>
 
 				</div>

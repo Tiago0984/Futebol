@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.btn-editar').forEach(btn => {
         btn.addEventListener('click', function () {
             const f = document.getElementById('formEditarNoticia');
-            f.action = `/admin/noticias/${this.dataset.id}`;
+            f.action = `{{ url('admin/noticias') }}/${this.dataset.id}`;
             document.getElementById('edit_titulo').value    = this.dataset.titulo;
             document.getElementById('edit_conteudo').value  = this.dataset.conteudo;
             document.getElementById('edit_categoria').value = this.dataset.categoria;
