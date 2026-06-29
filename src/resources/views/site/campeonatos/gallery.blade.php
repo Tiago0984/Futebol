@@ -12,6 +12,9 @@
         @else
         <div class="camp-grid">
             @foreach ($campeonatos as $camp)
+            @php
+                $subs = $camp->times->map(fn($t) => $t->categoria)->filter()->unique('id_categoria')->sortBy('nome_categoria');
+            @endphp
             <article class="camp-card">
 
                 <a href="{{ route('campeonato.show', $camp->id_campeonato) }}" class="camp-card-banner-link">
@@ -19,6 +22,13 @@
                          style="background-image: url('{{ asset('futebol/images/campeonatos/' . $camp->banner_evento) }}');">
                         <div class="camp-card-overlay"></div>
                         <span class="camp-card-type-badge">{{ $camp->tipo_campeonato }}</span>
+                        @if($subs->isNotEmpty())
+                        <div class="camp-card-subs-banner">
+                            @foreach($subs as $sub)
+                            <span class="camp-sub-badge-banner">{{ strtoupper($sub->nome_categoria) }}</span>
+                            @endforeach
+                        </div>
+                        @endif
                     </div>
                 </a>
 

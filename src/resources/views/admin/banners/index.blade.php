@@ -120,22 +120,30 @@
                                             data-status="{{ strtolower($banner->status_banner) }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <form action="{{ route('admin.banners.destroy', $banner->id_banner) }}"
-                                          method="POST"
-                                          onsubmit="return confirm('Deseja realmente alterar o status deste banner?');"
-                                          style="display:inline">
-                                        @csrf
-                                        @method('DELETE')
+                                    <form action="{{ route('admin.banners.toggleStatus', $banner->id_banner) }}"
+                                          method="POST" style="display:inline">
+                                        @csrf @method('PATCH')
                                         @if(strtolower($banner->status_banner) === 'ativo')
                                             <button type="submit" class="btn-tbl deactivate" title="Inativar">
                                                 <i class="bi bi-eye-slash"></i>
                                             </button>
                                         @else
-                                            <button type="submit" class="btn-tbl activate" title="Ativar">
+                                            <button type="submit" class="btn-tbl activate" title="Reativar">
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                         @endif
                                     </form>
+                                    @if(strtolower($banner->status_banner) !== 'ativo')
+                                    <form action="{{ route('admin.banners.destroy', $banner->id_banner) }}"
+                                          method="POST"
+                                          onsubmit="return confirm('Excluir permanentemente este banner?');"
+                                          style="display:inline">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn-tbl delete" title="Excluir">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

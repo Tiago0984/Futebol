@@ -29,12 +29,10 @@ class CategoriasController extends Controller
             'sexo_categoria'      => 'required|in:M,F,Misto',
         ]);
 
-        Categoria::create($request->only([
-            'nome_categoria',
-            'idade_min_categoria',
-            'idade_max_categoria',
-            'sexo_categoria',
-        ]));
+        Categoria::create([
+            ...$request->only(['nome_categoria', 'idade_min_categoria', 'idade_max_categoria', 'sexo_categoria']),
+            'status_categoria' => 'ATIVO',
+        ]);
 
         return redirect()->route('admin.categorias.index')->with('sucesso', 'Categoria criada com sucesso.');
     }
@@ -65,6 +63,15 @@ class CategoriasController extends Controller
         ]));
 
         return redirect()->route('admin.categorias.index')->with('sucesso', 'Categoria atualizada com sucesso.');
+    }
+
+    public function toggleStatus($id)
+    {
+        $categoria = Categoria::findOrFail($id);
+        $novo = strtoupper($categoria->status_categoria) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+        $categoria->update(['status_categoria' => $novo]);
+
+        return back()->with('sucesso', "Categoria {$novo} com sucesso.");
     }
 
     public function destroy($id)

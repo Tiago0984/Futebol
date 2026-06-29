@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\AtletasController as AdminAtletasController;
 use App\Http\Controllers\Admin\InscricoesController;
 use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
+use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -79,17 +80,35 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Conteúdo do site
     Route::resource('noticias', AdminNoticiasController::class);
     Route::resource('banners',   BannersController::class);
+    Route::patch('banners/{id}/toggle-status', [BannersController::class, 'toggleStatus'])->name('banners.toggleStatus');
     Route::resource('galeria',   GaleriaController::class);
 
     // Esporte
     Route::resource('campeonatos', CampeonatosController::class);
+    Route::patch('campeonatos/{id}/toggle-status', [CampeonatosController::class, 'toggleStatus'])->name('campeonatos.toggleStatus');
     Route::resource('times',       TimesController::class);
+    Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
     Route::resource('jogos',       JogosController::class);
+    Route::patch('jogos/{id}/toggle-status', [JogosController::class, 'toggleStatus'])->name('jogos.toggleStatus');
     Route::resource('categorias',  CategoriasController::class);
+    Route::patch('categorias/{id}/toggle-status', [CategoriasController::class, 'toggleStatus'])->name('categorias.toggleStatus');
+
+    // Calendário (Eventos + Grade de Treinos)
+    Route::prefix('calendario')->name('calendario.')->group(function () {
+        Route::get('/',                        [AdminCalendarioController::class, 'index'])->name('index');
+        Route::post('/eventos',                [AdminCalendarioController::class, 'storeEvento'])->name('eventos.store');
+        Route::put('/eventos/{id}',            [AdminCalendarioController::class, 'updateEvento'])->name('eventos.update');
+        Route::patch('/eventos/{id}/toggle',   [AdminCalendarioController::class, 'toggleStatusEvento'])->name('eventos.toggleStatus');
+        Route::delete('/eventos/{id}',         [AdminCalendarioController::class, 'destroyEvento'])->name('eventos.destroy');
+        Route::post('/grade',                  [AdminCalendarioController::class, 'storeGrade'])->name('grade.store');
+        Route::put('/grade/{id}',              [AdminCalendarioController::class, 'updateGrade'])->name('grade.update');
+        Route::patch('/grade/{id}/toggle',     [AdminCalendarioController::class, 'toggleStatusGrade'])->name('grade.toggleStatus');
+        Route::delete('/grade/{id}',           [AdminCalendarioController::class, 'destroyGrade'])->name('grade.destroy');
+    });
 
     // Pessoas
     // Pessoas (Corrigido para usar o alias AdminAtletasController)
-    
+    // toggle-status significa que o status do atleta será alternado entre ATIVO e INATIVO
     Route::resource('atletas', AdminAtletasController::class);
     Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
     Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');

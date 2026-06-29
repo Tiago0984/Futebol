@@ -85,20 +85,20 @@ class BannersController extends Controller
         return redirect()->route('admin.banners.index')->with('sucesso', 'Banner atualizado com sucesso.');
     }
 
-    public function destroy($id)
+    public function toggleStatus($id)
     {
         $banner = Banner::findOrFail($id);
-
-        if (strtolower($banner->status_banner) === 'ativo') {
-            $banner->status_banner = 'inativo';
-            $mensagem = 'Banner inativado com sucesso!';
-        } else {
-            $banner->status_banner = 'ativo';
-            $mensagem = 'Banner reativado com sucesso!';
-        }
-
+        $banner->status_banner = strtolower($banner->status_banner) === 'ativo' ? 'inativo' : 'ativo';
         $banner->save();
 
-        return redirect()->route('admin.banners.index')->with('sucesso', $mensagem);
+        $msg = $banner->status_banner === 'inativo' ? 'Banner inativado.' : 'Banner reativado.';
+        return back()->with('sucesso', $msg);
+    }
+
+    public function destroy($id)
+    {
+        Banner::findOrFail($id)->delete();
+
+        return redirect()->route('admin.banners.index')->with('sucesso', 'Banner excluído com sucesso.');
     }
 }

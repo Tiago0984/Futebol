@@ -15,6 +15,7 @@ class Categoria extends Model
         'idade_min_categoria',
         'idade_max_categoria',
         'sexo_categoria',
+        'status_categoria',
     ];
 
     public function campeonatos()

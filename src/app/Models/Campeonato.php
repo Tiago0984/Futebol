@@ -23,6 +23,7 @@ class Campeonato extends Model
         'data_fim_campeonato',
         'local_evento',
         'id_categoria',
+        'status_campeonato',
     ];
 
     protected $casts = [

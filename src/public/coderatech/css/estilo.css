@@ -2337,6 +2337,7 @@ img:focus {
     box-shadow: 0 8px 25px rgba(0, 0, 0, 0.05);
 }
 
+
 /* Bloco da Esquerda: Data em destaque */
 .event-date-block {
     background: #111111;
@@ -5123,6 +5124,22 @@ body {
     letter-spacing: 0.05em;
 }
 
+/* Descrição / bio do atleta no modal */
+.profile-bio-block {
+    margin-bottom: 18px;
+    padding: 12px 14px;
+    background: #161920;
+    border-left: 3px solid #e20e0e;
+    border-radius: 0 6px 6px 0;
+}
+.profile-bio-text {
+    font-size: 13px;
+    color: #8b95b0;
+    font-style: italic;
+    line-height: 1.6;
+    margin: 0;
+}
+
 /* Estado vazio */
 .no-records-text {
     color: #5a6480;
@@ -6171,6 +6188,27 @@ body {
     margin-top: 2px;
     width: 14px;
 }
+/* Subs no banner do card de campeonato (canto superior direito) */
+.camp-card-subs-banner {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    align-items: flex-end;
+}
+.camp-sub-badge-banner {
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
 .btn-camp-card {
     display: inline-flex;
     align-items: center;
@@ -6628,6 +6666,15 @@ body {
     background: rgba(0,0,0,0.06);
     color: #888888;
     border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* Sub-categoria do time (Sub-12, Sub-15 etc.) no card do campeonato */
+.camp-team-sub-tag {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #e20e0e;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
 }
 
 /* Logo de time externo levemente opaca para diferenciar */

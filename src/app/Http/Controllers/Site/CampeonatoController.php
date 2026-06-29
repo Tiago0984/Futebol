@@ -10,13 +10,13 @@ class CampeonatoController extends Controller
 {
     public function campeonato()
     {
-        $campeonatos = Campeonato::all();
+        $campeonatos = Campeonato::with(['times.categoria'])->get();
         return view('site.campeonatos.campeonatos', compact('campeonatos'));
     }
 
     public function show($id)
     {
-        $campeonato = Campeonato::with(['times.atletas.cartoes.jogo'])->findOrFail($id);
+        $campeonato = Campeonato::with(['times.atletas.cartoes.jogo', 'times.categoria'])->findOrFail($id);
         $jogos = Jogo::with(['timeCasa', 'timeVisitante'])
                     ->where('id_campeonato', $id)
                     ->get();

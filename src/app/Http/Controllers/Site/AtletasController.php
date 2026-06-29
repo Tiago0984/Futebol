@@ -13,13 +13,13 @@ class AtletasController extends Controller
         // Buscamos todos os atletas ativos — filtragem por nome, posição e clube é feita
         // no client-side via JavaScript para suportar busca em tempo real sem reload de página.
         // 'cartoes' carregado para exibir total de cartões no modal detalhado do atleta.
-        $atletas = Atleta::with(['times', 'categorias', 'cartoes'])
+        $atletas = Atleta::with(['times.categoria', 'categorias', 'cartoes'])
             ->where('status_atleta', 'ATIVO')
             ->orderBy('nome_atleta')
             ->get();
 
         // atletas.cartoes.jogo necessário para filtrar cartões por time no modal de elenco.
-        $times = \App\Models\Time::with(['atletas.cartoes.jogo'])->orderBy('nome_time')->get();
+        $times = \App\Models\Time::with(['atletas.cartoes.jogo', 'categoria'])->orderBy('nome_time')->get();
 
         // Lista de posições fixa ou vinda de outra model
         $posicoes = ['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'CENTROAVANTE'];

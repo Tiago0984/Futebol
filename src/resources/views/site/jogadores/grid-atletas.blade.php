@@ -87,6 +87,12 @@
                                     <h2 class="profile-main-title">{{ $atleta->nome_atleta }}</h2>
                                 </header>
 
+                                @if($atleta->descricao_atleta)
+                                <section class="profile-bio-block">
+                                    <p class="profile-bio-text">{{ $atleta->descricao_atleta }}</p>
+                                </section>
+                                @endif
+
                                 <h4 class="scout-block-title"><i class="fa fa-bar-chart"></i> Desempenho Geral Acumulado</h4>
                                 <section class="performance-stats-row">
                                     <div class="perf-stat-box highlight-stat">
@@ -154,7 +160,7 @@
                                             <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}" class="team-crest-mini" alt="Escudo">
                                             <div class="team-meta-inline">
                                                 <span class="team-name-span">{{ $time->nome_time }}</span>
-                                                <small class="team-pivot-status">{{ $time->pivot->status_atleta_time }} | nº {{ $time->pivot->camisa_atleta_time }}</small>
+                                                <small class="team-pivot-status">{{ $time->pivot->status_atleta_time }} | nº {{ $time->pivot->camisa_atleta_time }}{{ $time->categoria ? ' | ' . $time->categoria->nome_categoria : '' }}</small>
                                             </div>
                                             <i class="fa fa-angle-right badge-team-arrow"></i>
                                         </button>

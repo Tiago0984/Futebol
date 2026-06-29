@@ -17,6 +17,7 @@ class Jogo extends Model
         'placar_time_casa_jogos',
         'placar_time_visitante_jogos',
         'data_jogo',
+        'status_jogo',
     ];
 
     protected $casts = [

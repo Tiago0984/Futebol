@@ -76,9 +76,7 @@
                      alt="{{ $time->nome_time }}"
                      class="camp-team-logo">
                 <p class="camp-team-name">{{ $time->nome_time }}</p>
-                <span class="camp-team-type-tag tag-interno">
-                    <i class="fa fa-users"></i> Ver Elenco
-                </span>
+                <span class="camp-team-type-tag tag-interno">INTERNO</span>
             </div>
             @else
             {{-- Time externo: abre modal simples informativo --}}

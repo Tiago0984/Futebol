@@ -15,6 +15,7 @@ class Time extends Model
         'nome_time',
         'tipo_time',
         'id_categoria',
+        'status_time',
     ];
 
     public function categoria()

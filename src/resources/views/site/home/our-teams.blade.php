@@ -15,7 +15,7 @@
 					<article class="team-clean-card" data-toggle="modal" data-target="#modalTime{{ $time->id_time }}">
 
 						<span class="type-clean-badge interno">
-							{{ $time->tipo_time }}
+							{{ strtoupper($time->tipo_time) }}
 						</span>
 
 						<figure class="team-clean-logo">
@@ -24,7 +24,7 @@
 
 						<div class="team-clean-info">
 							<h3>{{ mb_strtoupper($time->nome_time) }}</h3>
-							<span class="category-clean-id">Categoria ID: #{{ $time->id_categoriaint }}</span>
+							<span class="category-clean-id">{{ $time->categoria->nome_categoria ?? '-' }}</span>
 						</div>
 
 						<footer class="team-clean-footer">

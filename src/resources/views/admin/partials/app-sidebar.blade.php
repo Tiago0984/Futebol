@@ -86,44 +86,40 @@
         </li>
 
         <li class="nav-header">ESPORTE</li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item {{ request()->routeIs('admin.campeonatos.*') ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs('admin.campeonatos.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-trophy"></i>
             <p>
               Campeonatos
-              <span class="badge text-bg-warning ms-1 me-auto" style="font-size:0.65rem;">pendente</span>
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.campeonatos.index') }}"
+                class="nav-link {{ request()->routeIs('admin.campeonatos.index') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Listar campeonatos</p>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
+            <!-- <li class="nav-item">
+              <a href="{{ route('admin.campeonatos.create') }}"
+                class="nav-link {{ request()->routeIs('admin.campeonatos.create') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Adicionar campeonato</p>
               </a>
-            </li>
+            </li> -->
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.jogos.index') }}"
+                class="nav-link {{ request()->routeIs('admin.jogos.*') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Jogos / partidas</p>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Tabela de classificação</p>
-              </a>
-            </li>
           </ul>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item {{ request()->routeIs('admin.times.*') ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs('admin.times.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-shield-fill"></i>
             <p>
               Times
@@ -132,21 +128,16 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.times.index') }}"
+                class="nav-link {{ request()->routeIs('admin.times.index') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
                 <p>Listar times</p>
               </a>
             </li>
-            <li class="nav-item">
-              <a href="#" class="nav-link">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Adicionar time</p>
-              </a>
-            </li>
           </ul>
         </li>
-        <li class="nav-item">
-          <a href="#" class="nav-link">
+        <li class="nav-item {{ request()->routeIs('admin.categorias.*') ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs('admin.categorias.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-tags"></i>
             <p>
               Categorias
@@ -155,9 +146,29 @@
           </a>
           <ul class="nav nav-treeview">
             <li class="nav-item">
-              <a href="#" class="nav-link">
+              <a href="{{ route('admin.categorias.index') }}"
+                class="nav-link {{ request()->routeIs('admin.categorias.index') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-circle"></i>
-                <p>Sub-13, Sub-15...</p>
+                <p>Sub-11, Sub-13, Sub-15...</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="nav-item {{ request()->routeIs('admin.calendario.*') ? 'menu-open' : '' }}">
+          <a href="#" class="nav-link {{ request()->routeIs('admin.calendario.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-calendar3"></i>
+            <p>
+              Calendário
+              <i class="nav-arrow bi bi-chevron-right"></i>
+            </p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="{{ route('admin.calendario.index') }}"
+                class="nav-link {{ request()->routeIs('admin.calendario.index') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-circle"></i>
+                <p>Eventos e Grade</p>
               </a>
             </li>
           </ul>

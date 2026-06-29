@@ -32,7 +32,7 @@ class HomeController extends Controller
             ->take(3)
             ->get();
 
-        $times = Time::with(['atletas.cartoes.jogo'])->get();
+        $times = Time::with(['atletas.cartoes.jogo', 'categoria'])->get();
 
         // Próximo jogo em destaque para LIGA PREMIERE
         $proximoJogo = Jogo::with(['timeCasa', 'timeVisitante', 'campeonato']) // busca o próximo jogo com os times e campeonato relacionados

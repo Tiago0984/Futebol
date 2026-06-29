@@ -41,7 +41,7 @@ $posicaoInfoModal = [
 						</div>
 						<div class="sport-title-meta">
 							<h2>{{ mb_strtoupper($time->nome_time) }}</h2>
-							<span class="sport-badge-type">{{ strtoupper($time->tipo_time) }}</span>
+							<span class="sport-badge-type">{{ strtoupper($time->categoria->nome_categoria ?? $time->tipo_time) }}</span>
 						</div>
 					</div>
 
