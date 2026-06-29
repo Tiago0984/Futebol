@@ -36,7 +36,10 @@ class NoticiasController extends Controller
         ]);
 
         if ($request->hasFile('foto_noticia')) {
-            $dados['foto_noticia'] = $request->file('foto_noticia')->store('noticias', 'public');
+            $arquivo = $request->file('foto_noticia');
+            $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+            $arquivo->move(public_path('futebol/images/news'), $nomeArquivo);
+            $dados['foto_noticia'] = $nomeArquivo;
         }
 
         Noticia::create($dados);
@@ -67,7 +70,10 @@ class NoticiasController extends Controller
         ]);
 
         if ($request->hasFile('foto_noticia')) {
-            $dados['foto_noticia'] = $request->file('foto_noticia')->store('noticias', 'public');
+            $arquivo = $request->file('foto_noticia');
+            $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
+            $arquivo->move(public_path('futebol/images/news'), $nomeArquivo);
+            $dados['foto_noticia'] = $nomeArquivo;
         }
 
         $noticia->update($dados);
