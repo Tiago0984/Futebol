@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController;
 use App\Http\Controllers\Admin\VideosController;
 use App\Http\Controllers\Admin\EscalacaoController;
+use App\Http\Controllers\Admin\ConfiguracoesController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -137,5 +138,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::patch('matriculas/{id}/rejeitar',      [MatriculasController::class, 'rejeitar'])->name('matriculas.rejeitar');
     Route::patch('matriculas/{id}/reativar',      [MatriculasController::class, 'reativar'])->name('matriculas.reativar');
     Route::delete('matriculas/{id}/deletar',      [MatriculasController::class, 'deletar'])->name('matriculas.deletar');
+
+    // Configurações do painel
+    Route::get('configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
 
 });

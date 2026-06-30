@@ -246,13 +246,10 @@
             <p>Ver site</p>
           </a>
         </li>
-        <li class="nav-item">
-          <a href="javascript:void(0)" class="nav-link">
+        <li class="nav-item {{ request()->routeIs('admin.configuracoes.*') ? 'menu-open' : '' }}">
+          <a href="{{ route('admin.configuracoes.index') }}" class="nav-link {{ request()->routeIs('admin.configuracoes.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-gear"></i>
-            <p>
-              Configurações
-              <span class="badge text-bg-secondary ms-1 me-auto" style="font-size:0.65rem;">futuro</span>
-            </p>
+            <p>Configurações</p>
           </a>
         </li>
 
@@ -264,7 +261,7 @@
 
   <!--begin::Sidebar User-->
   @php
-    $sidebarUser = auth()->user();
+    $sidebarUser = auth('admin')->user();
     $sidebarInitials = 'AD';
     if ($sidebarUser) {
       $parts = explode(' ', trim($sidebarUser->nome_usuario));

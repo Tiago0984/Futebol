@@ -1,0 +1,549 @@
+/* ============================================
+   Modo Escuro - AdminLTE / AACJ Futebol
+   Ativado quando <html data-bs-theme="dark">
+   ============================================ */
+
+html[data-bs-theme="dark"],
+html[data-bs-theme="dark"] body {
+    background-color: #1f1f23 !important;
+    color: #d6d6dc !important;
+}
+
+/* --- Layout principal --- */
+html[data-bs-theme="dark"] .app-main,
+html[data-bs-theme="dark"] .app-content,
+html[data-bs-theme="dark"] .app-content-wrapper,
+html[data-bs-theme="dark"] main {
+    background-color: #1f1f23 !important;
+    color: #d6d6dc !important;
+}
+
+/* --- Sidebar --- */
+html[data-bs-theme="dark"] .app-sidebar,
+html[data-bs-theme="dark"] .main-sidebar,
+html[data-bs-theme="dark"] aside.main-sidebar {
+    background-color: #18181b !important;
+    border-right-color: #2b2b30 !important;
+}
+
+html[data-bs-theme="dark"] .sidebar-wrapper,
+html[data-bs-theme="dark"] .sidebar {
+    background-color: #18181b !important;
+}
+
+html[data-bs-theme="dark"] .nav-sidebar .nav-link {
+    color: #c5c5cb !important;
+}
+
+html[data-bs-theme="dark"] .nav-sidebar .nav-link:hover {
+    background-color: #2b2b30 !important;
+    color: #ffffff !important;
+}
+
+html[data-bs-theme="dark"] .nav-sidebar .nav-link.active {
+    background-color: var(--bs-primary, #dc3545) !important;
+    color: #ffffff !important;
+}
+
+html[data-bs-theme="dark"] .nav-header {
+    color: #8a8a92 !important;
+}
+
+/* --- Topbar / Navbar --- */
+html[data-bs-theme="dark"] .app-header,
+html[data-bs-theme="dark"] .main-header,
+html[data-bs-theme="dark"] nav.app-header {
+    background-color: #18181b !important;
+    border-bottom-color: #2b2b30 !important;
+    color: #d6d6dc !important;
+}
+
+html[data-bs-theme="dark"] .app-header .nav-link,
+html[data-bs-theme="dark"] .app-header .nav-icon {
+    color: #d6d6dc !important;
+}
+
+/* --- Footer --- */
+html[data-bs-theme="dark"] .app-footer,
+html[data-bs-theme="dark"] footer.app-footer {
+    background-color: #18181b !important;
+    border-top-color: #2b2b30 !important;
+    color: #a0a0a8 !important;
+}
+
+/* --- Cards --- */
+html[data-bs-theme="dark"] .card,
+html[data-bs-theme="dark"] .card-body,
+html[data-bs-theme="dark"] .card-header,
+html[data-bs-theme="dark"] .card-footer {
+    background-color: #2a2a2f !important;
+    color: #d6d6dc !important;
+    border-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .card-header {
+    background-color: #232328 !important;
+    border-bottom-color: #3a3a40 !important;
+}
+
+/* --- Tabelas --- */
+html[data-bs-theme="dark"] .table {
+    --bs-table-color: #d6d6dc;
+    --bs-table-bg: #2a2a2f;
+    --bs-table-border-color: #3a3a40;
+    --bs-table-striped-color: #d6d6dc;
+    --bs-table-striped-bg: #2f2f35;
+    --bs-table-hover-color: #ffffff;
+    --bs-table-hover-bg: #34343a;
+    color: #d6d6dc !important;
+    background-color: #2a2a2f !important;
+}
+
+html[data-bs-theme="dark"] .table > :not(caption) > * > * {
+    background-color: #2a2a2f !important;
+    color: #d6d6dc !important;
+    border-bottom-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .table > thead {
+    background-color: #232328 !important;
+}
+
+html[data-bs-theme="dark"] .table thead th {
+    color: #ffffff !important;
+    background-color: #232328 !important;
+    border-bottom-color: #3a3a40 !important;
+}
+
+/* --- Formulários --- */
+html[data-bs-theme="dark"] .form-control,
+html[data-bs-theme="dark"] .form-select,
+html[data-bs-theme="dark"] input.form-control,
+html[data-bs-theme="dark"] textarea.form-control {
+    background-color: #1f1f23 !important;
+    color: #e6e6ec !important;
+    border-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .form-control::placeholder {
+    color: #7a7a82 !important;
+}
+
+html[data-bs-theme="dark"] .form-control:focus,
+html[data-bs-theme="dark"] .form-select:focus {
+    background-color: #1f1f23 !important;
+    color: #ffffff !important;
+    border-color: var(--bs-primary, #dc3545) !important;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25) !important;
+}
+
+html[data-bs-theme="dark"] .form-label,
+html[data-bs-theme="dark"] label {
+    color: #d6d6dc !important;
+}
+
+/* --- Botões secundários --- */
+html[data-bs-theme="dark"] .btn-secondary {
+    background-color: #3a3a40 !important;
+    border-color: #4a4a50 !important;
+    color: #ffffff !important;
+}
+
+html[data-bs-theme="dark"] .btn-outline-secondary {
+    color: #d6d6dc !important;
+    border-color: #4a4a50 !important;
+}
+
+html[data-bs-theme="dark"] .btn-outline-secondary:hover {
+    background-color: #3a3a40 !important;
+    color: #ffffff !important;
+}
+
+/* --- Badges --- */
+html[data-bs-theme="dark"] .badge.text-bg-secondary {
+    background-color: #3a3a40 !important;
+    color: #d6d6dc !important;
+}
+
+/* --- Alertas --- */
+html[data-bs-theme="dark"] .alert-info {
+    background-color: #1a3a4a !important;
+    color: #b6ddee !important;
+    border-color: #2a5a6a !important;
+}
+
+/* --- Modais --- */
+html[data-bs-theme="dark"] .modal-content {
+    background-color: #2a2a2f !important;
+    color: #d6d6dc !important;
+    border-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .modal-header,
+html[data-bs-theme="dark"] .modal-footer {
+    border-color: #3a3a40 !important;
+}
+
+/* --- Dropdown --- */
+html[data-bs-theme="dark"] .dropdown-menu {
+    background-color: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+    color: #d6d6dc !important;
+}
+
+html[data-bs-theme="dark"] .dropdown-item {
+    color: #d6d6dc !important;
+}
+
+html[data-bs-theme="dark"] .dropdown-item:hover,
+html[data-bs-theme="dark"] .dropdown-item:focus {
+    background-color: #3a3a40 !important;
+    color: #ffffff !important;
+}
+
+/* --- Textos utilitários do Bootstrap --- */
+html[data-bs-theme="dark"] .text-secondary {
+    color: #a0a0a8 !important;
+}
+
+html[data-bs-theme="dark"] .text-muted {
+    color: #8a8a92 !important;
+}
+
+/* --- Bordas --- */
+html[data-bs-theme="dark"] .border,
+html[data-bs-theme="dark"] .border-top,
+html[data-bs-theme="dark"] .border-bottom,
+html[data-bs-theme="dark"] .border-start,
+html[data-bs-theme="dark"] .border-end,
+html[data-bs-theme="dark"] .border-secondary-subtle {
+    border-color: #3a3a40 !important;
+}
+
+/* --- Breadcrumb / Page header --- */
+html[data-bs-theme="dark"] .page-header,
+html[data-bs-theme="dark"] .page-title {
+    color: #ffffff !important;
+}
+
+html[data-bs-theme="dark"] h1,
+html[data-bs-theme="dark"] h2,
+html[data-bs-theme="dark"] h3,
+html[data-bs-theme="dark"] h4,
+html[data-bs-theme="dark"] h5,
+html[data-bs-theme="dark"] h6 {
+    color: #ffffff !important;
+}
+
+html[data-bs-theme="dark"] p {
+    color: #d6d6dc !important;
+}
+
+/* --- Scrollbar discreta (opcional, visual) --- */
+html[data-bs-theme="dark"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+html[data-bs-theme="dark"] ::-webkit-scrollbar-track {
+    background: #1f1f23;
+}
+html[data-bs-theme="dark"] ::-webkit-scrollbar-thumb {
+    background: #3a3a40;
+    border-radius: 5px;
+}
+html[data-bs-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+    background: #4a4a50;
+}
+
+/* ── Sidebar: brand (topo) e bloco do usuário (rodapé) ───────────────── */
+html[data-bs-theme="dark"] .sidebar-brand {
+    background: #18181b !important;
+    border-bottom-color: #2b2b30 !important;
+}
+
+html[data-bs-theme="dark"] .sidebar-user-wrap {
+    background: #18181b !important;
+    border-top-color: #2b2b30 !important;
+}
+
+html[data-bs-theme="dark"] .user-name {
+    color: #e8e8ec !important;
+}
+
+html[data-bs-theme="dark"] .user-email {
+    color: #6a6a72 !important;
+}
+
+/* ── Variáveis CSS customizadas do tema AACJ ─────────────────────────── */
+html[data-bs-theme="dark"] {
+    --aacj-text-primary:   #e8e8ec;
+    --aacj-text-secondary: #a0a0a8;
+    --aacj-text-muted:     #6a6a72;
+    --aacj-border:         rgba(255, 255, 255, 0.10);
+}
+
+/* ── Cabeçalho do dashboard (greeting + data) ────────────────────────── */
+html[data-bs-theme="dark"] .app-content-header {
+    background: #18181b !important;
+    border-bottom-color: #2b2b30 !important;
+}
+
+/* ── Painéis personalizados do dashboard (.dash-panel) ───────────────── */
+html[data-bs-theme="dark"] .dash-panel {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .dash-panel-header {
+    background: #232328 !important;
+    border-bottom-color: #3a3a40 !important;
+    color: #e8e8ec !important;
+}
+
+/* ── Feed de atividade ───────────────────────────────────────────────── */
+html[data-bs-theme="dark"] .feed-item:hover {
+    background: rgba(255, 255, 255, .04) !important;
+}
+
+html[data-bs-theme="dark"] .feed-action:hover {
+    background: rgba(255, 255, 255, .07) !important;
+}
+
+html[data-bs-theme="dark"] .feed-score {
+    background: #064e3b !important;
+    color: #6ee7b7 !important;
+}
+
+html[data-bs-theme="dark"] .feed-badge {
+    background: rgba(255, 255, 255, .10) !important;
+    color: #a0a0a8 !important;
+}
+
+/* ── Hovers padronizados ─────────────────────────────────────────────── */
+
+/* Header — ícones da navbar (hambúrguer, sino, fullscreen, avatar) */
+html[data-bs-theme="dark"] .app-header .nav-link:hover {
+    background-color: rgba(255, 255, 255, .07) !important;
+    border-radius: 6px;
+    color: #ffffff !important;
+}
+
+/* KPI cards — sombra mais pronunciada no fundo escuro */
+html[data-bs-theme="dark"] .kpi-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, .55) !important;
+}
+
+/* Quick tiles — fundo sutil no tile + sombra do ícone reforçada */
+html[data-bs-theme="dark"] .quick-tile:hover {
+    background: rgba(255, 255, 255, .04);
+    border-radius: 10px;
+}
+
+html[data-bs-theme="dark"] .quick-tile:hover .qt-icon {
+    box-shadow: 0 6px 18px rgba(0, 0, 0, .55) !important;
+}
+
+/* Sidebar nav — sub-itens do treeview (herda a regra, mas garante cor de fundo) */
+html[data-bs-theme="dark"] .nav-treeview .nav-link:hover {
+    background-color: #2b2b30 !important;
+    color: #ffffff !important;
+}
+
+/* ── Badges dos quick tiles ──────────────────────────────────────────── */
+html[data-bs-theme="dark"] .qt-badge-warn {
+    background: #450a0a !important;
+    color: #fca5a5 !important;
+}
+
+html[data-bs-theme="dark"] .qt-badge-soon {
+    background: #422006 !important;
+    color: #fcd34d !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   PÁGINAS INTERNAS — tabelas, filtros, badges, botões de ação
+   ══════════════════════════════════════════════════════════════════════ */
+
+/* ── Container da tabela ─────────────────────────────────────────────── */
+html[data-bs-theme="dark"] .table-card {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .table-card-toolbar {
+    background: #232328 !important;
+    border-bottom-color: #3a3a40 !important;
+}
+
+/* ── Hover da linha da tabela (sobrepõe o !important da regra base) ──── */
+html[data-bs-theme="dark"] .table-hover > tbody > tr:hover > * {
+    background-color: #34343a !important;
+    color: #ffffff !important;
+}
+
+/* ── Botão Filtrar ────────────────────────────────────────────────────── */
+html[data-bs-theme="dark"] .btn-filter-toggle {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+    color: #d6d6dc !important;
+}
+
+html[data-bs-theme="dark"] .btn-filter-toggle:hover,
+html[data-bs-theme="dark"] .btn-filter-toggle[aria-expanded="true"] {
+    background: rgba(227, 28, 28, .10) !important;
+    border-color: #e31c1c !important;
+    color: #e31c1c !important;
+}
+
+/* ── Painel de filtros ────────────────────────────────────────────────── */
+html[data-bs-theme="dark"] .filter-panel {
+    background: #232328 !important;
+    border-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .btn-filter-clear {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+    color: #d6d6dc !important;
+}
+
+html[data-bs-theme="dark"] .btn-filter-clear:hover {
+    background: rgba(185, 28, 28, .15) !important;
+    border-color: #b91c1c !important;
+    color: #fca5a5 !important;
+}
+
+/* ── Badges de status ─────────────────────────────────────────────────── */
+html[data-bs-theme="dark"] .badge-status.ativo {
+    background: #052e16 !important;
+    color: #86efac !important;
+}
+
+html[data-bs-theme="dark"] .badge-status.inativo {
+    background: #450a0a !important;
+    color: #fca5a5 !important;
+}
+
+html[data-bs-theme="dark"] .badge-status.pendente {
+    background: #422006 !important;
+    color: #fde68a !important;
+}
+
+/* ── Badge de categoria ──────────────────────────────────────────────── */
+html[data-bs-theme="dark"] .badge-cat {
+    background: rgba(255, 255, 255, .08) !important;
+    color: #c5c5cb !important;
+}
+
+/* ── Botões de ação na linha da tabela ───────────────────────────────── */
+html[data-bs-theme="dark"] .btn-tbl {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+    color: #a0a0a8 !important;
+}
+
+html[data-bs-theme="dark"] .btn-tbl.edit:hover {
+    background: #1e2d45 !important;
+    border-color: #3b5070 !important;
+    color: #93c5fd !important;
+}
+
+html[data-bs-theme="dark"] .btn-tbl.activate:hover {
+    background: #052e16 !important;
+    border-color: #15803d !important;
+    color: #86efac !important;
+}
+
+html[data-bs-theme="dark"] .btn-tbl.deactivate:hover,
+html[data-bs-theme="dark"] .btn-tbl.danger:hover,
+html[data-bs-theme="dark"] .btn-tbl.delete:hover {
+    background: #450a0a !important;
+    border-color: #b91c1c !important;
+    color: #fca5a5 !important;
+}
+
+/* ── Botões de ação com label (Matrículas, etc.) ────────────────────── */
+html[data-bs-theme="dark"] .btn-tbl-action.view {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+    color: #a0a0a8 !important;
+}
+
+html[data-bs-theme="dark"] .btn-tbl-action.view:hover {
+    background: #1e2d45 !important;
+    border-color: #3b5070 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   MODAIS ADMIN (.modal-admin)
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-bs-theme="dark"] .modal-admin .modal-header {
+    background: #232328 !important;
+    border-bottom-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .modal-admin .modal-title {
+    color: #e8e8ec !important;
+}
+
+html[data-bs-theme="dark"] .modal-admin .modal-body {
+    background: #2a2a2f !important;
+}
+
+html[data-bs-theme="dark"] .modal-admin .modal-footer {
+    background: #232328 !important;
+    border-top-color: #3a3a40 !important;
+}
+
+/* Botão X (fechar) visível no fundo escuro */
+html[data-bs-theme="dark"] .modal-admin .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+/* Botão Cancelar */
+html[data-bs-theme="dark"] .btn-modal-cancel {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+    color: #d6d6dc !important;
+}
+
+html[data-bs-theme="dark"] .btn-modal-cancel:hover {
+    background: #34343a !important;
+    border-color: #4a4a50 !important;
+    color: #ffffff !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   CARDS DE VÍDEO
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-bs-theme="dark"] .video-admin-card {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+}
+
+html[data-bs-theme="dark"] .video-admin-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .5) !important;
+}
+
+html[data-bs-theme="dark"] .video-card-actions {
+    border-top-color: #3a3a40 !important;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   ESCALAÇÃO — cards de time
+   ══════════════════════════════════════════════════════════════════════ */
+html[data-bs-theme="dark"] .escal-team-card {
+    background: #2a2a2f !important;
+    border-color: #3a3a40 !important;
+    color: #e8e8ec !important;
+}
+
+html[data-bs-theme="dark"] .escal-team-card:hover {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .5) !important;
+    border-color: var(--aacj-red) !important;
+}
+
+html[data-bs-theme="dark"] .escal-team-card-external {
+    background: #232328 !important;
+    border-color: #3a3a40 !important;
+}

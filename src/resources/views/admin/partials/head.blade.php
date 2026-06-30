@@ -27,6 +27,18 @@
     <!-- Skip links will be dynamically added by accessibility.js -->
     <meta name="supported-color-schemes" content="light dark" />
     <link rel="preload" href="{{asset('dash/css/adminlte.css')}}" as="style" />
+
+    {{-- Aplica o modo escuro ANTES do CSS pintar a tela (evita flash) --}}
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('adminlte-theme');
+          document.documentElement.setAttribute('data-bs-theme', saved === 'dark' ? 'dark' : 'light');
+        } catch (e) {
+          document.documentElement.setAttribute('data-bs-theme', 'light');
+        }
+      })();
+    </script>
     <!--end::Accessibility Features-->
 
     <!--begin::Fonts-->
@@ -54,6 +66,9 @@
     <!--begin::Required Plugin(AdminLTE)-->
     <link rel="stylesheet" href="{{asset('dash/css/adminlte.css')}}" />
     <!--end::Required Plugin(AdminLTE)-->
+
+    {{-- CSS customizado para o modo escuro do dashboard --}}
+    <link rel="stylesheet" href="{{asset('dash/css/darkmode.css')}}" />
 
     <!--begin::Tema AACJ-->
     <link rel="stylesheet" href="{{asset('coderatech/css/estilo.css')}}" />
