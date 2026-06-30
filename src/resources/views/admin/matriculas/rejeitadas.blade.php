@@ -131,7 +131,7 @@
                                           onsubmit="return confirm('Reativar matrícula de {{ $atleta->nome_atleta }}? Ela voltará para pendentes.')">
                                         @csrf @method('PATCH')
                                         <button type="submit" class="btn-tbl-action reactivate"
-                                                {{ $autPendente ? 'disabled title="Aguardando assinatura"' : 'title="Reativar para pendentes"' }}>
+                                                title="Reativar para pendentes">
                                             <i class="bi bi-arrow-counterclockwise"></i>
                                             Reativar
                                         </button>
