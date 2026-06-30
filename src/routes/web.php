@@ -29,6 +29,8 @@ use App\Http\Controllers\Admin\InscricoesController;
 use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController;
+use App\Http\Controllers\Admin\VideosController;
+use App\Http\Controllers\Admin\EscalacaoController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -114,6 +116,18 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');
     Route::get('inscricoes/{id}',     [InscricoesController::class, 'show'])->name('inscricoes.show');
     Route::delete('inscricoes/{id}',  [InscricoesController::class, 'destroy'])->name('inscricoes.destroy');
+
+    // Escalação
+    Route::get('escalacao',                                  [EscalacaoController::class, 'index'])->name('escalacao.index');
+    Route::get('escalacao/{timeId}',                         [EscalacaoController::class, 'show'])->name('escalacao.show');
+    Route::patch('escalacao/{timeId}/atleta/{atletaId}',     [EscalacaoController::class, 'update'])->name('escalacao.update');
+
+    // Vídeos
+    Route::get('videos',                         [VideosController::class, 'index'])->name('videos.index');
+    Route::post('videos',                        [VideosController::class, 'store'])->name('videos.store');
+    Route::put('videos/{id}',                    [VideosController::class, 'update'])->name('videos.update');
+    Route::patch('videos/{id}/toggle-status',    [VideosController::class, 'toggleStatus'])->name('videos.toggleStatus');
+    Route::delete('videos/{id}',                 [VideosController::class, 'destroy'])->name('videos.destroy');
 
     // Matrículas (cadastros vindos do site aguardando aprovação)
     Route::get('matriculas',                      [MatriculasController::class, 'index'])->name('matriculas.index');

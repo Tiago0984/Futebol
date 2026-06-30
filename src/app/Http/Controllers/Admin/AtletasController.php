@@ -23,7 +23,7 @@ class AtletasController extends Controller
         ])->orderBy('nome_atleta')->get();
 
         $categorias = Categoria::orderBy('nome_categoria')->get();
-        $times      = Time::orderBy('nome_time')->get();
+        $times      = Time::where('tipo_time', 'INTERNO')->orderBy('nome_time')->get();
 
         return view('admin.atletas.index', compact('atletas', 'categorias', 'times'));
     }
@@ -84,9 +84,12 @@ class AtletasController extends Controller
             ]);
 
             // 3. Atleta
-            $fotoPath = null;
+            $fotoPath = 'default-player.jpg';
             if ($request->hasFile('foto_atleta')) {
-                $fotoPath = $request->file('foto_atleta')->store('atletas', 'public');
+                $ext      = $request->file('foto_atleta')->getClientOriginalExtension();
+                $filename = 'atleta_' . uniqid() . '.' . $ext;
+                $request->file('foto_atleta')->move(public_path('futebol/images/our-teams'), $filename);
+                $fotoPath = $filename;
             }
 
             $atleta = Atleta::create([
@@ -98,7 +101,7 @@ class AtletasController extends Controller
                 'foto_atleta'            => $fotoPath,
                 'status_atleta'          => 'ATIVO', // Padronizado para MAIÚSCULO
                 'id_endereco'            => $endereco->id_endereco,
-                'posicao_atleta'         => $request->posicao_atleta,
+                'posicao_atleta'         => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
                 'sexo_atleta'            => $request->sexo_atleta ?? 'M',
                 'peso_atleta'            => $request->peso_atleta ?? 0,
                 'altura_atleta'          => $request->altura_atleta ?? 0,
@@ -166,7 +169,10 @@ class AtletasController extends Controller
             // 1. Atualiza atleta
             $fotoPath = $atleta->foto_atleta;
             if ($request->hasFile('foto_atleta')) {
-                $fotoPath = $request->file('foto_atleta')->store('atletas', 'public');
+                $ext      = $request->file('foto_atleta')->getClientOriginalExtension();
+                $filename = 'atleta_' . uniqid() . '.' . $ext;
+                $request->file('foto_atleta')->move(public_path('futebol/images/our-teams'), $filename);
+                $fotoPath = $filename;
             }
 
             $atleta->update([
@@ -180,7 +186,7 @@ class AtletasController extends Controller
                 'sexo_atleta'             => $request->sexo_atleta,
                 'peso_atleta'             => $request->peso_atleta,
                 'altura_atleta'           => $request->altura_atleta,
-                'posicao_atleta'          => $request->posicao_atleta,
+                'posicao_atleta'          => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
                 'descricao_atleta'        => $request->descricao_atleta,
                 'sala_atleta'             => $request->sala_atleta,
                 'status_atleta'           => strtoupper($request->status_atleta),
@@ -240,13 +246,17 @@ class AtletasController extends Controller
                 $atleta->categorias()->detach();
             }
 
-            // 5. Sincroniza times
-            $novosTimeIds    = collect($request->input('times', []))->map(fn($v) => (int) $v);
+            // 5. Sincroniza times — apenas INTERNOS podem ser associados
+            $internosIds     = Time::where('tipo_time', 'INTERNO')->pluck('id_time')->map(fn($v) => (int) $v);
+            $novosTimeIds    = collect($request->input('times', []))
+                                   ->map(fn($v) => (int) $v)
+                                   ->filter(fn($id) => $internosIds->contains($id))
+                                   ->values();
             $timesExistentes = $atleta->times->unique('id_time')->pluck('id_time')->map(fn($v) => (int) $v);
             $camisaValue     = ($request->filled('camisa_atleta_time') && (int) $request->camisa_atleta_time > 0)
                                 ? (int) $request->camisa_atleta_time
                                 : 0;
-            $posicaoValue    = $request->posicao_atleta ?? '';
+            $posicaoValue    = $request->posicao_atleta ? strtoupper($request->posicao_atleta) : '';
 
             // Remove times desmarcados
             $remover = $timesExistentes->diff($novosTimeIds);

@@ -22,7 +22,7 @@ class AtletasController extends Controller
         $times = \App\Models\Time::with(['atletas.cartoes.jogo', 'categoria'])->orderBy('nome_time')->get();
 
         // Lista de posições fixa ou vinda de outra model
-        $posicoes = ['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'CENTROAVANTE'];
+        $posicoes = ['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'ATACANTE'];
 
         return view('site.jogadores.index', compact('atletas', 'times', 'posicoes'));
     }

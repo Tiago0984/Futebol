@@ -5,10 +5,13 @@ $posicaoInfoModal = [
     'lateral'      => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
     'volante'      => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
     'meia'         => ['sigla' => 'MEI', 'nome' => 'MEIA'],
+    'meio'         => ['sigla' => 'MEI', 'nome' => 'MEIA'],
     'centroavante' => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
     'atacante'     => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+    'ataque'       => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
     'gr'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
     'gk'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
+    'gl'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
     'cb'  => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
     'zag' => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
     'lb'  => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
@@ -82,7 +85,7 @@ $posicaoInfoModal = [
 								// Filtra os cartões do atleta apenas para jogos onde este time participou
 								// (como time da casa ou visitante), isolando a disciplina por vínculo.
 								$cartoesNoTime = $atleta->cartoes->filter(function($cartao) use ($time) {
-								    if (!$cartao->jogo) return false;
+								    if (!$cartao->jogo) return true; // cartão manual (sem jogo vinculado), sempre inclui
 								    return $cartao->jogo->id_time_casa == $time->id_time ||
 								           $cartao->jogo->id_time_visitante == $time->id_time;
 								});
@@ -90,7 +93,7 @@ $posicaoInfoModal = [
 								$vermelhosNoTime = $cartoesNoTime->where('tipo_cartao', 'VERMELHO')->count();
 								@endphp
 
-								@if($status === 'TITULAR' || $status === '')
+								@if($status === 'TITULAR' || $status === 'ATIVO' || $status === '')
 								@php $hasTitular = true; @endphp
 								<div class="sport-player-row js-atleta-btn"
 									data-atleta-id="{{ $atleta->id_atleta }}"
@@ -187,7 +190,7 @@ $posicaoInfoModal = [
 								// Filtra os cartões do atleta apenas para jogos onde este time participou
 								// (como time da casa ou visitante), isolando a disciplina por vínculo.
 								$cartoesNoTime = $atleta->cartoes->filter(function($cartao) use ($time) {
-								    if (!$cartao->jogo) return false;
+								    if (!$cartao->jogo) return true; // cartão manual (sem jogo vinculado), sempre inclui
 								    return $cartao->jogo->id_time_casa == $time->id_time ||
 								           $cartao->jogo->id_time_visitante == $time->id_time;
 								});

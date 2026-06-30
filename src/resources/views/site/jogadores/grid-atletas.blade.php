@@ -27,10 +27,12 @@
     <div class="player-grid-container">
         @forelse($atletas as $atleta)
         @php
-            $posKey  = strtolower(trim($atleta->posicao_atleta ?? ''));
+            $posicaoBruta = $atleta->posicao_atleta
+                ?: ($atleta->times->first()?->pivot->posicao_atleta_time ?? '');
+            $posKey  = strtolower(trim($posicaoBruta));
             $posData = $posicaoInfo[$posKey] ?? [
-                'sigla' => $atleta->posicao_atleta ? strtoupper(substr(trim($atleta->posicao_atleta), 0, 3)) : 'ATL',
-                'nome'  => ucfirst(strtolower(trim($atleta->posicao_atleta ?? 'Atleta'))),
+                'sigla' => $posicaoBruta ? strtoupper(substr(trim($posicaoBruta), 0, 3)) : 'ATL',
+                'nome'  => $posicaoBruta ? ucfirst(strtolower(trim($posicaoBruta))) : 'Atleta',
             ];
         @endphp
 
@@ -39,7 +41,7 @@
             data-target="#modalAtleta{{ $atleta->id_atleta }}"
             data-atleta-id="{{ $atleta->id_atleta }}"
             data-nome="{{ strtolower($atleta->nome_atleta) }}"
-            data-posicao="{{ strtolower($atleta->posicao_atleta ?? '') }}"
+            data-posicao="{{ strtolower($posicaoBruta) }}"
             data-times="{{ $atleta->times->pluck('id_time')->implode(',') }}"
             role="button" tabindex="0">
             <div class="sticker-inner-frame">

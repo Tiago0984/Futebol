@@ -13,6 +13,7 @@ class NoticiasController extends Controller
         // 1. Buscar APENAS as notícias ativas para a listagem principal
         $listaNoticias = Noticia::where('status_noticia', 'ATIVO')
             ->orderBy('data_publicacao_noticia', 'desc')
+             
             ->get();
 
         // 2. Pegar as 3 últimas notícias RIGOROSAMENTE ATIVAS para o "Posts Recentes"

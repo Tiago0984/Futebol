@@ -1,9 +1,9 @@
 @extends('layout.admin')
 
 @section('content')
-<!--begin::App Main-->
 <main class="app-main">
-  <!--begin::App Content Header-->
+
+  {{-- ── HEADER ─────────────────────────────────────────────────────────── --}}
   <div class="app-content-header">
     <div class="container-fluid">
       <div class="row align-items-center">
@@ -17,125 +17,257 @@
       </div>
     </div>
   </div>
-  <!--end::App Content Header-->
 
-  <!--begin::App Content-->
   <div class="app-content">
     <div class="container-fluid">
 
-      <!--begin::Stats Row-->
+      {{-- ── KPI CARDS ──────────────────────────────────────────────────── --}}
       <div class="row mb-4 g-3">
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card">
-            <div>
-              <div class="stat-card-number">{{ $stats['noticias'] }}</div>
-              <div class="stat-card-label">Notícias</div>
-              <a href="{{ route('admin.noticias.index') }}" class="stat-card-link">
-                Gerenciar <i class="bi bi-arrow-right"></i>
-              </a>
+
+        <div class="col-6 col-lg-3">
+          <a href="{{ route('admin.atletas.index') }}" class="kpi-card kpi-red">
+            <div class="kpi-icon"><i class="bi bi-person-badge"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-number">{{ $stats['atletas_ativos'] }}</div>
+              <div class="kpi-label">Atletas Ativos</div>
             </div>
-            <div class="stat-card-icon" style="background:var(--aacj-red);">
-              <i class="bi bi-newspaper"></i>
-            </div>
-          </div>
+            <i class="bi bi-arrow-right kpi-arrow"></i>
+          </a>
         </div>
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card">
-            <div>
-              <div class="stat-card-number">{{ $stats['campeonatos'] }}</div>
-              <div class="stat-card-label">Campeonatos</div>
-              <a href="#" class="stat-card-link">
-                Gerenciar <i class="bi bi-arrow-right"></i>
-              </a>
+
+        <div class="col-6 col-lg-3">
+          <a href="{{ route('admin.campeonatos.index') }}" class="kpi-card kpi-dark">
+            <div class="kpi-icon"><i class="bi bi-trophy"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-number">{{ $stats['campeonatos'] }}</div>
+              <div class="kpi-label">Campeonatos</div>
             </div>
-            <div class="stat-card-icon" style="background:var(--aacj-red-dark);">
-              <i class="bi bi-trophy"></i>
-            </div>
-          </div>
+            <i class="bi bi-arrow-right kpi-arrow"></i>
+          </a>
         </div>
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card">
-            <div>
-              <div class="stat-card-number">{{ $stats['times'] }}</div>
-              <div class="stat-card-label">Times</div>
-              <a href="#" class="stat-card-link">
-                Gerenciar <i class="bi bi-arrow-right"></i>
-              </a>
+
+        <div class="col-6 col-lg-3">
+          <a href="{{ route('admin.jogos.index') }}" class="kpi-card kpi-slate">
+            <div class="kpi-icon"><i class="bi bi-calendar-event"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-number">{{ $stats['jogos'] }}</div>
+              <div class="kpi-label">Jogos Cadastrados</div>
             </div>
-            <div class="stat-card-icon" style="background:#374151;">
-              <i class="bi bi-shield-fill"></i>
-            </div>
-          </div>
+            <i class="bi bi-arrow-right kpi-arrow"></i>
+          </a>
         </div>
-        <div class="col-lg-3 col-sm-6">
-          <div class="stat-card">
-            <div>
-              <div class="stat-card-number">{{ $stats['jogos'] }}</div>
-              <div class="stat-card-label">Jogos</div>
-              <a href="#" class="stat-card-link">
-                Gerenciar <i class="bi bi-arrow-right"></i>
-              </a>
+
+        <div class="col-6 col-lg-3">
+          <a href="{{ route('admin.matriculas.index') }}" class="kpi-card {{ $stats['matriculas_pendentes'] > 0 ? 'kpi-warning' : 'kpi-slate' }}">
+            <div class="kpi-icon"><i class="bi bi-clipboard-check"></i></div>
+            <div class="kpi-body">
+              <div class="kpi-number">{{ $stats['matriculas_pendentes'] }}</div>
+              <div class="kpi-label">Matrículas Pendentes</div>
             </div>
-            <div class="stat-card-icon" style="background:#1e293b;">
-              <i class="bi bi-calendar-event"></i>
-            </div>
-          </div>
+            @if($stats['matriculas_pendentes'] > 0)
+              <i class="bi bi-exclamation-circle kpi-arrow"></i>
+            @else
+              <i class="bi bi-check-circle kpi-arrow"></i>
+            @endif
+          </a>
         </div>
+
       </div>
-      <!--end::Stats Row-->
 
-      <!--begin::Seções-->
-      <div class="row">
-        <div class="col-12 mb-3">
-          <h5 class="fw-semibold">Seções</h5>
-        </div>
+      {{-- ── CORPO PRINCIPAL ────────────────────────────────────────────── --}}
+      <div class="row g-3">
 
-        <div class="col-md-6 mb-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <h6 class="card-title fw-semibold mb-1">Conteúdo do site</h6>
-              <p class="card-text text-muted small">Notícias, banners e galeria — tudo que aparece no site público. CRUDs simples, sem joins.</p>
+        {{-- Acesso Rápido ──────────────────────────────────────────────── --}}
+        <div class="col-lg-8">
+          <div class="dash-panel">
+            <div class="dash-panel-header">
+              <i class="bi bi-grid-3x3-gap"></i> Acesso Rápido
             </div>
-          </div>
-        </div>
+            <div class="dash-panel-body">
 
-        <div class="col-md-6 mb-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <h6 class="card-title fw-semibold mb-1">Esporte</h6>
-              <p class="card-text text-muted small">Campeonatos, times, categorias e jogos. Classificação já funciona dinamicamente.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <h6 class="card-title fw-semibold mb-1">Pessoas</h6>
-              <p class="card-text text-muted small">Atletas é o mais complexo — form único que salva em 4 tabelas: atleta, responsável, endereço e pivot.</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="col-md-6 mb-3">
-          <div class="card h-100 border-0 shadow-sm">
-            <div class="card-body">
-              <div class="d-flex align-items-center gap-2 mb-1">
-                <h6 class="card-title fw-semibold mb-0">Badges</h6>
-                <span class="badge text-bg-warning" style="font-size:0.65rem;">pendente</span>
+              {{-- Conteúdo do Site --}}
+              <div class="quick-group">
+                <p class="quick-group-label">Conteúdo do Site</p>
+                <div class="quick-tiles">
+                  <a href="{{ route('admin.noticias.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#e31c1c;">
+                      <i class="bi bi-newspaper"></i>
+                    </div>
+                    <span class="qt-label">Notícias</span>
+                    <span class="qt-count">{{ $stats['noticias'] }}</span>
+                  </a>
+                  <a href="{{ route('admin.banners.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#b51212;">
+                      <i class="bi bi-image"></i>
+                    </div>
+                    <span class="qt-label">Banners</span>
+                    <span class="qt-count">{{ $stats['banners'] }}</span>
+                  </a>
+                  <a href="{{ route('admin.galeria.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#c0392b;">
+                      <i class="bi bi-images"></i>
+                    </div>
+                    <span class="qt-label">Galeria</span>
+                    <span class="qt-count">{{ $stats['galerias'] }}</span>
+                  </a>
+                  <a href="{{ route('admin.videos.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#7c3aed;">
+                      <i class="bi bi-camera-video"></i>
+                    </div>
+                    <span class="qt-label">Vídeos</span>
+                    <span class="qt-count">{{ $stats['videos'] ?? 0 }}</span>
+                  </a>
+                </div>
               </div>
-              <p class="card-text text-muted small mb-1">CRUD ainda não feito</p>
-              <p class="card-text text-muted small">Opcional / próxima fase</p>
+
+              {{-- Esporte --}}
+              <div class="quick-group">
+                <p class="quick-group-label">Esporte</p>
+                <div class="quick-tiles">
+                  <a href="{{ route('admin.campeonatos.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#374151;">
+                      <i class="bi bi-trophy"></i>
+                    </div>
+                    <span class="qt-label">Campeonatos</span>
+                    <span class="qt-count">{{ $stats['campeonatos'] }}</span>
+                  </a>
+                  <a href="{{ route('admin.times.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#1f2937;">
+                      <i class="bi bi-shield-fill"></i>
+                    </div>
+                    <span class="qt-label">Times</span>
+                    <span class="qt-count">{{ $stats['times'] }}</span>
+                  </a>
+                  <a href="{{ route('admin.categorias.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#111827;">
+                      <i class="bi bi-tags"></i>
+                    </div>
+                    <span class="qt-label">Categorias</span>
+                  </a>
+                  <a href="{{ route('admin.jogos.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#4b5563;">
+                      <i class="bi bi-calendar-event"></i>
+                    </div>
+                    <span class="qt-label">Jogos</span>
+                    <span class="qt-count">{{ $stats['jogos'] }}</span>
+                  </a>
+                  <a href="{{ route('admin.calendario.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#6b7280;">
+                      <i class="bi bi-calendar3"></i>
+                    </div>
+                    <span class="qt-label">Calendário</span>
+                  </a>
+                  <a href="{{ route('admin.escalacao.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#0891b2;">
+                      <i class="bi bi-people-fill"></i>
+                    </div>
+                    <span class="qt-label">Escalação</span>
+                  </a>
+                </div>
+              </div>
+
+              {{-- Pessoas --}}
+              <div class="quick-group">
+                <p class="quick-group-label">Pessoas</p>
+                <div class="quick-tiles">
+                  <a href="{{ route('admin.atletas.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:#e31c1c;">
+                      <i class="bi bi-person-badge"></i>
+                    </div>
+                    <span class="qt-label">Atletas</span>
+                    <span class="qt-count">{{ $stats['atletas_ativos'] }}</span>
+                  </a>
+                  <a href="{{ route('admin.matriculas.index') }}" class="quick-tile">
+                    <div class="qt-icon" style="background:{{ $stats['matriculas_pendentes'] > 0 ? '#d97706' : '#374151' }};">
+                      <i class="bi bi-clipboard-check"></i>
+                    </div>
+                    <span class="qt-label">Matrículas</span>
+                    @if($stats['matriculas_pendentes'] > 0)
+                      <span class="qt-badge-warn">{{ $stats['matriculas_pendentes'] }}</span>
+                    @endif
+                  </a>
+                </div>
+              </div>
+
             </div>
           </div>
         </div>
 
+        {{-- Feed de Atividade ─────────────────────────────────────────── --}}
+        <div class="col-lg-4">
+
+          {{-- Matrículas Pendentes --}}
+          <div class="dash-panel mb-3">
+            <div class="dash-panel-header">
+              <i class="bi bi-clipboard-check"></i> Matrículas Pendentes
+              <a href="{{ route('admin.matriculas.index') }}" class="dash-panel-link">Ver todas</a>
+            </div>
+            <div class="dash-feed">
+              @forelse($ultimasMatriculas as $m)
+              <div class="feed-item">
+                <div class="feed-avatar" style="background:var(--aacj-red);">
+                  {{ strtoupper(substr($m->nome_atleta, 0, 1)) }}
+                </div>
+                <div class="feed-info">
+                  <span class="feed-name">{{ $m->nome_atleta }}</span>
+                  <span class="feed-meta">Aguardando aprovação</span>
+                </div>
+                <a href="{{ route('admin.matriculas.show', $m->id_atleta) }}" class="feed-action" title="Visualizar">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </div>
+              @empty
+              <div class="feed-empty">
+                <i class="bi bi-check-circle-fill text-success"></i>
+                Tudo em dia!
+              </div>
+              @endforelse
+            </div>
+          </div>
+
+          {{-- Últimos Jogos --}}
+          <div class="dash-panel">
+            <div class="dash-panel-header">
+              <i class="bi bi-calendar-event"></i> Últimos Jogos
+              <a href="{{ route('admin.jogos.index') }}" class="dash-panel-link">Ver todos</a>
+            </div>
+            <div class="dash-feed">
+              @forelse($ultimosJogos as $j)
+              <div class="feed-item">
+                <div class="feed-avatar" style="background:#374151;">
+                  <i class="bi bi-trophy-fill" style="font-size:.85rem;"></i>
+                </div>
+                <div class="feed-info">
+                  <span class="feed-name">
+                    {{ Str::limit($j->timeCasa?->nome_time ?? '?', 10) }}
+                    <span style="color:var(--aacj-text-muted); font-weight:400;">vs</span>
+                    {{ Str::limit($j->timeVisitante?->nome_time ?? '?', 10) }}
+                  </span>
+                  <span class="feed-meta">
+                    {{ \Carbon\Carbon::parse($j->data_jogo)->format('d/m/Y') }}
+                    &bull; {{ Str::limit($j->campeonato?->nome_campeonato ?? '—', 18) }}
+                  </span>
+                </div>
+                @if(!is_null($j->placar_time_casa_jogos))
+                  <span class="feed-score">{{ $j->placar_time_casa_jogos }}×{{ $j->placar_time_visitante_jogos }}</span>
+                @else
+                  <span class="feed-badge">{{ $j->status_jogo }}</span>
+                @endif
+              </div>
+              @empty
+              <div class="feed-empty">
+                <i class="bi bi-calendar-x"></i> Sem jogos cadastrados.
+              </div>
+              @endforelse
+            </div>
+          </div>
+
+        </div>
+
       </div>
-      <!--end::Seções-->
+      {{-- end::corpo principal --}}
 
     </div>
   </div>
-  <!--end::App Content-->
 </main>
-<!--end::App Main-->
 @endsection

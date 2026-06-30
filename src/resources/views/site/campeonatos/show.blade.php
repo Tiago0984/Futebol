@@ -76,7 +76,7 @@
                      alt="{{ $time->nome_time }}"
                      class="camp-team-logo">
                 <p class="camp-team-name">{{ $time->nome_time }}</p>
-                <span class="camp-team-type-tag tag-interno">INTERNO</span>
+                <span class="camp-team-type-tag tag-interno">VER ELENCO</span>
             </div>
             @else
             {{-- Time externo: abre modal simples informativo --}}
@@ -275,6 +275,54 @@ document.querySelectorAll('.camp-team-externo').forEach(function(card) {
         document.getElementById('extModalLogo').src = this.dataset.logo;
         document.getElementById('extModalNome').textContent = this.dataset.nome;
     });
+});
+
+// Painel de detalhes do atleta dentro dos modais de time
+$(document).on('click', '.js-atleta-btn', function () {
+    var $btn = $(this);
+    var $pane = $btn.closest('.sport-split-pane');
+
+    var nome       = $btn.data('nome')        || 'Sem nome';
+    var foto       = $btn.data('foto')        || '{{ asset("futebol/images/our-teams/default-player.jpg") }}';
+    var posicao    = $btn.data('posicao')     || '—';
+    var camisa     = $btn.data('camisa')      || '--';
+    var jogos      = $btn.data('jogos')       || 0;
+    var convocacoes = $btn.data('convocacoes') || 0;
+    var gols       = $btn.data('gols')        || 0;
+    var defesas    = $btn.data('defesas')     || 0;
+    var amarelos   = $btn.data('amarelos')    || 0;
+    var vermelhos  = $btn.data('vermelhos')   || 0;
+    var atletaId   = $btn.data('atleta-id')   || '';
+
+    $pane.find('.js-player-foto').attr('src', foto).off('error').on('error', function () {
+        $(this).attr('src', '{{ asset("futebol/images/our-teams/default-player.jpg") }}');
+    });
+    $pane.find('.js-player-camisa').text(camisa);
+    $pane.find('.js-player-nome').text(nome);
+    $pane.find('.js-player-posicao').text(posicao);
+    $pane.find('.js-player-jogos').text(jogos);
+    $pane.find('.js-player-convocacoes').text(convocacoes);
+    $pane.find('.js-player-gols').text(gols);
+    $pane.find('.js-player-defesas').text(defesas);
+    $pane.find('.js-player-amarelos').text(amarelos);
+    $pane.find('.js-player-vermelhos').text(vermelhos);
+
+    // Goleiros mostram defesas; demais jogadores mostram gols
+    var posLower = posicao.toLowerCase();
+    if (posLower === 'goleiro' || posLower === 'gr' || posLower === 'gk') {
+        $pane.find('.js-box-gols').hide();
+        $pane.find('.js-box-defesas').show();
+    } else {
+        $pane.find('.js-box-gols').show();
+        $pane.find('.js-box-defesas').hide();
+    }
+
+    // Atualiza o link "ver perfil completo"
+    $pane.find('.js-ver-atleta-completo').attr('data-atleta-id', atletaId);
+
+    // Destaca o atleta selecionado
+    $btn.closest('.sport-athletes-sidebar').find('.js-atleta-btn').removeClass('active');
+    $btn.addClass('active');
 });
 </script>
 

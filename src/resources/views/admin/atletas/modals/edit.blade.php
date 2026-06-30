@@ -54,7 +54,7 @@
                             <label class="form-label">Posição</label>
                             <select name="posicao_atleta" id="edit_posicao" class="form-select">
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Goleiro', 'Zagueiro', 'Lateral', 'Volante', 'Meia', 'Atacante'] as $pos)
+                                @foreach(['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'ATACANTE'] as $pos)
                                 <option value="{{ $pos }}">{{ $pos }}</option>
                                 @endforeach
                             </select>

@@ -10,6 +10,7 @@ use App\Models\Galeria;
 use App\Models\Banner;
 use App\Models\Noticia;
 use App\Models\Campeonato;
+use App\Models\Video;
 
 class HomeController extends Controller
 {
@@ -132,6 +133,8 @@ class HomeController extends Controller
             $classificacaoPorCampeonato[$camp->id_campeonato] = $classif;
         }
 
-        return view('site.home.home', compact('jogos', 'classificacao', 'galerias', 'banners', 'noticias', 'times', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato'));
+        $videoDestaque = Video::where('status_video', 'ATIVO')->orderByDesc('id_video')->first();
+
+        return view('site.home.home', compact('jogos', 'classificacao', 'galerias', 'banners', 'noticias', 'times', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato', 'videoDestaque'));
     }
 }

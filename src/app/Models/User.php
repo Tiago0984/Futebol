@@ -34,6 +34,12 @@ class User extends Authenticatable
         ];
     }
 
+    // Informa ao Laravel o nome da coluna de senha (evita erro no rehash automático)
+    public function getAuthPasswordName(): string
+    {
+        return 'senha_usuario';
+    }
+
     // Campo usado como senha
     public function getAuthPassword()
     {

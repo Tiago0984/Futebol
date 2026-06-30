@@ -10,6 +10,7 @@ use App\Models\Time;
 use App\Models\Galeria;
 use App\Models\Jogo;
 use App\Models\Atleta;
+use App\Models\Video;
 
 class DashController extends Controller
 {
@@ -23,8 +24,21 @@ class DashController extends Controller
                 'times'                => Time::count(),
                 'galerias'             => Galeria::count(),
                 'jogos'                => Jogo::count(),
+                'atletas_ativos'       => Atleta::where('status_atleta', 'ATIVO')->count(),
                 'matriculas_pendentes' => Atleta::whereIn('status_atleta', ['PENDENTE', 'pendente'])->count(),
+                'videos'               => Video::count(),
             ];
+
+            $ultimasMatriculas = Atleta::whereIn('status_atleta', ['PENDENTE', 'pendente'])
+                ->orderByDesc('id_atleta')
+                ->limit(5)
+                ->get();
+
+            $ultimosJogos = Jogo::with(['timeCasa', 'timeVisitante', 'campeonato'])
+                ->orderByDesc('id_jogo')
+                ->limit(5)
+                ->get();
+
         } catch (\Exception $e) {
             $stats = [
                 'noticias'             => 0,
@@ -33,10 +47,14 @@ class DashController extends Controller
                 'times'                => 0,
                 'galerias'             => 0,
                 'jogos'                => 0,
+                'atletas_ativos'       => 0,
                 'matriculas_pendentes' => 0,
+                'videos'               => 0,
             ];
+            $ultimasMatriculas = collect();
+            $ultimosJogos      = collect();
         }
 
-        return view('admin.dash.dashboard', compact('stats'));
+        return view('admin.dash.dashboard', compact('stats', 'ultimasMatriculas', 'ultimosJogos'));
     }
 }

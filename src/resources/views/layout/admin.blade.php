@@ -26,19 +26,18 @@
 
   <script>
     document.addEventListener('DOMContentLoaded', function () {
-      var userMenu = document.querySelector('.navbar-nav > .user-menu');
-      if (!userMenu) return;
-      var toggle = userMenu.querySelector('[data-bs-toggle="dropdown"]');
-      if (!toggle) return;
-      var dropdown = bootstrap.Dropdown.getOrCreateInstance(toggle);
-      var hideTimer;
-      userMenu.addEventListener('mouseenter', function () {
-        clearTimeout(hideTimer);
-        dropdown.show();
-      });
-      userMenu.addEventListener('mouseleave', function () {
-        hideTimer = setTimeout(function () { dropdown.hide(); }, 150);
-      });
+      function hoverDropdown(selector) {
+        var item = document.querySelector(selector);
+        if (!item) return;
+        var toggle = item.querySelector('[data-bs-toggle="dropdown"]');
+        if (!toggle) return;
+        var dd = bootstrap.Dropdown.getOrCreateInstance(toggle);
+        var timer;
+        item.addEventListener('mouseenter', function () { clearTimeout(timer); dd.show(); });
+        item.addEventListener('mouseleave', function () { timer = setTimeout(function () { dd.hide(); }, 150); });
+      }
+      hoverDropdown('.navbar-nav > .user-menu');
+      hoverDropdown('.navbar-nav > .nav-item.dropdown:not(.user-menu)');
     });
   </script>
 
