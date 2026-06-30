@@ -29,23 +29,18 @@
 									<li><a href="{{ route('home') }}"><i class="fa fa-angle-right"></i> Início</a></li>
 									<li><a href="{{ route('sobre') }}"><i class="fa fa-angle-right"></i> O Clube</a></li>
 									<li><a href="{{ route('calendario') }}"><i class="fa fa-angle-right"></i> Calendário</a></li>
-									<li><a href="{{ route('campeonato') }}"><i class="fa fa-angle-right"></i> Campeonatos</a></li>
+									<li><a href="{{ route('noticias.index') }}"><i class="fa fa-angle-right"></i> Notícias</a></li>
+									<li><a href="{{ route('galeria.index') }}"><i class="fa fa-angle-right"></i> Galeria</a></li>
 								</ul>
 							</div>
 							<div class="col-xs-6">
 								<ul class="links-rapidos">
-									<li><a href="{{ route('noticias.index') }}"><i class="fa fa-angle-right"></i> Notícias</a></li>
-									<li><a href="{{ route('shopping') }}"><i class="fa fa-angle-right"></i> Loja / Shop</a></li>
-									<li><a href="{{ route('parcerias') }}"><i class="fa fa-angle-right"></i> Parceiros</a></li>
 									<li><a href="{{ route('contato') }}"><i class="fa fa-angle-right"></i> Contato</a></li>
+									<li><a href="{{ route('jogadores.vitrine') }}"><i class="fa fa-angle-right"></i> Jogadores</a></li>
+									<li><a href="{{ route('campeonato') }}"><i class="fa fa-angle-right"></i> Campeonatos</a></li>
+									<li><a href="{{ route('cadastro.index') }}"><i class="fa fa-angle-right"></i> Matricule-se</a></li>
+									<li><a href="{{ route('parcerias') }}"><i class="fa fa-angle-right"></i> Parceiros</a></li>
 								</ul>
-							</div>
-						</div>
-						<div class="row mt-3">
-							<div class="col-xs-12">
-								<a href="{{ route('cadastro.index') }}" class="btn btn-matricula-footer">
-									<i class="fa fa-pencil-square-o"></i> FAÇA SUA MATRÍCULA
-								</a>
 							</div>
 						</div>
 					</div>
