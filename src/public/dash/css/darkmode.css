@@ -201,6 +201,12 @@ html[data-bs-theme="dark"] .dropdown-item:focus {
     color: #ffffff !important;
 }
 
+/* --- Dropdown de perfil do usuário (AdminLTE) --- */
+html[data-bs-theme="dark"] .user-menu .dropdown-menu .user-footer {
+    background-color: #232328 !important;
+    border-top: 1px solid #3a3a40 !important;
+}
+
 /* --- Textos utilitários do Bootstrap --- */
 html[data-bs-theme="dark"] .text-secondary {
     color: #a0a0a8 !important;
