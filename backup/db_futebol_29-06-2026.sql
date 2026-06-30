@@ -69,5 +69,11 @@ ALTER TABLE tbl_cartoes
   MODIFY COLUMN id_campeonato INT NULL,
   MODIFY COLUMN id_jogo INT NULL;
 
+-- Corrige colunas para aceitar NULL (campos opcionais que o middleware converte de "" para null)
+ALTER TABLE tbl_atletas
+  MODIFY COLUMN numero_matricula_atleta VARCHAR(20) NULL DEFAULT NULL,
+  MODIFY COLUMN serie_atleta            VARCHAR(20) NULL DEFAULT NULL,
+  MODIFY COLUMN periodo_escolar_atleta  VARCHAR(20) NULL DEFAULT NULL;
+
 
 
