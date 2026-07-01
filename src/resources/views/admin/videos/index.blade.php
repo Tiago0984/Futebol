@@ -7,7 +7,7 @@
     <div class="admin-page-header">
       <div>
         <h1 class="page-title">Vídeos</h1>
-        <p class="page-subtitle">Gerencie os vídeos exibidos na home do site</p>
+        <p class="page-subtitle">Gerencie os vídeos exibidos no site</p>
       </div>
       <div class="d-flex gap-2">
         <button class="btn-filter-toggle" id="btnFiltros"
@@ -51,6 +51,15 @@
               <option value="0">Gravado</option>
             </select>
           </div>
+          <div class="col-md-2">
+            <label class="filter-label">Seção</label>
+            <select id="filtroSecao" class="form-select form-select-sm">
+              <option value="">Todas</option>
+              <option value="home">Home</option>
+              <option value="campeonatos">Campeonatos</option>
+              <option value="ambas">Ambas</option>
+            </select>
+          </div>
           <div class="col-md-2 d-flex align-items-end">
             <button class="btn-filter-clear" id="btnLimparFiltros">
               <i class="bi bi-x-circle"></i> Limpar
@@ -69,7 +78,8 @@
       <div class="col-md-6 col-xl-4 video-item"
            data-titulo="{{ strtolower($video->titulo_video) }}"
            data-status="{{ $video->status_video }}"
-           data-ao-vivo="{{ $video->ao_vivo_video ? '1' : '0' }}">
+           data-ao-vivo="{{ $video->ao_vivo_video ? '1' : '0' }}"
+           data-secao="{{ $video->secao_video ?? 'home' }}">
         <div class="video-admin-card {{ $video->status_video !== 'ATIVO' ? 'video-card-inactive' : '' }}">
 
           {{-- Thumbnail --}}
@@ -92,6 +102,9 @@
             @if($video->ao_vivo_video)
               <span class="video-live-badge"><i class="bi bi-broadcast me-1"></i>Ao Vivo</span>
             @endif
+            <span class="badge bg-secondary position-absolute" style="bottom:8px;left:8px;font-size:.65rem;">
+              {{ $video->secao_video === 'campeonatos' ? 'Campeonatos' : ($video->secao_video === 'ambas' ? 'Home & Camp.' : 'Home') }}
+            </span>
           </div>
 
           {{-- Info --}}
@@ -179,13 +192,21 @@
                   <textarea name="descricao_video" class="form-control" rows="2"
                             placeholder="Legenda exibida na home quando não for ao vivo">{{ $video->descricao_video }}</textarea>
                 </div>
+                <div class="mb-3">
+                  <label class="form-label">Seção <span class="text-danger">*</span></label>
+                  <select name="secao_video" class="form-select">
+                    <option value="home"         {{ ($video->secao_video ?? 'home') === 'home'         ? 'selected' : '' }}>Home</option>
+                    <option value="campeonatos"  {{ ($video->secao_video ?? '') === 'campeonatos'       ? 'selected' : '' }}>Campeonatos</option>
+                    <option value="ambas"        {{ ($video->secao_video ?? '') === 'ambas'             ? 'selected' : '' }}>Ambas (Home & Campeonatos)</option>
+                  </select>
+                </div>
                 <div class="form-check form-switch">
                   <input class="form-check-input" type="checkbox" name="ao_vivo_video"
                          id="aoVivo{{ $video->id_video }}" value="1"
                          {{ $video->ao_vivo_video ? 'checked' : '' }}>
                   <label class="form-check-label" for="aoVivo{{ $video->id_video }}">
                     <i class="bi bi-broadcast text-danger me-1"></i>
-                    Ao Vivo — exibe "ASSISTA AO VIVO" na home
+                    Ao Vivo — exibe "ASSISTA AO VIVO" na seção selecionada
                   </label>
                 </div>
               </div>
@@ -252,12 +273,20 @@
             <textarea name="descricao_video" class="form-control" rows="2"
                       placeholder="Legenda exibida na home quando não for ao vivo"></textarea>
           </div>
+          <div class="mb-3">
+            <label class="form-label">Seção <span class="text-danger">*</span></label>
+            <select name="secao_video" class="form-select">
+              <option value="home">Home</option>
+              <option value="campeonatos">Campeonatos</option>
+              <option value="ambas">Ambas (Home & Campeonatos)</option>
+            </select>
+          </div>
           <div class="form-check form-switch">
             <input class="form-check-input" type="checkbox" name="ao_vivo_video"
                    id="novoAoVivo" value="1">
             <label class="form-check-label" for="novoAoVivo">
               <i class="bi bi-broadcast text-danger me-1"></i>
-              Ao Vivo — exibe "ASSISTA AO VIVO" na home
+              Ao Vivo — exibe "ASSISTA AO VIVO" na seção selecionada
             </label>
           </div>
         </div>
@@ -292,6 +321,7 @@ document.getElementById('novoVideoUrl').addEventListener('input', function () {
     var fNome    = document.getElementById('filtroNome');
     var fStatus  = document.getElementById('filtroStatus');
     var fTipo    = document.getElementById('filtroTipo');
+    var fSecao   = document.getElementById('filtroSecao');
     var btnLimp  = document.getElementById('btnLimparFiltros');
     var emptyMsg = document.getElementById('videoFilterEmpty');
     var contador = document.getElementById('filtroContador');
@@ -302,12 +332,14 @@ document.getElementById('novoVideoUrl').addEventListener('input', function () {
         var nome   = fNome.value.toLowerCase().trim();
         var status = fStatus.value;
         var tipo   = fTipo.value;
+        var secao  = fSecao.value;
         var visible = 0;
 
         items.forEach(function (el) {
             var ok = (!nome   || el.dataset.titulo.includes(nome))
-                  && (!status || el.dataset.status   === status)
-                  && (!tipo   || el.dataset.aoVivo   === tipo);
+                  && (!status || el.dataset.status  === status)
+                  && (!tipo   || el.dataset.aoVivo  === tipo)
+                  && (!secao  || el.dataset.secao   === secao);
             el.style.display = ok ? '' : 'none';
             if (ok) visible++;
         });
@@ -316,11 +348,12 @@ document.getElementById('novoVideoUrl').addEventListener('input', function () {
         contador.textContent = visible + ' vídeo' + (visible !== 1 ? 's' : '') + ' encontrado' + (visible !== 1 ? 's' : '');
     }
 
-    fNome.addEventListener('input',   filtrar);
+    fNome.addEventListener('input',    filtrar);
     fStatus.addEventListener('change', filtrar);
     fTipo.addEventListener('change',   filtrar);
+    fSecao.addEventListener('change',  filtrar);
     btnLimp.addEventListener('click', function () {
-        fNome.value = ''; fStatus.value = ''; fTipo.value = '';
+        fNome.value = ''; fStatus.value = ''; fTipo.value = ''; fSecao.value = '';
         filtrar();
     });
     filtrar();

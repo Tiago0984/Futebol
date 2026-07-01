@@ -5,13 +5,18 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
 use App\Models\Jogo;
+use App\Models\Video;
 
 class CampeonatoController extends Controller
 {
     public function campeonato()
     {
         $campeonatos = Campeonato::with(['times.categoria'])->get();
-        return view('site.campeonatos.campeonatos', compact('campeonatos'));
+        $videoDestaque = Video::where('status_video', 'ATIVO')
+            ->whereIn('secao_video', ['campeonatos', 'ambas'])
+            ->orderByDesc('id_video')
+            ->first();
+        return view('site.campeonatos.campeonatos', compact('campeonatos', 'videoDestaque'));
     }
 
     public function show($id)

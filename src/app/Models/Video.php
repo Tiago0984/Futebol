@@ -18,6 +18,7 @@ class Video extends Model
         'descricao_video',
         'status_video',
         'ao_vivo_video',
+        'secao_video',
     ];
 
     public function getEmbedUrlAttribute(): string

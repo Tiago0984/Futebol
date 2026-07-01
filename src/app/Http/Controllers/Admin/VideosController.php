@@ -28,6 +28,7 @@ class VideosController extends Controller
             'descricao_video' => $request->descricao_video,
             'status_video'    => 'ATIVO',
             'ao_vivo_video'   => $request->boolean('ao_vivo_video') ? 1 : 0,
+            'secao_video'     => $request->input('secao_video', 'home'),
         ]);
 
         return redirect()->route('admin.videos.index')
@@ -49,6 +50,7 @@ class VideosController extends Controller
             'url_video'       => $request->url_video,
             'descricao_video' => $request->descricao_video,
             'ao_vivo_video'   => $request->boolean('ao_vivo_video') ? 1 : 0,
+            'secao_video'     => $request->input('secao_video', 'home'),
         ]);
 
         return redirect()->route('admin.videos.index')

@@ -64,6 +64,11 @@ CREATE TABLE `tbl_videos` (
 
 ALTER TABLE tbl_videos ADD COLUMN ao_vivo_video INT(1) NOT NULL DEFAULT 0 AFTER status_video;
 
+ALTER TABLE tbl_videos
+  ADD COLUMN secao_video VARCHAR(20) NOT NULL DEFAULT 'home'
+  AFTER ao_vivo_video;
+
+
 
 ALTER TABLE tbl_cartoes
   MODIFY COLUMN id_campeonato INT NULL,
