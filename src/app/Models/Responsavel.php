@@ -16,6 +16,7 @@ class Responsavel extends Model
         'rg_responsavel',
         'telefone_responsavel',
         'whatsapp_responsavel',
+        'email_responsavel',
         'assinatura_responsavel',
         'aceite_responsavel',
         'id_endereco',

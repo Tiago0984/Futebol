@@ -19,23 +19,54 @@ class CadastroController extends Controller
         return view('site.cadastro.cadastro');
     }
 
+    // Valida se um CPF é válido (formato e dígitos verificadores)
+    private function cpfValido(?string $cpf): bool
+    {
+        $cpf = preg_replace('/\D/', '', (string) $cpf);
+
+        if (strlen($cpf) !== 11 || preg_match('/^(\d)\1{10}$/', $cpf)) {
+            return false;
+        }
+
+        for ($t = 9; $t < 11; $t++) {
+            $soma = 0;
+            for ($i = 0; $i < $t; $i++) {
+                $soma += (int) $cpf[$i] * (($t + 1) - $i);
+            }
+            $digito = ((10 * $soma) % 11) % 10;
+            if ((int) $cpf[$t] !== $digito) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     // Processa o cadastro
     public function store(Request $request)
     {
+        $cpfRegex = '/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/';
+        $cepRegex = '/^\d{5}-?\d{3}$/';
+        $rgRegex  = '/^[0-9Xx.\-\s]{5,15}$/';
+        $foneRegex = '/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/';
+
+        // Data mais antiga permitida (idade máxima 17) e mais recente permitida (idade mínima 9)
+        $nascMaisAntiga = now()->subYears(18)->addDay()->format('Y-m-d');
+        $nascMaisRecente = now()->subYears(9)->format('Y-m-d');
+
         $request->validate([
             // Atleta
             'nome_atleta'            => 'required|string|max:100',
-            'data_nasc_atleta'       => 'required|date',
-            'cpf_atleta'             => 'required|string|max:14|unique:tbl_atletas,cpf_atleta',
-            'rg_atleta'              => 'required|string|max:11',
+            'data_nasc_atleta'       => "required|date|after_or_equal:{$nascMaisAntiga}|before_or_equal:{$nascMaisRecente}",
+            'cpf_atleta'             => ['required', 'string', 'max:14', 'regex:' . $cpfRegex, 'unique:tbl_atletas,cpf_atleta'],
+            'rg_atleta'              => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
             'sexo_atleta'            => 'required|in:M,F',
             'escola_atleta'          => 'required|string|max:100',
             'serie_atleta'           => 'required|string|max:20',
             'periodo_escolar_atleta' => 'required|string|max:20',
             'email_atleta'           => 'required|email|unique:tbl_atletas,email_atleta',
-            'password'               => 'required|string|min:8|confirmed',
             // Endereço atleta
-            'cep_endereco'           => 'required|string|max:10',
+            'cep_endereco'           => ['required', 'string', 'max:10', 'regex:' . $cepRegex],
             'rua_endereco'           => 'required|string|max:100',
             'numero_endereco'        => 'required|string|max:10',
             'bairro_endereco'        => 'required|string|max:100',
@@ -43,12 +74,14 @@ class CadastroController extends Controller
             'estado_endereco'        => 'required|string|max:2',
             // Responsável
             'nome_responsavel'       => 'required|string|max:100',
-            'cpf_responsavel'        => 'required|string|max:14',
-            'rg_responsavel'         => 'required|string|max:11',
-            'whatsapp_responsavel'   => 'required|string|max:20',
+            'cpf_responsavel'        => ['required', 'string', 'max:14', 'regex:' . $cpfRegex],
+            'rg_responsavel'         => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
+            'email_responsavel'      => 'required|email|max:150',
+            'telefone_responsavel'   => ['nullable', 'string', 'max:15', 'regex:' . $foneRegex],
+            'whatsapp_responsavel'   => ['required', 'string', 'max:15', 'regex:' . $foneRegex],
             'grau_parentesco'        => 'required|string|max:50',
             // Endereço responsável
-            'cep_resp_endereco'      => 'required|string|max:10',
+            'cep_resp_endereco'      => ['required', 'string', 'max:10', 'regex:' . $cepRegex],
             'rua_resp_endereco'      => 'required|string|max:100',
             'numero_resp_endereco'   => 'required|string|max:10',
             'bairro_resp_endereco'   => 'required|string|max:100',
@@ -57,9 +90,25 @@ class CadastroController extends Controller
         ], [
             'email_atleta.unique'  => 'Este e-mail já está cadastrado.',
             'cpf_atleta.unique'    => 'Este CPF já está cadastrado.',
-            'password.confirmed'   => 'As senhas não coincidem.',
-            'password.min'         => 'A senha deve ter pelo menos 8 caracteres.',
+            'cpf_atleta.regex'     => 'Informe um CPF válido para o atleta.',
+            'cpf_responsavel.regex'=> 'Informe um CPF válido para o responsável.',
+            'rg_atleta.regex'      => 'Informe um RG válido para o atleta.',
+            'rg_responsavel.regex' => 'Informe um RG válido para o responsável.',
+            'cep_endereco.regex'      => 'Informe um CEP válido.',
+            'cep_resp_endereco.regex' => 'Informe um CEP válido.',
+            'data_nasc_atleta.after_or_equal'  => 'A idade do atleta deve estar entre 9 e 17 anos.',
+            'data_nasc_atleta.before_or_equal' => 'A idade do atleta deve estar entre 9 e 17 anos.',
+            'telefone_responsavel.regex' => 'Informe um telefone válido com DDD.',
+            'whatsapp_responsavel.regex' => 'Informe um WhatsApp válido com DDD.',
         ]);
+
+        if (!$this->cpfValido($request->cpf_atleta)) {
+            return back()->withErrors(['cpf_atleta' => 'Informe um CPF válido para o atleta.'])->withInput();
+        }
+
+        if (!$this->cpfValido($request->cpf_responsavel)) {
+            return back()->withErrors(['cpf_responsavel' => 'Informe um CPF válido para o responsável.'])->withInput();
+        }
 
         // 1. Salva endereço do atleta
         $enderecoAtleta = Endereco::create([
@@ -97,7 +146,7 @@ class CadastroController extends Controller
             'descricao_atleta'       => $request->descricao_atleta,
             'foto_atleta'            => $fotoNome,
             'email_atleta'           => $request->email_atleta,
-            'password'               => Hash::make($request->password),
+            'password'               => Hash::make(Str::random(20)),
             'status_atleta'          => 'PENDENTE',
             'token_cadastro'         => $token,
             'id_endereco'            => $enderecoAtleta->id_endereco,
@@ -121,6 +170,7 @@ class CadastroController extends Controller
             'rg_responsavel'       => $request->rg_responsavel,
             'telefone_responsavel' => $request->telefone_responsavel,
             'whatsapp_responsavel' => $request->whatsapp_responsavel,
+            'email_responsavel'    => $request->email_responsavel,
             'aceite_responsavel'   => 'N',
             'id_endereco'          => $enderecoResp->id_endereco,
         ]);

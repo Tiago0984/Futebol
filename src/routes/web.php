@@ -60,7 +60,7 @@ Route::get('/contato', [ContatoController::class, 'contato'])->name('contato');
 
 // Cadastro público de atletas
 Route::get('/cadastro',  [CadastroController::class, 'index'])->name('cadastro.index');
-Route::post('/cadastro', [CadastroController::class, 'store'])->name('cadastro.store');
+Route::post('/cadastro', [CadastroController::class, 'store'])->middleware('throttle:5,1')->name('cadastro.store');
 
 // Assinatura do responsável (link enviado por WhatsApp)
 Route::get('/assinar/{token}',  [AssinaturaController::class, 'show'])->name('assinar.show');

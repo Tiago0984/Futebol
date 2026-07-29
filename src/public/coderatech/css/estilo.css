@@ -2974,6 +2974,23 @@ img:focus {
 .mat-btn:hover {
     background: #a00;
 }
+.mat-btn:disabled,
+.mat-btn:disabled:hover {
+    background: #e08a8a;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+.mat-input-erro {
+    border-color: #c00 !important;
+    background: #fff6f6 !important;
+    box-shadow: 0 0 0 3px rgba(204, 0, 0, 0.08) !important;
+}
+.mat-error-msg {
+    display: block;
+    color: #c00;
+    font-size: 11px;
+    margin-top: 4px;
+}
 
 .alert-ok {
     background: #d4edda;

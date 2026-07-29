@@ -12,7 +12,7 @@
             <div class="matricula-intro-checklist">
                 <h4><i class="fa fa-info-circle"></i> Antes de começar, tenha em mãos:</h4>
                 <ul>
-                    <li><i class="fa fa-users"></i> Categorias disponíveis: <strong>5 a 17 anos</strong></li>
+                    <li><i class="fa fa-users"></i> Categorias disponíveis: <strong>9 a 17 anos</strong></li>
                     <li><i class="fa fa-id-card-o"></i> <strong>CPF e RG</strong> do atleta</li>
                     <li><i class="fa fa-whatsapp"></i> <strong>WhatsApp do responsável</strong> para assinatura digital</li>
                     <li><i class="fa fa-camera"></i> Foto do atleta <strong>(opcional)</strong></li>
