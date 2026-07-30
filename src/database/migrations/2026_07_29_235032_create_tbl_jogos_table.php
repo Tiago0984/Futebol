@@ -16,8 +16,8 @@ return new class extends Migration
             $table->integer('id_campeonato')->index('fk_jogo_campeonato');
             $table->integer('id_time_casa')->index('fk_jogo_time_casa');
             $table->integer('id_time_visitante')->index('fk_jogo_time_visitante');
-            $table->integer('placar_time_casa_jogos')->default(0);
-            $table->integer('placar_time_visitante_jogos')->default(0);
+            $table->integer('placar_time_casa_jogos')->nullable();
+            $table->integer('placar_time_visitante_jogos')->nullable();
             $table->dateTime('data_jogo')->nullable();
             $table->string('status_jogo', 10)->default('ATIVO');
         });
