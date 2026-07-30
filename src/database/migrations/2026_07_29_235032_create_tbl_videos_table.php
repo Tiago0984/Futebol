@@ -18,6 +18,7 @@ return new class extends Migration
             $table->text('descricao_video')->nullable();
             $table->string('status_video', 20)->default('ATIVO');
             $table->integer('ao_vivo_video')->default(0);
+            $table->string('secao_video', 20)->default('home');
             $table->timestamp('criado_em_video')->useCurrent();
             $table->timestamp('atualizado_em_video')->useCurrentOnUpdate()->useCurrent();
         });
