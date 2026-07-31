@@ -14,15 +14,12 @@
         </div>
         @endif
 
-        @if(session('link_whatsapp'))
-        <div class="whatsapp-box">
-            <p><span class="fa fa-whatsapp"></span> Envie o link de assinatura ao responsável:</p>
-            <a href="{{ session('link_whatsapp') }}" target="_blank">
-                <span class="fa fa-whatsapp"></span> Abrir WhatsApp
-            </a>
-            <small style="display:block; margin-top:8px; color:#555; font-size:11px;">
-                Link direto: {{ session('link_assinatura') }}
-            </small>
+        @if(session('link_assinatura'))
+        <div class="alert-err">
+            <strong><span class="fa fa-exclamation-triangle"></span> Não foi possível enviar o e-mail ao responsável.</strong>
+            <p style="margin:8px 0 0; font-size:13px; word-break:break-all;">
+                Envie este link de assinatura manualmente: <a href="{{ session('link_assinatura') }}">{{ session('link_assinatura') }}</a>
+            </p>
         </div>
         @endif
 
@@ -259,7 +256,6 @@
                         <div class="mat-group">
                             <label class="mat-label">WhatsApp *</label>
                             <input type="text" name="whatsapp_responsavel" value="{{ old('whatsapp_responsavel') }}" required class="mat-input" placeholder="(00) 00000-0000" id="whatsapp-resp" maxlength="15" inputmode="numeric" autocomplete="off">
-                            <p class="mat-hint"><span class="fa fa-whatsapp"></span> O link de assinatura será enviado aqui</p>
                         </div>
                     </div>
                 </div>
@@ -316,7 +312,7 @@
                     <span class="fa fa-paper-plane"></span> &nbsp;ENVIAR CADASTRO
                 </button>
                 <p style="margin-top:14px; color:#aaa; font-size:12px; letter-spacing:.3px;">
-                    Após o envio, o responsável receberá um link no WhatsApp para assinar a autorização.
+                    Após o envio, o responsável receberá um link no e-mail cadastrado para assinar a autorização.
                 </p>
             </div>
 

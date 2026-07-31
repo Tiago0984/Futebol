@@ -3,12 +3,15 @@
 namespace App\Http\Controllers\Site;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AutorizacaoAssinaturaMail;
 use App\Models\Atleta;
 use App\Models\Endereco;
 use App\Models\Responsavel;
 use App\Models\Autorizacao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class CadastroController extends Controller
@@ -194,16 +197,25 @@ class CadastroController extends Controller
         // 9. Monta o link de assinatura
         $linkAssinatura = route('assinar.show', $tokenAssinatura);
 
-        // 10. Envia link ao responsável via WhatsApp (link direto)
-        // Em produção: integrar com API do WhatsApp (Twilio, Z-API, etc.)
-        // Por enquanto armazena o link para exibir na tela
-        $whatsapp = preg_replace('/\D/', '', $request->whatsapp_responsavel);
-        $mensagem = urlencode("Olá {$request->nome_responsavel}! Clique no link abaixo para assinar a autorização de {$request->nome_atleta} na Escolinha de Futebol: {$linkAssinatura}");
-        $linkWhatsApp = "https://wa.me/55{$whatsapp}?text={$mensagem}";
+        // 10. Envia o link de assinatura por e-mail ao responsável
+        $emailEnviado = true;
+        try {
+            Mail::to($responsavel->email_responsavel)
+                ->send(new AutorizacaoAssinaturaMail($atleta, $responsavel, $linkAssinatura));
+        } catch (\Throwable $e) {
+            $emailEnviado = false;
+            Log::error('Falha ao enviar e-mail de autorização de assinatura', [
+                'id_atleta' => $atleta->id_atleta,
+                'erro' => $e->getMessage(),
+            ]);
+        }
+
+        $mensagemSucesso = $emailEnviado
+            ? 'Cadastro enviado com sucesso! Um link de assinatura foi enviado para o e-mail do responsável.'
+            : 'Cadastro enviado com sucesso, mas não foi possível enviar o e-mail ao responsável. Use o link abaixo para enviar manualmente.';
 
         return redirect()->route('cadastro.index')
-            ->with('sucesso', 'Cadastro enviado com sucesso! Envie o link de assinatura ao responsável.')
-            ->with('link_whatsapp', $linkWhatsApp)
-            ->with('link_assinatura', $linkAssinatura);
+            ->with('sucesso', $mensagemSucesso)
+            ->with('link_assinatura', $emailEnviado ? null : $linkAssinatura);
     }
 }
