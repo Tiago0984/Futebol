@@ -47,6 +47,36 @@
     </script>
     <!--end::OverlayScrollbars Configure-->
 
+    <!--begin::Proteção contra duplo envio de formulários (evita cliques repetidos em Salvar/Atualizar/Excluir)-->
+    <script>
+      (function () {
+        document.addEventListener('submit', function (e) {
+          var form = e.target;
+          if (!(form instanceof HTMLFormElement)) return;
+
+          // Respeita validações próprias do formulário (ex: onsubmit="return confirm(...)")
+          if (e.defaultPrevented) return;
+
+          if (form.dataset.submitLocked === '1') {
+            e.preventDefault();
+            return;
+          }
+          form.dataset.submitLocked = '1';
+
+          var buttons = form.querySelectorAll('button[type="submit"], input[type="submit"]');
+          buttons.forEach(function (btn) {
+            btn.disabled = true;
+
+            if (btn.tagName === 'BUTTON' && btn.classList.contains('btn-modal-submit')) {
+              btn.dataset.originalHtml = btn.innerHTML;
+              btn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Enviando...';
+            }
+          });
+        });
+      })();
+    </script>
+    <!--end::Proteção contra duplo envio de formulários-->
+
     <!-- OPTIONAL SCRIPTS -->
 
     <!-- sortablejs -->

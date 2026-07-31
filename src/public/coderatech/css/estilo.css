@@ -9550,6 +9550,7 @@ body {
 .btn-tbl.activate:hover   { background: #dcfce7; border-color: #86efac; color: #15803d; }
 .btn-tbl.danger:hover     { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
 .btn-tbl.delete:hover     { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+.btn-tbl:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
 /* === ALERTAS === */
 .app-main .alert {
@@ -9780,6 +9781,8 @@ body {
     transition: background .15s !important;
 }
 .btn-modal-submit:hover { background: var(--aacj-red-dark) !important; border-color: var(--aacj-red-dark) !important; color: #fff !important; }
+.btn-modal-submit:disabled,
+.btn-modal-cancel:disabled { opacity: 0.65; cursor: not-allowed !important; pointer-events: none; }
 
 /* Altura uniforme para todos os campos dos modais */
 .modal-admin .form-control,
