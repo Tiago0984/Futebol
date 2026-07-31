@@ -67,8 +67,8 @@
                         <label class="filter-label">Dia da Semana</label>
                         <select id="filtroDia" class="form-select form-select-sm">
                             <option value="">Todos</option>
-                            @foreach(['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'] as $d)
-                            <option value="{{ $d }}">{{ $d }}</option>
+                            @foreach(\App\Models\GradeTreino::DIAS_SEMANA as $valor => $label)
+                            <option value="{{ $valor }}">{{ $label }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -253,7 +253,7 @@
                             data-categoria="{{ strtolower($g->categoria_grade_treino ?? '') }}"
                             data-status="{{ strtoupper($g->status_grade_treino) }}">
                             <td class="text-muted" style="font-size:0.8rem;">{{ $g->ordem_grade_treino }}</td>
-                            <td><span class="fw-semibold">{{ $g->dia_semana_grade_treino }}</span></td>
+                            <td><span class="fw-semibold">{{ $g->dia_label }}</span></td>
                             <td><span class="badge-cat">{{ $g->categoria_grade_treino ?? '—' }}</span></td>
                             <td class="text-muted">{{ $g->tipo_grade_treino ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
@@ -468,8 +468,8 @@
                             <label class="form-label">Dia da Semana <span class="text-danger">*</span></label>
                             <select name="dia_semana_grade_treino" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'] as $dia)
-                                <option value="{{ $dia }}">{{ $dia }}</option>
+                                @foreach(\App\Models\GradeTreino::DIAS_SEMANA as $valor => $label)
+                                <option value="{{ $valor }}">{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -536,8 +536,8 @@
                             <label class="form-label">Dia da Semana <span class="text-danger">*</span></label>
                             <select id="edit_g_dia" name="dia_semana_grade_treino" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Segunda-feira','Terça-feira','Quarta-feira','Quinta-feira','Sexta-feira','Sábado','Domingo'] as $dia)
-                                <option value="{{ $dia }}">{{ $dia }}</option>
+                                @foreach(\App\Models\GradeTreino::DIAS_SEMANA as $valor => $label)
+                                <option value="{{ $valor }}">{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>

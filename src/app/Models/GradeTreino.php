@@ -22,6 +22,13 @@ class GradeTreino extends Model
         'status_grade_treino',
     ];
 
+    public const DIAS_SEMANA = [
+        'segunda_quarta' => 'Segunda/Quarta',
+        'terca_quinta'   => 'Terça/Quinta',
+        'sexta'          => 'Sexta',
+        'sabado'         => 'Sábado',
+    ];
+
     public function getCatClassAttribute(): string
     {
         return match($this->tipo_grade_treino) {
@@ -29,5 +36,10 @@ class GradeTreino extends Model
             'LIVRE' => 'cat-livre',
             default => 'cat-' . strtolower(str_replace(['-', ' '], '', $this->categoria_grade_treino)),
         };
+    }
+
+    public function getDiaLabelAttribute(): string
+    {
+        return self::DIAS_SEMANA[$this->dia_semana_grade_treino] ?? $this->dia_semana_grade_treino;
     }
 }

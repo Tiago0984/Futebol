@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CalendarioController extends Controller
 {
+    private const TIPOS_EVENTO = ['JOGO', 'TREINO', 'CAMPEONATO', 'EVENTO', 'REUNIÃO', 'CONFRATERNIZAÇÃO'];
+
     public function index()
     {
         $eventos = EventoCalendario::orderBy('data_evento_calendario', 'desc')->get();
@@ -23,10 +26,10 @@ class CalendarioController extends Controller
     {
         $request->validate([
             'titulo_evento_calendario'          => 'required|string|max:255',
-            'tipo_evento_calendario'            => 'required|string|max:50',
+            'tipo_evento_calendario'            => ['required', Rule::in(self::TIPOS_EVENTO)],
             'data_evento_calendario'            => 'required|date',
-            'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i',
-            'horario_fim_evento_calendario'     => 'nullable|date_format:H:i',
+            'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i,H:i:s',
+            'horario_fim_evento_calendario'     => 'nullable|date_format:H:i,H:i:s',
             'local_evento_calendario'           => 'nullable|string|max:255',
             'subtipo_evento_calendario'         => 'nullable|string|max:50',
             'descricao_evento_calendario'       => 'nullable|string',
@@ -51,10 +54,10 @@ class CalendarioController extends Controller
 
         $request->validate([
             'titulo_evento_calendario'          => 'required|string|max:255',
-            'tipo_evento_calendario'            => 'required|string|max:50',
+            'tipo_evento_calendario'            => ['required', Rule::in(self::TIPOS_EVENTO)],
             'data_evento_calendario'            => 'required|date',
-            'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i',
-            'horario_fim_evento_calendario'     => 'nullable|date_format:H:i',
+            'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i,H:i:s',
+            'horario_fim_evento_calendario'     => 'nullable|date_format:H:i,H:i:s',
             'local_evento_calendario'           => 'nullable|string|max:255',
             'subtipo_evento_calendario'         => 'nullable|string|max:50',
             'descricao_evento_calendario'       => 'nullable|string',
@@ -91,11 +94,11 @@ class CalendarioController extends Controller
     public function storeGrade(Request $request)
     {
         $request->validate([
-            'dia_semana_grade_treino'        => 'required|string|max:20',
+            'dia_semana_grade_treino'        => ['required', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
             'categoria_grade_treino'         => 'nullable|string|max:50',
             'tipo_grade_treino'              => 'nullable|string|max:30',
-            'horario_inicio_grade_treino'    => 'required|date_format:H:i',
-            'horario_fim_grade_treino'       => 'required|date_format:H:i',
+            'horario_inicio_grade_treino'    => 'required|date_format:H:i,H:i:s',
+            'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
             'horario_obs_grade_treino'       => 'nullable|string|max:100',
             'local_grade_treino'             => 'nullable|string|max:255',
             'ordem_grade_treino'             => 'nullable|integer|min:0',
@@ -120,11 +123,11 @@ class CalendarioController extends Controller
         $grade = GradeTreino::findOrFail($id);
 
         $request->validate([
-            'dia_semana_grade_treino'        => 'required|string|max:20',
+            'dia_semana_grade_treino'        => ['required', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
             'categoria_grade_treino'         => 'nullable|string|max:50',
             'tipo_grade_treino'              => 'nullable|string|max:30',
-            'horario_inicio_grade_treino'    => 'required|date_format:H:i',
-            'horario_fim_grade_treino'       => 'required|date_format:H:i',
+            'horario_inicio_grade_treino'    => 'required|date_format:H:i,H:i:s',
+            'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
             'horario_obs_grade_treino'       => 'nullable|string|max:100',
             'local_grade_treino'             => 'nullable|string|max:255',
             'ordem_grade_treino'             => 'nullable|integer|min:0',
