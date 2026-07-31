@@ -3,6 +3,18 @@
    Ativado quando <html data-bs-theme="dark">
    ============================================ */
 
+/* Sincroniza os controles nativos do navegador (ícone de calendário/hora,
+   seta de <select>, scrollbar) com o tema do dashboard. Sem isso, o navegador
+   usa a preferência de cor do sistema operacional para desenhar esses ícones,
+   podendo renderizar um ícone claro sobre um campo claro (ou escuro sobre
+   escuro) e deixá-lo invisível. */
+html[data-bs-theme="light"] {
+    color-scheme: light;
+}
+html[data-bs-theme="dark"] {
+    color-scheme: dark;
+}
+
 html[data-bs-theme="dark"],
 html[data-bs-theme="dark"] body {
     background-color: #1f1f23 !important;
