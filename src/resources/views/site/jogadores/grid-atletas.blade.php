@@ -27,8 +27,10 @@
     <div class="player-grid-container">
         @forelse($atletas as $atleta)
         @php
-            $posicaoBruta = $atleta->posicao_atleta
-                ?: ($atleta->times->first()?->pivot->posicao_atleta_time ?? '');
+            // Prioriza a posição do time (mantida na tela de Escalação, editada com mais frequência)
+            // e só cai para a posição geral do perfil se o atleta não estiver em nenhum time.
+            $posicaoBruta = $atleta->times->first()?->pivot->posicao_atleta_time
+                ?: ($atleta->posicao_atleta ?? '');
             $posKey  = strtolower(trim($posicaoBruta));
             $posData = $posicaoInfo[$posKey] ?? [
                 'sigla' => $posicaoBruta ? strtoupper(substr(trim($posicaoBruta), 0, 3)) : 'ATL',
