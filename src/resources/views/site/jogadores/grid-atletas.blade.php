@@ -7,7 +7,7 @@
         'lateral'      => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
         'volante'      => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
         'meia'         => ['sigla' => 'MEI', 'nome' => 'MEIA'],
-        'atacante'     => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+        'atacante'     => ['sigla' => 'ATA', 'nome' => 'ATACANTE'],
         'centroavante' => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
         // Aliases internacionais vindos do banco (posicao_atleta_time)
         'gr'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
@@ -18,7 +18,7 @@
         'dm'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
         'am'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
         'mc'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
-        'at'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
+        'at'  => ['sigla' => 'ATA', 'nome' => 'ATACANTE'],
         'fw'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
         'cf'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
         'vo'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
