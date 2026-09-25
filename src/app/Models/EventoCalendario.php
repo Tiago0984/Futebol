@@ -10,6 +10,12 @@ class EventoCalendario extends Model
     protected $primaryKey = 'id_evento_calendario';
     public    $timestamps = false;
 
+    // Valores do ENUM status_evento_calendario
+    public const STATUS = ['CONFIRMADO', 'ALTERADO', 'CANCELADO'];
+
+    // Status que aparecem no site público
+    public const STATUS_VISIVEIS = ['CONFIRMADO', 'ALTERADO'];
+
     protected $fillable = [
         'titulo_evento_calendario',
         'descricao_evento_calendario',

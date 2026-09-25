@@ -22,7 +22,7 @@ return new class extends Migration
             $table->time('horario_fim_evento_calendario')->nullable();
             $table->string('local_evento_calendario');
             $table->enum('destaque_evento_calendario', ['SIM', 'NAO'])->default('NAO');
-            $table->enum('status_evento_calendario', ['ATIVO', 'INATIVO'])->default('ATIVO');
+            $table->enum('status_evento_calendario', ['CANCELADO', 'CONFIRMADO', 'ALTERADO'])->default('CONFIRMADO');
         });
     }
 

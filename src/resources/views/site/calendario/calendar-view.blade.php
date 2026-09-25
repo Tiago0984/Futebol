@@ -66,6 +66,11 @@
                 <div class="event-details-block">
                     <div class="event-type-tag tag-{{ $tipo }}">{{ $evento->subtipo_evento_calendario }}</div>
                     <h3 class="event-title">{{ $evento->titulo_evento_calendario }}</h3>
+                    @if(strtoupper($evento->status_evento_calendario) === 'ALTERADO')
+                    <p class="event-meta" style="color:#b45309;">
+                        <i class="fa fa-exclamation-triangle"></i> <strong>Atenção:</strong> este evento sofreu alteração.
+                    </p>
+                    @endif
                     <p class="event-meta">
                         <i class="fa fa-clock-o"></i> <strong>Horário:</strong>
                         {{ \Carbon\Carbon::parse($evento->horario_inicio_evento_calendario)->format('H:i') }}

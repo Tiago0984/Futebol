@@ -45,8 +45,9 @@
                         <label class="filter-label">Status</label>
                         <select id="filtroStatus" class="form-select form-select-sm">
                             <option value="">Todos</option>
-                            <option value="ATIVO">Ativo</option>
-                            <option value="INATIVO">Inativo</option>
+                            <option value="CONFIRMADO">Confirmado</option>
+                            <option value="ALTERADO">Alterado</option>
+                            <option value="CANCELADO">Cancelado</option>
                         </select>
                     </div>
                     <div class="col-md-auto">
@@ -169,11 +170,16 @@
                             </td>
                             <td class="text-muted">{{ $ev->local_evento_calendario ?? '—' }}</td>
                             <td class="text-center">
-                                @if(strtoupper($ev->status_evento_calendario) === 'ATIVO')
-                                    <span class="badge-status ativo">Ativo</span>
-                                @else
-                                    <span class="badge-status inativo">Inativo</span>
-                                @endif
+                                @switch(strtoupper($ev->status_evento_calendario))
+                                    @case('CONFIRMADO')
+                                        <span class="badge-status ativo">Confirmado</span>
+                                        @break
+                                    @case('ALTERADO')
+                                        <span class="badge-status pendente">Alterado</span>
+                                        @break
+                                    @default
+                                        <span class="badge-status inativo">Cancelado</span>
+                                @endswitch
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
@@ -187,22 +193,23 @@
                                         data-inicio="{{ $ev->horario_inicio_evento_calendario }}"
                                         data-fim="{{ $ev->horario_fim_evento_calendario }}"
                                         data-local="{{ $ev->local_evento_calendario }}"
-                                        data-descricao="{{ $ev->descricao_evento_calendario }}">
+                                        data-descricao="{{ $ev->descricao_evento_calendario }}"
+                                        data-status="{{ strtoupper($ev->status_evento_calendario) }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form action="{{ route('admin.calendario.eventos.toggleStatus', $ev->id_evento_calendario) }}" method="POST" style="display:inline">
                                         @csrf @method('PATCH')
-                                        @if(strtoupper($ev->status_evento_calendario) === 'ATIVO')
-                                            <button type="submit" class="btn-tbl deactivate" title="Inativar">
-                                                <i class="bi bi-eye-slash"></i>
+                                        @if(strtoupper($ev->status_evento_calendario) !== 'CANCELADO')
+                                            <button type="submit" class="btn-tbl deactivate" title="Cancelar evento">
+                                                <i class="bi bi-x-circle"></i>
                                             </button>
                                         @else
-                                            <button type="submit" class="btn-tbl activate" title="Reativar">
-                                                <i class="bi bi-eye"></i>
+                                            <button type="submit" class="btn-tbl activate" title="Reconfirmar evento">
+                                                <i class="bi bi-check-circle"></i>
                                             </button>
                                         @endif
                                     </form>
-                                    @if(strtoupper($ev->status_evento_calendario) !== 'ATIVO')
+                                    @if(strtoupper($ev->status_evento_calendario) === 'CANCELADO')
                                     <form action="{{ route('admin.calendario.eventos.destroy', $ev->id_evento_calendario) }}" method="POST"
                                           onsubmit="return confirm('Excluir permanentemente este evento?');" style="display:inline">
                                         @csrf @method('DELETE')
@@ -436,6 +443,14 @@
                             <input type="text" id="edit_ev_local" name="local_evento_calendario"
                                 class="form-control">
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Status <span class="text-danger">*</span></label>
+                            <select id="edit_ev_status" name="status_evento_calendario" class="form-select" required>
+                                @foreach(\App\Models\EventoCalendario::STATUS as $st)
+                                <option value="{{ $st }}">{{ ucfirst(strtolower($st)) }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-12">
                             <label class="form-label">Descrição</label>
                             <textarea id="edit_ev_descricao" name="descricao_evento_calendario"
@@ -658,6 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_ev_descricao').value = this.dataset.descricao || '';
             const sel = document.getElementById('edit_ev_tipo');
             for (let opt of sel.options) opt.selected = opt.value === this.dataset.tipo;
+            document.getElementById('edit_ev_status').value = this.dataset.status || 'CONFIRMADO';
         });
     });
 

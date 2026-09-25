@@ -42,7 +42,7 @@ class CalendarioController extends Controller
                 'horario_fim_evento_calendario', 'local_evento_calendario',
                 'subtipo_evento_calendario', 'descricao_evento_calendario',
             ]),
-            'status_evento_calendario' => 'ATIVO',
+            'status_evento_calendario' => 'CONFIRMADO',
         ]);
 
         return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento adicionado ao calendário.');
@@ -61,6 +61,7 @@ class CalendarioController extends Controller
             'local_evento_calendario'           => 'nullable|string|max:255',
             'subtipo_evento_calendario'         => 'nullable|string|max:50',
             'descricao_evento_calendario'       => 'nullable|string',
+            'status_evento_calendario'          => ['required', Rule::in(EventoCalendario::STATUS)],
         ]);
 
         $evento->update($request->only([
@@ -68,6 +69,7 @@ class CalendarioController extends Controller
             'data_evento_calendario', 'horario_inicio_evento_calendario',
             'horario_fim_evento_calendario', 'local_evento_calendario',
             'subtipo_evento_calendario', 'descricao_evento_calendario',
+            'status_evento_calendario',
         ]));
 
         return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento atualizado.');
@@ -76,7 +78,8 @@ class CalendarioController extends Controller
     public function toggleStatusEvento($id)
     {
         $evento = EventoCalendario::findOrFail($id);
-        $novo = strtoupper($evento->status_evento_calendario) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+        // Botão rápido: cancela o evento ou, se já cancelado, reconfirma
+        $novo = strtoupper($evento->status_evento_calendario) === 'CANCELADO' ? 'CONFIRMADO' : 'CANCELADO';
         $evento->update(['status_evento_calendario' => $novo]);
 
         return back()->with('sucesso', "Evento {$novo} com sucesso.");
