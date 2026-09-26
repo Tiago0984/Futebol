@@ -66,6 +66,9 @@ Route::post('/cadastro', [CadastroController::class, 'store'])->middleware('thro
 Route::get('/assinar/{token}',  [AssinaturaController::class, 'show'])->name('assinar.show');
 Route::post('/assinar/{token}', [AssinaturaController::class, 'store'])->name('assinar.store');
 
+// Documentação da API (página HTML para leitura humana)
+Route::view('/api/documentacao', 'api.documentacao')->name('api.documentacao');
+
 
 // Rotas de autenticação admin (sem middleware)
 Route::prefix('admin')->name('admin.')->group(function () {

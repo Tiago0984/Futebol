@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Laravel\Sanctum\HasApiTokens;
 
 class Atleta extends Authenticatable
 {
+    // HasApiTokens: permite gerar e gerenciar tokens do Sanctum (login pela API)
+    use HasApiTokens;
+
     protected $table = 'tbl_atletas';
     protected $primaryKey = 'id_atleta';
     public $timestamps = false;
@@ -33,6 +37,13 @@ class Atleta extends Authenticatable
         'email_atleta',
         'password',
         'remember_token',
+    ];
+
+    // Nunca devolver esses campos no JSON da API
+    protected $hidden = [
+        'password',
+        'remember_token',
+        'token_cadastro',
     ];
 
     protected $casts = [
