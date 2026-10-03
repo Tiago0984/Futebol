@@ -168,17 +168,20 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Acesso do atleta ao app:** o cadastro público grava senha aleatória (`Str::random(20)`), então nenhum atleta consegue logar. `token_cadastro` é gerado e nunca lido. Plano: password broker do Laravel (broker `atletas`, e-mail em `email_atleta`), link "defina sua senha" na aprovação e "esqueci minha senha". Pendente: o link vai para o e-mail do atleta ou do responsável?
 - **Assinaturas:** gravadas em `public/` (acessíveis por URL), nome previsível, caminho salvo no **responsável** (sobrescreve quando ele tem dois atletas), sem validar se é PNG, e o arquivo não é apagado na exclusão. Plano: coluna `tbl_autorizacoes.arquivo_assinatura`, `Storage::disk('local')` com UUID, rota protegida no admin, comando para migrar os arquivos, apagar após o commit da transação.
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
-- **Grade** cita Sub-9, Sub-11, Sub-13 e Sub-17, que não existem em `tbl_categoria` (só Sub-15 casa).
+- **Grade** cita Sub-9, Sub-11, Sub-13 e Sub-17, que não existem em `tbl_categoria` (só Sub-15 casa). O professor confirmou que devem existir, em M e F (seção 8, pergunta 2); criação planejada na Fase 3.
+- **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
 - `STATUS_VISIVEIS` do site inclui `ALTERADO` (muda na Fase 4).
 - **Tabela `users` sobrando:** a migration padrão `0001_01_01_000000_create_users_table` cria `users`, que o projeto não usa (o admin usa `tbl_usuarios`). Ela não existe no `db_futebol` (foi apagada à mão), mas é criada no `migrate:fresh` e seria criada no primeiro deploy. Plano: tirar a criação de `users` dessa migration ou criar uma migration que a remova.
-- **Grant órfão:** o `user` tem `GRANT ALL` em `db_futebol_migrations_teste`, banco que não existe mais.
-
 ---
 
 ## 8. Perguntas em aberto para o professor
 
 1. Níveis de usuário: quais valores e o que cada um pode fazer? **Provisório:** `nivel_usuario` = `ADMIN` / `EDITOR` / `LEITURA` e `User::CARGOS` = Professor, Nutricionista, Fisiologista, Médico, Coordenador. Valores de nível e cargo aguardam o professor.
-2. Sub-9, Sub-11, Sub-13 e Sub-17 existem? Cadastrar ou a grade está desatualizada?
+2. Sub-9, Sub-11, Sub-13 e Sub-17 existem? **Respondida pelo professor (03/10/2026):** a escolinha atende de 9 a 17 anos e as categorias da grade **devem existir**. **Não criar categorias sem OK** (plano da Fase 3).
+   - **Faixas:** Sub-9 (9), Sub-11 (10–11), Sub-13 (12–13), Sub-15 (14–15), Sub-17 (16–17).
+   - **Idade pelo ANO de nascimento:** idade = ano atual − ano de nascimento (a data exata não importa).
+   - **Há categorias femininas**, com as mesmas faixas (a confirmar se todas existem).
+   - **Todos os dados do banco local são de teste**; nada precisa ser preservado (inclui a Sub-12, 10–12, e a Sub-15, 13–15, atuais).
 3. Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada?
 4. A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?
 5. Atleta com cartões: pode ser excluído (apagando histórico) ou só inativado?
