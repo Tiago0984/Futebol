@@ -75,6 +75,28 @@ class GrauParentescoTest extends TestCase
             ->assertSessionDoesntHaveErrors('grau_parentesco');
     }
 
+    public function test_migration_normaliza_so_os_formatos_antigos(): void
+    {
+        $graus = ['PAI', 'MAE', 'Mãe', 'Pai', 'Outro'];
+        $ids   = [];
+
+        foreach ($graus as $grau) {
+            $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+            $this->vincularResponsavel($idAtleta, $grau);
+            $ids[$grau] = $idAtleta;
+        }
+
+        $migration = require database_path('migrations/2026_10_03_000005_normaliza_grau_parentesco.php');
+        $migration->up();
+
+        $gravados = DB::table('tbl_atleta_responsavel')->pluck('grau_parentesco_responsavel', 'id_atleta');
+        $this->assertSame('Pai', $gravados[$ids['PAI']]);
+        $this->assertSame('Mãe', $gravados[$ids['MAE']]);
+        $this->assertSame('Mãe', $gravados[$ids['Mãe']]);
+        $this->assertSame('Pai', $gravados[$ids['Pai']]);
+        $this->assertSame('Outro', $gravados[$ids['Outro']]);
+    }
+
     // Responsável com o grau gravado exatamente como veio (sem passar pela validação)
     private function vincularResponsavel(int $idAtleta, string $grau): void
     {
