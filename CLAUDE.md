@@ -73,14 +73,19 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Cancelar um treino de um dia específico: editar **aquele evento** e mudar para cancelado.
 
 ### Status
-- **Gravado no evento:** `ATIVO` / `CANCELADO` / `INATIVO` (inativo = escondido; cancelado = continua visível com o selo).
+- **Gravado no evento:** `ATIVO` / `CANCELADO` / `INATIVO` (inativo = escondido, rótulo "Oculto"; cancelado = continua visível com o selo).
+- **Status muda só por ações** no admin: **Cancelar ↔ Reativar** (`CANCELADO` ↔ `ATIVO`) e **Ocultar ↔ Mostrar** (`INATIVO` ↔ `ATIVO`). A edição do evento não altera o status.
+  - ⚠️ **Para a Etapa 3 (histórico):** "Mostrar" deve restaurar o **status anterior** ao ocultar (cancelado e depois ocultado volta como cancelado). Hoje (Etapa 1) volta sempre como `ATIVO`.
+- **Sem exclusão de evento** (rota, método e botão removidos): **ocultar** faz esse papel e preserva o registro.
+- **Site público:** mostra eventos **cancelados com o selo "Cancelado"**; `INATIVO` continua escondido. O destaque "Próximo Evento" considera só eventos ativos.
 - **Derivados (não gravados):**
-  - **Alterado:** mudou **data, horário ou local** e o evento ainda não aconteceu. Aparece **só no dashboard**.
-  - **Concluído:** a data já passou (cancelado continua cancelado).
-- **Histórico de alterações:** campo, valor antigo, valor novo, quem alterou, quando.
+  - **Alterado:** mudou **data, horário ou local** e o evento ainda não aconteceu. Aparece **só no dashboard** (nunca no site nem no app).
+  - **Concluído:** data anterior a hoje, ou hoje com o horário de fim já passado (sem fim, vale o início; sem nenhum dos dois, só no dia seguinte). **Cancelado continua cancelado** mesmo depois da data.
+- **Histórico de alterações:** campo, valor antigo, valor novo, quem alterou, quando. Registra **data, horário de início e de fim, local, status, título, tipo e categoria**; só data, horário e local contam para "Alterado".
+- **Responsável (`id_usuario`):** quem criou; os 6 eventos anteriores à Fase 4 ficam com `id_usuario` NULL ("—" na tela).
 - **App do atleta:** mostra só **Confirmado** (inscrito e ativo) ou **Cancelado**. **Nunca o selo "Alterado"**; a alteração chega por notificação.
 - App mostra os **últimos 3 eventos passados**.
-- ⚠️ Conflita com o código atual: os commits `59c9743` e `86b8e78` gravam `CONFIRMADO/ALTERADO/CANCELADO`. A Fase 4 desfaz isso.
+- Os commits `59c9743` e `86b8e78` (que gravavam `CONFIRMADO/ALTERADO/CANCELADO`) são desfeitos por **migration nova** na Fase 4, sem `git revert` (a branch já está no remoto).
 
 ### Site público (provisório até o professor decidir)
 - O calendário do site mostra só os tipos **JOGO, TREINO e CAMPEONATO** (`EventoCalendario::TIPOS_PUBLICOS`), na lista e no próximo evento. EVENTO, REUNIAO, CONFRATERNIZACAO e AVALIACAO ficam só no admin.
@@ -202,7 +207,6 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
 - **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
 - **Camisa repetida na lista de atletas:** um atleta em dois times mostra "Camisa Nº 15" duas vezes, sem dizer de qual time é cada número.
-- `STATUS_VISIVEIS` do site inclui `ALTERADO` (muda na Fase 4).
 ---
 
 ## 8. Perguntas em aberto para o professor

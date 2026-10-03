@@ -45,9 +45,9 @@
                         <label class="filter-label">Status</label>
                         <select id="filtroStatus" class="form-select form-select-sm">
                             <option value="">Todos</option>
-                            <option value="CONFIRMADO">Confirmado</option>
-                            <option value="ALTERADO">Alterado</option>
-                            <option value="CANCELADO">Cancelado</option>
+                            @foreach(\App\Models\EventoCalendario::STATUS as $st => $rotuloStatus)
+                            <option value="{{ $st }}">{{ $rotuloStatus }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-md-auto">
@@ -108,6 +108,13 @@
         @if(session('sucesso'))
         <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
             <strong>Sucesso!</strong> {{ session('sucesso') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+
+        @if(session('erro'))
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <strong>Erro!</strong> {{ session('erro') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         @endif
@@ -180,16 +187,10 @@
                             </td>
                             <td class="text-muted">{{ $ev->local_evento_calendario ?? '—' }}</td>
                             <td class="text-center">
-                                @switch(strtoupper($ev->status_evento_calendario))
-                                    @case('CONFIRMADO')
-                                        <span class="badge-status ativo">Confirmado</span>
-                                        @break
-                                    @case('ALTERADO')
-                                        <span class="badge-status pendente">Alterado</span>
-                                        @break
-                                    @default
-                                        <span class="badge-status inativo">Cancelado</span>
-                                @endswitch
+                                @php
+                                    $classeStatus = ['ATIVO' => 'ativo', 'CANCELADO' => 'inativo', 'INATIVO' => 'rejeitado'][$ev->status_evento_calendario] ?? 'pendente';
+                                @endphp
+                                <span class="badge-status {{ $classeStatus }}">{{ $ev->status_label }}</span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
@@ -203,31 +204,39 @@
                                         data-inicio="{{ $ev->horario_inicio_evento_calendario }}"
                                         data-fim="{{ $ev->horario_fim_evento_calendario }}"
                                         data-local="{{ $ev->local_evento_calendario }}"
-                                        data-descricao="{{ $ev->descricao_evento_calendario }}"
-                                        data-status="{{ strtoupper($ev->status_evento_calendario) }}">
+                                        data-descricao="{{ $ev->descricao_evento_calendario }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <form action="{{ route('admin.calendario.eventos.toggleStatus', $ev->id_evento_calendario) }}" method="POST" style="display:inline">
+                                    {{-- Cancelar <-> reativar (oculto precisa ser mostrado antes) --}}
+                                    @unless($ev->estaOculto())
+                                    <form action="{{ route('admin.calendario.eventos.cancelar', $ev->id_evento_calendario) }}" method="POST" style="display:inline"
+                                          onsubmit="return confirm(@js($ev->estaCancelado() ? 'Reativar este evento?' : 'Cancelar este evento? Ele continua visível no site, com o selo "Cancelado".'))">
                                         @csrf @method('PATCH')
-                                        @if(strtoupper($ev->status_evento_calendario) !== 'CANCELADO')
+                                        @if($ev->estaCancelado())
+                                            <button type="submit" class="btn-tbl activate" title="Reativar evento">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        @else
                                             <button type="submit" class="btn-tbl deactivate" title="Cancelar evento">
                                                 <i class="bi bi-x-circle"></i>
                                             </button>
+                                        @endif
+                                    </form>
+                                    @endunless
+                                    {{-- Ocultar <-> mostrar: substitui a exclusão (o evento some do site, o registro fica) --}}
+                                    <form action="{{ route('admin.calendario.eventos.ocultar', $ev->id_evento_calendario) }}" method="POST" style="display:inline"
+                                          onsubmit="return confirm(@js($ev->estaOculto() ? 'Mostrar este evento de novo? Ele volta como ativo.' : 'Ocultar este evento? Ele some do site, mas o registro fica.'))">
+                                        @csrf @method('PATCH')
+                                        @if($ev->estaOculto())
+                                            <button type="submit" class="btn-tbl activate" title="Mostrar evento">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
                                         @else
-                                            <button type="submit" class="btn-tbl activate" title="Reconfirmar evento">
-                                                <i class="bi bi-check-circle"></i>
+                                            <button type="submit" class="btn-tbl deactivate" title="Ocultar evento">
+                                                <i class="bi bi-eye-slash"></i>
                                             </button>
                                         @endif
                                     </form>
-                                    @if(strtoupper($ev->status_evento_calendario) === 'CANCELADO')
-                                    <form action="{{ route('admin.calendario.eventos.destroy', $ev->id_evento_calendario) }}" method="POST"
-                                          onsubmit="return confirm('Excluir permanentemente este evento?');" style="display:inline">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn-tbl delete" title="Excluir">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -449,18 +458,10 @@
                             <input type="time" id="edit_ev_fim" name="horario_fim_evento_calendario"
                                 class="form-control">
                         </div>
-                        <div class="col-md-8">
+                        <div class="col-12">
                             <label class="form-label">Local</label>
                             <input type="text" id="edit_ev_local" name="local_evento_calendario"
                                 class="form-control">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Status <span class="text-danger">*</span></label>
-                            <select id="edit_ev_status" name="status_evento_calendario" class="form-select" required>
-                                @foreach(\App\Models\EventoCalendario::STATUS as $st)
-                                <option value="{{ $st }}">{{ ucfirst(strtolower($st)) }}</option>
-                                @endforeach
-                            </select>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Descrição</label>
@@ -702,7 +703,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_ev_descricao').value = this.dataset.descricao || '';
             const sel = document.getElementById('edit_ev_tipo');
             for (let opt of sel.options) opt.selected = opt.value === this.dataset.tipo;
-            document.getElementById('edit_ev_status').value = this.dataset.status || 'CONFIRMADO';
         });
     });
 

@@ -103,8 +103,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::get('/',                        [AdminCalendarioController::class, 'index'])->name('index');
         Route::post('/eventos',                [AdminCalendarioController::class, 'storeEvento'])->name('eventos.store');
         Route::put('/eventos/{id}',            [AdminCalendarioController::class, 'updateEvento'])->name('eventos.update');
-        Route::patch('/eventos/{id}/toggle',   [AdminCalendarioController::class, 'toggleStatusEvento'])->name('eventos.toggleStatus');
-        Route::delete('/eventos/{id}',         [AdminCalendarioController::class, 'destroyEvento'])->name('eventos.destroy');
+        // Sem exclusão de evento: ocultar (INATIVO) faz esse papel e preserva o registro
+        Route::patch('/eventos/{id}/cancelar', [AdminCalendarioController::class, 'cancelarEvento'])->name('eventos.cancelar');
+        Route::patch('/eventos/{id}/ocultar',  [AdminCalendarioController::class, 'ocultarEvento'])->name('eventos.ocultar');
         Route::post('/grade',                  [AdminCalendarioController::class, 'storeGrade'])->name('grade.store');
         Route::put('/grade/{id}',              [AdminCalendarioController::class, 'updateGrade'])->name('grade.update');
         Route::patch('/grade/{id}/toggle',     [AdminCalendarioController::class, 'toggleStatusGrade'])->name('grade.toggleStatus');

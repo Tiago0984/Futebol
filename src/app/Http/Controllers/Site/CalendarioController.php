@@ -15,7 +15,8 @@ class CalendarioController extends Controller
             ->orderBy('data_evento_calendario')
             ->get();
 
-        $proximoEvento = EventoCalendario::whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS)
+        // Destaque com contagem regressiva: só evento ativo (cancelado aparece na lista, com o selo)
+        $proximoEvento = EventoCalendario::where('status_evento_calendario', 'ATIVO')
             ->whereIn('tipo_evento_calendario', EventoCalendario::TIPOS_PUBLICOS)
             ->where('data_evento_calendario', '>=', now()->toDateString()) // Filtra eventos futuros ou do dia atual
             ->orderBy('data_evento_calendario')

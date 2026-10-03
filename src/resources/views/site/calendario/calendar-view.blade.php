@@ -19,7 +19,7 @@
                 <span class="event-type-tag tag-{{ $proximoEvento->tipo_class }}" style="margin-bottom:10px; display:inline-block;">{{ $proximoEvento->subtipo_evento_calendario }}</span>
                 <h3 class="cal-next-title">{{ $proximoEvento->titulo_evento_calendario }}</h3>
                 <p class="cal-next-meta">
-                    <i class="fa fa-clock-o"></i> {{ \Carbon\Carbon::parse($proximoEvento->horario_inicio_evento_calendario)->format('H:i') }} &nbsp;&nbsp;
+                    <i class="fa fa-clock-o"></i> {{ $proximoEvento->horario_texto }} &nbsp;&nbsp;
                     <i class="fa fa-map-marker"></i> {{ $proximoEvento->local_evento_calendario }}
                 </p>
             </div>
@@ -58,25 +58,21 @@
                 $dt   = $evento->data_evento_calendario;
                 $tipo = $evento->tipo_class;
             @endphp
-            <div class="cal-event-card event-{{ $tipo }}">
+            <div class="cal-event-card event-{{ $tipo }} {{ $evento->estaCancelado() ? 'cal-event-card--cancelado' : '' }}">
                 <div class="event-date-block">
                     <span class="event-day">{{ $dt->format('d') }}</span>
                     <span class="event-month">{{ $meses[$dt->month] }}</span>
                 </div>
                 <div class="event-details-block">
                     <div class="event-type-tag tag-{{ $tipo }}">{{ $evento->subtipo_evento_calendario }}</div>
-                    <h3 class="event-title">{{ $evento->titulo_evento_calendario }}</h3>
-                    @if(strtoupper($evento->status_evento_calendario) === 'ALTERADO')
-                    <p class="event-meta" style="color:#b45309;">
-                        <i class="fa fa-exclamation-triangle"></i> <strong>Atenção:</strong> este evento sofreu alteração.
-                    </p>
+                    @if($evento->estaCancelado())
+                    <span class="event-selo-cancelado"><i class="fa fa-ban"></i> Cancelado</span>
                     @endif
+                    <h3 class="event-title">{{ $evento->titulo_evento_calendario }}</h3>
+                    {{-- "Alterado" não aparece no site (só no dashboard): CLAUDE.md, seção 4 --}}
                     <p class="event-meta">
                         <i class="fa fa-clock-o"></i> <strong>Horário:</strong>
-                        {{ \Carbon\Carbon::parse($evento->horario_inicio_evento_calendario)->format('H:i') }}
-                        @if($evento->horario_fim_evento_calendario)
-                            às {{ \Carbon\Carbon::parse($evento->horario_fim_evento_calendario)->format('H:i') }}
-                        @endif
+                        {{ $evento->horario_texto }}
                         &nbsp;|&nbsp;
                         <i class="fa fa-map-marker"></i> <strong>Local:</strong> {{ $evento->local_evento_calendario }}
                     </p>

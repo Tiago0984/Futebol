@@ -59,7 +59,6 @@ class CalendarioTest extends TestCase
             'tipo_evento_calendario'    => 'CAMPEONATO',
             'subtipo_evento_calendario' => 'Campeonato',
             'local_evento_calendario'   => 'Estádio Novo',
-            'status_evento_calendario'  => 'CONFIRMADO',
         ]))->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas(self::TABELA, [
@@ -85,7 +84,6 @@ class CalendarioTest extends TestCase
 
         $this->comoAdmin()->put(self::URL_ADMIN . '/' . $id, $this->dados([
             'tipo_evento_calendario'   => 'INVALIDO',
-            'status_evento_calendario' => 'CONFIRMADO',
         ]))->assertSessionHasErrors('tipo_evento_calendario');
 
         $this->assertDatabaseHas(self::TABELA, [
@@ -94,19 +92,21 @@ class CalendarioTest extends TestCase
         ]);
     }
 
-    public function test_site_nao_lista_eventos_cancelados(): void
+    public function test_site_lista_cancelados_com_o_selo_e_esconde_os_ocultos(): void
     {
-        $this->criarEvento(['titulo_evento_calendario' => 'Amistoso Confirmado XYZ']);
+        $this->criarEvento(['titulo_evento_calendario' => 'Amistoso Ativo XYZ']);
         $cancelado = $this->criarEvento(['titulo_evento_calendario' => 'Amistoso Cancelado XYZ']);
+        $oculto    = $this->criarEvento(['titulo_evento_calendario' => 'Amistoso Oculto XYZ']);
 
-        DB::table(self::TABELA)
-            ->where(self::PK, $cancelado)
-            ->update(['status_evento_calendario' => 'CANCELADO']);
+        DB::table(self::TABELA)->where(self::PK, $cancelado)->update(['status_evento_calendario' => 'CANCELADO']);
+        DB::table(self::TABELA)->where(self::PK, $oculto)->update(['status_evento_calendario' => 'INATIVO']);
 
         $this->get(self::URL_SITE)
             ->assertOk()
-            ->assertSee('Amistoso Confirmado XYZ')
-            ->assertDontSee('Amistoso Cancelado XYZ');
+            ->assertSee('Amistoso Ativo XYZ')
+            ->assertSee('Amistoso Cancelado XYZ')
+            ->assertSee('event-selo-cancelado', false)
+            ->assertDontSee('Amistoso Oculto XYZ');
     }
 
     // Regra provisória de tipos públicos (EventoCalendario::TIPOS_PUBLICOS)

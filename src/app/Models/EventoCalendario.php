@@ -10,11 +10,16 @@ class EventoCalendario extends Model
     protected $primaryKey = 'id_evento_calendario';
     public    $timestamps = false;
 
-    // Valores do ENUM status_evento_calendario
-    public const STATUS = ['CONFIRMADO', 'ALTERADO', 'CANCELADO'];
+    // Valores do ENUM status_evento_calendario => rótulo. "Alterado" e "Concluído" não são gravados:
+    // são derivados (Fase 4, Etapa 3). INATIVO = oculto (substitui a exclusão).
+    public const STATUS = [
+        'ATIVO'     => 'Ativo',
+        'CANCELADO' => 'Cancelado',
+        'INATIVO'   => 'Oculto',
+    ];
 
-    // Status que aparecem no site público
-    public const STATUS_VISIVEIS = ['CONFIRMADO', 'ALTERADO'];
+    // Status que aparecem no site público: cancelado continua visível, com o selo
+    public const STATUS_VISIVEIS = ['ATIVO', 'CANCELADO'];
 
     // Tipos que aparecem no site público (provisório até o professor decidir)
     public const TIPOS_PUBLICOS = ['JOGO', 'TREINO', 'CAMPEONATO'];
@@ -55,5 +60,34 @@ class EventoCalendario extends Model
     public function getTipoLabelAttribute(): string
     {
         return self::TIPOS[$this->tipo_evento_calendario] ?? $this->tipo_evento_calendario;
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return self::STATUS[$this->status_evento_calendario] ?? $this->status_evento_calendario;
+    }
+
+    public function estaCancelado(): bool
+    {
+        return $this->status_evento_calendario === 'CANCELADO';
+    }
+
+    public function estaOculto(): bool
+    {
+        return $this->status_evento_calendario === 'INATIVO';
+    }
+
+    // "09:00 às 11:00", "09:00" ou "A definir". Sem horário, Carbon::parse(null) mostraria a hora atual.
+    public function getHorarioTextoAttribute(): string
+    {
+        $formatar = fn ($hora) => substr((string) $hora, 0, 5);
+
+        if (! $this->horario_inicio_evento_calendario) {
+            return 'A definir';
+        }
+
+        return $this->horario_fim_evento_calendario
+            ? $formatar($this->horario_inicio_evento_calendario) . ' às ' . $formatar($this->horario_fim_evento_calendario)
+            : $formatar($this->horario_inicio_evento_calendario);
     }
 }

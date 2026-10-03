@@ -42,7 +42,7 @@ class CalendarioController extends Controller
                 'horario_fim_evento_calendario', 'local_evento_calendario',
                 'subtipo_evento_calendario', 'descricao_evento_calendario',
             ]),
-            'status_evento_calendario' => 'CONFIRMADO',
+            'status_evento_calendario' => 'ATIVO',
         ]);
 
         return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento adicionado ao calendário.');
@@ -61,35 +61,44 @@ class CalendarioController extends Controller
             'local_evento_calendario'           => 'nullable|string|max:255',
             'subtipo_evento_calendario'         => 'nullable|string|max:50',
             'descricao_evento_calendario'       => 'nullable|string',
-            'status_evento_calendario'          => ['required', Rule::in(EventoCalendario::STATUS)],
         ]);
 
+        // O status não muda pela edição: só pelas ações de cancelar e ocultar
         $evento->update($request->only([
             'titulo_evento_calendario', 'tipo_evento_calendario',
             'data_evento_calendario', 'horario_inicio_evento_calendario',
             'horario_fim_evento_calendario', 'local_evento_calendario',
             'subtipo_evento_calendario', 'descricao_evento_calendario',
-            'status_evento_calendario',
         ]));
 
         return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento atualizado.');
     }
 
-    public function toggleStatusEvento($id)
+    // Cancelar <-> reativar. Cancelado continua visível (com o selo); oculto precisa ser mostrado antes.
+    public function cancelarEvento($id)
     {
         $evento = EventoCalendario::findOrFail($id);
-        // Botão rápido: cancela o evento ou, se já cancelado, reconfirma
-        $novo = strtoupper($evento->status_evento_calendario) === 'CANCELADO' ? 'CONFIRMADO' : 'CANCELADO';
+
+        if ($evento->estaOculto()) {
+            return back()->with('erro', 'Este evento está oculto. Mostre o evento antes de cancelar ou reativar.');
+        }
+
+        $novo = $evento->estaCancelado() ? 'ATIVO' : 'CANCELADO';
         $evento->update(['status_evento_calendario' => $novo]);
 
-        return back()->with('sucesso', "Evento {$novo} com sucesso.");
+        return back()->with('sucesso', $novo === 'CANCELADO' ? 'Evento cancelado.' : 'Evento reativado.');
     }
 
-    public function destroyEvento($id)
+    // Ocultar <-> mostrar. Oculto (INATIVO) some do site e faz o papel da exclusão, sem perder o registro.
+    // Mostrar de novo volta para ATIVO (um evento cancelado e depois ocultado volta ativo).
+    public function ocultarEvento($id)
     {
-        EventoCalendario::findOrFail($id)->delete();
+        $evento = EventoCalendario::findOrFail($id);
 
-        return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento removido.');
+        $novo = $evento->estaOculto() ? 'ATIVO' : 'INATIVO';
+        $evento->update(['status_evento_calendario' => $novo]);
+
+        return back()->with('sucesso', $novo === 'INATIVO' ? 'Evento ocultado.' : 'Evento visível de novo.');
     }
 
     // ── Grade de Treinos ────────────────────────────────────────────────────
