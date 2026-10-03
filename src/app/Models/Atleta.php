@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
 
 class Atleta extends Authenticatable
@@ -103,5 +104,27 @@ class Atleta extends Authenticatable
     public function autorizacoes()
     {
         return $this->hasMany(Autorizacao::class, 'id_atleta', 'id_atleta');
+    }
+
+    // Exclui o atleta e todos os vínculos dele (as FKs não têm ON DELETE CASCADE).
+    // Atleta com cartões não é excluído, para não apagar o histórico dos jogos:
+    // retorna false e quem chamou deve avisar o usuário.
+    public function excluirComDependencias(): bool
+    {
+        if ($this->cartoes()->exists()) {
+            return false;
+        }
+
+        DB::transaction(function () {
+            $this->responsaveis()->detach();
+            $this->categorias()->detach();
+            $this->times()->detach();
+            $this->autorizacoes()->delete();
+            $this->inscricoes()->delete();
+            $this->tokens()->delete(); // tokens do Sanctum (personal_access_tokens não tem FK)
+            $this->delete();
+        });
+
+        return true;
     }
 }

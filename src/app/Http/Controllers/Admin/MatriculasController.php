@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
-use Illuminate\Support\Facades\DB;
 
 class MatriculasController extends Controller
 {
@@ -82,16 +81,13 @@ class MatriculasController extends Controller
 
     public function deletar($id)
     {
-        $atleta = Atleta::with(['responsaveis', 'autorizacoes'])->findOrFail($id);
+        $atleta = Atleta::findOrFail($id);
         $nome = $atleta->nome_atleta;
 
-        DB::transaction(function () use ($atleta) {
-            $atleta->autorizacoes()->delete();
-            $atleta->responsaveis()->detach();
-            $atleta->categorias()->detach();
-            $atleta->times()->detach();
-            $atleta->delete();
-        });
+        if (!$atleta->excluirComDependencias()) {
+            return redirect()->route('admin.matriculas.rejeitadas')
+                ->with('erro', "{$nome} possui cartões registrados em jogos e não pode ser excluído definitivamente. O cadastro continua em Matrículas Rejeitadas para preservar o histórico das partidas.");
+        }
 
         return redirect()->route('admin.matriculas.rejeitadas')
             ->with('sucesso', "Cadastro de {$nome} excluído permanentemente.");

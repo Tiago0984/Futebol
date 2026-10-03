@@ -301,19 +301,4 @@ class AtletasController extends Controller
 
         return back()->with('sucesso', "Atleta {$novoStatus} com sucesso.");
     }
-
-    public function destroy($id)
-    {
-        $atleta = Atleta::findOrFail($id);
-
-        DB::transaction(function () use ($atleta) {
-            $atleta->responsaveis()->detach();
-            $atleta->categorias()->detach();
-            $atleta->times()->detach();
-            $atleta->delete();
-        });
-
-        return redirect()->route('admin.atletas.index')
-            ->with('sucesso', 'Atleta removido com sucesso.');
-    }
 }

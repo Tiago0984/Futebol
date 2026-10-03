@@ -28,6 +28,13 @@
         </div>
         @endif
 
+        @if(session('erro'))
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <strong>Erro!</strong> {{ session('erro') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
+        </div>
+        @endif
+
         {{-- Filtros --}}
         <div class="collapse" id="filterPanel">
             <div class="filter-panel">

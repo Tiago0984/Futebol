@@ -115,7 +115,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Pessoas
     // Pessoas (Corrigido para usar o alias AdminAtletasController)
     // toggle-status significa que o status do atleta será alternado entre ATIVO e INATIVO
-    Route::resource('atletas', AdminAtletasController::class);
+    // Sem destroy: na tela de Atletas o atleta só é inativado; exclusão definitiva só em Matrículas Rejeitadas
+    Route::resource('atletas', AdminAtletasController::class)->except(['destroy']);
     Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
     Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');
     Route::get('inscricoes/{id}',     [InscricoesController::class, 'show'])->name('inscricoes.show');
