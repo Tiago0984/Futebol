@@ -29,6 +29,23 @@ class UserFactory extends Factory
             'email_usuario'          => fake()->unique()->safeEmail(),
             'senha_usuario'          => static::$password ??= Hash::make('password'),
             'remember_token_usuario' => Str::random(10),
+            'cargo_usuario'          => null,
+            'nivel_usuario'          => 'LEITURA',
         ];
+    }
+
+    public function admin(): static
+    {
+        return $this->state(fn (array $attributes) => ['nivel_usuario' => 'ADMIN']);
+    }
+
+    public function editor(): static
+    {
+        return $this->state(fn (array $attributes) => ['nivel_usuario' => 'EDITOR']);
+    }
+
+    public function leitura(): static
+    {
+        return $this->state(fn (array $attributes) => ['nivel_usuario' => 'LEITURA']);
     }
 }

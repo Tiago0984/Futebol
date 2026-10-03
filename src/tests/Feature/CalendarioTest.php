@@ -3,19 +3,15 @@
 namespace Tests\Feature;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
-use RuntimeException;
+use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
 
 class CalendarioTest extends TestCase
 {
-    use RefreshDatabase {
-        refreshDatabase as private refreshDatabaseOriginal;
-    }
+    use RefreshBancoDeTestes;
 
-    private const BANCO_TESTE = 'db_futebol_test';
     private const TABELA      = 'tbl_evento_calendario';
     private const PK          = 'id_evento_calendario';
     private const GUARD       = 'admin';
@@ -23,24 +19,6 @@ class CalendarioTest extends TestCase
     // Rotas reais (php artisan route:list --path=calendario)
     private const URL_ADMIN = '/admin/calendario/eventos';
     private const URL_SITE  = '/calendario';
-
-    /**
-     * Trava de segurança: o RefreshDatabase roda migrate:fresh.
-     * Se a conexão não for o banco de testes, aborta antes de apagar qualquer coisa.
-     */
-    public function refreshDatabase()
-    {
-        $banco = DB::connection()->getDatabaseName();
-
-        if ($banco !== self::BANCO_TESTE) {
-            throw new RuntimeException(
-                "Testes abortados: conectado em '{$banco}', esperado '" . self::BANCO_TESTE . "'. "
-                . 'Rode php artisan config:clear e confira o phpunit.xml.'
-            );
-        }
-
-        $this->refreshDatabaseOriginal();
-    }
 
     public static function tipos(): array
     {
@@ -182,7 +160,7 @@ class CalendarioTest extends TestCase
 
     private function comoAdmin(): static
     {
-        return $this->actingAs(User::factory()->create(), self::GUARD);
+        return $this->actingAs(User::factory()->admin()->create(), self::GUARD);
     }
 
     private function dados(array $extra = []): array
