@@ -203,6 +203,10 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
+                                    <a href="{{ route('admin.calendario.eventos.show', $ev->id_evento_calendario) }}"
+                                       class="btn-tbl view" title="Inscritos ({{ $ev->inscritos_ativos }})">
+                                        <i class="bi bi-people"></i><small class="ms-1">{{ $ev->inscritos_ativos }}</small>
+                                    </a>
                                     <button class="btn-tbl edit" title="Editar"
                                         data-bs-toggle="modal" data-bs-target="#modalEditarEvento"
                                         data-id="{{ $ev->id_evento_calendario }}"

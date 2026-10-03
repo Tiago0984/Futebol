@@ -68,9 +68,19 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Treinos, jogos (campeonato e amistoso), eventos individuais (exame médico, avaliação física) e outros (reunião, viagem, café da manhã) são **eventos**.
 - Evento guarda **`id_categoria`** (nullable: preenchido em evento de categoria, vazio em evento individual).
 - Nova tabela **`tbl_evento_atleta`** (inscrição, **sem status**). **O atleta só vê na agenda os eventos em que está inscrito.**
-- Evento de categoria: o admin cria e inscreve os atletas da categoria (consultando `tbl_categoria_atleta`). Evento individual: o admin inscreve o atleta direto.
-- Troca de categoria: o **admin reinscreve manualmente** o atleta nos eventos futuros.
 - Cancelar um treino de um dia específico: editar **aquele evento** e mudar para cancelado.
+
+### Inscrição em eventos (Fase 5)
+- **Sem status:** remover a inscrição apaga a linha. Ficam registrados **origem** (`CATEGORIA` = automática pela categoria do evento; `INDIVIDUAL` = escolha do admin), **quem** inscreveu e **quando**. Único (evento, atleta).
+- **Evento com categoria:** ao ser criado, já inscreve os atletas **ATIVO** com linha **ATIVO** em `tbl_categoria_atleta` nela (origem `CATEGORIA`).
+- **Inscrição individual:** o admin escolhe atletas ativos um a um; botão **"Adicionar todos de uma categoria"** (pode usar várias vezes, para eventos de várias categorias como a avaliação física; já inscritos são ignorados sem erro; origem `INDIVIDUAL`).
+- **Evento futuro que muda de categoria:** sincroniza as inscrições **automáticas** (sai quem não é da nova, entra quem é) e **mantém as individuais**; ficando **sem categoria**, as automáticas saem; evento **concluído** não muda nada. A tela mostra o resumo.
+- **Evento cancelado ou oculto:** mantém as inscrições.
+- **Atleta muda de categoria:** aviso com os eventos futuros e não cancelados da categoria antiga e da nova + botão **"Mover inscrições"** (com confirmação). Nada é movido sem o admin confirmar.
+- **Atleta inativado ou rejeitado:** a inscrição **não é apagada**; listas, conflitos e o app consideram **só atletas ATIVO** (se voltar a ativo, a inscrição volta a valer). A exclusão definitiva (Matrículas Rejeitadas) apaga as inscrições.
+- **Quem entra na categoria depois que o evento existe:** não é inscrito automaticamente. Botão **"Atualizar inscritos pela categoria"** (só acrescenta) e a tela mostra quantos atletas da categoria ainda não estão inscritos.
+- **`id_time`** (escalação no jogo): coluna criada na Fase 5 (nullable, FK); a tela de escalação por jogo fica para a Fase 6.
+- **Site público nunca mostra inscritos** (dados de menores).
 
 ### Status
 - **Gravado no evento:** `ATIVO` / `CANCELADO` / `INATIVO` (inativo = escondido, rótulo "Oculto"; cancelado = continua visível com o selo).
@@ -100,6 +110,9 @@ O atleta é notificado em três casos: **inscrição, alteração e cancelamento
 
 ### Conflito de horário
 O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta num evento que **sobrepõe** outro em que ele já está, o admin recebe um **alerta**.
+- Sobreposição: **mesmo dia** e `inícioA < fimB` e `inícioB < fimA`; cancelados e ocultos não contam; só atletas ATIVO.
+- **Sem horário de fim:** duração padrão por tipo, numa constante **provisória** (seção 8, pergunta 12): JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h.
+- **Sem horário de início:** não dá para calcular sobreposição; **aviso fraco** "mesmo dia, horário a definir".
 
 ### Menu do dashboard
 - **Eventos** centraliza tudo: Campeonato → jogos; Amistoso → jogo; Individual → tipo (exame médico, avaliação física).
@@ -239,6 +252,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 9. ~~O feminino treina junto com o masculino da mesma faixa?~~ ✅ **RESOLVIDA** (professor): feminino treina **só com feminino**. A grade usa **uma coluna** `id_categoria` (sem tabela de ligação); horários femininos entram como **linhas novas** da grade.
 10. ~~Atleta pode jogar numa categoria acima da idade?~~ ✅ **RESOLVIDA** (professor): **pode, a critério do técnico** (atleta mais robusto). Escolher categoria **acima** da sugerida gera **aviso** (não bloqueia) e exige um **motivo**, gravado em `observacao_categoria_atleta`.
 11. Atleta numa categoria **abaixo** da idade: hoje **bloqueado** (provisório). Confirmar com o professor se há exceção.
+12. **Duração padrão dos eventos sem horário de fim** (usada no alerta de conflito), hoje provisória: JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h. Confirmar os valores com o professor.
 
 ---
 

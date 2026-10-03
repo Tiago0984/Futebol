@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -85,14 +86,73 @@ class EventoCalendario extends Model
         'data_evento_calendario' => 'date',
     ];
 
-    // Cria o evento já com o responsável (quem criou), que depois nunca muda
+    /**
+     * Cria o evento já com o responsável (quem criou), que depois nunca muda. Evento com categoria
+     * já nasce com os atletas ativos da categoria inscritos (origem CATEGORIA). Usado também pela
+     * geração da grade (Fase 7).
+     */
     public static function criarPor(?int $idUsuario, array $dados): self
     {
-        $evento = new self(self::normalizarHorarios($dados));
-        $evento->id_usuario = $idUsuario;
-        $evento->save();
+        return DB::transaction(function () use ($idUsuario, $dados) {
+            $evento = new self(self::normalizarHorarios($dados));
+            $evento->id_usuario = $idUsuario;
+            $evento->save();
 
-        return $evento;
+            if ($evento->id_categoria) {
+                $evento->inscreverCategoria($evento->id_categoria, 'CATEGORIA', $idUsuario);
+            }
+
+            return $evento;
+        });
+    }
+
+    // ── Inscrições ──────────────────────────────────────────────────────────
+
+    public function inscricoes()
+    {
+        return $this->hasMany(EventoAtleta::class, 'id_evento_calendario', 'id_evento_calendario');
+    }
+
+    /**
+     * Inscreve um atleta. Já inscrito: não faz nada e devolve false (sem erro), para "adicionar
+     * todos de uma categoria" poder ser usado várias vezes. Ponto único de inscrição: a notificação
+     * de inscrição (Fase 8) entra aqui.
+     */
+    public function inscrever(int $idAtleta, string $origem, ?int $idUsuario): bool
+    {
+        if ($this->inscricoes()->where('id_atleta', $idAtleta)->exists()) {
+            return false;
+        }
+
+        try {
+            $this->inscricoes()->create([
+                'id_atleta'            => $idAtleta,
+                'origem_evento_atleta' => $origem,
+                'id_usuario'           => $idUsuario,
+                'data_evento_atleta'   => now(),
+            ]);
+        } catch (UniqueConstraintViolationException $e) {
+            return false; // outro admin inscreveu o mesmo atleta ao mesmo tempo
+        }
+
+        return true;
+    }
+
+    // Inscreve os atletas ativos com categoria ativa nesta categoria; devolve quantos entraram
+    public function inscreverCategoria(int $idCategoria, string $origem, ?int $idUsuario): int
+    {
+        $novos = 0;
+
+        foreach (Atleta::idsAtivosNaCategoria($idCategoria) as $idAtleta) {
+            $novos += $this->inscrever($idAtleta, $origem, $idUsuario) ? 1 : 0;
+        }
+
+        return $novos;
+    }
+
+    public function removerInscricao(int $idAtleta): bool
+    {
+        return $this->inscricoes()->where('id_atleta', $idAtleta)->delete() > 0;
     }
 
     // Categoria do evento; null em evento individual (exame, avaliação de um atleta)

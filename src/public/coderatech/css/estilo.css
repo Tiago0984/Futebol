@@ -9610,6 +9610,9 @@ body {
 .btn-tbl.activate:hover   { background: #dcfce7; border-color: #86efac; color: #15803d; }
 .btn-tbl.danger:hover     { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
 .btn-tbl.delete:hover     { background: #fee2e2; border-color: #fca5a5; color: #b91c1c; }
+/* Botão com contador (ex.: inscritos do evento): largura pelo conteúdo */
+.btn-tbl.view             { width: auto; padding: 0 8px; }
+.btn-tbl.view:hover       { background: #e0f2fe; border-color: #7dd3fc; color: #075985; }
 .btn-tbl:disabled { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
 /* === ALERTAS === */

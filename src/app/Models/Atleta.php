@@ -183,6 +183,22 @@ class Atleta extends Authenticatable
             ]);
     }
 
+    // Atletas ATIVO com a categoria (linha ATIVO em tbl_categoria_atleta) informada, em ordem de nome
+    public static function idsAtivosNaCategoria(int $idCategoria): array
+    {
+        return self::where('status_atleta', 'ATIVO')
+            ->whereHas('categoriasAtivas', fn ($q) => $q->where('tbl_categoria.id_categoria', $idCategoria))
+            ->orderBy('nome_atleta')
+            ->pluck('id_atleta')
+            ->all();
+    }
+
+    // Inscrições do atleta em eventos (sem status: só existem enquanto inscrito)
+    public function inscricoesEmEventos()
+    {
+        return $this->hasMany(EventoAtleta::class, 'id_atleta', 'id_atleta');
+    }
+
     // Só a categoria atual (no máximo uma linha ATIVO)
     public function categoriasAtivas()
     {
@@ -252,6 +268,7 @@ class Atleta extends Authenticatable
             $this->categorias()->detach();
             $this->times()->detach();
             $this->autorizacoes()->delete();
+            $this->inscricoesEmEventos()->delete(); // tbl_evento_atleta (FK sem cascade)
             $this->tokens()->delete(); // tokens do Sanctum (personal_access_tokens não tem FK)
             $this->delete();
         });

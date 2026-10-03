@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Atleta;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
@@ -15,6 +16,7 @@ class CalendarioController extends Controller
     {
         $eventos = EventoCalendario::with(['categoria', 'responsavel', 'historico.usuario'])
             ->comAlteracao()
+            ->withCount(['inscricoes as inscritos_ativos' => fn ($q) => $q->whereHas('atleta', fn ($a) => $a->where('status_atleta', 'ATIVO'))])
             ->orderBy('data_evento_calendario', 'desc')
             ->get();
         $grades  = GradeTreino::with('categoria')->ordenada()->get();
@@ -33,13 +35,96 @@ class CalendarioController extends Controller
 
     public function storeEvento(Request $request)
     {
-        // Responsável = admin logado que criou o evento (gravado só aqui)
-        EventoCalendario::criarPor(auth('admin')->id(), [
+        // Responsável = admin logado que criou o evento (gravado só aqui). Com categoria, os atletas
+        // ativos dela já são inscritos (EventoCalendario::criarPor)
+        $evento = EventoCalendario::criarPor(auth('admin')->id(), [
             ...$this->dadosEvento($request),
             'status_evento_calendario' => 'ATIVO',
         ]);
 
-        return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento adicionado ao calendário.');
+        $inscritos = $evento->inscricoes()->count();
+        $mensagem  = 'Evento adicionado ao calendário.'
+            . ($evento->id_categoria ? " {$inscritos} atleta(s) da categoria inscrito(s)." : '');
+
+        return redirect()->route('admin.calendario.index')->with('sucesso', $mensagem);
+    }
+
+    // Tela do evento: dados e inscritos (só atletas ATIVO aparecem; CLAUDE.md, seção 4)
+    public function showEvento($id)
+    {
+        $evento = EventoCalendario::with(['categoria', 'responsavel'])->comAlteracao()->findOrFail($id);
+
+        $inscricoes = $evento->inscricoes()
+            ->with(['atleta.categoriasAtivas', 'usuario'])
+            ->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))
+            ->get()
+            ->sortBy(fn ($i) => $i->atleta->nome_atleta, SORT_NATURAL | SORT_FLAG_CASE)
+            ->values();
+
+        $inscritosInativos = $evento->inscricoes()
+            ->whereHas('atleta', fn ($q) => $q->where('status_atleta', '<>', 'ATIVO'))
+            ->count();
+
+        // Atletas ativos ainda não inscritos, agrupados pela categoria atual (para o select)
+        $disponiveis = Atleta::with('categoriasAtivas')
+            ->where('status_atleta', 'ATIVO')
+            ->whereNotIn('id_atleta', $evento->inscricoes()->select('id_atleta'))
+            ->orderBy('nome_atleta')
+            ->get()
+            ->groupBy(fn ($atleta) => $atleta->categoriasAtivas->first()?->rotulo ?? 'Sem categoria')
+            ->sortKeys();
+
+        $categorias = Categoria::ativas()->get();
+
+        return view('admin.calendario.evento', compact('evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias'));
+    }
+
+    // Inscrição individual: um atleta ativo escolhido no select
+    public function inscreverAtleta(Request $request, $id)
+    {
+        $evento = EventoCalendario::findOrFail($id);
+
+        $request->validate([
+            'id_atleta' => ['required', 'integer', Rule::exists('tbl_atletas', 'id_atleta')->where('status_atleta', 'ATIVO')],
+        ], [
+            'id_atleta.required' => 'Escolha um atleta.',
+            'id_atleta.exists'   => 'Escolha um atleta ativo.',
+        ]);
+
+        $inscreveu = $evento->inscrever((int) $request->id_atleta, 'INDIVIDUAL', auth('admin')->id());
+
+        return back()->with('sucesso', $inscreveu ? 'Atleta inscrito.' : 'O atleta já estava inscrito.');
+    }
+
+    /**
+     * "Adicionar todos de uma categoria": para eventos de várias categorias (ex.: avaliação física).
+     * Pode ser usado várias vezes; quem já está inscrito é ignorado. Origem INDIVIDUAL: foi uma
+     * escolha do admin, e a sincronização pela categoria do evento (Etapa 2) não mexe nessas.
+     */
+    public function inscreverCategoriaNoEvento(Request $request, $id)
+    {
+        $evento = EventoCalendario::findOrFail($id);
+
+        $request->validate([
+            'id_categoria' => ['required', 'integer', Rule::exists('tbl_categoria', 'id_categoria')->where('status_categoria', 'ATIVO')],
+        ], [
+            'id_categoria.required' => 'Escolha uma categoria.',
+            'id_categoria.exists'   => 'Escolha uma categoria ativa.',
+        ]);
+
+        $categoria = Categoria::find($request->id_categoria);
+        $novos     = $evento->inscreverCategoria($categoria->id_categoria, 'INDIVIDUAL', auth('admin')->id());
+
+        return back()->with('sucesso', "{$categoria->rotulo}: {$novos} atleta(s) inscrito(s)"
+            . ($novos === 0 ? ' (todos já estavam inscritos ou não há atletas ativos).' : '.'));
+    }
+
+    public function removerInscricao($id, $idAtleta)
+    {
+        $evento = EventoCalendario::findOrFail($id);
+        $evento->removerInscricao((int) $idAtleta);
+
+        return back()->with('sucesso', 'Inscrição removida.');
     }
 
     public function updateEvento(Request $request, $id)

@@ -33,6 +33,26 @@ class MatriculaExclusaoTest extends TestCase
         $this->assertDatabaseMissing('tbl_categoria_atleta', ['id_atleta' => $idAtleta]);
     }
 
+    public function test_exclusao_remove_as_inscricoes_em_eventos(): void
+    {
+        $idAtleta = $this->criarAtleta('REJEITADO');
+        $idEvento = DB::table('tbl_evento_calendario')->insertGetId([
+            'titulo_evento_calendario' => 'Evento', 'tipo_evento_calendario' => 'TREINO',
+            'data_evento_calendario' => now()->addWeek()->toDateString(), 'status_evento_calendario' => 'ATIVO',
+        ]);
+        DB::table('tbl_evento_atleta')->insert([
+            'id_evento_calendario' => $idEvento, 'id_atleta' => $idAtleta, 'origem_evento_atleta' => 'INDIVIDUAL',
+        ]);
+
+        $this->comoAdmin()
+            ->delete(route('admin.matriculas.deletar', $idAtleta))
+            ->assertSessionHas('sucesso');
+
+        $this->assertDatabaseMissing('tbl_atletas', ['id_atleta' => $idAtleta]);
+        $this->assertDatabaseMissing('tbl_evento_atleta', ['id_atleta' => $idAtleta]);
+        $this->assertDatabaseHas('tbl_evento_calendario', ['id_evento_calendario' => $idEvento]);
+    }
+
     public function test_atleta_com_cartao_nao_e_excluido(): void
     {
         $idAtleta = $this->criarAtleta('REJEITADO');

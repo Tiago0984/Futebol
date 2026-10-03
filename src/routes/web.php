@@ -106,6 +106,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         // Sem exclusão de evento: ocultar (INATIVO) faz esse papel e preserva o registro
         Route::patch('/eventos/{id}/cancelar', [AdminCalendarioController::class, 'cancelarEvento'])->name('eventos.cancelar');
         Route::patch('/eventos/{id}/ocultar',  [AdminCalendarioController::class, 'ocultarEvento'])->name('eventos.ocultar');
+        // Tela do evento e inscrições
+        Route::get('/eventos/{id}',                          [AdminCalendarioController::class, 'showEvento'])->name('eventos.show');
+        Route::post('/eventos/{id}/inscricoes',              [AdminCalendarioController::class, 'inscreverAtleta'])->name('eventos.inscricoes.store');
+        Route::post('/eventos/{id}/inscricoes/categoria',    [AdminCalendarioController::class, 'inscreverCategoriaNoEvento'])->name('eventos.inscricoes.categoria');
+        Route::delete('/eventos/{id}/inscricoes/{idAtleta}', [AdminCalendarioController::class, 'removerInscricao'])->name('eventos.inscricoes.destroy');
         Route::post('/grade',                  [AdminCalendarioController::class, 'storeGrade'])->name('grade.store');
         Route::put('/grade/{id}',              [AdminCalendarioController::class, 'updateGrade'])->name('grade.update');
         Route::patch('/grade/{id}/toggle',     [AdminCalendarioController::class, 'toggleStatusGrade'])->name('grade.toggleStatus');
