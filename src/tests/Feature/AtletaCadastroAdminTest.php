@@ -163,6 +163,27 @@ class AtletaCadastroAdminTest extends TestCase
         ]);
     }
 
+    public function test_migration_preenche_numero_so_de_aprovados_sem_numero(): void
+    {
+        $comNumero = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        DB::table('tbl_atletas')->where('id_atleta', $comNumero)->update(['numero_matricula_atleta' => 'A005']);
+        $ativo     = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $pendente  = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
+        $inativo   = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'INATIVO');
+        $rejeitado = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'REJEITADO');
+
+        $migration = require database_path('migrations/2026_10_03_000004_preenche_numero_matricula_faltante.php');
+        $migration->up();
+        $migration->up(); // rodar de novo não muda nada
+
+        $numeros = DB::table('tbl_atletas')->pluck('numero_matricula_atleta', 'id_atleta');
+        $this->assertSame('A005', $numeros[$comNumero]);
+        $this->assertSame('A006', $numeros[$ativo]);
+        $this->assertSame('A007', $numeros[$inativo]);
+        $this->assertNull($numeros[$pendente]);
+        $this->assertNull($numeros[$rejeitado]);
+    }
+
     public function test_aprovacao_mantem_numero_que_ja_existia(): void
     {
         $idPendente = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
