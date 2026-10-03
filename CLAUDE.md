@@ -152,6 +152,11 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `8dbb21c` fix: grau de parentesco abre vazio na edição do atleta (Fase 3)
 - `b1ef107` fix: normaliza graus de parentesco gravados em outro formato (Fase 3)
 - `79d8893` feat: grade de treino aponta para a categoria (Fase 3, Etapa 4)
+- `0386659` docs: Fase 3 concluída
+- `d27ae6d` fix: ordena a grade de cada dia pelo horário de início
+- `003b27c` feat: status do evento ATIVO/CANCELADO/INATIVO (Fase 4, Etapa 1)
+- `8bce102` feat: evento com categoria e responsável (Fase 4, Etapa 2)
+- `bf72311` feat: histórico de alterações do evento e status derivados (Fase 4, Etapa 3)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -185,11 +190,19 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Backups** em `backup/`: `db_futebol_antes_fase3_inscricao_20261003_094201.sql`, `..._categorias_20261003_095704.sql`, `..._matricula_20261003_135849.sql`, `..._grau_20261003_143920.sql`, `..._grade_20261003_144534.sql`.
 - 103 testes passando.
 
-### Próxima: Fase 4 — evento base
-(detalhes no item 4 abaixo e nas seções 4 e 5)
+### Fase 4 concluída — evento base (`003b27c`, `8bce102`, `bf72311`)
+- **Status** (`003b27c`): ENUM `ATIVO/CANCELADO/INATIVO` (migration nova, sem `git revert` de `59c9743`/`86b8e78`); ações Cancelar↔Reativar e Ocultar↔Mostrar; sem exclusão de evento; site mostra cancelado com selo e esconde oculto; "Próximo Evento" só ativo; horário vazio = "A definir".
+- **Categoria e responsável** (`8bce102`): `id_categoria` (INT, nullable) e `id_usuario` (BIGINT UNSIGNED, nullable; os 6 eventos antigos NULL); responsável gravado só na criação (`EventoCalendario::criarPor`, fora do `$fillable`); categoria inativa atual aparece como "(inativa)" na edição.
+- **Histórico e derivados** (`bf72311`): `tbl_evento_historico` (campo, antigo, novo, quem, quando); `EventoCalendario::atualizarComHistorico` em edição, cancelar e ocultar; "Mostrar" restaura o status anterior; `situacao` = Ativo/Alterado/Concluído/Cancelado/Oculto, só no admin (`comAlteracao()` evita consulta por evento); histórico no modal de edição.
+- **Também:** grade ordenada por horário de início (`d27ae6d`).
+- **Migrations no `db_futebol`:** batches 15 (status), 16 (categoria e responsável), 17 (histórico).
+- **Backups** em `backup/`: `db_futebol_antes_fase4_status_20261003_151316.sql`, `..._categoria_usuario_20261003_151851.sql`, `..._historico_20261003_185700.sql`.
+- 137 testes passando; roteiros das Etapas 1, 2 e 3 validados no navegador.
+
+### Próxima: Fase 5 — inscrição e conflito
+(detalhes no item 5 abaixo e na seção 4)
 
 ### Próximas fases (ordem recomendada)
-4. Evento base: `id_categoria`, `id_usuario` (BIGINT UNSIGNED), status ATIVO/CANCELADO/INATIVO, status derivados, histórico.
 5. Inscrição e conflito: `tbl_evento_atleta` (+ `id_time`), inscrição por categoria ou individual, alerta de conflito.
 6. Jogos ↔ evento: `tbl_jogos.id_evento`, amistoso, migrar jogos, adaptar a home do site.
 7. Grade → eventos: botão "gerar mês".
