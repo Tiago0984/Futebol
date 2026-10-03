@@ -8,19 +8,14 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
+     *
+     * A tabela padrão "users" do Laravel saiu daqui: o admin usa tbl_usuarios (model User).
+     * Editado antes do primeiro deploy; depois dele, uma mudança assim exigiria migration nova.
+     * password_reset_tokens e sessions continuam: SESSION_DRIVER=database e o futuro
+     * "esqueci minha senha" usam essas tabelas.
      */
     public function up(): void
     {
-        Schema::create('users', function (Blueprint $table) {
-            $table->id();
-            $table->string('name');
-            $table->string('email')->unique();
-            $table->timestamp('email_verified_at')->nullable();
-            $table->string('password');
-            $table->rememberToken();
-            $table->timestamps();
-        });
-
         Schema::create('password_reset_tokens', function (Blueprint $table) {
             $table->string('email')->primary();
             $table->string('token');
