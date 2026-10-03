@@ -65,6 +65,45 @@ class CategoriasTest extends TestCase
         $this->assertDatabaseHas('tbl_categoria', ['nome_categoria' => 'Sub-19', 'sexo_categoria' => 'M']);
     }
 
+    public function test_limpeza_da_sub12_move_vinculos_e_recalcula_atletas(): void
+    {
+        $idSub12  = DB::table('tbl_categoria')->insertGetId([
+            'nome_categoria' => 'Sub-12', 'idade_min_categoria' => 10, 'idade_max_categoria' => 12, 'sexo_categoria' => 'M',
+        ]);
+        $idSub11M = DB::table('tbl_categoria')->where('nome_categoria', 'Sub-11')->where('sexo_categoria', 'M')->value('id_categoria');
+        $idSub13M = DB::table('tbl_categoria')->where('nome_categoria', 'Sub-13')->where('sexo_categoria', 'M')->value('id_categoria');
+
+        $idTime = DB::table('tbl_time')->insertGetId([
+            'id_categoria' => $idSub12, 'logo_time' => 'x.png', 'nome_time' => 'Time Teste', 'tipo_time' => 'INTERNO',
+        ]);
+        $idCampeonato = DB::table('tbl_campeonato')->insertGetId([
+            'id_categoria' => $idSub12, 'logo_evento' => 'x.png', 'banner_evento' => 'x.png', 'nome_campeonato' => 'Copa Teste',
+            'organizador_campeonato' => 'AACJ', 'tipo_campeonato' => 'TORNEIO', 'data_inicio_campeonato' => now(),
+            'data_fim_campeonato' => now(), 'local_evento' => 'Campo',
+        ]);
+
+        // Idade 12 no ano atual: vai para a Sub-13 M. Nascido em 1984: fora de 9–17, fica sem categoria.
+        $anoSub13 = now()->year - 12;
+        $idNaFaixa = $this->criarAtletaNaCategoria("{$anoSub13}-12-31", $idSub12);
+        $idForaDaFaixa = $this->criarAtletaNaCategoria('1984-09-10', $idSub12);
+
+        $migration = require database_path('migrations/2026_10_03_000003_remove_categoria_sub12_de_teste.php');
+        $migration->up();
+
+        $this->assertDatabaseMissing('tbl_categoria', ['id_categoria' => $idSub12]);
+        $this->assertDatabaseHas('tbl_time', ['id_time' => $idTime, 'id_categoria' => $idSub11M]);
+        $this->assertDatabaseHas('tbl_campeonato', ['id_campeonato' => $idCampeonato, 'id_categoria' => $idSub11M]);
+
+        $this->assertDatabaseHas('tbl_categoria_atleta', [
+            'id_atleta' => $idNaFaixa, 'id_categoria' => $idSub13M, 'status_categoria_atleta' => 'ATIVO',
+        ]);
+        $this->assertDatabaseMissing('tbl_categoria_atleta', ['id_atleta' => $idForaDaFaixa]);
+
+        // Rodar de novo não faz nada (a Sub-12 já não existe)
+        $migration->up();
+        $this->assertSame(1, DB::table('tbl_categoria_atleta')->where('id_atleta', $idNaFaixa)->count());
+    }
+
     // ---------- helpers ----------
 
     private function comoAdmin(): static
@@ -80,5 +119,26 @@ class CategoriasTest extends TestCase
             'idade_max_categoria' => 19,
             'sexo_categoria'      => 'M',
         ], $extra);
+    }
+
+    private function criarAtletaNaCategoria(string $nascimento, int $idCategoria): int
+    {
+        $idEndereco = DB::table('tbl_endereco')->insertGetId([
+            'rua_endereco' => 'Rua', 'numero_endereco' => '1', 'bairro_endereco' => 'Centro',
+            'cep_endereco' => '01000-000', 'cidade_endereco' => 'São Paulo', 'estado_endereco' => 'SP',
+        ]);
+
+        $idAtleta = DB::table('tbl_atletas')->insertGetId([
+            'id_endereco' => $idEndereco, 'nome_atleta' => 'Atleta', 'data_nasc_atleta' => $nascimento,
+            'cpf_atleta' => '000.000.000-00', 'rg_atleta' => '0000000', 'sexo_atleta' => 'M',
+            'escola_atleta' => 'Escola', 'status_atleta' => 'ATIVO',
+        ]);
+
+        DB::table('tbl_categoria_atleta')->insert([
+            'id_categoria' => $idCategoria, 'id_atleta' => $idAtleta,
+            'data_inicio_categoria_atleta' => now(), 'status_categoria_atleta' => 'ATIVO',
+        ]);
+
+        return $idAtleta;
     }
 }
