@@ -29,3 +29,6 @@ Thumbs.db
 chat_*.md
 
 /backup/
+
+# Assinaturas de responsáveis: dados pessoais, não versionar
+/src/public/futebol/images/Assinaturas/
