@@ -54,7 +54,7 @@
         $publicas = [
             ['GET', '/status', 'Verifica se a API está online'],
             ['GET', '/banners', 'Banners ativos da home, na ordem de exibição'],
-            ['GET', '/categorias', 'Categorias ativas (Sub-12, Sub-15...)'],
+            ['GET', '/categorias', 'Categorias ativas (Sub-9 a Sub-17, masculino e feminino)'],
             ['GET', '/categorias/{id}/times', 'Times ativos de uma categoria'],
             ['GET', '/noticias', 'Notícias ativas. Filtro opcional: ?categoria=Campeonatos'],
             ['GET', '/noticias/{id}', 'Notícia completa'],

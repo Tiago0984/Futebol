@@ -10,6 +10,12 @@ class Categoria extends Model
     protected $primaryKey = 'id_categoria';
     public $timestamps = false;
 
+    // Valores de sexo_categoria => rótulo
+    public const SEXOS = [
+        'M' => 'Masculino',
+        'F' => 'Feminino',
+    ];
+
     protected $fillable = [
         'nome_categoria',
         'idade_min_categoria',
@@ -38,5 +44,13 @@ class Categoria extends Model
                         'status_categoria_atleta',
                         'observacao_categoria_atleta',
                     ]);
+    }
+
+    // Nome com o sexo, para não confundir Sub-13 M e Sub-13 F nos selects: "Sub-13 Masculino"
+    public function getRotuloAttribute(): string
+    {
+        $sexo = self::SEXOS[$this->sexo_categoria] ?? $this->sexo_categoria;
+
+        return "{$this->nome_categoria} {$sexo}";
     }
 }

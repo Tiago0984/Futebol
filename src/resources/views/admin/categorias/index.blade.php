@@ -34,7 +34,6 @@
                             <option value="">Todos</option>
                             <option value="M">Masculino</option>
                             <option value="F">Feminino</option>
-                            <option value="Misto">Misto</option>
                         </select>
                     </div>
                     <div class="col-md-2">
@@ -98,13 +97,7 @@
                             <td class="text-center text-muted">{{ $cat->idade_min_categoria ?? '—' }} anos</td>
                             <td class="text-center text-muted">{{ $cat->idade_max_categoria ?? '—' }} anos</td>
                             <td class="text-center">
-                                @if($cat->sexo_categoria === 'M')
-                                    <span class="badge-cat">Masculino</span>
-                                @elseif($cat->sexo_categoria === 'F')
-                                    <span class="badge-cat">Feminino</span>
-                                @else
-                                    <span class="badge-cat">Misto</span>
-                                @endif
+                                <span class="badge-cat">{{ \App\Models\Categoria::SEXOS[$cat->sexo_categoria] ?? $cat->sexo_categoria }}</span>
                             </td>
                             <td class="text-center">
                                 @if(strtoupper($cat->status_categoria) === 'ATIVO')

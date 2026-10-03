@@ -33,7 +33,6 @@
                                 <option value="">— Selecionar —</option>
                                 <option value="M" {{ old('sexo_categoria') == 'M' ? 'selected' : '' }}>Masculino</option>
                                 <option value="F" {{ old('sexo_categoria') == 'F' ? 'selected' : '' }}>Feminino</option>
-                                <option value="Misto" {{ old('sexo_categoria') == 'Misto' ? 'selected' : '' }}>Misto</option>
                             </select>
                         </div>
                     </div>

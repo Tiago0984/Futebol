@@ -30,7 +30,6 @@
                             <select id="edit_sexo_categoria" name="sexo_categoria" class="form-select" required>
                                 <option value="M">Masculino</option>
                                 <option value="F">Feminino</option>
-                                <option value="Misto">Misto</option>
                             </select>
                         </div>
                     </div>

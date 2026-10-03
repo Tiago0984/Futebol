@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class CategoriasController extends Controller
 {
@@ -23,11 +24,11 @@ class CategoriasController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nome_categoria'      => 'required|string|max:100',
+            'nome_categoria'      => ['required', 'string', 'max:50', $this->nomeUnicoPorSexo($request)],
             'idade_min_categoria' => 'required|integer|min:1',
             'idade_max_categoria' => 'required|integer|min:1|gte:idade_min_categoria',
-            'sexo_categoria'      => 'required|in:M,F,Misto',
-        ]);
+            'sexo_categoria'      => ['required', Rule::in(array_keys(Categoria::SEXOS))],
+        ], $this->mensagens());
 
         Categoria::create([
             ...$request->only(['nome_categoria', 'idade_min_categoria', 'idade_max_categoria', 'sexo_categoria']),
@@ -49,11 +50,11 @@ class CategoriasController extends Controller
         $categoria = Categoria::findOrFail($id);
 
         $request->validate([
-            'nome_categoria'      => 'required|string|max:100',
+            'nome_categoria'      => ['required', 'string', 'max:50', $this->nomeUnicoPorSexo($request, $categoria->id_categoria)],
             'idade_min_categoria' => 'required|integer|min:1',
             'idade_max_categoria' => 'required|integer|min:1|gte:idade_min_categoria',
-            'sexo_categoria'      => 'required|in:M,F,Misto',
-        ]);
+            'sexo_categoria'      => ['required', Rule::in(array_keys(Categoria::SEXOS))],
+        ], $this->mensagens());
 
         $categoria->update($request->only([
             'nome_categoria',
@@ -80,5 +81,20 @@ class CategoriasController extends Controller
         $categoria->delete();
 
         return redirect()->route('admin.categorias.index')->with('sucesso', 'Categoria removida com sucesso.');
+    }
+
+    // Mesmo nome pode existir uma vez por sexo (Sub-13 M e Sub-13 F); espelha o índice único do banco
+    private function nomeUnicoPorSexo(Request $request, ?int $ignorarId = null)
+    {
+        return Rule::unique('tbl_categoria', 'nome_categoria')
+            ->where('sexo_categoria', $request->input('sexo_categoria'))
+            ->ignore($ignorarId, 'id_categoria');
+    }
+
+    private function mensagens(): array
+    {
+        return [
+            'nome_categoria.unique' => 'Já existe uma categoria com esse nome para esse sexo.',
+        ];
     }
 }
