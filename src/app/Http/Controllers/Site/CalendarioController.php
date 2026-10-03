@@ -21,7 +21,8 @@ class CalendarioController extends Controller
             ->orderBy('data_evento_calendario')
             ->first();
 
-        $gradeTreinos = GradeTreino::where('status_grade_treino', 'ATIVO')
+        $gradeTreinos = GradeTreino::with('categoria')
+            ->where('status_grade_treino', 'ATIVO')
             ->orderByRaw("FIELD(dia_semana_grade_treino, 'segunda_quarta', 'terca_quinta', 'sexta', 'sabado')")
             ->orderBy('ordem_grade_treino')
             ->get()

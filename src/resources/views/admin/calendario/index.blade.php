@@ -112,6 +112,16 @@
         </div>
         @endif
 
+        @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <strong>Ops! Verifique os campos do formulário:</strong>
+            <ul class="mb-0 mt-1">
+                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+
         {{-- Tabs --}}
         <ul class="nav nav-tabs mb-3" id="calendarioTabs">
             <li class="nav-item">
@@ -257,11 +267,11 @@
                         <tr class="linha-grade"
                             data-dia="{{ $g->dia_semana_grade_treino }}"
                             data-tipo="{{ $g->tipo_grade_treino }}"
-                            data-categoria="{{ strtolower($g->categoria_grade_treino ?? '') }}"
+                            data-categoria="{{ mb_strtolower($g->rotulo) }}"
                             data-status="{{ strtoupper($g->status_grade_treino) }}">
                             <td class="text-muted" style="font-size:0.8rem;">{{ $g->ordem_grade_treino }}</td>
                             <td><span class="fw-semibold">{{ $g->dia_label }}</span></td>
-                            <td><span class="badge-cat">{{ $g->categoria_grade_treino ?? '—' }}</span></td>
+                            <td><span class="badge-cat">{{ $g->rotulo }}</span></td>
                             <td class="text-muted">{{ $g->tipo_grade_treino ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
                                 {{ $g->horario_inicio_grade_treino }} – {{ $g->horario_fim_grade_treino }}
@@ -281,7 +291,8 @@
                                         data-bs-toggle="modal" data-bs-target="#modalEditarGrade"
                                         data-id="{{ $g->id_grade_treino }}"
                                         data-dia="{{ $g->dia_semana_grade_treino }}"
-                                        data-categoria="{{ $g->categoria_grade_treino }}"
+                                        data-id-categoria="{{ $g->id_categoria }}"
+                                        data-categoria="{{ $g->id_categoria ? '' : $g->categoria_grade_treino }}"
                                         data-tipo="{{ $g->tipo_grade_treino }}"
                                         data-inicio="{{ $g->horario_inicio_grade_treino }}"
                                         data-fim="{{ $g->horario_fim_grade_treino }}"
@@ -493,18 +504,27 @@
                             <input type="number" name="ordem_grade_treino" class="form-control" min="0" value="0">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Tipo</label>
-                            <select name="tipo_grade_treino" class="form-select">
-                                <option value="">—</option>
-                                @foreach(['TREINO','JOGO','LIVRE'] as $t)
-                                <option value="{{ $t }}">{{ $t }}</option>
+                            <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                            <select name="tipo_grade_treino" class="form-select" required>
+                                @foreach(\App\Models\GradeTreino::TIPOS as $t)
+                                <option value="{{ $t }}" @selected(old('tipo_grade_treino', 'TREINO') === $t)>{{ $t }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Categoria</label>
-                            <input type="text" name="categoria_grade_treino" class="form-control"
-                                placeholder="Ex: Sub-13, Feminino...">
+                            <label class="form-label">Categoria <span class="text-danger">*</span></label>
+                            <select name="id_categoria" id="cad_g_categoria" class="form-select js-grade-categoria"
+                                data-geral="#cad_g_geral">
+                                <option value="">Geral (sem categoria)</option>
+                                @foreach($categorias as $cat)
+                                <option value="{{ $cat->id_categoria }}" @selected(old('id_categoria') == $cat->id_categoria)>{{ $cat->rotulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="cad_g_geral">
+                            <label class="form-label">Nome do item geral <span class="text-danger">*</span></label>
+                            <input type="text" name="categoria_grade_treino" class="form-control" maxlength="60"
+                                placeholder="Ex: Integrado, Treino Livre" value="{{ old('categoria_grade_treino') }}">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Início <span class="text-danger">*</span></label>
@@ -515,9 +535,9 @@
                             <input type="time" name="horario_fim_grade_treino" class="form-control" required>
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label">Local</label>
-                            <input type="text" name="local_grade_treino" class="form-control"
-                                placeholder="Ex: Campo A">
+                            <label class="form-label">Local <span class="text-danger">*</span></label>
+                            <input type="text" name="local_grade_treino" class="form-control" required
+                                placeholder="Ex: Campo A" value="{{ old('local_grade_treino') }}">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Observação do horário</label>
@@ -562,18 +582,27 @@
                                 class="form-control" min="0">
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Tipo</label>
-                            <select id="edit_g_tipo" name="tipo_grade_treino" class="form-select">
-                                <option value="">—</option>
-                                @foreach(['TREINO','JOGO','LIVRE'] as $t)
+                            <label class="form-label">Tipo <span class="text-danger">*</span></label>
+                            <select id="edit_g_tipo" name="tipo_grade_treino" class="form-select" required>
+                                @foreach(\App\Models\GradeTreino::TIPOS as $t)
                                 <option value="{{ $t }}">{{ $t }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Categoria</label>
+                            <label class="form-label">Categoria <span class="text-danger">*</span></label>
+                            <select id="edit_g_id_categoria" name="id_categoria" class="form-select js-grade-categoria"
+                                data-geral="#edit_g_geral">
+                                <option value="">Geral (sem categoria)</option>
+                                @foreach($categorias as $cat)
+                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6" id="edit_g_geral">
+                            <label class="form-label">Nome do item geral <span class="text-danger">*</span></label>
                             <input type="text" id="edit_g_categoria" name="categoria_grade_treino"
-                                class="form-control">
+                                class="form-control" maxlength="60" placeholder="Ex: Integrado, Treino Livre">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Início <span class="text-danger">*</span></label>
@@ -586,8 +615,8 @@
                                 class="form-control" required>
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label">Local</label>
-                            <input type="text" id="edit_g_local" name="local_grade_treino" class="form-control">
+                            <label class="form-label">Local <span class="text-danger">*</span></label>
+                            <input type="text" id="edit_g_local" name="local_grade_treino" class="form-control" required>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Observação do horário</label>
@@ -677,13 +706,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    // Grade: "Geral (sem categoria)" pede o nome do item (Integrado, Treino Livre...);
+    // com categoria, o nome vem dela e o campo some
+    function alternarItemGeral(select) {
+        const bloco = document.querySelector(select.dataset.geral);
+        const campo = bloco?.querySelector('input');
+        const geral = !select.value;
+        bloco?.classList.toggle('d-none', !geral);
+        if (campo) campo.required = geral;
+    }
+
+    document.querySelectorAll('.js-grade-categoria').forEach(select => {
+        select.addEventListener('change', () => alternarItemGeral(select));
+        alternarItemGeral(select);
+    });
+
     // Popula modal editar grade
     document.querySelectorAll('[data-bs-target="#modalEditarGrade"]').forEach(btn => {
         btn.addEventListener('click', function () {
             const baseUrl = '{{ url("admin/calendario/grade") }}';
             document.getElementById('formEditarGrade').action = `${baseUrl}/${this.dataset.id}`;
             document.getElementById('edit_g_ordem').value     = this.dataset.ordem     || 0;
+            document.getElementById('edit_g_id_categoria').value = this.dataset.idCategoria || '';
             document.getElementById('edit_g_categoria').value = this.dataset.categoria || '';
+            alternarItemGeral(document.getElementById('edit_g_id_categoria'));
             document.getElementById('edit_g_inicio').value    = this.dataset.inicio    || '';
             document.getElementById('edit_g_fim').value       = this.dataset.fim       || '';
             document.getElementById('edit_g_obs').value       = this.dataset.obs       || '';

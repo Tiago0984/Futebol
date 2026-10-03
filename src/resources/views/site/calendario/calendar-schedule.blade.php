@@ -33,7 +33,7 @@
                                 @if($item->tipo_grade_treino === 'JOGO')
                                     <i class="fa fa-dot-circle-o"></i>
                                 @endif
-                                {{ $item->categoria_grade_treino }}
+                                {{ $item->rotulo }}
                             </span>
                             <span class="cal-schedule-time">
                                 <i class="fa fa-clock-o"></i>

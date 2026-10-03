@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
 use Illuminate\Http\Request;
@@ -13,9 +14,10 @@ class CalendarioController extends Controller
     public function index()
     {
         $eventos = EventoCalendario::orderBy('data_evento_calendario', 'desc')->get();
-        $grades  = GradeTreino::orderBy('ordem_grade_treino')->orderBy('dia_semana_grade_treino')->get();
+        $grades  = GradeTreino::with('categoria')->orderBy('ordem_grade_treino')->orderBy('dia_semana_grade_treino')->get();
+        $categorias = Categoria::ativas()->get();
 
-        return view('admin.calendario.index', compact('eventos', 'grades'));
+        return view('admin.calendario.index', compact('eventos', 'grades', 'categorias'));
     }
 
     // ── Eventos ─────────────────────────────────────────────────────────────
@@ -94,25 +96,8 @@ class CalendarioController extends Controller
 
     public function storeGrade(Request $request)
     {
-        $request->validate([
-            'dia_semana_grade_treino'        => ['required', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
-            'categoria_grade_treino'         => 'nullable|string|max:50',
-            'tipo_grade_treino'              => 'nullable|string|max:30',
-            'horario_inicio_grade_treino'    => 'required|date_format:H:i,H:i:s',
-            'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
-            'horario_obs_grade_treino'       => 'nullable|string|max:100',
-            'local_grade_treino'             => 'nullable|string|max:255',
-            'ordem_grade_treino'             => 'nullable|integer|min:0',
-        ]);
-
         GradeTreino::create([
-            ...$request->only([
-                'dia_semana_grade_treino', 'categoria_grade_treino',
-                'tipo_grade_treino', 'horario_inicio_grade_treino',
-                'horario_fim_grade_treino', 'horario_obs_grade_treino',
-                'local_grade_treino',
-            ]),
-            'ordem_grade_treino'  => $request->input('ordem_grade_treino', 0),
+            ...$this->dadosGrade($request),
             'status_grade_treino' => 'ATIVO',
         ]);
 
@@ -123,28 +108,46 @@ class CalendarioController extends Controller
     {
         $grade = GradeTreino::findOrFail($id);
 
-        $request->validate([
-            'dia_semana_grade_treino'        => ['required', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
-            'categoria_grade_treino'         => 'nullable|string|max:50',
-            'tipo_grade_treino'              => 'nullable|string|max:30',
-            'horario_inicio_grade_treino'    => 'required|date_format:H:i,H:i:s',
-            'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
-            'horario_obs_grade_treino'       => 'nullable|string|max:100',
-            'local_grade_treino'             => 'nullable|string|max:255',
-            'ordem_grade_treino'             => 'nullable|integer|min:0',
-        ]);
-
-        $grade->update([
-            ...$request->only([
-                'dia_semana_grade_treino', 'categoria_grade_treino',
-                'tipo_grade_treino', 'horario_inicio_grade_treino',
-                'horario_fim_grade_treino', 'horario_obs_grade_treino',
-                'local_grade_treino',
-            ]),
-            'ordem_grade_treino' => $request->input('ordem_grade_treino', 0),
-        ]);
+        $grade->update($this->dadosGrade($request));
 
         return redirect()->route('admin.calendario.index', ['tab' => 'grade'])->with('sucesso', 'Horário atualizado.');
+    }
+
+    /**
+     * Valida e monta os dados de um horário da grade.
+     * Com categoria: o rótulo (categoria_grade_treino) vem do nome da categoria.
+     * Sem categoria ("Geral", ex.: Integrado, Treino Livre): o rótulo é obrigatório.
+     * Tipo e local são NOT NULL no banco, por isso obrigatórios aqui.
+     */
+    private function dadosGrade(Request $request): array
+    {
+        $request->validate([
+            'dia_semana_grade_treino'        => ['required', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
+            'id_categoria'                   => ['nullable', 'integer', Rule::exists('tbl_categoria', 'id_categoria')->where('status_categoria', 'ATIVO')],
+            'categoria_grade_treino'         => 'required_without:id_categoria|nullable|string|max:60',
+            'tipo_grade_treino'              => ['required', Rule::in(GradeTreino::TIPOS)],
+            'horario_inicio_grade_treino'    => 'required|date_format:H:i,H:i:s',
+            'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
+            'horario_obs_grade_treino'       => 'nullable|string|max:60',
+            'local_grade_treino'             => 'required|string|max:255',
+            'ordem_grade_treino'             => 'nullable|integer|min:0',
+        ], [
+            'categoria_grade_treino.required_without' => 'Escolha uma categoria ou, para um item geral, informe o nome (ex.: Integrado).',
+            'id_categoria.exists'                     => 'Escolha uma categoria ativa.',
+        ]);
+
+        $categoria = $request->filled('id_categoria') ? Categoria::find($request->id_categoria) : null;
+
+        return [
+            ...$request->only([
+                'dia_semana_grade_treino', 'tipo_grade_treino',
+                'horario_inicio_grade_treino', 'horario_fim_grade_treino',
+                'horario_obs_grade_treino', 'local_grade_treino',
+            ]),
+            'id_categoria'           => $categoria?->id_categoria,
+            'categoria_grade_treino' => $categoria?->nome_categoria ?? $request->categoria_grade_treino,
+            'ordem_grade_treino'     => $request->input('ordem_grade_treino') ?? 0,
+        ];
     }
 
     public function toggleStatusGrade($id)
