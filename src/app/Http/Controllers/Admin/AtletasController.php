@@ -8,12 +8,20 @@ use App\Models\Responsavel;
 use App\Models\Endereco;
 use App\Models\Categoria;
 use App\Models\Time;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class AtletasController extends Controller
 {
+    // E-mail do atleta é opcional (CLAUDE.md, seção 8, pergunta 7), mas é o login do app
+    private const MENSAGENS_EMAIL = [
+        'email_atleta.email'  => 'Informe um e-mail válido para o atleta.',
+        'email_atleta.unique' => 'Este e-mail já está cadastrado para outro atleta.',
+    ];
+
     public function index()
     {
         $atletas = Atleta::with([
@@ -45,6 +53,7 @@ class AtletasController extends Controller
             'cpf_atleta'                  => 'required|string|max:14|unique:tbl_atletas,cpf_atleta',
             'rg_atleta'                   => 'required|string|max:20',
             'numero_matricula_atleta'     => 'nullable|string|max:20|unique:tbl_atletas,numero_matricula_atleta',
+            'email_atleta'                => 'nullable|email|max:255|unique:tbl_atletas,email_atleta',
             'escola_atleta'               => 'required|string|max:255',
             'sexo_atleta'                 => 'required|in:M,F',
             'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
@@ -61,76 +70,89 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], $nascimento['mensagens']);
+        ], [...$nascimento['mensagens'], ...self::MENSAGENS_EMAIL]);
 
         $this->validarCategoria($request);
 
-        DB::transaction(function () use ($request) {
-
-            // 1. Endereço do atleta
-            $endereco = Endereco::create([
-                'rua_endereco'         => $request->rua_endereco,
-                'numero_endereco'      => $request->numero_endereco,
-                'bairro_endereco'      => $request->bairro_endereco,
-                'complemento_endereco' => $request->complemento_endereco,
-                'cep_endereco'         => $request->cep_endereco,
-                'cidade_endereco'      => $request->cidade_endereco,
-                'estado_endereco'      => strtoupper($request->estado_endereco),
-            ]);
-
-            // 2. Responsável
-            $responsavel = Responsavel::create([
-                'nome_responsavel'       => $request->nome_responsavel,
-                'cpf_responsavel'        => $request->cpf_responsavel,
-                'rg_responsavel'         => '',
-                'telefone_responsavel'   => $request->whatsapp_responsavel,
-                'whatsapp_responsavel'   => $request->whatsapp_responsavel,
-                'assinatura_responsavel' => '',
-                'aceite_responsavel'     => 'N',
-                'id_endereco'            => $endereco->id_endereco,
-            ]);
-
-            // 3. Atleta
-            $fotoPath = 'default-player.jpg';
-            if ($request->hasFile('foto_atleta')) {
-                $ext      = $request->file('foto_atleta')->getClientOriginalExtension();
-                $filename = 'atleta_' . uniqid() . '.' . $ext;
-                $request->file('foto_atleta')->move(public_path('futebol/images/our-teams'), $filename);
-                $fotoPath = $filename;
-            }
-
-            $atleta = Atleta::create([
-                'nome_atleta'            => $request->nome_atleta,
-                'data_nasc_atleta'       => $request->data_nasc_atleta,
-                'cpf_atleta'             => $request->cpf_atleta,
-                'rg_atleta'              => $request->rg_atleta,
-                'escola_atleta'          => $request->escola_atleta,
-                'foto_atleta'            => $fotoPath,
-                'status_atleta'          => 'ATIVO', // Padronizado para MAIÚSCULO
-                'id_endereco'            => $endereco->id_endereco,
-                'posicao_atleta'         => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
-                'sexo_atleta'            => $request->sexo_atleta,
-                'peso_atleta'            => $request->peso_atleta ?? 0,
-                'altura_atleta'          => $request->altura_atleta ?? 0,
-                'serie_atleta'           => $request->serie_atleta ?? '',
-                'periodo_escolar_atleta' => $request->periodo_escolar_atleta ?? '',
-                'descricao_atleta'       => $request->descricao_atleta ?? '',
-                'sala_atleta'            => $request->sala_atleta,
-            ]);
-
-            // 4. Pivot atleta <-> responsável
-            $atleta->responsaveis()->attach($responsavel->id_responsavel, [
-                'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
-            ]);
-
-            // 5. Categoria (se selecionada; já validada em validarCategoria)
-            if ($request->filled('id_categoria')) {
-                $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
-            }
-        });
+        try {
+            $numero = DB::transaction(fn () => $this->cadastrarAtleta($request));
+        } catch (UniqueConstraintViolationException $e) {
+            return back()->withInput()
+                ->with('erro', 'Não foi possível gerar o número de matrícula agora. Tente salvar de novo.');
+        }
 
         return redirect()->route('admin.atletas.index')
-            ->with('sucesso', 'Atleta cadastrado com sucesso.');
+            ->with('sucesso', "Atleta cadastrado com sucesso. Matrícula: {$numero}");
+    }
+
+    // Grava endereço, responsável, atleta, categoria e número de matrícula; devolve o número
+    private function cadastrarAtleta(Request $request): string
+    {
+        // 1. Endereço do atleta
+        $endereco = Endereco::create([
+            'rua_endereco'         => $request->rua_endereco,
+            'numero_endereco'      => $request->numero_endereco,
+            'bairro_endereco'      => $request->bairro_endereco,
+            'complemento_endereco' => $request->complemento_endereco,
+            'cep_endereco'         => $request->cep_endereco,
+            'cidade_endereco'      => $request->cidade_endereco,
+            'estado_endereco'      => strtoupper($request->estado_endereco),
+        ]);
+
+        // 2. Responsável
+        $responsavel = Responsavel::create([
+            'nome_responsavel'       => $request->nome_responsavel,
+            'cpf_responsavel'        => $request->cpf_responsavel,
+            'rg_responsavel'         => '',
+            'telefone_responsavel'   => $request->whatsapp_responsavel,
+            'whatsapp_responsavel'   => $request->whatsapp_responsavel,
+            'assinatura_responsavel' => '',
+            'aceite_responsavel'     => 'N',
+            'id_endereco'            => $endereco->id_endereco,
+        ]);
+
+        // 3. Atleta
+        $fotoPath = 'default-player.jpg';
+        if ($request->hasFile('foto_atleta')) {
+            $ext      = $request->file('foto_atleta')->getClientOriginalExtension();
+            $filename = 'atleta_' . uniqid() . '.' . $ext;
+            $request->file('foto_atleta')->move(public_path('futebol/images/our-teams'), $filename);
+            $fotoPath = $filename;
+        }
+
+        $atleta = Atleta::create([
+            'nome_atleta'            => $request->nome_atleta,
+            'data_nasc_atleta'       => $request->data_nasc_atleta,
+            'cpf_atleta'             => $request->cpf_atleta,
+            'rg_atleta'              => $request->rg_atleta,
+            'email_atleta'           => $request->email_atleta, // vazio vira null (ConvertEmptyStringsToNull)
+            'numero_matricula_atleta' => $request->numero_matricula_atleta,
+            'escola_atleta'          => $request->escola_atleta,
+            'foto_atleta'            => $fotoPath,
+            'status_atleta'          => 'ATIVO', // Padronizado para MAIÚSCULO
+            'id_endereco'            => $endereco->id_endereco,
+            'posicao_atleta'         => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
+            'sexo_atleta'            => $request->sexo_atleta,
+            'peso_atleta'            => $request->peso_atleta ?? 0,
+            'altura_atleta'          => $request->altura_atleta ?? 0,
+            'serie_atleta'           => $request->serie_atleta ?? '',
+            'periodo_escolar_atleta' => $request->periodo_escolar_atleta ?? '',
+            'descricao_atleta'       => $request->descricao_atleta ?? '',
+            'sala_atleta'            => $request->sala_atleta,
+        ]);
+
+        // 4. Pivot atleta <-> responsável
+        $atleta->responsaveis()->attach($responsavel->id_responsavel, [
+            'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
+        ]);
+
+        // 5. Categoria (se selecionada; já validada em validarCategoria)
+        if ($request->filled('id_categoria')) {
+            $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
+        }
+
+        // 6. Número de matrícula: o informado ou o próximo (A001, A002...)
+        return $atleta->atribuirNumeroMatricula();
     }
 
     public function edit($id)
@@ -154,6 +176,7 @@ class AtletasController extends Controller
             'data_nasc_atleta'            => $nascimento['regra'],
             'cpf_atleta'                  => 'required|string|max:14',
             'rg_atleta'                   => 'required|string|max:20',
+            'email_atleta'                => ['nullable', 'email', 'max:255', Rule::unique('tbl_atletas', 'email_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
             'escola_atleta'               => 'required|string|max:255',
             'sexo_atleta'                 => 'required|in:M,F',
             'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
@@ -171,7 +194,7 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], $nascimento['mensagens']);
+        ], [...$nascimento['mensagens'], ...self::MENSAGENS_EMAIL]);
 
         // Só valida a categoria quando ela muda: editar outro campo de um atleta que já está
         // numa categoria (por exemplo, acima da idade, com motivo) não pode ser bloqueado
@@ -196,6 +219,7 @@ class AtletasController extends Controller
                 'data_nasc_atleta'        => $request->data_nasc_atleta,
                 'cpf_atleta'              => $request->cpf_atleta,
                 'rg_atleta'               => $request->rg_atleta,
+                'email_atleta'            => $request->email_atleta,
                 'escola_atleta'           => $request->escola_atleta,
                 'serie_atleta'            => $request->serie_atleta,
                 'periodo_escolar_atleta'  => $request->periodo_escolar_atleta,

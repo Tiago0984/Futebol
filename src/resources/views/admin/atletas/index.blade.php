@@ -218,6 +218,7 @@
                                             data-posicao-atleta="{{ $time?->pivot->posicao_atleta_time ?: $atleta->posicao_atleta }}"
                                             data-data-nasc="{{ $atleta->data_nasc_atleta?->format('Y-m-d') }}"
                                             data-cpf="{{ $atleta->cpf_atleta }}"
+                                            data-email="{{ $atleta->email_atleta }}"
                                             data-rg="{{ $atleta->rg_atleta }}"
                                             data-status="{{ $atleta->status_atleta }}"
                                             data-sexo="{{ $atleta->sexo_atleta }}"
@@ -302,6 +303,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_numero').value    = g('data-numero');
             document.getElementById('edit_data_nasc').value = g('data-data-nasc');
             document.getElementById('edit_cpf').value       = g('data-cpf');
+            document.getElementById('edit_email').value     = g('data-email');
             document.getElementById('edit_rg').value        = g('data-rg');
             document.getElementById('edit_peso').value      = g('data-peso');
             document.getElementById('edit_altura').value    = g('data-altura');
@@ -428,6 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
         btnReabrir.click();
         document.getElementById('edit_categoria').value        = @js(old('id_categoria', ''));
         document.getElementById('edit_motivo_categoria').value = @js(old('motivo_categoria', ''));
+        document.getElementById('edit_email').value            = @js(old('email_atleta', ''));
         sugestaoEdicao.atualizar(false);
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarAtleta')).show();
     }

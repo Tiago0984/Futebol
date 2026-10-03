@@ -51,6 +51,15 @@
                                 value="{{ old('camisa_atleta_time') }}">
                         </div>
 
+                        <div class="col-md-8">
+                            <label class="form-label">E-mail do atleta</label>
+                            <input type="email" name="email_atleta" maxlength="255"
+                                class="form-control @error('email_atleta') is-invalid @enderror"
+                                placeholder="atleta@email.com" value="{{ old('email_atleta') }}">
+                            @error('email_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="form-text">Opcional. Sem e-mail, o atleta não consegue acessar o app.</div>
+                        </div>
+
                         <div class="col-md-4">
                             <label class="form-label">Categoria</label>
                             <select name="id_categoria" id="cad_categoria" class="form-select @error('id_categoria') is-invalid @enderror">

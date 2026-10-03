@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
 use App\Models\Categoria;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -56,30 +57,19 @@ class MatriculasController extends Controller
             return back()->withErrors(['id_categoria' => $erro])->withInput();
         }
 
-        $matricula = $atleta->numero_matricula_atleta ?: $this->gerarNumeroMatricula();
+        try {
+            $matricula = DB::transaction(function () use ($atleta, $request) {
+                $atleta->update(['status_atleta' => 'ATIVO']);
+                $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
 
-        DB::transaction(function () use ($atleta, $matricula, $request) {
-            $atleta->update([
-                'status_atleta'           => 'ATIVO',
-                'numero_matricula_atleta' => $matricula,
-            ]);
-
-            $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
-        });
+                return $atleta->atribuirNumeroMatricula();
+            });
+        } catch (UniqueConstraintViolationException $e) {
+            return back()->with('erro', 'Não foi possível gerar o número de matrícula agora. Tente aprovar de novo.');
+        }
 
         return redirect()->route('admin.matriculas.index')
             ->with('sucesso', "Matrícula de {$atleta->nome_atleta} aprovada. Número: {$matricula}");
-    }
-
-    private function gerarNumeroMatricula(): string
-    {
-        $maxNumero = Atleta::whereRaw("numero_matricula_atleta REGEXP '^A[0-9]+$'")
-            ->selectRaw('MAX(CAST(SUBSTRING(numero_matricula_atleta, 2) AS UNSIGNED)) as max_num')
-            ->value('max_num');
-
-        $proximo = ($maxNumero ?? 0) + 1;
-
-        return 'A' . str_pad($proximo, 3, '0', STR_PAD_LEFT);
     }
 
     public function rejeitar($id)

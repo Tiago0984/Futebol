@@ -43,6 +43,12 @@
                             <input type="text" name="camisa_atleta_time" id="edit_numero" class="form-control text-center" placeholder="Ex: 10" maxlength="10">
                         </div>
 
+                        <div class="col-md-8">
+                            <label class="form-label">E-mail do atleta</label>
+                            <input type="email" name="email_atleta" id="edit_email" class="form-control" maxlength="255" placeholder="atleta@email.com">
+                            <div class="form-text">Opcional. Sem e-mail, o atleta não consegue acessar o app.</div>
+                        </div>
+
                         <div class="col-md-3">
                             <label class="form-label">Categoria</label>
                             <select name="id_categoria" id="edit_categoria" class="form-select">

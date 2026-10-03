@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\HasApiTokens;
@@ -89,6 +90,47 @@ class Atleta extends Authenticatable
                 'jogos_atleta_time',
                 'convocacao_atleta_time'
             ]);
+    }
+
+    /**
+     * Próximo número de matrícula (A001, A002...). Leitura com lockForUpdate: dentro de uma transação,
+     * um SELECT comum leria a foto antiga do banco e repetiria o mesmo MAX; a leitura com bloqueio vê o
+     * último valor confirmado e faz um cadastro simultâneo esperar o outro terminar.
+     */
+    public static function proximoNumeroMatricula(): string
+    {
+        $maior = self::whereRaw("numero_matricula_atleta REGEXP '^A[0-9]+$'")
+            ->selectRaw('MAX(CAST(SUBSTRING(numero_matricula_atleta, 2) AS UNSIGNED)) AS maior')
+            ->lockForUpdate()
+            ->value('maior');
+
+        return 'A' . str_pad((string) (($maior ?? 0) + 1), 3, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Grava o número de matrícula se o atleta ainda não tiver (aprovação e cadastro pelo admin).
+     * Se outro cadastro gravar o mesmo número no meio do caminho, o índice único recusa
+     * e o número é recalculado, até 5 tentativas.
+     */
+    public function atribuirNumeroMatricula(): string
+    {
+        if ($this->numero_matricula_atleta) {
+            return $this->numero_matricula_atleta;
+        }
+
+        for ($tentativa = 1; ; $tentativa++) {
+            $numero = self::proximoNumeroMatricula();
+
+            try {
+                $this->update(['numero_matricula_atleta' => $numero]);
+
+                return $numero;
+            } catch (UniqueConstraintViolationException $e) {
+                if ($tentativa >= 5) {
+                    throw $e;
+                }
+            }
+        }
     }
 
     public function foiAprovado(): bool
