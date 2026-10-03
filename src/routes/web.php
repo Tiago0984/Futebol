@@ -25,7 +25,6 @@ use App\Http\Controllers\Admin\TimesController;
 use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
 use App\Http\Controllers\Admin\AtletasController as AdminAtletasController;
-use App\Http\Controllers\Admin\InscricoesController;
 use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController;
@@ -118,9 +117,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Sem destroy: na tela de Atletas o atleta só é inativado; exclusão definitiva só em Matrículas Rejeitadas
     Route::resource('atletas', AdminAtletasController::class)->except(['destroy']);
     Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
-    Route::get('inscricoes',          [InscricoesController::class, 'index'])->name('inscricoes.index');
-    Route::get('inscricoes/{id}',     [InscricoesController::class, 'show'])->name('inscricoes.show');
-    Route::delete('inscricoes/{id}',  [InscricoesController::class, 'destroy'])->name('inscricoes.destroy');
 
     // Escalação
     Route::get('escalacao',                                  [EscalacaoController::class, 'index'])->name('escalacao.index');
