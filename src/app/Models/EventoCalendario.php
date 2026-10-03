@@ -155,6 +155,60 @@ class EventoCalendario extends Model
         return $this->inscricoes()->where('id_atleta', $idAtleta)->delete() > 0;
     }
 
+    /**
+     * Evento que mudou de categoria (ou ficou sem): as inscrições AUTOMÁTICAS acompanham a categoria
+     * nova (sai quem não é dela, entra quem é); as individuais ficam. Quem chama decide se o evento
+     * ainda pode mudar (concluído não muda). Devolve ['entraram' => n, 'sairam' => n].
+     */
+    public function sincronizarInscricoesPelaCategoria(?int $idUsuario): array
+    {
+        return DB::transaction(function () use ($idUsuario) {
+            $daCategoria = $this->id_categoria ? Atleta::idsAtivosNaCategoria($this->id_categoria) : [];
+
+            $sairam = $this->inscricoes()
+                ->where('origem_evento_atleta', 'CATEGORIA')
+                ->whereNotIn('id_atleta', $daCategoria)
+                ->delete();
+
+            $entraram = $this->id_categoria
+                ? $this->inscreverCategoria($this->id_categoria, 'CATEGORIA', $idUsuario)
+                : 0;
+
+            return ['entraram' => $entraram, 'sairam' => $sairam];
+        });
+    }
+
+    // Atletas ativos da categoria do evento que ainda não estão inscritos (quem entrou depois)
+    public function idsFaltantesDaCategoria(): array
+    {
+        if (! $this->id_categoria) {
+            return [];
+        }
+
+        $inscritos = $this->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+
+        return array_values(array_diff(Atleta::idsAtivosNaCategoria($this->id_categoria), $inscritos));
+    }
+
+    // Eventos ativos (não cancelados nem ocultos) que ainda não aconteceram
+    public function scopeFuturosAtivos($query)
+    {
+        return $query->where('status_evento_calendario', 'ATIVO')
+            ->whereDate('data_evento_calendario', '>=', now()->toDateString())
+            ->orderBy('data_evento_calendario')
+            ->orderBy('horario_inicio_evento_calendario');
+    }
+
+    // Mesma lista, já sem os que terminaram hoje (regra de "Concluído")
+    public static function futurosAtivosDaCategoria(int $idCategoria)
+    {
+        return self::futurosAtivos()
+            ->where('id_categoria', $idCategoria)
+            ->get()
+            ->reject(fn (self $evento) => $evento->estaConcluido())
+            ->values();
+    }
+
     // Categoria do evento; null em evento individual (exame, avaliação de um atleta)
     public function categoria()
     {

@@ -110,6 +110,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::get('/eventos/{id}',                          [AdminCalendarioController::class, 'showEvento'])->name('eventos.show');
         Route::post('/eventos/{id}/inscricoes',              [AdminCalendarioController::class, 'inscreverAtleta'])->name('eventos.inscricoes.store');
         Route::post('/eventos/{id}/inscricoes/categoria',    [AdminCalendarioController::class, 'inscreverCategoriaNoEvento'])->name('eventos.inscricoes.categoria');
+        Route::post('/eventos/{id}/inscricoes/atualizar',    [AdminCalendarioController::class, 'atualizarInscritosPelaCategoria'])->name('eventos.inscricoes.atualizar');
         Route::delete('/eventos/{id}/inscricoes/{idAtleta}', [AdminCalendarioController::class, 'removerInscricao'])->name('eventos.inscricoes.destroy');
         Route::post('/grade',                  [AdminCalendarioController::class, 'storeGrade'])->name('grade.store');
         Route::put('/grade/{id}',              [AdminCalendarioController::class, 'updateGrade'])->name('grade.update');
@@ -123,6 +124,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Sem destroy: na tela de Atletas o atleta só é inativado; exclusão definitiva só em Matrículas Rejeitadas
     Route::resource('atletas', AdminAtletasController::class)->except(['destroy']);
     Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
+    Route::post('atletas/{id}/mover-inscricoes', [AdminAtletasController::class, 'moverInscricoes'])->name('atletas.moverInscricoes');
 
     // Escalação
     Route::get('escalacao',                                  [EscalacaoController::class, 'index'])->name('escalacao.index');

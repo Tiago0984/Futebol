@@ -76,7 +76,26 @@ class CalendarioController extends Controller
 
         $categorias = Categoria::ativas()->get();
 
-        return view('admin.calendario.evento', compact('evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias'));
+        // Atletas da categoria do evento que entraram depois e ainda não estão inscritos
+        $faltantesDaCategoria = count($evento->idsFaltantesDaCategoria());
+
+        return view('admin.calendario.evento', compact(
+            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria'
+        ));
+    }
+
+    // "Atualizar inscritos pela categoria": só acrescenta quem falta (não remove ninguém)
+    public function atualizarInscritosPelaCategoria($id)
+    {
+        $evento = EventoCalendario::findOrFail($id);
+
+        if (! $evento->id_categoria) {
+            return back()->with('erro', 'Este evento não tem categoria.');
+        }
+
+        $novos = $evento->inscreverCategoria($evento->id_categoria, 'CATEGORIA', auth('admin')->id());
+
+        return back()->with('sucesso', "{$novos} atleta(s) da categoria inscrito(s).");
     }
 
     // Inscrição individual: um atleta ativo escolhido no select
@@ -131,11 +150,23 @@ class CalendarioController extends Controller
     {
         $evento = EventoCalendario::findOrFail($id);
 
+        $categoriaAntes = $evento->id_categoria;
+
         // Nem o status (só pelas ações de cancelar e ocultar) nem o responsável mudam pela edição.
         // O que mudar em data, horário, local, título, tipo ou categoria vai para o histórico.
         $evento->atualizarComHistorico($this->dadosEvento($request, $evento), auth('admin')->id());
 
-        return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento atualizado.');
+        $mensagem = 'Evento atualizado.';
+
+        // Mudou de categoria (ou ficou sem): as inscrições automáticas acompanham; as individuais ficam.
+        // Evento concluído não muda nada.
+        if ((int) $categoriaAntes !== (int) $evento->id_categoria && ! $evento->estaConcluido()) {
+            ['entraram' => $entraram, 'sairam' => $sairam] = $evento->sincronizarInscricoesPelaCategoria(auth('admin')->id());
+            $mensagem .= " Inscrições pela categoria: {$entraram} atleta(s) inscrito(s), {$sairam} removido(s)."
+                . ' As inscrições individuais foram mantidas.';
+        }
+
+        return redirect()->route('admin.calendario.index')->with('sucesso', $mensagem);
     }
 
     /**

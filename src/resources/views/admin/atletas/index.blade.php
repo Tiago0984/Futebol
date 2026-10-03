@@ -36,6 +36,29 @@
         </div>
         @endif
 
+        {{-- Troca de categoria: eventos futuros a mover (só com a confirmação do admin) --}}
+        @if($mover = session('mover_inscricoes'))
+        <div class="alert alert-warning mb-3" role="alert">
+            <strong>{{ $mover['nome'] }} mudou de {{ $mover['de_rotulo'] }} para {{ $mover['para_rotulo'] }}.</strong>
+            @if(count($mover['sair']))
+                <div class="mt-2">Está inscrito em {{ count($mover['sair']) }} evento(s) futuro(s) da categoria antiga:
+                    {{ implode('; ', $mover['sair']) }}.</div>
+            @endif
+            @if(count($mover['entrar']))
+                <div class="mt-1">Não está em {{ count($mover['entrar']) }} evento(s) futuro(s) da categoria nova:
+                    {{ implode('; ', $mover['entrar']) }}.</div>
+            @endif
+            <form action="{{ route('admin.atletas.moverInscricoes', $mover['id_atleta']) }}" method="POST" class="mt-2"
+                  onsubmit="return confirm('Mover as inscrições? Sai dos eventos da categoria antiga (só os automáticos) e entra nos da nova.')">
+                @csrf
+                <input type="hidden" name="de" value="{{ $mover['de'] }}">
+                <input type="hidden" name="para" value="{{ $mover['para'] }}">
+                <button type="submit" class="btn btn-warning btn-sm">Mover inscrições</button>
+                <span class="small text-muted ms-2">Se não mover, nada muda nos eventos.</span>
+            </form>
+        </div>
+        @endif
+
         @if ($errors->any() || $errors->edicao->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Ops! Verifique os campos do formulário:</strong>

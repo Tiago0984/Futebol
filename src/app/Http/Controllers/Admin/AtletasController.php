@@ -334,8 +334,51 @@ class AtletasController extends Controller
             }
         });
 
-        return redirect()->route('admin.atletas.index')
-            ->with('sucesso', 'Atleta atualizado com sucesso.');
+        $resposta = redirect()->route('admin.atletas.index')->with('sucesso', 'Atleta atualizado com sucesso.');
+
+        // Trocou de categoria: avisa dos eventos futuros a mover (nada muda sem o admin confirmar)
+        $idNova = $request->filled('id_categoria') ? (int) $request->id_categoria : null;
+        if ($idAtual && $idNova && $idAtual !== $idNova) {
+            $movimento = $atleta->eventosParaMoverInscricoes($idAtual, $idNova);
+
+            if ($movimento['sair']->isNotEmpty() || $movimento['entrar']->isNotEmpty()) {
+                $resposta->with('mover_inscricoes', [
+                    'id_atleta' => $atleta->id_atleta,
+                    'nome'      => $atleta->nome_atleta,
+                    'de'        => $idAtual,
+                    'para'      => $idNova,
+                    'de_rotulo'   => Categoria::find($idAtual)?->rotulo,
+                    'para_rotulo' => Categoria::find($idNova)?->rotulo,
+                    'sair'      => $movimento['sair']->map(fn ($e) => $e->data_evento_calendario->format('d/m') . ' ' . $e->titulo_evento_calendario)->all(),
+                    'entrar'    => $movimento['entrar']->map(fn ($e) => $e->data_evento_calendario->format('d/m') . ' ' . $e->titulo_evento_calendario)->all(),
+                ]);
+            }
+        }
+
+        return $resposta;
+    }
+
+    /**
+     * "Mover inscrições" depois da troca de categoria (confirmado pelo admin): sai dos eventos futuros
+     * e não cancelados da categoria antiga (só das inscrições automáticas) e entra nos da nova.
+     */
+    public function moverInscricoes(Request $request, $id)
+    {
+        $atleta = Atleta::with('categoriasAtivas')->findOrFail($id);
+
+        $request->validate([
+            'de'   => 'required|integer|exists:tbl_categoria,id_categoria',
+            'para' => 'required|integer|exists:tbl_categoria,id_categoria',
+        ]);
+
+        // Só move para a categoria em que o atleta está agora (o aviso pode ter ficado velho)
+        if ((int) $request->para !== $atleta->categoriasAtivas->first()?->id_categoria) {
+            return back()->with('erro', 'A categoria do atleta mudou de novo. Edite o atleta e confira os eventos.');
+        }
+
+        ['sairam' => $sairam, 'entraram' => $entraram] = $atleta->moverInscricoes((int) $request->de, (int) $request->para, auth('admin')->id());
+
+        return back()->with('sucesso', "Inscrições de {$atleta->nome_atleta} movidas: saiu de {$sairam} evento(s) e entrou em {$entraram}.");
     }
 
     public function toggleStatus($id)

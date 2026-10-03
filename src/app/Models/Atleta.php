@@ -199,6 +199,45 @@ class Atleta extends Authenticatable
         return $this->hasMany(EventoAtleta::class, 'id_atleta', 'id_atleta');
     }
 
+    /**
+     * Para o aviso de troca de categoria: eventos futuros e não cancelados da categoria antiga em que
+     * o atleta está inscrito pela categoria (sair) e da nova em que ainda não está (entrar).
+     * Inscrições individuais na categoria antiga ficam: foram escolha do admin.
+     */
+    public function eventosParaMoverInscricoes(int $idCategoriaAntiga, int $idCategoriaNova): array
+    {
+        $inscricoes = $this->inscricoesEmEventos()->get()->keyBy('id_evento_calendario');
+
+        $sair = EventoCalendario::futurosAtivosDaCategoria($idCategoriaAntiga)
+            ->filter(fn ($evento) => ($inscricoes[$evento->id_evento_calendario] ?? null)?->origem_evento_atleta === 'CATEGORIA')
+            ->values();
+
+        $entrar = EventoCalendario::futurosAtivosDaCategoria($idCategoriaNova)
+            ->reject(fn ($evento) => isset($inscricoes[$evento->id_evento_calendario]))
+            ->values();
+
+        return ['sair' => $sair, 'entrar' => $entrar];
+    }
+
+    // "Mover inscrições" (confirmado pelo admin): sai dos eventos da categoria antiga e entra nos da nova
+    public function moverInscricoes(int $idCategoriaAntiga, int $idCategoriaNova, ?int $idUsuario): array
+    {
+        return DB::transaction(function () use ($idCategoriaAntiga, $idCategoriaNova, $idUsuario) {
+            ['sair' => $sair, 'entrar' => $entrar] = $this->eventosParaMoverInscricoes($idCategoriaAntiga, $idCategoriaNova);
+
+            foreach ($sair as $evento) {
+                $evento->removerInscricao($this->id_atleta);
+            }
+
+            $entraram = 0;
+            foreach ($entrar as $evento) {
+                $entraram += $evento->inscrever($this->id_atleta, 'CATEGORIA', $idUsuario) ? 1 : 0;
+            }
+
+            return ['sairam' => $sair->count(), 'entraram' => $entraram];
+        });
+    }
+
     // Só a categoria atual (no máximo uma linha ATIVO)
     public function categoriasAtivas()
     {

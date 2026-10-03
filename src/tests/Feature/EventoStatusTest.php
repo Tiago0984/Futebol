@@ -152,6 +152,19 @@ class EventoStatusTest extends TestCase
         $this->get('/calendario')->assertOk()->assertSee('A definir');
     }
 
+    public function test_lista_do_admin_mostra_horario_sem_segundos(): void
+    {
+        $this->criarEvento('ATIVO', ['horario_inicio_evento_calendario' => '17:00:00', 'horario_fim_evento_calendario' => '18:30:00']);
+        $this->criarEvento('ATIVO', ['titulo_evento_calendario' => 'Sem Horario', 'horario_inicio_evento_calendario' => null]);
+
+        $this->comoAdmin()
+            ->get(route('admin.calendario.index'))
+            ->assertOk()
+            ->assertSee('17:00 às 18:30')
+            ->assertDontSee('17:00:00 – 18:30:00') // formato antigo da coluna (o data-inicio do botão pode ter segundos)
+            ->assertSee('A definir');
+    }
+
     public function test_horario_texto(): void
     {
         $evento = new EventoCalendario([

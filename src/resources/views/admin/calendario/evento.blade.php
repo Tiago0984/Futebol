@@ -24,6 +24,13 @@
                 </div>
             @endif
 
+            @if (session('erro'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    {{ session('erro') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             @if ($errors->any())
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     @foreach ($errors->all() as $error)<div>{{ $error }}</div>@endforeach
@@ -110,6 +117,30 @@
 
                 {{-- Adicionar --}}
                 <div class="col-lg-5">
+                    @if ($evento->categoria)
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header bg-dark text-white fw-semibold">
+                            <i class="bi bi-arrow-repeat me-2"></i> Pela categoria ({{ $evento->categoria->rotulo }})
+                        </div>
+                        <div class="card-body">
+                            @if ($faltantesDaCategoria > 0)
+                                <p class="mb-2">
+                                    <strong>{{ $faltantesDaCategoria }}</strong> atleta(s) ativo(s) da categoria ainda não
+                                    {{ $faltantesDaCategoria === 1 ? 'está inscrito' : 'estão inscritos' }}
+                                    (entraram na categoria depois que o evento foi criado, ou foram removidos).
+                                </p>
+                                <form action="{{ route('admin.calendario.eventos.inscricoes.atualizar', $evento->id_evento_calendario) }}" method="POST"
+                                      onsubmit="return confirm('Inscrever os atletas da categoria que faltam? Ninguém é removido.')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-success">Atualizar inscritos pela categoria</button>
+                                </form>
+                            @else
+                                <p class="text-muted mb-0">Todos os atletas ativos da categoria estão inscritos.</p>
+                            @endif
+                        </div>
+                    </div>
+                    @endif
+
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-dark text-white fw-semibold">
                             <i class="bi bi-person-plus me-2"></i> Inscrever atleta

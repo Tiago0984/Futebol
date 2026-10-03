@@ -185,10 +185,7 @@
                             <td><span class="badge-cat">{{ $ev->tipo_label }}</span></td>
                             <td class="text-muted">{{ $ev->subtipo_evento_calendario ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;">
-                                {{ $ev->horario_inicio_evento_calendario ?? '—' }}
-                                @if($ev->horario_fim_evento_calendario)
-                                – {{ $ev->horario_fim_evento_calendario }}
-                                @endif
+                                {{ $ev->horario_texto }}
                             </td>
                             <td class="text-muted">{{ $ev->local_evento_calendario ?? '—' }}</td>
                             <td class="text-center">
