@@ -56,7 +56,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Na tela de **Atletas** o atleta só é **inativado**. Exclusão definitiva **só em Matrículas Rejeitadas**, via `Atleta::excluirComDependencias()`.
 - Atleta **com cartões não é excluído** (preserva o histórico dos jogos). Provisório até o professor decidir.
 - Matrícula aprovada não volta para rejeitada.
-- Fonte oficial da categoria do atleta: **`tbl_categoria_atleta`** (com início, fim e status). `tbl_inscricao` deve ser **descontinuada**.
+- Fonte oficial da categoria do atleta: **`tbl_categoria_atleta`** (com início, fim e status `ATIVO`/`ENCERRADO`). `tbl_inscricao` foi **descontinuada** (Fase 3).
 - Troca de categoria: **fechar a linha antiga** (data_fim + status) e **criar uma nova**, nunca só dar UPDATE.
 
 ### Usuários (dashboard)
@@ -90,7 +90,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 O atleta é notificado em três casos: **inscrição, alteração e cancelamento**.
 
 ### Grade de treino
-- Ganha **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre").
+- Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
 - Vira **modelo**: gera **eventos reais por data**, já com os atletas da categoria inscritos.
 
 ### Conflito de horário
@@ -143,6 +143,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `5f81ea0` feat: e-mail do atleta e número de matrícula no cadastro pelo admin (Fase 3)
 - `c2e982b` feat: preenche número de matrícula de aprovados sem número (Fase 3)
 - `d5da33b` feat: e-mail do responsável nos modais de atleta do admin (Fase 3)
+- `9422049` docs: andamento da Fase 3
+- `8dbb21c` fix: grau de parentesco abre vazio na edição do atleta (Fase 3)
+- `b1ef107` fix: normaliza graus de parentesco gravados em outro formato (Fase 3)
+- `79d8893` feat: grade de treino aponta para a categoria (Fase 3, Etapa 4)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -165,10 +169,19 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `cargo_usuario` VARCHAR(30) nullable; valores em `User::CARGOS`, validar com `Rule::in`.
 - Checkbox "Lembrar-me" no login do admin; `AdminLoginTest` cobre login, erro, visitante, logout, lembrar-me, nome no painel e schema.
 
-### Fase em andamento: 3 — categoria e grade
-- **Feito:** `tbl_inscricao` descontinuada; `users` fora da 0001; 10 categorias oficiais com índice único (nome, sexo) e Sub-12 removida; categoria do atleta pela regra do ano (`Categoria::sugeridaPara`, `erroParaAtleta`; `Atleta::trocarCategoria` encerra a linha e abre outra); aprovação grava categoria e número; cadastro pelo admin gera número (`Atleta::atribuirNumeroMatricula`, com `lockForUpdate` e nova tentativa); idade de 9 a 17 anos pelo ano no site e no admin (`Atleta::limitesNascimento`); pendente/rejeitado só mudam de status por Matrículas; e-mails do atleta (único) e do responsável (não único) no admin.
-- Migrations aplicadas no `db_futebol`: batches 10 a 12 (backups `db_futebol_antes_fase3_*` em `backup/`).
-- **Falta:** grau de parentesco (select abre vazio na edição) e Etapa 4, `tbl_grade_treino.id_categoria`.
+### Fase 3 concluída — categoria e grade (`bd3f7dd` a `79d8893`)
+- **Inscrição e users:** `tbl_inscricao` descontinuada (`bd3f7dd`, `3c78803`); `users` fora da 0001 (`b81235b`).
+- **Categorias:** 10 oficiais, Sub-9 a Sub-17 em M e F, com índice único (nome, sexo) (`fc6b3ec`); Sub-12 de teste removida (`6dd95f9`).
+- **Categoria do atleta pela regra do ano** (`50ff8ea`): `Categoria::sugeridaPara` / `erroParaAtleta` (abaixo bloqueado, acima com motivo); `Atleta::trocarCategoria` encerra a linha e abre outra; aprovação grava a categoria; idade de 9 a 17 anos pelo ano no site e no admin (`Atleta::limitesNascimento`); pendente/rejeitado só mudam de status por Matrículas.
+- **Cadastro pelo admin** (`5f81ea0`, `c2e982b`, `d5da33b`): número de matrícula gerado também fora da aprovação (`Atleta::atribuirNumeroMatricula`, `lockForUpdate` + nova tentativa) e preenchido para os aprovados sem número; e-mail do atleta (único) e do responsável (não único).
+- **Grau de parentesco** (`8dbb21c`, `b1ef107`): lista única `Responsavel::GRAUS_PARENTESCO` validada com `Rule::in`; valores antigos `PAI`/`MAE` normalizados.
+- **Grade** (`79d8893`): `tbl_grade_treino.id_categoria` (INT com sinal, nullable, FK `fk_grade_categoria`); Sub-N → categoria masculina; Integrado, Treino Livre e Jogos sem categoria; select no admin; rótulo "Sub-13 Masculino" no admin e no site.
+- **Migrations no `db_futebol`:** batches 10 (inscrição), 11 (categorias e Sub-12), 12 (números de matrícula), 13 (grau), 14 (grade).
+- **Backups** em `backup/`: `db_futebol_antes_fase3_inscricao_20261003_094201.sql`, `..._categorias_20261003_095704.sql`, `..._matricula_20261003_135849.sql`, `..._grau_20261003_143920.sql`, `..._grade_20261003_144534.sql`.
+- 103 testes passando.
+
+### Próxima: Fase 4 — evento base
+(detalhes no item 4 abaixo e nas seções 4 e 5)
 
 ### Próximas fases (ordem recomendada)
 4. Evento base: `id_categoria`, `id_usuario` (BIGINT UNSIGNED), status ATIVO/CANCELADO/INATIVO, status derivados, histórico.
@@ -187,11 +200,9 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Acesso do atleta ao app:** o cadastro público grava senha aleatória (`Str::random(20)`), então nenhum atleta consegue logar. `token_cadastro` é gerado e nunca lido. Plano: password broker do Laravel (broker `atletas`, e-mail em `email_atleta`), link "defina sua senha" na aprovação e "esqueci minha senha". Pendente: o link vai para o e-mail do atleta ou do responsável?
 - **Assinaturas:** gravadas em `public/` (acessíveis por URL), nome previsível, caminho salvo no **responsável** (sobrescreve quando ele tem dois atletas), sem validar se é PNG, e o arquivo não é apagado na exclusão. Plano: coluna `tbl_autorizacoes.arquivo_assinatura`, `Storage::disk('local')` com UUID, rota protegida no admin, comando para migrar os arquivos, apagar após o commit da transação.
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
-- **Grade** cita Sub-9, Sub-11, Sub-13 e Sub-17, que não existem em `tbl_categoria` (só Sub-15 casa). O professor confirmou que devem existir, em M e F (seção 8, pergunta 2); criação planejada na Fase 3.
 - **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
 - **Camisa repetida na lista de atletas:** um atleta em dois times mostra "Camisa Nº 15" duas vezes, sem dizer de qual time é cada número.
 - `STATUS_VISIVEIS` do site inclui `ALTERADO` (muda na Fase 4).
-- **Tabela `users` sobrando:** a migration padrão `0001_01_01_000000_create_users_table` cria `users`, que o projeto não usa (o admin usa `tbl_usuarios`). Ela não existe no `db_futebol` (foi apagada à mão), mas é criada no `migrate:fresh` e seria criada no primeiro deploy. Plano: tirar a criação de `users` dessa migration ou criar uma migration que a remova.
 ---
 
 ## 8. Perguntas em aberto para o professor
