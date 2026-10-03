@@ -2393,6 +2393,22 @@ img:focus {
     background: #fff9db;
     color: #f59f00;
 }
+.tag-evento {
+    background: #e7f1ff;
+    color: #1c64e3;
+}
+.tag-reuniao {
+    background: #f3effd;
+    color: #6f42c1;
+}
+.tag-confraternizacao {
+    background: #ebfbee;
+    color: #2b8a3e;
+}
+.tag-avaliacao {
+    background: #e6fcf5;
+    color: #0c8599;
+}
 
 .event-title {
     font-size: 1.35rem;

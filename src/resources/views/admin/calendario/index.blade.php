@@ -36,8 +36,8 @@
                         <label class="filter-label">Tipo</label>
                         <select id="filtroTipo" class="form-select form-select-sm">
                             <option value="">Todos</option>
-                            @foreach(['JOGO','TREINO','EVENTO','REUNIÃO','CONFRATERNIZAÇÃO'] as $t)
-                            <option value="{{ $t }}">{{ $t }}</option>
+                            @foreach(\App\Models\EventoCalendario::TIPOS as $t => $rotulo)
+                            <option value="{{ $t }}">{{ $rotulo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -160,7 +160,7 @@
                                 {{ $ev->data_evento_calendario->format('d/m/Y') }}
                             </td>
                             <td><span class="fw-semibold">{{ $ev->titulo_evento_calendario }}</span></td>
-                            <td><span class="badge-cat">{{ $ev->tipo_evento_calendario }}</span></td>
+                            <td><span class="badge-cat">{{ $ev->tipo_label }}</span></td>
                             <td class="text-muted">{{ $ev->subtipo_evento_calendario ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;">
                                 {{ $ev->horario_inicio_evento_calendario ?? '—' }}
@@ -353,8 +353,8 @@
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_evento_calendario" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['JOGO', 'TREINO', 'EVENTO', 'REUNIÃO', 'CONFRATERNIZAÇÃO'] as $tipo)
-                                <option value="{{ $tipo }}">{{ $tipo }}</option>
+                                @foreach(\App\Models\EventoCalendario::TIPOS as $tipo => $rotulo)
+                                <option value="{{ $tipo }}">{{ $rotulo }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -418,8 +418,8 @@
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select id="edit_ev_tipo" name="tipo_evento_calendario" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['JOGO', 'TREINO', 'EVENTO', 'REUNIÃO', 'CONFRATERNIZAÇÃO'] as $tipo)
-                                <option value="{{ $tipo }}">{{ $tipo }}</option>
+                                @foreach(\App\Models\EventoCalendario::TIPOS as $tipo => $rotulo)
+                                <option value="{{ $tipo }}">{{ $rotulo }}</option>
                                 @endforeach
                             </select>
                         </div>

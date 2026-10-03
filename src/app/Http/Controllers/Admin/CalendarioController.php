@@ -10,8 +10,6 @@ use Illuminate\Validation\Rule;
 
 class CalendarioController extends Controller
 {
-    private const TIPOS_EVENTO = ['JOGO', 'TREINO', 'CAMPEONATO', 'EVENTO', 'REUNIÃO', 'CONFRATERNIZAÇÃO'];
-
     public function index()
     {
         $eventos = EventoCalendario::orderBy('data_evento_calendario', 'desc')->get();
@@ -26,7 +24,7 @@ class CalendarioController extends Controller
     {
         $request->validate([
             'titulo_evento_calendario'          => 'required|string|max:255',
-            'tipo_evento_calendario'            => ['required', Rule::in(self::TIPOS_EVENTO)],
+            'tipo_evento_calendario'            => ['required', Rule::in(array_keys(EventoCalendario::TIPOS))],
             'data_evento_calendario'            => 'required|date',
             'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i,H:i:s',
             'horario_fim_evento_calendario'     => 'nullable|date_format:H:i,H:i:s',
@@ -54,7 +52,7 @@ class CalendarioController extends Controller
 
         $request->validate([
             'titulo_evento_calendario'          => 'required|string|max:255',
-            'tipo_evento_calendario'            => ['required', Rule::in(self::TIPOS_EVENTO)],
+            'tipo_evento_calendario'            => ['required', Rule::in(array_keys(EventoCalendario::TIPOS))],
             'data_evento_calendario'            => 'required|date',
             'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i,H:i:s',
             'horario_fim_evento_calendario'     => 'nullable|date_format:H:i,H:i:s',

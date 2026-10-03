@@ -16,6 +16,17 @@ class EventoCalendario extends Model
     // Status que aparecem no site público
     public const STATUS_VISIVEIS = ['CONFIRMADO', 'ALTERADO'];
 
+    // Valores do ENUM tipo_evento_calendario (sem acento) => texto exibido na tela
+    public const TIPOS = [
+        'JOGO'             => 'JOGO',
+        'TREINO'           => 'TREINO',
+        'CAMPEONATO'       => 'CAMPEONATO',
+        'EVENTO'           => 'EVENTO',
+        'REUNIAO'          => 'REUNIÃO',
+        'CONFRATERNIZACAO' => 'CONFRATERNIZAÇÃO',
+        'AVALIACAO'        => 'AVALIAÇÃO',
+    ];
+
     protected $fillable = [
         'titulo_evento_calendario',
         'descricao_evento_calendario',
@@ -35,6 +46,11 @@ class EventoCalendario extends Model
 
     public function getTipoClassAttribute(): string
     {
-        return strtolower($this->tipo_evento_calendario);
+        return mb_strtolower($this->tipo_evento_calendario);
+    }
+
+    public function getTipoLabelAttribute(): string
+    {
+        return self::TIPOS[$this->tipo_evento_calendario] ?? $this->tipo_evento_calendario;
     }
 }
