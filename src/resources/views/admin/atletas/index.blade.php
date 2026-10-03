@@ -132,7 +132,8 @@
                             $idCategoria = $categoria->id_categoria ?? null;
                             $responsavel = $atleta->responsaveis->first();
                             $nomeResponsavel = $responsavel->nome_responsavel ?? null;
-                            $grauParentesco = $responsavel?->pivot->grau_parentesco_responsavel ?? null;
+                            // Normalizado para a opção do select ("PAI" -> "Pai", "MAE" -> "Mãe")
+                            $grauParentesco = \App\Models\Responsavel::normalizarGrau($responsavel?->pivot->grau_parentesco_responsavel);
                             $time = $atleta->times->first();
                             $posicao = $time?->pivot->posicao_atleta_time ?: ($atleta->posicao_atleta ?: null);
                             $camisa = ($time?->pivot->camisa_atleta_time > 0) ? $time->pivot->camisa_atleta_time : null;
@@ -333,7 +334,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_posicao').value   = g('data-posicao-atleta');
 
             document.getElementById('edit_nome_responsavel').value     = g('data-nome-responsavel');
-            document.getElementById('edit_grau_responsavel').value     = g('data-grau-responsavel');
+            selecionarSemDiferenciar(document.getElementById('edit_grau_responsavel'), g('data-grau-responsavel'));
             document.getElementById('edit_whatsapp_responsavel').value = g('data-whatsapp-responsavel');
             document.getElementById('edit_cpf_responsavel').value      = g('data-cpf-responsavel');
             document.getElementById('edit_email_responsavel').value    = g('data-email-responsavel');
@@ -354,6 +355,19 @@ document.addEventListener('DOMContentLoaded', function () {
             sugestaoEdicao.atualizar(false); // mantém a categoria atual; só mostra a dica
         });
     });
+
+    // Seleciona a opção cujo valor casa com o informado sem diferenciar maiúsculas e, se preciso, acentos
+    // ("PAI" -> "Pai", "MAE" -> "Mãe"). Sem correspondência, o select fica vazio.
+    function selecionarSemDiferenciar(select, valor) {
+        const maiusculo = t => (t || '').trim().toUpperCase();
+        const semAcento = t => maiusculo(t).normalize('NFD').replace(/[̀-ͯ]/g, '');
+        const opcoes    = Array.from(select.options).filter(opt => opt.value);
+
+        const achada = opcoes.find(opt => maiusculo(opt.value) === maiusculo(valor))
+                    || opcoes.find(opt => semAcento(opt.value) === semAcento(valor));
+
+        select.value = achada ? achada.value : '';
+    }
 
     // --- Sugestão de categoria (regra do ano: idade = ano atual − ano de nascimento) ---
     // Opções de outro sexo ou abaixo da idade ficam desabilitadas (abaixo é bloqueado);

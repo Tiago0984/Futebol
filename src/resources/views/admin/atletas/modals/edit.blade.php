@@ -173,7 +173,7 @@
                             <label class="form-label">Grau de Parentesco <span class="text-danger">*</span></label>
                             <select name="grau_parentesco_responsavel" id="edit_grau_responsavel" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Pai', 'Mãe', 'Avô', 'Avó', 'Tio', 'Tia', 'Responsável Legal', 'Outro'] as $grau)
+                                @foreach(\App\Models\Responsavel::GRAUS_PARENTESCO as $grau)
                                 <option value="{{ $grau }}">{{ $grau }}</option>
                                 @endforeach
                             </select>

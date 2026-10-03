@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CadastroController extends Controller
 {
@@ -81,7 +82,7 @@ class CadastroController extends Controller
             'email_responsavel'      => 'required|email|max:150',
             'telefone_responsavel'   => ['nullable', 'string', 'max:15', 'regex:' . $foneRegex],
             'whatsapp_responsavel'   => ['required', 'string', 'max:15', 'regex:' . $foneRegex],
-            'grau_parentesco'        => 'required|string|max:50',
+            'grau_parentesco'        => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
             // Endereço responsável
             'cep_resp_endereco'      => ['required', 'string', 'max:10', 'regex:' . $cepRegex],
             'rua_resp_endereco'      => 'required|string|max:100',

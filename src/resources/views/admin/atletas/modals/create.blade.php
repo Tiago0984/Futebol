@@ -161,7 +161,7 @@
                             <select name="grau_parentesco_responsavel"
                                 class="form-select @error('grau_parentesco_responsavel') is-invalid @enderror" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Pai', 'Mãe', 'Avô', 'Avó', 'Tio', 'Tia', 'Responsável Legal', 'Outro'] as $grau)
+                                @foreach(\App\Models\Responsavel::GRAUS_PARENTESCO as $grau)
                                 <option value="{{ $grau }}" {{ old('grau_parentesco_responsavel') == $grau ? 'selected' : '' }}>{{ $grau }}</option>
                                 @endforeach
                             </select>

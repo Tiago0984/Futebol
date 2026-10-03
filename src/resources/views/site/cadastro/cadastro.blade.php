@@ -232,12 +232,9 @@
                             <label class="mat-label">Grau de Parentesco *</label>
                             <select name="grau_parentesco" required class="mat-input">
                                 <option value="">Selecione</option>
-                                <option value="Pai"        {{ old('grau_parentesco')=='Pai'?'selected':'' }}>Pai</option>
-                                <option value="Mãe"        {{ old('grau_parentesco')=='Mãe'?'selected':'' }}>Mãe</option>
-                                <option value="Avô"        {{ old('grau_parentesco')=='Avô'?'selected':'' }}>Avô</option>
-                                <option value="Avó"        {{ old('grau_parentesco')=='Avó'?'selected':'' }}>Avó</option>
-                                <option value="Tutor Legal"{{ old('grau_parentesco')=='Tutor Legal'?'selected':'' }}>Tutor Legal</option>
-                                <option value="Outro"      {{ old('grau_parentesco')=='Outro'?'selected':'' }}>Outro</option>
+                                @foreach(\App\Models\Responsavel::GRAUS_PARENTESCO as $grau)
+                                <option value="{{ $grau }}" @selected(old('grau_parentesco') === $grau)>{{ $grau }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
