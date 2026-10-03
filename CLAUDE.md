@@ -131,6 +131,18 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `776ca56` docs: adiciona CLAUDE.md
 - `bc63372` feat: renomeia id de usuário e adiciona cargo e nível (Fase 2)
 - `5252c45` feat: checkbox "Lembrar-me" no login do admin (Fase 2)
+- `7c58df3` docs: registra Fase 2 concluída
+- `89ed009`, `10431af` docs: respostas do professor (categorias, feminino, categoria acima)
+- `bd3f7dd` refactor: remove tela morta de Inscrições (Fase 3)
+- `3c78803` feat: descontinua `tbl_inscricao` (Fase 3)
+- `b81235b` chore: deixa de criar a tabela `users` na migration 0001 (Fase 3)
+- `fc6b3ec` feat: cria as 10 categorias oficiais, Sub-9 a Sub-17, M e F (Fase 3)
+- `6dd95f9` feat: remove a categoria Sub-12 de teste (Fase 3)
+- `50ff8ea` feat: sugere e valida a categoria do atleta pela regra do ano (Fase 3)
+- `d00d41d` docs: débito da camisa repetida
+- `5f81ea0` feat: e-mail do atleta e número de matrícula no cadastro pelo admin (Fase 3)
+- `c2e982b` feat: preenche número de matrícula de aprovados sem número (Fase 3)
+- `d5da33b` feat: e-mail do responsável nos modais de atleta do admin (Fase 3)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -142,6 +154,9 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - O `RefreshDatabase` roda `migrate:fresh`. Testes que usam o banco usam o trait **`Tests\RefreshBancoDeTestes`** (no lugar do `RefreshDatabase`), que aborta se a conexão não for `db_futebol_test`.
 - **As migrations montam o banco do zero** (conferido: 42 migrations, 31 tabelas, todas `general_ci`, 21 FKs, igual ao `db_futebol` exceto a tabela `users`). Isso vale para o primeiro deploy.
 - `UserFactory` usa as colunas de `tbl_usuarios`, com estados `->admin()`, `->editor()` e `->leitura()` (padrão: `LEITURA`). Testes do admin usam `->admin()`.
+- Trait **`Tests\CriaDadosDeAtleta`**: cria atleta, categoria do atleta e os formulários completos de cadastro/edição do admin.
+- Migrations de dados (limpeza da Sub-12, números de matrícula) são testadas rodando o `up()` sobre dados simulados, porque num banco novo elas não fazem nada.
+- O `--pretend` não executa `SELECT`: para migrations de dados, ensaiar carregando o backup no `db_futebol_test` (conferindo a conexão antes) e rodando o `migrate` lá.
 
 ### Fase 2 concluída — usuários (`bc63372`, `5252c45`)
 - Migration aplicada no `db_futebol` (batch 9; backup em `backup/db_futebol_antes_fase2_20261003_091003.sql`). 28 testes passando; roteiro no navegador validado (login, lembrar-me, logout, nome no header e na sidebar).
@@ -150,8 +165,12 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `cargo_usuario` VARCHAR(30) nullable; valores em `User::CARGOS`, validar com `Rule::in`.
 - Checkbox "Lembrar-me" no login do admin; `AdminLoginTest` cobre login, erro, visitante, logout, lembrar-me, nome no painel e schema.
 
+### Fase em andamento: 3 — categoria e grade
+- **Feito:** `tbl_inscricao` descontinuada; `users` fora da 0001; 10 categorias oficiais com índice único (nome, sexo) e Sub-12 removida; categoria do atleta pela regra do ano (`Categoria::sugeridaPara`, `erroParaAtleta`; `Atleta::trocarCategoria` encerra a linha e abre outra); aprovação grava categoria e número; cadastro pelo admin gera número (`Atleta::atribuirNumeroMatricula`, com `lockForUpdate` e nova tentativa); idade de 9 a 17 anos pelo ano no site e no admin (`Atleta::limitesNascimento`); pendente/rejeitado só mudam de status por Matrículas; e-mails do atleta (único) e do responsável (não único) no admin.
+- Migrations aplicadas no `db_futebol`: batches 10 a 12 (backups `db_futebol_antes_fase3_*` em `backup/`).
+- **Falta:** grau de parentesco (select abre vazio na edição) e Etapa 4, `tbl_grade_treino.id_categoria`.
+
 ### Próximas fases (ordem recomendada)
-3. Categoria e grade: descontinuar `tbl_inscricao`; `tbl_grade_treino.id_categoria`; resolver categorias da grade que não existem.
 4. Evento base: `id_categoria`, `id_usuario` (BIGINT UNSIGNED), status ATIVO/CANCELADO/INATIVO, status derivados, histórico.
 5. Inscrição e conflito: `tbl_evento_atleta` (+ `id_time`), inscrição por categoria ou individual, alerta de conflito.
 6. Jogos ↔ evento: `tbl_jogos.id_evento`, amistoso, migrar jogos, adaptar a home do site.
