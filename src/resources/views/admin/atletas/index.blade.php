@@ -235,6 +235,7 @@
                                             data-grau-responsavel="{{ $grauParentesco ?? '' }}"
                                             data-whatsapp-responsavel="{{ $responsavel->whatsapp_responsavel ?? '' }}"
                                             data-cpf-responsavel="{{ $responsavel->cpf_responsavel ?? '' }}"
+                                            data-email-responsavel="{{ $responsavel->email_responsavel ?? '' }}"
                                             data-cep="{{ $atleta->endereco->cep_endereco ?? '' }}"
                                             data-rua="{{ $atleta->endereco->rua_endereco ?? '' }}"
                                             data-numero-endereco="{{ $atleta->endereco->numero_endereco ?? '' }}"
@@ -335,6 +336,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_grau_responsavel').value     = g('data-grau-responsavel');
             document.getElementById('edit_whatsapp_responsavel').value = g('data-whatsapp-responsavel');
             document.getElementById('edit_cpf_responsavel').value      = g('data-cpf-responsavel');
+            document.getElementById('edit_email_responsavel').value    = g('data-email-responsavel');
 
             document.getElementById('edit_cep_endereco').value         = g('data-cep');
             document.getElementById('edit_rua_endereco').value         = g('data-rua');
@@ -431,6 +433,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('edit_categoria').value        = @js(old('id_categoria', ''));
         document.getElementById('edit_motivo_categoria').value = @js(old('motivo_categoria', ''));
         document.getElementById('edit_email').value            = @js(old('email_atleta', ''));
+        document.getElementById('edit_email_responsavel').value = @js(old('email_responsavel', ''));
         sugestaoEdicao.atualizar(false);
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarAtleta')).show();
     }

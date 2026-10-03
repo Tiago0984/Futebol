@@ -186,6 +186,11 @@
                             <label class="form-label">CPF do Responsável <span class="text-danger">*</span></label>
                             <input type="text" name="cpf_responsavel" id="edit_cpf_responsavel" class="form-control" maxlength="14" required>
                         </div>
+                        <div class="col-md-12">
+                            <label class="form-label">E-mail do Responsável</label>
+                            <input type="email" name="email_responsavel" id="edit_email_responsavel" class="form-control" maxlength="150" placeholder="responsavel@email.com">
+                            <div class="form-text">Opcional. Se o responsável tiver outros atletas, o e-mail muda para todos.</div>
+                        </div>
                     </div>
 
                     <p class="modal-section-label">

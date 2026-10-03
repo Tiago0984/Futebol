@@ -182,6 +182,14 @@
                                 maxlength="14" required value="{{ old('cpf_responsavel') }}">
                             @error('cpf_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
+                        <div class="col-md-12">
+                            <label class="form-label">E-mail do Responsável</label>
+                            <input type="email" name="email_responsavel" maxlength="150"
+                                class="form-control @error('email_responsavel') is-invalid @enderror"
+                                placeholder="responsavel@email.com" value="{{ old('email_responsavel') }}">
+                            @error('email_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <div class="form-text">Opcional.</div>
+                        </div>
                     </div>
 
                     <p class="modal-section-label">

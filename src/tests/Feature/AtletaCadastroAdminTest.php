@@ -91,6 +91,76 @@ class AtletaCadastroAdminTest extends TestCase
         $this->assertDatabaseHas('tbl_atletas', ['id_atleta' => $idAtleta, 'email_atleta' => null]);
     }
 
+    // ---------- e-mail do responsável ----------
+
+    public function test_cria_responsavel_com_e_sem_email(): void
+    {
+        $this->comoAdmin()
+            ->post(route('admin.atletas.store'), $this->dadosCadastro([
+                'nome_responsavel' => 'Resp Com Email', 'email_responsavel' => 'resp@email.com',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->comoAdmin()
+            ->post(route('admin.atletas.store'), $this->dadosCadastro([
+                'cpf_atleta' => '333.333.333-33', 'nome_responsavel' => 'Resp Sem Email', 'email_responsavel' => '',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('tbl_responsavel', ['nome_responsavel' => 'Resp Com Email', 'email_responsavel' => 'resp@email.com']);
+        $this->assertDatabaseHas('tbl_responsavel', ['nome_responsavel' => 'Resp Sem Email', 'email_responsavel' => null]);
+    }
+
+    public function test_cadastro_recusa_email_de_responsavel_invalido(): void
+    {
+        $this->comoAdmin()
+            ->post(route('admin.atletas.store'), $this->dadosCadastro(['email_responsavel' => 'nao-e-email']))
+            ->assertSessionHasErrors('email_responsavel');
+
+        $this->assertDatabaseMissing('tbl_atletas', ['nome_atleta' => 'Atleta Novo']);
+    }
+
+    public function test_responsavel_pode_repetir_email_entre_atletas(): void
+    {
+        // Irmãos com o mesmo responsável (ou responsáveis diferentes com e-mail da família)
+        $this->comoAdmin()
+            ->post(route('admin.atletas.store'), $this->dadosCadastro(['email_responsavel' => 'familia@email.com']))
+            ->assertSessionHasNoErrors();
+
+        $this->comoAdmin()
+            ->post(route('admin.atletas.store'), $this->dadosCadastro([
+                'cpf_atleta' => '333.333.333-33', 'email_responsavel' => 'familia@email.com',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSame(2, DB::table('tbl_responsavel')->where('email_responsavel', 'familia@email.com')->count());
+    }
+
+    public function test_edicao_grava_altera_e_apaga_o_email_do_responsavel(): void
+    {
+        $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+
+        // Atleta sem responsável: a edição cria o responsável com o e-mail
+        $this->comoAdmin()
+            ->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['email_responsavel' => 'antes@email.com']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('antes@email.com', $this->emailDoResponsavel($idAtleta));
+
+        $this->comoAdmin()
+            ->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['email_responsavel' => 'depois@email.com']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('depois@email.com', $this->emailDoResponsavel($idAtleta));
+
+        $this->comoAdmin()
+            ->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['email_responsavel' => '']))
+            ->assertSessionHasNoErrors();
+        $this->assertNull($this->emailDoResponsavel($idAtleta));
+
+        $this->comoAdmin()
+            ->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['email_responsavel' => 'nao-e-email']))
+            ->assertSessionHasErrorsIn('edicao', 'email_responsavel');
+    }
+
     // ---------- número de matrícula ----------
 
     public function test_primeiro_cadastro_pelo_admin_recebe_a001(): void
@@ -194,5 +264,13 @@ class AtletaCadastroAdminTest extends TestCase
             ->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('tbl_atletas', ['id_atleta' => $idPendente, 'numero_matricula_atleta' => 'A020']);
+    }
+
+    private function emailDoResponsavel(int $idAtleta): ?string
+    {
+        return DB::table('tbl_atleta_responsavel as ar')
+            ->join('tbl_responsavel as r', 'r.id_responsavel', '=', 'ar.id_responsavel')
+            ->where('ar.id_atleta', $idAtleta)
+            ->value('r.email_responsavel');
     }
 }

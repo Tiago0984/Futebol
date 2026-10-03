@@ -16,10 +16,12 @@ use Illuminate\Validation\ValidationException;
 
 class AtletasController extends Controller
 {
-    // E-mail do atleta é opcional (CLAUDE.md, seção 8, pergunta 7), mas é o login do app
+    // E-mails opcionais (CLAUDE.md, seção 8, pergunta 7). O do atleta é o login do app, por isso único;
+    // o do responsável não: um responsável pode ter mais de um atleta
     private const MENSAGENS_EMAIL = [
-        'email_atleta.email'  => 'Informe um e-mail válido para o atleta.',
-        'email_atleta.unique' => 'Este e-mail já está cadastrado para outro atleta.',
+        'email_atleta.email'      => 'Informe um e-mail válido para o atleta.',
+        'email_atleta.unique'     => 'Este e-mail já está cadastrado para outro atleta.',
+        'email_responsavel.email' => 'Informe um e-mail válido para o responsável.',
     ];
 
     public function index()
@@ -61,6 +63,7 @@ class AtletasController extends Controller
             'foto_atleta'                 => 'nullable|image|max:2048',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
+            'email_responsavel'           => 'nullable|email|max:150',
             'whatsapp_responsavel'        => 'required|string|max:20',
             'grau_parentesco_responsavel' => 'required|string|max:50',
             'cep_endereco'                => 'required|string|max:9',
@@ -103,6 +106,7 @@ class AtletasController extends Controller
         $responsavel = Responsavel::create([
             'nome_responsavel'       => $request->nome_responsavel,
             'cpf_responsavel'        => $request->cpf_responsavel,
+            'email_responsavel'      => $request->email_responsavel,
             'rg_responsavel'         => '',
             'telefone_responsavel'   => $request->whatsapp_responsavel,
             'whatsapp_responsavel'   => $request->whatsapp_responsavel,
@@ -185,6 +189,7 @@ class AtletasController extends Controller
             'camisa_atleta_time'          => 'nullable|string|max:10',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
+            'email_responsavel'           => 'nullable|email|max:150',
             'whatsapp_responsavel'        => 'required|string|max:20',
             'grau_parentesco_responsavel' => 'required|string|max:50',
             'cep_endereco'                => 'required|string|max:9',
@@ -255,6 +260,7 @@ class AtletasController extends Controller
                 $responsavel->update([
                     'nome_responsavel'     => $request->nome_responsavel,
                     'cpf_responsavel'      => $request->cpf_responsavel,
+                    'email_responsavel'    => $request->email_responsavel,
                     'whatsapp_responsavel' => $request->whatsapp_responsavel,
                     'telefone_responsavel' => $request->whatsapp_responsavel,
                 ]);
@@ -266,6 +272,7 @@ class AtletasController extends Controller
                 $novoResponsavel = Responsavel::create([
                     'nome_responsavel'       => $request->nome_responsavel,
                     'cpf_responsavel'        => $request->cpf_responsavel,
+                    'email_responsavel'      => $request->email_responsavel,
                     'rg_responsavel'         => '',
                     'telefone_responsavel'   => $request->whatsapp_responsavel,
                     'whatsapp_responsavel'   => $request->whatsapp_responsavel,
