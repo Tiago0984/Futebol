@@ -176,7 +176,12 @@
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
                                 {{ $ev->data_evento_calendario->format('d/m/Y') }}
                             </td>
-                            <td><span class="fw-semibold">{{ $ev->titulo_evento_calendario }}</span></td>
+                            <td>
+                                <span class="fw-semibold">{{ $ev->titulo_evento_calendario }}</span>
+                                <div class="text-muted" style="font-size:0.75rem;">
+                                    {{ $ev->categoria?->rotulo ?? 'Sem categoria' }} · Responsável: {{ $ev->responsavel?->nome_usuario ?? '—' }}
+                                </div>
+                            </td>
                             <td><span class="badge-cat">{{ $ev->tipo_label }}</span></td>
                             <td class="text-muted">{{ $ev->subtipo_evento_calendario ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;">
@@ -204,7 +209,9 @@
                                         data-inicio="{{ $ev->horario_inicio_evento_calendario }}"
                                         data-fim="{{ $ev->horario_fim_evento_calendario }}"
                                         data-local="{{ $ev->local_evento_calendario }}"
-                                        data-descricao="{{ $ev->descricao_evento_calendario }}">
+                                        data-descricao="{{ $ev->descricao_evento_calendario }}"
+                                        data-id-categoria="{{ $ev->id_categoria }}"
+                                        data-responsavel="{{ $ev->responsavel?->nome_usuario ?? '—' }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     {{-- Cancelar <-> reativar (oculto precisa ser mostrado antes) --}}
@@ -396,6 +403,15 @@
                             <input type="text" name="local_evento_calendario" class="form-control"
                                 placeholder="Ex: Campo AACJ">
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Categoria</label>
+                            <select name="id_categoria" class="form-select">
+                                <option value="">Sem categoria (evento individual)</option>
+                                @foreach($categorias as $cat)
+                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-12">
                             <label class="form-label">Descrição</label>
                             <textarea name="descricao_evento_calendario" class="form-control" rows="2"
@@ -458,10 +474,26 @@
                             <input type="time" id="edit_ev_fim" name="horario_fim_evento_calendario"
                                 class="form-control">
                         </div>
-                        <div class="col-12">
+                        <div class="col-md-8">
                             <label class="form-label">Local</label>
                             <input type="text" id="edit_ev_local" name="local_evento_calendario"
                                 class="form-control">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Categoria</label>
+                            <select id="edit_ev_categoria" name="id_categoria" class="form-select">
+                                <option value="">Sem categoria (evento individual)</option>
+                                @foreach($categorias as $cat)
+                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
+                                @endforeach
+                                {{-- Inativas em uso: escondidas; o JS mostra só a do evento aberto, já selecionada --}}
+                                @foreach($categoriasInativasEmUso as $cat)
+                                <option value="{{ $cat->id_categoria }}" class="js-categoria-inativa" hidden disabled>{{ $cat->rotulo }} (inativa)</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-text"><i class="bi bi-person"></i> Responsável (quem criou): <strong id="edit_ev_responsavel">—</strong></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Descrição</label>
@@ -703,6 +735,15 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_ev_descricao').value = this.dataset.descricao || '';
             const sel = document.getElementById('edit_ev_tipo');
             for (let opt of sel.options) opt.selected = opt.value === this.dataset.tipo;
+            // Categoria inativa só aparece (e só pode ser enviada) se for a atual deste evento
+            const selCategoria = document.getElementById('edit_ev_categoria');
+            selCategoria.querySelectorAll('.js-categoria-inativa').forEach(opt => {
+                const atual = opt.value === (this.dataset.idCategoria || '');
+                opt.hidden   = !atual;
+                opt.disabled = !atual;
+            });
+            selCategoria.value = this.dataset.idCategoria || '';
+            document.getElementById('edit_ev_responsavel').textContent = this.dataset.responsavel || '—';
         });
     });
 

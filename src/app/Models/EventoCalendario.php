@@ -35,11 +35,14 @@ class EventoCalendario extends Model
         'AVALIACAO'        => 'AVALIAÇÃO',
     ];
 
+    // id_usuario fica fora de propósito: o responsável é gravado só na criação (criarPor) e nenhum
+    // update() com os dados do formulário pode trocá-lo
     protected $fillable = [
         'titulo_evento_calendario',
         'descricao_evento_calendario',
         'tipo_evento_calendario',
         'subtipo_evento_calendario',
+        'id_categoria',
         'data_evento_calendario',
         'horario_inicio_evento_calendario',
         'horario_fim_evento_calendario',
@@ -51,6 +54,28 @@ class EventoCalendario extends Model
     protected $casts = [
         'data_evento_calendario' => 'date',
     ];
+
+    // Cria o evento já com o responsável (quem criou), que depois nunca muda
+    public static function criarPor(?int $idUsuario, array $dados): self
+    {
+        $evento = new self($dados);
+        $evento->id_usuario = $idUsuario;
+        $evento->save();
+
+        return $evento;
+    }
+
+    // Categoria do evento; null em evento individual (exame, avaliação de um atleta)
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
+    }
+
+    // Usuário do admin que criou o evento; null nos eventos anteriores à Fase 4
+    public function responsavel()
+    {
+        return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
+    }
 
     public function getTipoClassAttribute(): string
     {

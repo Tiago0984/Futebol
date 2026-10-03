@@ -13,35 +13,26 @@ class CalendarioController extends Controller
 {
     public function index()
     {
-        $eventos = EventoCalendario::orderBy('data_evento_calendario', 'desc')->get();
+        $eventos = EventoCalendario::with(['categoria', 'responsavel'])->orderBy('data_evento_calendario', 'desc')->get();
         $grades  = GradeTreino::with('categoria')->ordenada()->get();
         $categorias = Categoria::ativas()->get();
 
-        return view('admin.calendario.index', compact('eventos', 'grades', 'categorias'));
+        // Categorias inativadas que algum evento ainda usa: aparecem no select da edição
+        // como "(inativa)", para editar só o título não tirar a categoria do evento
+        $categoriasInativasEmUso = Categoria::where('status_categoria', '<>', 'ATIVO')
+            ->whereIn('id_categoria', EventoCalendario::whereNotNull('id_categoria')->select('id_categoria'))
+            ->get();
+
+        return view('admin.calendario.index', compact('eventos', 'grades', 'categorias', 'categoriasInativasEmUso'));
     }
 
     // ── Eventos ─────────────────────────────────────────────────────────────
 
     public function storeEvento(Request $request)
     {
-        $request->validate([
-            'titulo_evento_calendario'          => 'required|string|max:255',
-            'tipo_evento_calendario'            => ['required', Rule::in(array_keys(EventoCalendario::TIPOS))],
-            'data_evento_calendario'            => 'required|date',
-            'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i,H:i:s',
-            'horario_fim_evento_calendario'     => 'nullable|date_format:H:i,H:i:s',
-            'local_evento_calendario'           => 'nullable|string|max:255',
-            'subtipo_evento_calendario'         => 'nullable|string|max:50',
-            'descricao_evento_calendario'       => 'nullable|string',
-        ]);
-
-        EventoCalendario::create([
-            ...$request->only([
-                'titulo_evento_calendario', 'tipo_evento_calendario',
-                'data_evento_calendario', 'horario_inicio_evento_calendario',
-                'horario_fim_evento_calendario', 'local_evento_calendario',
-                'subtipo_evento_calendario', 'descricao_evento_calendario',
-            ]),
+        // Responsável = admin logado que criou o evento (gravado só aqui)
+        EventoCalendario::criarPor(auth('admin')->id(), [
+            ...$this->dadosEvento($request),
             'status_evento_calendario' => 'ATIVO',
         ]);
 
@@ -52,26 +43,41 @@ class CalendarioController extends Controller
     {
         $evento = EventoCalendario::findOrFail($id);
 
+        // Nem o status (só pelas ações de cancelar e ocultar) nem o responsável mudam pela edição
+        $evento->update($this->dadosEvento($request, $evento));
+
+        return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento atualizado.');
+    }
+
+    /**
+     * Valida e devolve os campos editáveis do evento.
+     * Categoria: só ativa; na edição, a categoria atual é aceita mesmo que tenha sido inativada depois.
+     */
+    private function dadosEvento(Request $request, ?EventoCalendario $evento = null): array
+    {
+        $idAtual = $evento?->id_categoria;
+
         $request->validate([
             'titulo_evento_calendario'          => 'required|string|max:255',
             'tipo_evento_calendario'            => ['required', Rule::in(array_keys(EventoCalendario::TIPOS))],
+            'id_categoria'                      => ['nullable', 'integer', Rule::exists('tbl_categoria', 'id_categoria')
+                ->where(fn ($q) => $q->where('status_categoria', 'ATIVO')->orWhere('id_categoria', $idAtual))],
             'data_evento_calendario'            => 'required|date',
             'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i,H:i:s',
             'horario_fim_evento_calendario'     => 'nullable|date_format:H:i,H:i:s',
             'local_evento_calendario'           => 'nullable|string|max:255',
-            'subtipo_evento_calendario'         => 'nullable|string|max:50',
+            'subtipo_evento_calendario'         => 'nullable|string|max:60',
             'descricao_evento_calendario'       => 'nullable|string',
+        ], [
+            'id_categoria.exists' => 'Escolha uma categoria ativa, ou deixe sem categoria para evento individual.',
         ]);
 
-        // O status não muda pela edição: só pelas ações de cancelar e ocultar
-        $evento->update($request->only([
-            'titulo_evento_calendario', 'tipo_evento_calendario',
+        return $request->only([
+            'titulo_evento_calendario', 'tipo_evento_calendario', 'id_categoria',
             'data_evento_calendario', 'horario_inicio_evento_calendario',
             'horario_fim_evento_calendario', 'local_evento_calendario',
             'subtipo_evento_calendario', 'descricao_evento_calendario',
-        ]));
-
-        return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento atualizado.');
+        ]);
     }
 
     // Cancelar <-> reativar. Cancelado continua visível (com o selo); oculto precisa ser mostrado antes.
