@@ -24,6 +24,13 @@
                 </div>
             @endif
 
+            @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    @foreach ($errors->all() as $error)<div>{{ $error }}</div>@endforeach
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             {{-- Cabeçalho do atleta --}}
             <div class="card shadow-sm mb-4">
                 <div class="card-body d-flex align-items-center gap-4">
@@ -59,9 +66,29 @@
                     </div>
                     <div class="ms-auto d-flex flex-column align-items-end gap-2">
                         <div class="d-flex gap-2">
+                            @php $idadeNoAno = \App\Models\Categoria::idadeNoAno($atleta->data_nasc_atleta); @endphp
                             <form action="{{ route('admin.matriculas.aprovar', $atleta->id_atleta) }}" method="POST"
-                                onsubmit="return confirm('Aprovar matrícula de {{ $atleta->nome_atleta }}?')">
+                                class="d-flex gap-2 align-items-start"
+                                onsubmit="return confirm(@js("Aprovar matrícula de {$atleta->nome_atleta}?"))">
                                 @csrf @method('PATCH')
+                                <div>
+                                    <select name="id_categoria" id="aprovarCategoria" class="form-select" required
+                                        title="Categoria do atleta ({{ $idadeNoAno }} anos no ano)">
+                                        <option value="">— Categoria —</option>
+                                        @foreach ($categorias as $cat)
+                                        @php $posicao = $cat->posicaoPara($idadeNoAno); @endphp
+                                        @continue($posicao === \App\Models\Categoria::ABAIXO)
+                                        <option value="{{ $cat->id_categoria }}"
+                                            data-acima="{{ $posicao === \App\Models\Categoria::ACIMA ? 1 : 0 }}"
+                                            @selected(old('id_categoria', $sugerida?->id_categoria) == $cat->id_categoria)>
+                                            {{ $cat->rotulo }}{{ $sugerida?->id_categoria === $cat->id_categoria ? ' (sugerida)' : '' }}{{ $posicao === \App\Models\Categoria::ACIMA ? ' (acima da idade)' : '' }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                    <input type="text" name="motivo_categoria" id="aprovarMotivo" maxlength="500"
+                                        class="form-control mt-2 d-none" placeholder="Motivo (categoria acima da idade)"
+                                        value="{{ old('motivo_categoria') }}">
+                                </div>
                                 <button type="submit" class="btn btn-success px-4"
                                     @if ($autorizacaoPendente) disabled title="Aguardando assinatura da autorização pelo responsável" @endif>
                                     <i class="bi bi-check-lg"></i> Aprovar
@@ -244,4 +271,22 @@
 
         </div>
     </main>
+
+    <script>
+        // Categoria acima da idade: mostra o campo de motivo e torna obrigatório
+        (function () {
+            const select = document.getElementById('aprovarCategoria');
+            const motivo = document.getElementById('aprovarMotivo');
+            if (!select || !motivo) return;
+
+            function atualizar() {
+                const acima = select.selectedOptions[0]?.dataset.acima === '1';
+                motivo.classList.toggle('d-none', !acima);
+                motivo.required = acima;
+            }
+
+            select.addEventListener('change', atualizar);
+            atualizar();
+        })();
+    </script>
 @endsection

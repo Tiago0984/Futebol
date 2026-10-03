@@ -137,16 +137,26 @@
                                         Ver
                                     </a>
 
+                                    @if($sugerida = $sugeridas[$atleta->id_atleta] ?? null)
+                                    {{-- Aprovação rápida na categoria sugerida; outra categoria, pela tela de detalhes --}}
                                     <form action="{{ route('admin.matriculas.aprovar', $atleta->id_atleta) }}"
                                           method="POST" style="display:inline"
-                                          onsubmit="return confirm('Aprovar matrícula de {{ $atleta->nome_atleta }}?')">
+                                          onsubmit="return confirm(@js("Aprovar matrícula de {$atleta->nome_atleta} na {$sugerida->rotulo}?"))">
                                         @csrf @method('PATCH')
+                                        <input type="hidden" name="id_categoria" value="{{ $sugerida->id_categoria }}">
                                         <button type="submit" class="btn-tbl-action approve"
-                                                {{ $autPendente ? 'disabled title="Aguardando assinatura"' : 'title="Aprovar"' }}>
+                                                {{ $autPendente ? 'disabled title="Aguardando assinatura"' : 'title="Aprovar na ' . $sugerida->rotulo . '"' }}>
                                             <i class="bi bi-check-lg"></i>
                                             Aprovar
                                         </button>
                                     </form>
+                                    @else
+                                    <a href="{{ route('admin.matriculas.show', $atleta->id_atleta) }}"
+                                       class="btn-tbl-action approve" title="Sem categoria sugerida: escolha nos detalhes">
+                                        <i class="bi bi-check-lg"></i>
+                                        Aprovar
+                                    </a>
+                                    @endif
 
                                     <form action="{{ route('admin.matriculas.rejeitar', $atleta->id_atleta) }}"
                                           method="POST" style="display:inline"

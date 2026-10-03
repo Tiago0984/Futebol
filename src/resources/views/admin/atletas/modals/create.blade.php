@@ -27,7 +27,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Data de Nascimento <span class="text-danger">*</span></label>
-                            <input type="date" name="data_nasc_atleta"
+                            <input type="date" name="data_nasc_atleta" id="cad_data_nasc"
                                 class="form-control @error('data_nasc_atleta') is-invalid @enderror" required
                                 value="{{ old('data_nasc_atleta') }}">
                             @error('data_nasc_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -53,14 +53,21 @@
 
                         <div class="col-md-4">
                             <label class="form-label">Categoria</label>
-                            <select name="id_categoria" class="form-select">
+                            <select name="id_categoria" id="cad_categoria" class="form-select @error('id_categoria') is-invalid @enderror">
                                 <option value="">— Selecionar —</option>
                                 @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}" {{ old('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
-                                    {{ $cat->nome_categoria }}
+                                <option value="{{ $cat->id_categoria }}"
+                                    data-min="{{ $cat->idade_min_categoria }}" data-max="{{ $cat->idade_max_categoria }}" data-sexo="{{ $cat->sexo_categoria }}"
+                                    {{ old('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
+                                    {{ $cat->rotulo }}
                                 </option>
                                 @endforeach
                             </select>
+                            <div class="form-text" id="cad_dica_categoria"></div>
+                            @error('id_categoria')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <input type="text" name="motivo_categoria" id="cad_motivo_categoria" maxlength="500"
+                                class="form-control mt-2 {{ old('motivo_categoria') ? '' : 'd-none' }}"
+                                placeholder="Motivo (categoria acima da idade)" value="{{ old('motivo_categoria') }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Posição</label>
@@ -73,7 +80,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Sexo <span class="text-danger">*</span></label>
-                            <select name="sexo_atleta" class="form-select" required>
+                            <select name="sexo_atleta" id="cad_sexo" class="form-select" required>
                                 <option value="">— Selecionar —</option>
                                 <option value="M" {{ old('sexo_atleta') == 'M' ? 'selected' : '' }}>Masculino</option>
                                 <option value="F" {{ old('sexo_atleta') == 'F' ? 'selected' : '' }}>Feminino</option>

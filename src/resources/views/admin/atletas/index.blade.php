@@ -36,11 +36,12 @@
         </div>
         @endif
 
-        @if ($errors->any())
+        @if ($errors->any() || $errors->edicao->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Ops! Verifique os campos do formulário:</strong>
             <ul class="mb-0 mt-1">
                 @foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+                @foreach ($errors->edicao->all() as $error)<li>{{ $error }}</li>@endforeach
             </ul>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
         </div>
@@ -67,7 +68,7 @@
                         <select id="filtroCategoria" class="form-select form-select-sm">
                             <option value="">Todas</option>
                             @foreach($categorias as $cat)
-                            <option value="{{ strtoupper($cat->nome_categoria) }}">{{ strtoupper($cat->nome_categoria) }}</option>
+                            <option value="{{ strtoupper($cat->rotulo) }}">{{ $cat->rotulo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -126,8 +127,8 @@
                             $paleta = ['#4361ee', '#3a0ca3', '#7209b7', '#f72585', '#4cc9f0', '#2ec4b6', '#e76f51', '#457b9d'];
                             $corAvatar = $paleta[abs(crc32($atleta->nome_atleta)) % count($paleta)];
                             $ativo = strtolower($atleta->status_atleta ?? '') === 'ativo';
-                            $categoria = $atleta->categorias->first();
-                            $nomeCategoria = $categoria->nome_categoria ?? null;
+                            $categoria = $atleta->categoriasAtivas->first();
+                            $nomeCategoria = $categoria?->rotulo;
                             $idCategoria = $categoria->id_categoria ?? null;
                             $responsavel = $atleta->responsaveis->first();
                             $nomeResponsavel = $responsavel->nome_responsavel ?? null;
@@ -198,11 +199,10 @@
                                 @endif
                             </td>
                             <td>
-                                @if($ativo)
-                                    <span class="badge-status ativo">Ativo</span>
-                                @else
-                                    <span class="badge-status inativo">Inativo</span>
-                                @endif
+                                @php $statusAtleta = strtoupper($atleta->status_atleta ?? ''); @endphp
+                                <span class="badge-status {{ strtolower($statusAtleta) }}">
+                                    {{ ['ATIVO' => 'Ativo', 'INATIVO' => 'Inativo', 'PENDENTE' => 'Pendente', 'REJEITADO' => 'Rejeitado'][$statusAtleta] ?? $statusAtleta }}
+                                </span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
@@ -229,6 +229,7 @@
                                             data-sala="{{ $atleta->sala_atleta }}"
                                             data-descricao="{{ $atleta->descricao_atleta }}"
                                             data-categoria="{{ $idCategoria }}"
+                                            data-motivo-categoria="{{ $categoria?->pivot->observacao_categoria_atleta }}"
                                             data-nome-responsavel="{{ $responsavel->nome_responsavel ?? '' }}"
                                             data-grau-responsavel="{{ $grauParentesco ?? '' }}"
                                             data-whatsapp-responsavel="{{ $responsavel->whatsapp_responsavel ?? '' }}"
@@ -243,6 +244,8 @@
                                         <i class="bi bi-pencil"></i>
                                     </button>
 
+                                    {{-- Ativar/inativar só para quem já foi aprovado; pendente e rejeitado vão por Matrículas --}}
+                                    @if($atleta->foiAprovado())
                                     <form action="{{ route('admin.atletas.toggleStatus', $atleta->id_atleta) }}"
                                           method="POST"
                                           onsubmit="return confirm('Deseja realmente alterar o status deste atleta?');"
@@ -259,6 +262,7 @@
                                             </button>
                                         @endif
                                     </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -308,7 +312,21 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_sexo').value      = g('data-sexo');
             document.getElementById('edit_periodo').value   = g('data-periodo');
             document.getElementById('edit_categoria').value = g('data-categoria');
-            document.getElementById('edit_status').value    = g('data-status');
+            document.getElementById('edit_id_atleta').value = g('data-id');
+            document.getElementById('edit_motivo_categoria').value = '';
+
+            // Categoria atual e motivo gravado: o motivo só é exigido se a categoria MUDAR para uma acima
+            document.getElementById('edit_categoria').dataset.atual       = g('data-categoria');
+            document.getElementById('edit_categoria').dataset.motivoAtual = g('data-motivo-categoria');
+
+            // Pendente/rejeitado: status só muda em Matrículas (select desabilitado não é enviado)
+            const statusEl   = document.getElementById('edit_status');
+            const statusAviso = document.getElementById('edit_status_aviso');
+            const aprovado   = ['ATIVO', 'INATIVO'].includes(g('data-status').toUpperCase());
+            statusEl.disabled = !aprovado;
+            statusEl.value    = aprovado ? g('data-status').toUpperCase() : '';
+            statusAviso.classList.toggle('d-none', aprovado);
+            statusAviso.textContent = aprovado ? '' : `${g('data-status')}: o status muda pela tela de Matrículas.`;
             document.getElementById('edit_posicao').value   = g('data-posicao-atleta');
 
             document.getElementById('edit_nome_responsavel').value     = g('data-nome-responsavel');
@@ -328,8 +346,92 @@ document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.time-checkbox').forEach(cb => {
                 cb.checked = atletaTimes.includes(parseInt(cb.value));
             });
+
+            sugestaoEdicao.atualizar(false); // mantém a categoria atual; só mostra a dica
         });
     });
+
+    // --- Sugestão de categoria (regra do ano: idade = ano atual − ano de nascimento) ---
+    // Opções de outro sexo ou abaixo da idade ficam desabilitadas (abaixo é bloqueado);
+    // acima da idade é permitido, mas só exige motivo se a categoria MUDAR (igual ao servidor).
+    // A categoria atual do atleta (select.dataset.atual, na edição) nunca é desabilitada nem limpa:
+    // na virada do ano ela pode ficar "abaixo", e limpar o select encerraria a categoria ao salvar.
+    const IDADE_MIN = @js(\App\Models\Atleta::IDADE_MINIMA);
+    const IDADE_MAX = @js(\App\Models\Atleta::IDADE_MAXIMA);
+
+    function ligarSugestaoCategoria(ids) {
+        const nasc   = document.getElementById(ids.nasc);
+        const sexo   = document.getElementById(ids.sexo);
+        const select = document.getElementById(ids.categoria);
+        const motivo = document.getElementById(ids.motivo);
+        const dica   = document.getElementById(ids.dica);
+
+        function atualizar(selecionarSugerida) {
+            const ano       = nasc.value ? parseInt(nasc.value.slice(0, 4), 10) : null;
+            const idade     = ano ? new Date().getFullYear() - ano : null;
+            const foraFaixa = idade !== null && (idade < IDADE_MIN || idade > IDADE_MAX);
+            const atual     = select.dataset.atual || '';
+            let sugerida = null;
+
+            Array.from(select.options).forEach(opt => {
+                if (!opt.value) return;
+                const min = parseInt(opt.dataset.min, 10), max = parseInt(opt.dataset.max, 10);
+                const outroSexo = sexo.value && opt.dataset.sexo !== sexo.value;
+                const abaixo    = idade !== null && idade > max;
+                opt.disabled = opt.value !== atual && (outroSexo || abaixo || foraFaixa);
+                if (!outroSexo && !foraFaixa && idade !== null && idade >= min && idade <= max) sugerida = opt;
+            });
+
+            // Mudou data ou sexo: vai para a sugerida; sem sugerida, volta para "— Selecionar —"
+            if (selecionarSugerida) select.value = sugerida ? sugerida.value : '';
+            if (select.selectedOptions[0]?.disabled) select.value = '';
+
+            const escolhida = select.selectedOptions[0];
+            const trocou    = (escolhida?.value || '') !== atual;
+            const acima     = !!(escolhida?.value && idade !== null && idade < parseInt(escolhida.dataset.min, 10));
+            const pedeMotivo = acima && trocou;
+            motivo.classList.toggle('d-none', !pedeMotivo);
+            motivo.required = pedeMotivo;
+
+            if (idade === null || !sexo.value) {
+                dica.textContent = '';
+            } else if (foraFaixa) {
+                dica.textContent = `${idade} anos no ano: fora da faixa de ${IDADE_MIN} a ${IDADE_MAX} anos.`;
+            } else {
+                dica.textContent = `${idade} anos no ano. Sugerida: ${sugerida ? sugerida.textContent.trim() : 'nenhuma'}`
+                    + (pedeMotivo ? ' · Acima da idade: informe o motivo.' : '')
+                    + (!trocou && select.dataset.motivoAtual ? ` · Motivo atual: ${select.dataset.motivoAtual}` : '');
+            }
+        }
+
+        // Mudou data ou sexo: sugere de novo. Mudou só a categoria: respeita a escolha.
+        [nasc, sexo].forEach(el => el.addEventListener('change', () => atualizar(true)));
+        select.addEventListener('change', () => atualizar(false));
+
+        return { atualizar };
+    }
+
+    const sugestaoCadastro = ligarSugestaoCategoria({
+        nasc: 'cad_data_nasc', sexo: 'cad_sexo', categoria: 'cad_categoria',
+        motivo: 'cad_motivo_categoria', dica: 'cad_dica_categoria',
+    });
+    const sugestaoEdicao = ligarSugestaoCategoria({
+        nasc: 'edit_data_nasc', sexo: 'edit_sexo', categoria: 'edit_categoria',
+        motivo: 'edit_motivo_categoria', dica: 'edit_dica_categoria',
+    });
+    sugestaoCadastro.atualizar(!@js(old('id_categoria')));
+
+    // Erro na edição: reabre o modal do mesmo atleta e devolve o que foi digitado na categoria
+    @if ($errors->edicao->any() && old('_editar_id'))
+    const btnReabrir = document.querySelector(`.btn-editar[data-id="{{ (int) old('_editar_id') }}"]`);
+    if (btnReabrir) {
+        btnReabrir.click();
+        document.getElementById('edit_categoria').value        = @js(old('id_categoria', ''));
+        document.getElementById('edit_motivo_categoria').value = @js(old('motivo_categoria', ''));
+        sugestaoEdicao.atualizar(false);
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarAtleta')).show();
+    }
+    @endif
 
     // --- Filtros ---
     function aplicarFiltros() {

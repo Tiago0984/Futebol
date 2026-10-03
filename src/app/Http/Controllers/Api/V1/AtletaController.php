@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Atleta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -14,7 +15,9 @@ class AtletaController extends Controller
     {
         $atleta = $request->user()->load([
             'endereco',
-            'categorias:tbl_categoria.id_categoria,nome_categoria',
+            // Só a categoria atual (o histórico tem linhas ENCERRADO); a chave "categorias" do JSON não muda
+            'categorias' => fn ($q) => $q->select('tbl_categoria.id_categoria', 'nome_categoria')
+                ->wherePivot('status_categoria_atleta', Atleta::CATEGORIA_ATIVA),
             'times:tbl_time.id_time,nome_time,logo_time',
         ]);
 

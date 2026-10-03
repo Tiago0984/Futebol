@@ -10,19 +10,20 @@ use App\Models\Categoria;
 use App\Models\Time;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class AtletasController extends Controller
 {
     public function index()
     {
         $atletas = Atleta::with([
-            'categorias',
+            'categoriasAtivas',
             'responsaveis',
             'times',
             'endereco',
         ])->orderBy('nome_atleta')->get();
 
-        $categorias = Categoria::orderBy('nome_categoria')->get();
+        $categorias = Categoria::ativas()->get();
         $times      = Time::where('tipo_time', 'INTERNO')->orderBy('nome_time')->get();
 
         return view('admin.atletas.index', compact('atletas', 'categorias', 'times'));
@@ -30,20 +31,24 @@ class AtletasController extends Controller
 
     public function create()
     {
-        $categorias = Categoria::orderBy('nome_categoria')->get();
+        $categorias = Categoria::ativas()->get();
         return view('admin.atletas.create', compact('categorias'));
     }
 
     public function store(Request $request)
     {
+        $nascimento = Atleta::regrasNascimento();
+
         $request->validate([
             'nome_atleta'                 => 'required|string|max:255',
-            'data_nasc_atleta'            => 'required|date',
+            'data_nasc_atleta'            => $nascimento['regra'],
             'cpf_atleta'                  => 'required|string|max:14|unique:tbl_atletas,cpf_atleta',
             'rg_atleta'                   => 'required|string|max:20',
             'numero_matricula_atleta'     => 'nullable|string|max:20|unique:tbl_atletas,numero_matricula_atleta',
             'escola_atleta'               => 'required|string|max:255',
+            'sexo_atleta'                 => 'required|in:M,F',
             'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
+            'motivo_categoria'            => 'nullable|string|max:500',
             'foto_atleta'                 => 'nullable|image|max:2048',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
@@ -56,7 +61,9 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ]);
+        ], $nascimento['mensagens']);
+
+        $this->validarCategoria($request);
 
         DB::transaction(function () use ($request) {
 
@@ -102,7 +109,7 @@ class AtletasController extends Controller
                 'status_atleta'          => 'ATIVO', // Padronizado para MAIÚSCULO
                 'id_endereco'            => $endereco->id_endereco,
                 'posicao_atleta'         => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
-                'sexo_atleta'            => $request->sexo_atleta ?? 'M',
+                'sexo_atleta'            => $request->sexo_atleta,
                 'peso_atleta'            => $request->peso_atleta ?? 0,
                 'altura_atleta'          => $request->altura_atleta ?? 0,
                 'serie_atleta'           => $request->serie_atleta ?? '',
@@ -116,12 +123,9 @@ class AtletasController extends Controller
                 'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
             ]);
 
-            // 5. Categoria (se selecionada)
+            // 5. Categoria (se selecionada; já validada em validarCategoria)
             if ($request->filled('id_categoria')) {
-                $atleta->categorias()->attach($request->id_categoria, [
-                    'data_inicio_categoria_atleta' => now(),
-                    'status_categoria_atleta'      => 'ATIVO', // Padronizado para MAIÚSCULO
-                ]);
+                $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
             }
         });
 
@@ -131,25 +135,30 @@ class AtletasController extends Controller
 
     public function edit($id)
     {
-        $atleta = Atleta::with(['endereco', 'responsaveis', 'categorias', 'times'])
+        $atleta = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas', 'times'])
             ->findOrFail($id);
 
-        $categorias = Categoria::orderBy('nome_categoria')->get();
+        $categorias = Categoria::ativas()->get();
 
         return view('admin.atletas.edit', compact('atleta', 'categorias'));
     }
 
     public function update(Request $request, $id)
     {
-        $atleta = Atleta::with(['endereco', 'responsaveis', 'categorias', 'times'])->findOrFail($id);
+        $atleta     = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas', 'times'])->findOrFail($id);
+        $nascimento = Atleta::regrasNascimento();
 
-        $request->validate([
+        // Bag "edicao": os erros da edição não podem abrir o modal de cadastro (que usa a bag padrão)
+        $request->validateWithBag('edicao', [
             'nome_atleta'                 => 'required|string|max:255',
-            'data_nasc_atleta'            => 'required|date',
+            'data_nasc_atleta'            => $nascimento['regra'],
             'cpf_atleta'                  => 'required|string|max:14',
             'rg_atleta'                   => 'required|string|max:20',
             'escola_atleta'               => 'required|string|max:255',
-            'status_atleta'               => 'required|in:ATIVO,INATIVO',
+            'sexo_atleta'                 => 'required|in:M,F',
+            'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
+            'motivo_categoria'            => 'nullable|string|max:500',
+            'status_atleta'               => 'nullable|in:ATIVO,INATIVO',
             'camisa_atleta_time'          => 'nullable|string|max:10',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
@@ -162,7 +171,14 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ]);
+        ], $nascimento['mensagens']);
+
+        // Só valida a categoria quando ela muda: editar outro campo de um atleta que já está
+        // numa categoria (por exemplo, acima da idade, com motivo) não pode ser bloqueado
+        $idAtual = $atleta->categoriasAtivas->first()?->id_categoria;
+        if ($request->filled('id_categoria') && (int) $request->id_categoria !== $idAtual) {
+            $this->validarCategoria($request, 'edicao');
+        }
 
         DB::transaction(function () use ($request, $atleta) {
 
@@ -189,7 +205,10 @@ class AtletasController extends Controller
                 'posicao_atleta'          => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
                 'descricao_atleta'        => $request->descricao_atleta,
                 'sala_atleta'             => $request->sala_atleta,
-                'status_atleta'           => strtoupper($request->status_atleta),
+                // PENDENTE e REJEITADO só mudam pela tela de Matrículas: a edição mantém o status atual
+                'status_atleta'           => $atleta->foiAprovado() && $request->filled('status_atleta')
+                                                ? strtoupper($request->status_atleta)
+                                                : $atleta->status_atleta,
                 'foto_atleta'             => $fotoPath,
             ]);
 
@@ -236,15 +255,12 @@ class AtletasController extends Controller
                 ]);
             }
 
-            // 4. Atualiza categoria (sync substitui qualquer categoria anterior)
-            if ($request->filled('id_categoria')) {
-                $atleta->categorias()->sync([$request->id_categoria => [
-                    'data_inicio_categoria_atleta' => $atleta->categorias->first()?->pivot->data_inicio_categoria_atleta ?? now(),
-                    'status_categoria_atleta'      => 'ATIVO',
-                ]]);
-            } else {
-                $atleta->categorias()->detach();
-            }
+            // 4. Categoria: encerra a linha atual e abre uma nova (mesma categoria não muda nada;
+            //    vazio só encerra a atual). Nunca sobrescreve nem apaga o histórico.
+            $atleta->trocarCategoria(
+                $request->filled('id_categoria') ? (int) $request->id_categoria : null,
+                $request->motivo_categoria,
+            );
 
             // 5. Sincroniza times — apenas INTERNOS podem ser associados
             $internosIds     = Time::where('tipo_time', 'INTERNO')->pluck('id_time')->map(fn($v) => (int) $v);
@@ -295,10 +311,30 @@ class AtletasController extends Controller
     {
         $atleta = Atleta::findOrFail($id);
 
-        // Garante a comparação e atribuição estritamente em maiúsculo
+        // Só alterna ATIVO <-> INATIVO. Pendente ou rejeitado ainda não foi aprovado: ativar por aqui
+        // pularia a assinatura da autorização, a categoria e o número de matrícula.
+        if (! $atleta->foiAprovado()) {
+            return back()->with('erro', 'Este atleta ainda não foi aprovado. Use a tela de Matrículas.');
+        }
+
         $novoStatus = strtoupper($atleta->status_atleta) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
         $atleta->update(['status_atleta' => $novoStatus]);
 
         return back()->with('sucesso', "Atleta {$novoStatus} com sucesso.");
+    }
+
+    // Categoria escolhida: mesmo sexo, não abaixo da idade e, se acima, com motivo (Categoria::erroParaAtleta)
+    private function validarCategoria(Request $request, string $bag = 'default'): void
+    {
+        if (! $request->filled('id_categoria')) {
+            return;
+        }
+
+        $erro = Categoria::findOrFail($request->id_categoria)
+            ->erroParaAtleta($request->data_nasc_atleta, $request->sexo_atleta, $request->motivo_categoria);
+
+        if ($erro) {
+            throw ValidationException::withMessages(['id_categoria' => $erro])->errorBag($bag);
+        }
     }
 }

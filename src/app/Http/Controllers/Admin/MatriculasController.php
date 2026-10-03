@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
+use App\Models\Categoria;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class MatriculasController extends Controller
 {
@@ -14,7 +17,12 @@ class MatriculasController extends Controller
             ->orderBy('nome_atleta')
             ->get();
 
-        return view('admin.matriculas.index', compact('matriculas'));
+        // Categoria sugerida de cada matrícula, para o botão "Aprovar" da lista
+        $sugeridas = $matriculas->mapWithKeys(fn ($atleta) => [
+            $atleta->id_atleta => Categoria::sugeridaPara($atleta->data_nasc_atleta, $atleta->sexo_atleta),
+        ]);
+
+        return view('admin.matriculas.index', compact('matriculas', 'sugeridas'));
     }
 
     public function show($id)
@@ -22,19 +30,42 @@ class MatriculasController extends Controller
         $atleta = Atleta::with(['responsaveis.endereco', 'endereco', 'autorizacoes'])
             ->findOrFail($id);
 
-        return view('admin.matriculas.show', compact('atleta'));
+        // Só as categorias do sexo do atleta; a sugerida (regra do ano) já vem selecionada
+        $categorias = Categoria::ativas()->where('sexo_categoria', $atleta->sexo_atleta)->get();
+        $sugerida   = Categoria::sugeridaPara($atleta->data_nasc_atleta, $atleta->sexo_atleta);
+
+        return view('admin.matriculas.show', compact('atleta', 'categorias', 'sugerida'));
     }
 
-    public function aprovar($id)
+    // Aprova a matrícula e grava a categoria (a sugerida, ou outra acima da idade com motivo)
+    public function aprovar(Request $request, $id)
     {
         $atleta = Atleta::findOrFail($id);
 
+        $request->validate([
+            'id_categoria'     => 'required|integer|exists:tbl_categoria,id_categoria',
+            'motivo_categoria' => 'nullable|string|max:500',
+        ], [
+            'id_categoria.required' => 'Escolha a categoria do atleta para aprovar a matrícula.',
+        ]);
+
+        $erro = Categoria::findOrFail($request->id_categoria)
+            ->erroParaAtleta($atleta->data_nasc_atleta, $atleta->sexo_atleta, $request->motivo_categoria);
+
+        if ($erro) {
+            return back()->withErrors(['id_categoria' => $erro])->withInput();
+        }
+
         $matricula = $atleta->numero_matricula_atleta ?: $this->gerarNumeroMatricula();
 
-        $atleta->update([
-            'status_atleta'          => 'ATIVO',
-            'numero_matricula_atleta' => $matricula,
-        ]);
+        DB::transaction(function () use ($atleta, $matricula, $request) {
+            $atleta->update([
+                'status_atleta'           => 'ATIVO',
+                'numero_matricula_atleta' => $matricula,
+            ]);
+
+            $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
+        });
 
         return redirect()->route('admin.matriculas.index')
             ->with('sucesso', "Matrícula de {$atleta->nome_atleta} aprovada. Número: {$matricula}");

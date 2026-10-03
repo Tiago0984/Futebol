@@ -15,6 +15,18 @@ class Atleta extends Authenticatable
     protected $primaryKey = 'id_atleta';
     public $timestamps = false;
 
+    // Valores de tbl_categoria_atleta.status_categoria_atleta
+    public const CATEGORIA_ATIVA     = 'ATIVO';
+    public const CATEGORIA_ENCERRADA = 'ENCERRADO';
+
+    // Status de quem já passou pela aprovação da matrícula; só entre eles o admin alterna.
+    // PENDENTE e REJEITADO só mudam pela tela de Matrículas.
+    public const STATUS_APROVADOS = ['ATIVO', 'INATIVO'];
+
+    // Faixa atendida pela escolinha, contada pelo ano (idade = ano atual − ano de nascimento)
+    public const IDADE_MINIMA = 9;
+    public const IDADE_MAXIMA = 17;
+
     protected $fillable = [
         'nome_atleta',
         'data_nasc_atleta',
@@ -79,6 +91,44 @@ class Atleta extends Authenticatable
             ]);
     }
 
+    public function foiAprovado(): bool
+    {
+        return in_array(strtoupper((string) $this->status_atleta), self::STATUS_APROVADOS, true);
+    }
+
+    /**
+     * Datas de nascimento aceitas no cadastro (site e admin): de 9 a 17 anos no ano,
+     * ou seja, de 1º/jan de (ano − 17) até 31/dez de (ano − 9). Inclui a mensagem de erro.
+     */
+    public static function limitesNascimento(?int $ano = null): array
+    {
+        $ano        ??= (int) now()->format('Y');
+        $anoMaisVelho = $ano - self::IDADE_MAXIMA;
+        $anoMaisNovo  = $ano - self::IDADE_MINIMA;
+
+        return [
+            'min'      => "{$anoMaisVelho}-01-01",
+            'max'      => "{$anoMaisNovo}-12-31",
+            'mensagem' => 'O atleta deve ter de ' . self::IDADE_MINIMA . ' a ' . self::IDADE_MAXIMA
+                . " anos em {$ano} (nascido entre {$anoMaisVelho} e {$anoMaisNovo}).",
+        ];
+    }
+
+    // Regras de validação de data_nasc_atleta, com as mensagens, para os controllers
+    public static function regrasNascimento(): array
+    {
+        $limites = self::limitesNascimento();
+
+        return [
+            'regra'     => "required|date|after_or_equal:{$limites['min']}|before_or_equal:{$limites['max']}",
+            'mensagens' => [
+                'data_nasc_atleta.after_or_equal'  => $limites['mensagem'],
+                'data_nasc_atleta.before_or_equal' => $limites['mensagem'],
+            ],
+        ];
+    }
+
+    // Histórico completo de categorias (linhas ativas e encerradas)
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class, 'tbl_categoria_atleta', 'id_atleta', 'id_categoria')
@@ -89,6 +139,51 @@ class Atleta extends Authenticatable
                 'status_categoria_atleta',
                 'observacao_categoria_atleta',
             ]);
+    }
+
+    // Só a categoria atual (no máximo uma linha ATIVO)
+    public function categoriasAtivas()
+    {
+        return $this->categorias()->wherePivot('status_categoria_atleta', self::CATEGORIA_ATIVA);
+    }
+
+    /**
+     * Troca a categoria do atleta sem apagar histórico: encerra a linha ativa (data_fim + ENCERRADO)
+     * e abre uma nova. Escolher a mesma categoria não faz nada; null só encerra a atual.
+     * A validação (sexo, idade, motivo) fica com quem chama: Categoria::erroParaAtleta().
+     */
+    public function trocarCategoria(?int $idCategoria, ?string $observacao = null): void
+    {
+        $atual = DB::table('tbl_categoria_atleta')
+            ->where('id_atleta', $this->id_atleta)
+            ->where('status_categoria_atleta', self::CATEGORIA_ATIVA)
+            ->value('id_categoria');
+
+        if ($atual !== null && (int) $atual === $idCategoria) {
+            return;
+        }
+
+        DB::transaction(function () use ($idCategoria, $observacao) {
+            DB::table('tbl_categoria_atleta')
+                ->where('id_atleta', $this->id_atleta)
+                ->where('status_categoria_atleta', self::CATEGORIA_ATIVA)
+                ->update([
+                    'data_fim_categoria_atleta' => now(),
+                    'status_categoria_atleta'   => self::CATEGORIA_ENCERRADA,
+                ]);
+
+            if ($idCategoria !== null) {
+                DB::table('tbl_categoria_atleta')->insert([
+                    'id_categoria'                 => $idCategoria,
+                    'id_atleta'                    => $this->id_atleta,
+                    'data_inicio_categoria_atleta' => now(),
+                    'status_categoria_atleta'      => self::CATEGORIA_ATIVA,
+                    'observacao_categoria_atleta'  => $observacao,
+                ]);
+            }
+        });
+
+        $this->unsetRelation('categorias')->unsetRelation('categoriasAtivas');
     }
 
     public function cartoes()

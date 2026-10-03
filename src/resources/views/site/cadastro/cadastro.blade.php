@@ -51,10 +51,11 @@
                     <div class="col-sm-4">
                         <div class="mat-group">
                             <label class="mat-label">Data de Nascimento *</label>
+                            @php $limitesNasc = \App\Models\Atleta::limitesNascimento(); @endphp
                             <input type="date" name="data_nasc_atleta" value="{{ old('data_nasc_atleta') }}" required class="mat-input" id="data-nasc-atleta"
-                                min="{{ now()->subYears(18)->addDay()->format('Y-m-d') }}"
-                                max="{{ now()->subYears(9)->format('Y-m-d') }}">
-                            <p class="mat-hint">Idade permitida: 9 a 17 anos</p>
+                                min="{{ $limitesNasc['min'] }}"
+                                max="{{ $limitesNasc['max'] }}">
+                            <p class="mat-hint">{{ $limitesNasc['mensagem'] }}</p>
                         </div>
                     </div>
                 </div>
@@ -389,12 +390,8 @@ function idadeValida(dataNasc) {
     const nascimento = new Date(dataNasc + 'T00:00:00');
     if (isNaN(nascimento.getTime())) return false;
 
-    const hoje = new Date();
-    let idade = hoje.getFullYear() - nascimento.getFullYear();
-    const aindaNaoFezAniversario =
-        (hoje.getMonth() < nascimento.getMonth()) ||
-        (hoje.getMonth() === nascimento.getMonth() && hoje.getDate() < nascimento.getDate());
-    if (aindaNaoFezAniversario) idade--;
+    // Idade pelo ano, como as categorias: ano atual − ano de nascimento (o dia do aniversário não conta)
+    const idade = new Date().getFullYear() - nascimento.getFullYear();
 
     return idade >= 9 && idade <= 17;
 }
@@ -452,7 +449,7 @@ formCadastro.addEventListener('submit', function (e) {
     const dataNascEl = document.getElementById('data-nasc-atleta');
     if (!idadeValida(dataNascEl.value)) {
         valido = false;
-        marcaErro(dataNascEl, 'A idade do atleta deve estar entre 9 e 17 anos.');
+        marcaErro(dataNascEl, @js(\App\Models\Atleta::limitesNascimento()['mensagem']));
     } else {
         limpaErro(dataNascEl);
     }

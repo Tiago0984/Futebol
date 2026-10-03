@@ -12,6 +12,8 @@
             <form id="formEditarAtleta" method="POST" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
+                {{-- Se a validação falhar, a lista reabre este modal para o mesmo atleta --}}
+                <input type="hidden" name="_editar_id" id="edit_id_atleta">
                 <div class="modal-body px-4" style="max-height:65vh;overflow-y:auto;">
 
                     <p class="modal-section-label mt-2">
@@ -46,9 +48,15 @@
                             <select name="id_categoria" id="edit_categoria" class="form-select">
                                 <option value="">— Selecionar —</option>
                                 @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
+                                <option value="{{ $cat->id_categoria }}"
+                                    data-min="{{ $cat->idade_min_categoria }}" data-max="{{ $cat->idade_max_categoria }}" data-sexo="{{ $cat->sexo_categoria }}">
+                                    {{ $cat->rotulo }}
+                                </option>
                                 @endforeach
                             </select>
+                            <div class="form-text" id="edit_dica_categoria"></div>
+                            <input type="text" name="motivo_categoria" id="edit_motivo_categoria" maxlength="500"
+                                class="form-control mt-2 d-none" placeholder="Motivo (categoria acima da idade)">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Posição</label>
@@ -72,6 +80,7 @@
                                 <option value="ATIVO">Ativo</option>
                                 <option value="INATIVO">Inativo</option>
                             </select>
+                            <div class="form-text d-none" id="edit_status_aviso"></div>
                         </div>
 
                         <div class="col-md-3">

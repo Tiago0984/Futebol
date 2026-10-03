@@ -53,14 +53,13 @@ class CadastroController extends Controller
         $rgRegex  = '/^[0-9Xx.\-\s]{5,15}$/';
         $foneRegex = '/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/';
 
-        // Data mais antiga permitida (idade máxima 17) e mais recente permitida (idade mínima 9)
-        $nascMaisAntiga = now()->subYears(18)->addDay()->format('Y-m-d');
-        $nascMaisRecente = now()->subYears(9)->format('Y-m-d');
+        // Idade pelo ano (9 a 17 anos no ano), mesma regra do cadastro pelo admin
+        $nascimento = Atleta::regrasNascimento();
 
         $request->validate([
             // Atleta
             'nome_atleta'            => 'required|string|max:100',
-            'data_nasc_atleta'       => "required|date|after_or_equal:{$nascMaisAntiga}|before_or_equal:{$nascMaisRecente}",
+            'data_nasc_atleta'       => $nascimento['regra'],
             'cpf_atleta'             => ['required', 'string', 'max:14', 'regex:' . $cpfRegex, 'unique:tbl_atletas,cpf_atleta'],
             'rg_atleta'              => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
             'sexo_atleta'            => 'required|in:M,F',
@@ -99,10 +98,9 @@ class CadastroController extends Controller
             'rg_responsavel.regex' => 'Informe um RG válido para o responsável.',
             'cep_endereco.regex'      => 'Informe um CEP válido.',
             'cep_resp_endereco.regex' => 'Informe um CEP válido.',
-            'data_nasc_atleta.after_or_equal'  => 'A idade do atleta deve estar entre 9 e 17 anos.',
-            'data_nasc_atleta.before_or_equal' => 'A idade do atleta deve estar entre 9 e 17 anos.',
             'telefone_responsavel.regex' => 'Informe um telefone válido com DDD.',
             'whatsapp_responsavel.regex' => 'Informe um WhatsApp válido com DDD.',
+            ...$nascimento['mensagens'],
         ]);
 
         if (!$this->cpfValido($request->cpf_atleta)) {
