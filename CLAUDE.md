@@ -170,6 +170,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
 - **Grade** cita Sub-9, Sub-11, Sub-13 e Sub-17, que não existem em `tbl_categoria` (só Sub-15 casa). O professor confirmou que devem existir, em M e F (seção 8, pergunta 2); criação planejada na Fase 3.
 - **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
+- **Camisa repetida na lista de atletas:** um atleta em dois times mostra "Camisa Nº 15" duas vezes, sem dizer de qual time é cada número.
 - `STATUS_VISIVEIS` do site inclui `ALTERADO` (muda na Fase 4).
 - **Tabela `users` sobrando:** a migration padrão `0001_01_01_000000_create_users_table` cria `users`, que o projeto não usa (o admin usa `tbl_usuarios`). Ela não existe no `db_futebol` (foi apagada à mão), mas é criada no `migrate:fresh` e seria criada no primeiro deploy. Plano: tirar a criação de `users` dessa migration ou criar uma migration que a remova.
 ---
