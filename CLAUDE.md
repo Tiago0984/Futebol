@@ -177,10 +177,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 ## 8. Perguntas em aberto para o professor
 
 1. Níveis de usuário: quais valores e o que cada um pode fazer? **Provisório:** `nivel_usuario` = `ADMIN` / `EDITOR` / `LEITURA` e `User::CARGOS` = Professor, Nutricionista, Fisiologista, Médico, Coordenador. Valores de nível e cargo aguardam o professor.
-2. Sub-9, Sub-11, Sub-13 e Sub-17 existem? **Respondida pelo professor (03/10/2026):** a escolinha atende de 9 a 17 anos e as categorias da grade **devem existir**. **Não criar categorias sem OK** (plano da Fase 3).
+2. ~~Sub-9, Sub-11, Sub-13 e Sub-17 existem?~~ ✅ **RESOLVIDA** (professor, 03/10/2026): a escolinha atende de 9 a 17 anos e as categorias da grade **devem existir**. **Não criar categorias sem OK** (plano da Fase 3).
    - **Faixas:** Sub-9 (9), Sub-11 (10–11), Sub-13 (12–13), Sub-15 (14–15), Sub-17 (16–17).
    - **Idade pelo ANO de nascimento:** idade = ano atual − ano de nascimento (a data exata não importa).
-   - **Há categorias femininas**, com as mesmas faixas (a confirmar se todas existem).
+   - **Masculino e feminino com as mesmas 5 faixas:** total de **10 categorias** (cada faixa em `M` e `F`).
    - **Todos os dados do banco local são de teste**; nada precisa ser preservado (inclui a Sub-12, 10–12, e a Sub-15, 13–15, atuais).
 3. Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada?
 4. A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?
@@ -188,6 +188,9 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 6. Responsável e endereço de atleta excluído: apagar quando não houver outro atleta vinculado, ou anonimizar?
 7. Link de definição de senha: e-mail do atleta ou do responsável?
 8. Assinaturas antigas com valor `assinatura.png` (responsáveis 1, 2 e 3): considerar inválidas?
+9. ~~O feminino treina junto com o masculino da mesma faixa?~~ ✅ **RESOLVIDA** (professor): feminino treina **só com feminino**. A grade usa **uma coluna** `id_categoria` (sem tabela de ligação); horários femininos entram como **linhas novas** da grade.
+10. ~~Atleta pode jogar numa categoria acima da idade?~~ ✅ **RESOLVIDA** (professor): **pode, a critério do técnico** (atleta mais robusto). Escolher categoria **acima** da sugerida gera **aviso** (não bloqueia) e exige um **motivo**, gravado em `observacao_categoria_atleta`.
+11. Atleta numa categoria **abaixo** da idade: hoje **bloqueado** (provisório). Confirmar com o professor se há exceção.
 
 ---
 
