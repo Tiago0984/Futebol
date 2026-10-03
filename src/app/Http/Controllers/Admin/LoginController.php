@@ -39,7 +39,7 @@ class LoginController extends Controller
 
         return back()->withErrors([
             'login' => 'Credenciais incorretas.',
-        ])->onlyInput('login');
+        ])->onlyInput('login', 'remember');
     }
 
     // Logout

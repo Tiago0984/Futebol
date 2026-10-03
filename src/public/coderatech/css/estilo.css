@@ -10201,6 +10201,24 @@ body.lp-body {
 
 .lp-eye-btn:hover { color: rgba(255, 255, 255, 0.6); }
 
+/* Checkbox "Lembrar-me" */
+.lp-remember {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.55);
+    cursor: pointer;
+    user-select: none;
+}
+
+.lp-remember input {
+    width: 16px;
+    height: 16px;
+    accent-color: #e31c1c;
+    cursor: pointer;
+}
+
 /* ==========================================================================
    68.4 BOTÃO ENTRAR E LINK DE RETORNO
    ========================================================================== */

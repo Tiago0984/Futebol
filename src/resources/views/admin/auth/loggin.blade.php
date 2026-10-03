@@ -121,6 +121,11 @@
                 </div>
             </div>
 
+            <label class="lp-remember" for="lp-remember">
+                <input id="lp-remember" type="checkbox" name="remember" value="1" @checked(old('remember'))>
+                Lembrar-me
+            </label>
+
             <button type="submit" class="lp-btn-submit">
                 Entrar no Painel
                 <i class="bi bi-arrow-right lp-btn-arrow"></i>
