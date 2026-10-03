@@ -13,7 +13,10 @@ class CalendarioController extends Controller
 {
     public function index()
     {
-        $eventos = EventoCalendario::with(['categoria', 'responsavel'])->orderBy('data_evento_calendario', 'desc')->get();
+        $eventos = EventoCalendario::with(['categoria', 'responsavel', 'historico.usuario'])
+            ->comAlteracao()
+            ->orderBy('data_evento_calendario', 'desc')
+            ->get();
         $grades  = GradeTreino::with('categoria')->ordenada()->get();
         $categorias = Categoria::ativas()->get();
 
@@ -43,8 +46,9 @@ class CalendarioController extends Controller
     {
         $evento = EventoCalendario::findOrFail($id);
 
-        // Nem o status (só pelas ações de cancelar e ocultar) nem o responsável mudam pela edição
-        $evento->update($this->dadosEvento($request, $evento));
+        // Nem o status (só pelas ações de cancelar e ocultar) nem o responsável mudam pela edição.
+        // O que mudar em data, horário, local, título, tipo ou categoria vai para o histórico.
+        $evento->atualizarComHistorico($this->dadosEvento($request, $evento), auth('admin')->id());
 
         return redirect()->route('admin.calendario.index')->with('sucesso', 'Evento atualizado.');
     }
@@ -90,21 +94,27 @@ class CalendarioController extends Controller
         }
 
         $novo = $evento->estaCancelado() ? 'ATIVO' : 'CANCELADO';
-        $evento->update(['status_evento_calendario' => $novo]);
+        $evento->mudarStatus($novo, auth('admin')->id());
 
         return back()->with('sucesso', $novo === 'CANCELADO' ? 'Evento cancelado.' : 'Evento reativado.');
     }
 
     // Ocultar <-> mostrar. Oculto (INATIVO) some do site e faz o papel da exclusão, sem perder o registro.
-    // Mostrar de novo volta para ATIVO (um evento cancelado e depois ocultado volta ativo).
+    // Mostrar devolve o status de antes de ocultar (pelo histórico): cancelado volta como cancelado.
     public function ocultarEvento($id)
     {
         $evento = EventoCalendario::findOrFail($id);
 
-        $novo = $evento->estaOculto() ? 'ATIVO' : 'INATIVO';
-        $evento->update(['status_evento_calendario' => $novo]);
+        $novo = $evento->estaOculto() ? $evento->statusAntesDeOcultar() : 'INATIVO';
+        $evento->mudarStatus($novo, auth('admin')->id());
 
-        return back()->with('sucesso', $novo === 'INATIVO' ? 'Evento ocultado.' : 'Evento visível de novo.');
+        $mensagem = match ($novo) {
+            'INATIVO'   => 'Evento ocultado.',
+            'CANCELADO' => 'Evento visível de novo (continua cancelado).',
+            default     => 'Evento visível de novo.',
+        };
+
+        return back()->with('sucesso', $mensagem);
     }
 
     // ── Grade de Treinos ────────────────────────────────────────────────────

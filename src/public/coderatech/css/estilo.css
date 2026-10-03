@@ -9574,6 +9574,7 @@ body {
 .badge-status.inativo { background: #fee2e2; color: #b91c1c; }
 .badge-status.pendente { background: #fef9c3; color: #854d0e; }
 .badge-status.rejeitado { background: #e5e7eb; color: #374151; }
+.badge-status.concluido { background: #e0f2fe; color: #075985; }
 
 .badge-cat {
     display: inline-flex;

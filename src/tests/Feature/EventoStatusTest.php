@@ -49,15 +49,36 @@ class EventoStatusTest extends TestCase
         $this->assertSame('INATIVO', $this->statusDe($id));
     }
 
-    public function test_ocultar_e_mostrar(): void
+    public function test_ocultar_e_mostrar_restaura_o_status_anterior(): void
     {
         $id = $this->criarEvento('CANCELADO');
 
         $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))->assertSessionHas('sucesso', 'Evento ocultado.');
         $this->assertSame('INATIVO', $this->statusDe($id));
 
-        // Mostrar de novo volta como ATIVO
+        // Mostrar devolve o status de antes de ocultar (pelo histórico): cancelado volta cancelado
+        $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))
+            ->assertSessionHas('sucesso', 'Evento visível de novo (continua cancelado).');
+        $this->assertSame('CANCELADO', $this->statusDe($id));
+    }
+
+    public function test_mostrar_evento_que_estava_ativo_volta_ativo(): void
+    {
+        $id = $this->criarEvento('ATIVO');
+
+        $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id));
         $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))->assertSessionHas('sucesso', 'Evento visível de novo.');
+
+        $this->assertSame('ATIVO', $this->statusDe($id));
+    }
+
+    public function test_mostrar_evento_oculto_sem_historico_volta_ativo(): void
+    {
+        // Ocultado antes do histórico existir: sem "status anterior", volta como ATIVO
+        $id = $this->criarEvento('INATIVO');
+
+        $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id));
+
         $this->assertSame('ATIVO', $this->statusDe($id));
     }
 

@@ -45,7 +45,7 @@
                         <label class="filter-label">Status</label>
                         <select id="filtroStatus" class="form-select form-select-sm">
                             <option value="">Todos</option>
-                            @foreach(\App\Models\EventoCalendario::STATUS as $st => $rotuloStatus)
+                            @foreach(\App\Models\EventoCalendario::SITUACOES as $st => $rotuloStatus)
                             <option value="{{ $st }}">{{ $rotuloStatus }}</option>
                             @endforeach
                         </select>
@@ -172,7 +172,7 @@
                         <tr class="linha-ev"
                             data-titulo="{{ strtolower($ev->titulo_evento_calendario) }}"
                             data-tipo="{{ $ev->tipo_evento_calendario }}"
-                            data-status="{{ strtoupper($ev->status_evento_calendario) }}">
+                            data-status="{{ $ev->situacao }}">
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
                                 {{ $ev->data_evento_calendario->format('d/m/Y') }}
                             </td>
@@ -193,9 +193,13 @@
                             <td class="text-muted">{{ $ev->local_evento_calendario ?? '—' }}</td>
                             <td class="text-center">
                                 @php
-                                    $classeStatus = ['ATIVO' => 'ativo', 'CANCELADO' => 'inativo', 'INATIVO' => 'rejeitado'][$ev->status_evento_calendario] ?? 'pendente';
+                                    // Situação = status gravado + derivados (Alterado, Concluído); só no admin
+                                    $classeStatus = [
+                                        'ATIVO' => 'ativo', 'ALTERADO' => 'pendente', 'CONCLUIDO' => 'concluido',
+                                        'CANCELADO' => 'inativo', 'INATIVO' => 'rejeitado',
+                                    ][$ev->situacao];
                                 @endphp
-                                <span class="badge-status {{ $classeStatus }}">{{ $ev->status_label }}</span>
+                                <span class="badge-status {{ $classeStatus }}">{{ $ev->situacao_label }}</span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
@@ -211,7 +215,12 @@
                                         data-local="{{ $ev->local_evento_calendario }}"
                                         data-descricao="{{ $ev->descricao_evento_calendario }}"
                                         data-id-categoria="{{ $ev->id_categoria }}"
-                                        data-responsavel="{{ $ev->responsavel?->nome_usuario ?? '—' }}">
+                                        data-responsavel="{{ $ev->responsavel?->nome_usuario ?? '—' }}"
+                                        data-historico="{{ $ev->historico->take(20)->map(fn ($h) => [
+                                            'quando' => $h->data_evento_historico->format('d/m/Y H:i'),
+                                            'quem'   => $h->usuario?->nome_usuario ?? '—',
+                                            'resumo' => $h->resumo,
+                                        ])->values()->toJson(JSON_UNESCAPED_UNICODE) }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     {{-- Cancelar <-> reativar (oculto precisa ser mostrado antes) --}}
@@ -496,6 +505,10 @@
                             <div class="form-text"><i class="bi bi-person"></i> Responsável (quem criou): <strong id="edit_ev_responsavel">—</strong></div>
                         </div>
                         <div class="col-12">
+                            <label class="form-label mb-1"><i class="bi bi-clock-history"></i> Histórico de alterações</label>
+                            <ul id="edit_ev_historico" class="list-unstyled small text-muted mb-0" style="max-height:140px;overflow-y:auto;"></ul>
+                        </div>
+                        <div class="col-12">
                             <label class="form-label">Descrição</label>
                             <textarea id="edit_ev_descricao" name="descricao_evento_calendario"
                                 class="form-control" rows="2"></textarea>
@@ -744,6 +757,19 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             selCategoria.value = this.dataset.idCategoria || '';
             document.getElementById('edit_ev_responsavel').textContent = this.dataset.responsavel || '—';
+
+            // Últimas 20 alterações (mais recentes primeiro); textContent evita interpretar HTML dos valores
+            const listaHistorico = document.getElementById('edit_ev_historico');
+            const historico = JSON.parse(this.dataset.historico || '[]');
+            listaHistorico.innerHTML = '';
+            if (!historico.length) {
+                listaHistorico.innerHTML = '<li>Nenhuma alteração registrada.</li>';
+            }
+            historico.forEach(h => {
+                const li = document.createElement('li');
+                li.textContent = `${h.quando} · ${h.quem} · ${h.resumo}`;
+                listaHistorico.appendChild(li);
+            });
         });
     });
 

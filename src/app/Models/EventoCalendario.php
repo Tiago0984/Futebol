@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class EventoCalendario extends Model
 {
@@ -10,12 +12,40 @@ class EventoCalendario extends Model
     protected $primaryKey = 'id_evento_calendario';
     public    $timestamps = false;
 
-    // Valores do ENUM status_evento_calendario => rótulo. "Alterado" e "Concluído" não são gravados:
-    // são derivados (Fase 4, Etapa 3). INATIVO = oculto (substitui a exclusão).
+    // Valores do ENUM status_evento_calendario => rótulo. INATIVO = oculto (substitui a exclusão).
     public const STATUS = [
         'ATIVO'     => 'Ativo',
         'CANCELADO' => 'Cancelado',
         'INATIVO'   => 'Oculto',
+    ];
+
+    // Situação exibida no admin: o status gravado mais os derivados (não gravados) Alterado e Concluído
+    public const SITUACOES = [
+        'ATIVO'     => 'Ativo',
+        'ALTERADO'  => 'Alterado',
+        'CONCLUIDO' => 'Concluído',
+        'CANCELADO' => 'Cancelado',
+        'INATIVO'   => 'Oculto',
+    ];
+
+    // Campos registrados no histórico de alterações => rótulo (CLAUDE.md, seção 4)
+    public const CAMPOS_HISTORICO = [
+        'titulo_evento_calendario'         => 'Título',
+        'tipo_evento_calendario'           => 'Tipo',
+        'id_categoria'                     => 'Categoria',
+        'data_evento_calendario'           => 'Data',
+        'horario_inicio_evento_calendario' => 'Horário de início',
+        'horario_fim_evento_calendario'    => 'Horário de fim',
+        'local_evento_calendario'          => 'Local',
+        'status_evento_calendario'         => 'Status',
+    ];
+
+    // Só estes contam para o derivado "Alterado"
+    public const CAMPOS_ALTERADO = [
+        'data_evento_calendario',
+        'horario_inicio_evento_calendario',
+        'horario_fim_evento_calendario',
+        'local_evento_calendario',
     ];
 
     // Status que aparecem no site público: cancelado continua visível, com o selo
@@ -58,7 +88,7 @@ class EventoCalendario extends Model
     // Cria o evento já com o responsável (quem criou), que depois nunca muda
     public static function criarPor(?int $idUsuario, array $dados): self
     {
-        $evento = new self($dados);
+        $evento = new self(self::normalizarHorarios($dados));
         $evento->id_usuario = $idUsuario;
         $evento->save();
 
@@ -76,6 +106,158 @@ class EventoCalendario extends Model
     {
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
     }
+
+    public function historico()
+    {
+        return $this->hasMany(EventoHistorico::class, 'id_evento_calendario', 'id_evento_calendario')
+            ->orderByDesc('data_evento_historico')
+            ->orderByDesc('id_evento_historico');
+    }
+
+    // Para listas: carrega "tem_alteracao" numa consulta só, no lugar de uma por evento
+    public function scopeComAlteracao($query)
+    {
+        return $query->withExists([
+            'historico as tem_alteracao' => fn ($q) => $q->whereIn('campo_evento_historico', self::CAMPOS_ALTERADO),
+        ]);
+    }
+
+    // ── Alterações com histórico ────────────────────────────────────────────
+
+    /**
+     * Atualiza o evento e grava no histórico uma linha por campo de CAMPOS_HISTORICO que mudou
+     * (valor antigo, valor novo, quem e quando), tudo na mesma transação.
+     */
+    public function atualizarComHistorico(array $dados, ?int $idUsuario): void
+    {
+        DB::transaction(function () use ($dados, $idUsuario) {
+            $antes = [];
+            foreach (array_keys(self::CAMPOS_HISTORICO) as $campo) {
+                $antes[$campo] = $this->valorParaHistorico($campo, $this->getRawOriginal($campo));
+            }
+
+            $this->fill(self::normalizarHorarios($dados));
+            $this->save();
+
+            foreach ($antes as $campo => $valorAntigo) {
+                $valorNovo = $this->valorParaHistorico($campo, $this->getRawOriginal($campo));
+
+                if ($valorAntigo !== $valorNovo) {
+                    $this->historico()->create([
+                        'campo_evento_historico'        => $campo,
+                        'valor_antigo_evento_historico' => $valorAntigo,
+                        'valor_novo_evento_historico'   => $valorNovo,
+                        'id_usuario'                    => $idUsuario,
+                        'data_evento_historico'         => now(),
+                    ]);
+                }
+            }
+        });
+    }
+
+    public function mudarStatus(string $novo, ?int $idUsuario): void
+    {
+        $this->atualizarComHistorico(['status_evento_calendario' => $novo], $idUsuario);
+    }
+
+    /**
+     * Status que o evento tinha antes de ser ocultado (o "valor antigo" da última vez que virou INATIVO).
+     * Assim, "Mostrar" devolve um evento cancelado como cancelado. Sem histórico, volta como ATIVO.
+     */
+    public function statusAntesDeOcultar(): string
+    {
+        $anterior = $this->historico()
+            ->where('campo_evento_historico', 'status_evento_calendario')
+            ->where('valor_novo_evento_historico', 'INATIVO')
+            ->value('valor_antigo_evento_historico');
+
+        return in_array($anterior, ['ATIVO', 'CANCELADO'], true) ? $anterior : 'ATIVO';
+    }
+
+    // Horários do formulário vêm como "09:00"; no banco ficam "09:00:00". Sem isso, toda edição
+    // registraria uma "mudança" de horário que não aconteceu.
+    private static function normalizarHorarios(array $dados): array
+    {
+        foreach (['horario_inicio_evento_calendario', 'horario_fim_evento_calendario'] as $campo) {
+            if (isset($dados[$campo]) && preg_match('/^\d{2}:\d{2}$/', $dados[$campo])) {
+                $dados[$campo] .= ':00';
+            }
+        }
+
+        return $dados;
+    }
+
+    // Valor comparável e legível para o histórico: data "Y-m-d", horário "H:i", vazio = null
+    private function valorParaHistorico(string $campo, $valor): ?string
+    {
+        if ($valor === null || $valor === '') {
+            return null;
+        }
+
+        return match ($campo) {
+            'data_evento_calendario'           => Carbon::parse($valor)->format('Y-m-d'),
+            'horario_inicio_evento_calendario',
+            'horario_fim_evento_calendario'    => substr((string) $valor, 0, 5),
+            default                            => (string) $valor,
+        };
+    }
+
+    // ── Status derivados ────────────────────────────────────────────────────
+
+    /**
+     * Concluído: data anterior a hoje, ou hoje com o horário de fim já passado (sem fim, vale o início;
+     * sem nenhum dos dois, só no dia seguinte). Decisão (e) da Fase 4, CLAUDE.md seção 4.
+     */
+    public function estaConcluido(): bool
+    {
+        $hoje = now()->startOfDay();
+        $data = $this->data_evento_calendario->copy()->startOfDay();
+
+        if ($data->lt($hoje)) {
+            return true;
+        }
+
+        if ($data->gt($hoje)) {
+            return false;
+        }
+
+        $hora = $this->horario_fim_evento_calendario ?? $this->horario_inicio_evento_calendario;
+
+        return $hora !== null && now()->format('H:i:s') >= substr($hora . ':00', 0, 8);
+    }
+
+    // Teve data, horário ou local alterado (usa o withExists de comAlteracao() quando carregado)
+    public function foiAlterado(): bool
+    {
+        if (array_key_exists('tem_alteracao', $this->attributes)) {
+            return (bool) $this->attributes['tem_alteracao'];
+        }
+
+        return $this->historico()->whereIn('campo_evento_historico', self::CAMPOS_ALTERADO)->exists();
+    }
+
+    /**
+     * Situação exibida no admin. Cancelado e oculto prevalecem (cancelado continua cancelado depois
+     * da data); depois Concluído; depois Alterado (só enquanto o evento não aconteceu).
+     * Nunca usar no site nem no app: lá não existe o selo "Alterado".
+     */
+    public function getSituacaoAttribute(): string
+    {
+        return match (true) {
+            $this->estaCancelado() => 'CANCELADO',
+            $this->estaOculto()    => 'INATIVO',
+            $this->estaConcluido() => 'CONCLUIDO',
+            $this->foiAlterado()   => 'ALTERADO',
+            default                => 'ATIVO',
+        };
+    }
+
+    public function getSituacaoLabelAttribute(): string
+    {
+        return self::SITUACOES[$this->situacao];
+    }
+
+    // ── Exibição ────────────────────────────────────────────────────────────
 
     public function getTipoClassAttribute(): string
     {

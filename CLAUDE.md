@@ -75,7 +75,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 ### Status
 - **Gravado no evento:** `ATIVO` / `CANCELADO` / `INATIVO` (inativo = escondido, rótulo "Oculto"; cancelado = continua visível com o selo).
 - **Status muda só por ações** no admin: **Cancelar ↔ Reativar** (`CANCELADO` ↔ `ATIVO`) e **Ocultar ↔ Mostrar** (`INATIVO` ↔ `ATIVO`). A edição do evento não altera o status.
-  - ⚠️ **Para a Etapa 3 (histórico):** "Mostrar" deve restaurar o **status anterior** ao ocultar (cancelado e depois ocultado volta como cancelado). Hoje (Etapa 1) volta sempre como `ATIVO`.
+  - "Mostrar" restaura o **status anterior** ao ocultar, pelo histórico (cancelado e depois ocultado volta como cancelado; sem histórico, volta `ATIVO`).
 - **Sem exclusão de evento** (rota, método e botão removidos): **ocultar** faz esse papel e preserva o registro.
 - **Site público:** mostra eventos **cancelados com o selo "Cancelado"**; `INATIVO` continua escondido. O destaque "Próximo Evento" considera só eventos ativos.
 - **Derivados (não gravados):**
@@ -165,7 +165,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `UserFactory` usa as colunas de `tbl_usuarios`, com estados `->admin()`, `->editor()` e `->leitura()` (padrão: `LEITURA`). Testes do admin usam `->admin()`.
 - Trait **`Tests\CriaDadosDeAtleta`**: cria atleta, categoria do atleta e os formulários completos de cadastro/edição do admin.
 - Migrations de dados (limpeza da Sub-12, números de matrícula) são testadas rodando o `up()` sobre dados simulados, porque num banco novo elas não fazem nada.
-- O `--pretend` não executa `SELECT`: para migrations de dados, ensaiar carregando o backup no `db_futebol_test` (conferindo a conexão antes) e rodando o `migrate` lá.
+- O `--pretend` não executa `SELECT`: para migrations de dados, ensaiar carregando o backup no `db_futebol_test` (conferindo a conexão antes) e rodando o `migrate` lá. **Recriar o banco de testes antes de carregar o backup** (`DROP DATABASE` + `CREATE DATABASE ... utf8mb4_general_ci`; o `GRANT` do `user` continua valendo): o dump não apaga tabelas que a suíte criou, e uma migration que cria tabela falharia com "already exists". Depois do ensaio, rodar a suíte para o banco de testes voltar ao normal.
 
 ### Fase 2 concluída — usuários (`bc63372`, `5252c45`)
 - Migration aplicada no `db_futebol` (batch 9; backup em `backup/db_futebol_antes_fase2_20261003_091003.sql`). 28 testes passando; roteiro no navegador validado (login, lembrar-me, logout, nome no header e na sidebar).
