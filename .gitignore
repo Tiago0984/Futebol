@@ -31,4 +31,6 @@ chat_*.md
 /backup/
 
 # Assinaturas de responsáveis: dados pessoais, não versionar
-/src/public/futebol/images/Assinaturas/
+# (o .gitkeep mantém a pasta no clone, porque o AssinaturaController grava nela sem criá-la)
+/src/public/futebol/images/Assinaturas/*
+!/src/public/futebol/images/Assinaturas/.gitkeep
