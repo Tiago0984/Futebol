@@ -9128,6 +9128,29 @@ body {
     border-left-color: var(--aacj-red) !important;
 }
 
+/* Submenus aninhados (Evento > Campeonato > Tipo > Jogos > Times > Jogadores) */
+.sidebar-menu .nav-treeview .nav-item.menu-open > .nav-link {
+    color: var(--aacj-text-secondary) !important;
+    font-weight: 600 !important;
+}
+.sidebar-menu .nav-treeview .nav-treeview {
+    padding-left: 10px !important;
+    margin-left: 14px !important;
+    border-left: 1px dashed var(--aacj-border) !important;
+}
+.sidebar-menu .nav-treeview .nav-treeview .nav-link p {
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+.sidebar-menu .nav-treeview .nav-arrow {
+    padding: 4px !important;
+    margin: -4px !important;
+}
+.sidebar-menu .nav-treeview .nav-treeview .nav-icon {
+    font-size: 0.7rem !important;
+}
+
 /* Bloco do usuário */
 .sidebar-user-wrap {
     position: absolute;

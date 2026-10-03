@@ -97,46 +97,63 @@
 
         <li class="nav-header">ESPORTE</li>
 
-        {{-- Campeonatos --}}
-        <li class="nav-item {{ request()->routeIs('admin.campeonatos.*', 'admin.jogos.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.campeonatos.*', 'admin.jogos.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-trophy"></i>
-            <p>Campeonatos <i class="nav-arrow bi bi-chevron-right"></i></p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.campeonatos.index') }}"
-                class="nav-link {{ request()->routeIs('admin.campeonatos.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Listar campeonatos</p>
-              </a>
-            </li>
-            <li class="nav-item">
-              <a href="{{ route('admin.jogos.index') }}"
-                class="nav-link {{ request()->routeIs('admin.jogos.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Jogos / partidas</p>
-              </a>
-            </li>
-          </ul>
-        </li>
+        {{-- Eventos: árvore aninhada (Evento > Campeonato > Tipo > Jogos > Times > Jogadores) --}}
+        {{-- TODO: dados FICTÍCIOS só para validar o visual; depois virão do banco --}}
+        @php
+          $jogadores = fn (array $nomes) => array_map(fn ($n) => ['titulo' => $n, 'icone' => 'bi-person-fill'], $nomes);
+          $time = fn (string $nome, array $nomes) => ['titulo' => $nome, 'icone' => 'bi-shield-fill', 'filhos' => $jogadores($nomes)];
+          $jogo = fn (string $titulo, array $times) => ['titulo' => $titulo, 'icone' => 'bi-calendar2-week', 'filhos' => $times];
 
-        {{-- Times --}}
-        <li class="nav-item {{ request()->routeIs('admin.times.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.times.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-shield-fill"></i>
-            <p>Times <i class="nav-arrow bi bi-chevron-right"></i></p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.times.index') }}"
-                class="nav-link {{ request()->routeIs('admin.times.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Listar times</p>
-              </a>
-            </li>
-          </ul>
-        </li>
+          $aacj    = $time('AACJ Sub-13', ['Lucas Silva', 'Pedro Santos', 'Gabriel Lima']);
+          $leoes   = $time('Leões FC', ['Rafael Costa', 'João Souza', 'Mateus Alves']);
+          $estrela = $time('Estrela Azul', ['Davi Rocha', 'Enzo Pereira', 'Arthur Melo']);
+
+          $arvoreEventos = [
+            [
+              'titulo' => 'Eventos', 'icone' => 'bi-calendar-event',
+              'filhos' => [
+                [
+                  'titulo' => 'Campeonato', 'icone' => 'bi-trophy',
+                  'filhos' => [
+                    [
+                      'titulo' => 'Copa Escola', 'icone' => 'bi-award',
+                      'filhos' => [
+                        $jogo('AACJ x Leões', [$aacj, $leoes]),
+                        $jogo('AACJ x Estrela', [$aacj, $estrela]),
+                      ],
+                    ],
+                    [
+                      'titulo' => 'Copa Regional', 'icone' => 'bi-award',
+                      'filhos' => [
+                        $jogo('Leões x Estrela', [$leoes, $estrela]),
+                      ],
+                    ],
+                  ],
+                ],
+                [
+                  'titulo' => 'Amistoso', 'icone' => 'bi-hand-thumbs-up',
+                  'filhos' => [
+                    $jogo('AACJ x Leões', [$aacj, $leoes]),
+                  ],
+                ],
+                [
+                  'titulo' => 'Individual', 'icone' => 'bi-person',
+                  'filhos' => [
+                    [
+                      'titulo' => 'Exame médico', 'icone' => 'bi-heart-pulse',
+                      'filhos' => $jogadores(['Lucas Silva', 'Pedro Santos', 'Gabriel Lima']),
+                    ],
+                    [
+                      'titulo' => 'Avaliação física', 'icone' => 'bi-activity',
+                      'filhos' => $jogadores(['Rafael Costa', 'João Souza']),
+                    ],
+                  ],
+                ],
+              ],
+            ],
+          ];
+        @endphp
+        @include('admin.partials.sidebar-arvore', ['itens' => $arvoreEventos])
 
         {{-- Categorias --}}
         <li class="nav-item {{ request()->routeIs('admin.categorias.*') ? 'menu-open' : '' }}">
@@ -286,13 +303,16 @@
 
 <script>
 // Abre/fecha submenus sem recarregar página, preservando estado da rota ativa
+// Itens sem página: o link inteiro alterna. Itens com página: só a seta alterna, o texto navega.
 document.addEventListener('DOMContentLoaded', function () {
-  document.querySelectorAll('.sidebar-menu > .nav-item > a.nav-link[href="javascript:void(0)"]').forEach(function (toggle) {
-    toggle.addEventListener('click', function (e) {
-      e.preventDefault();
+  document.querySelectorAll('.sidebar-menu .nav-item > a.nav-link').forEach(function (link) {
+    link.addEventListener('click', function (e) {
       var parent = this.closest('.nav-item');
-      var isOpen = parent.classList.contains('menu-open');
-      parent.classList.toggle('menu-open', !isOpen);
+      if (!parent.querySelector(':scope > .nav-treeview')) return;
+      var semPagina = this.getAttribute('href') === 'javascript:void(0)';
+      if (!semPagina && !e.target.closest('.nav-arrow')) return;
+      e.preventDefault();
+      parent.classList.toggle('menu-open');
     });
   });
 });
