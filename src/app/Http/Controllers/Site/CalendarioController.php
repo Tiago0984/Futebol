@@ -11,10 +11,12 @@ class CalendarioController extends Controller
     public function calendario()
     {
         $eventos = EventoCalendario::whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS)
+            ->whereIn('tipo_evento_calendario', EventoCalendario::TIPOS_PUBLICOS)
             ->orderBy('data_evento_calendario')
             ->get();
 
         $proximoEvento = EventoCalendario::whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS)
+            ->whereIn('tipo_evento_calendario', EventoCalendario::TIPOS_PUBLICOS)
             ->where('data_evento_calendario', '>=', now()->toDateString()) // Filtra eventos futuros ou do dia atual
             ->orderBy('data_evento_calendario')
             ->first();

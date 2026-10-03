@@ -131,25 +131,51 @@ class CalendarioTest extends TestCase
             ->assertDontSee('Amistoso Cancelado XYZ');
     }
 
-    /**
-     * Regra de tipos públicos: avaliações são dados de saúde de menores
-     * e nunca aparecem no site. Falha até a regra ser implementada.
-     */
-    public function test_site_nao_lista_eventos_de_avaliacao(): void
+    // Regra provisória de tipos públicos (EventoCalendario::TIPOS_PUBLICOS)
+    public static function tiposPublicos(): array
+    {
+        return [
+            'JOGO'       => ['JOGO'],
+            'TREINO'     => ['TREINO'],
+            'CAMPEONATO' => ['CAMPEONATO'],
+        ];
+    }
+
+    public static function tiposInternos(): array
+    {
+        return [
+            'EVENTO'           => ['EVENTO'],
+            'REUNIAO'          => ['REUNIAO'],
+            'CONFRATERNIZACAO' => ['CONFRATERNIZACAO'],
+            'AVALIACAO'        => ['AVALIACAO'],
+        ];
+    }
+
+    /** Um único evento futuro: cobre a lista e o bloco "Próximo Evento". */
+    #[DataProvider('tiposPublicos')]
+    public function test_site_lista_eventos_de_tipo_publico(string $tipo): void
     {
         $this->criarEvento([
-            'titulo_evento_calendario' => 'Jogo Publico XYZ',
-            'tipo_evento_calendario'   => 'JOGO',
-        ]);
-        $this->criarEvento([
-            'titulo_evento_calendario' => 'Avaliacao Fisica XYZ',
-            'tipo_evento_calendario'   => 'AVALIACAO',
+            'titulo_evento_calendario' => "Evento Publico {$tipo} XYZ",
+            'tipo_evento_calendario'   => $tipo,
         ]);
 
         $this->get(self::URL_SITE)
             ->assertOk()
-            ->assertSee('Jogo Publico XYZ')
-            ->assertDontSee('Avaliacao Fisica XYZ');
+            ->assertSee("Evento Publico {$tipo} XYZ");
+    }
+
+    #[DataProvider('tiposInternos')]
+    public function test_site_nao_lista_eventos_de_tipo_interno(string $tipo): void
+    {
+        $this->criarEvento([
+            'titulo_evento_calendario' => "Evento Interno {$tipo} XYZ",
+            'tipo_evento_calendario'   => $tipo,
+        ]);
+
+        $this->get(self::URL_SITE)
+            ->assertOk()
+            ->assertDontSee("Evento Interno {$tipo} XYZ");
     }
 
     // ---------- helpers ----------

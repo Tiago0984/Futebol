@@ -16,6 +16,9 @@ class EventoCalendario extends Model
     // Status que aparecem no site público
     public const STATUS_VISIVEIS = ['CONFIRMADO', 'ALTERADO'];
 
+    // Tipos que aparecem no site público (provisório até o professor decidir)
+    public const TIPOS_PUBLICOS = ['JOGO', 'TREINO', 'CAMPEONATO'];
+
     // Valores do ENUM tipo_evento_calendario (sem acento) => texto exibido na tela
     public const TIPOS = [
         'JOGO'             => 'JOGO',
