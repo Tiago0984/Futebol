@@ -32,6 +32,19 @@ class GradeTreino extends Model
         'sabado'         => 'Sábado',
     ];
 
+    /**
+     * Ordem de exibição (site e admin): dia da semana, depois horário de início, depois o campo "ordem".
+     * Sem horário (ex.: "Jogos", que usa a observação) vai para o fim do dia.
+     */
+    public function scopeOrdenada($query)
+    {
+        return $query
+            ->orderByRaw("FIELD(dia_semana_grade_treino, 'segunda_quarta', 'terca_quinta', 'sexta', 'sabado')")
+            ->orderByRaw('horario_inicio_grade_treino IS NULL')
+            ->orderBy('horario_inicio_grade_treino')
+            ->orderBy('ordem_grade_treino');
+    }
+
     // Categoria da linha da grade; null nos itens gerais (Integrado, Treino Livre, Jogos)
     public function categoria()
     {

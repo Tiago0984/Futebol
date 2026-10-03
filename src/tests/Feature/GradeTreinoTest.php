@@ -141,6 +141,29 @@ class GradeTreinoTest extends TestCase
             ->assertSee('Treino Livre');
     }
 
+    // ---------- ordem ----------
+
+    public function test_grade_do_dia_segue_o_horario_de_inicio_no_site_e_no_admin(): void
+    {
+        // "ordem" ao contrário do horário, e um item sem horário: deve ficar por último no dia
+        $this->criarGrade(['categoria_grade_treino' => 'Item Sem Horario', 'horario_inicio_grade_treino' => null,
+            'horario_fim_grade_treino' => null, 'horario_obs_grade_treino' => 'Conforme tabela', 'ordem_grade_treino' => 0]);
+        $this->criarGrade(['categoria_grade_treino' => 'Item Das Dez', 'horario_inicio_grade_treino' => '10:00', 'ordem_grade_treino' => 1]);
+        $this->criarGrade(['categoria_grade_treino' => 'Item Das Nove e Meia', 'horario_inicio_grade_treino' => '09:30', 'ordem_grade_treino' => 2]);
+        // Outro dia vem antes, mesmo com horário mais tarde
+        $this->criarGrade(['categoria_grade_treino' => 'Item De Segunda', 'dia_semana_grade_treino' => 'segunda_quarta',
+            'horario_inicio_grade_treino' => '18:00', 'ordem_grade_treino' => 9]);
+
+        $esperado = ['Item De Segunda', 'Item Das Nove e Meia', 'Item Das Dez', 'Item Sem Horario'];
+
+        $this->get('/calendario')->assertOk()->assertSeeInOrder($esperado);
+
+        $this->comoAdmin()
+            ->get(route('admin.calendario.index', ['tab' => 'grade']))
+            ->assertOk()
+            ->assertSeeInOrder($esperado);
+    }
+
     // ---------- helpers ----------
 
     private function migrationDaGrade(): object

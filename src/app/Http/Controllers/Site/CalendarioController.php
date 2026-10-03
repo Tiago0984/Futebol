@@ -23,8 +23,7 @@ class CalendarioController extends Controller
 
         $gradeTreinos = GradeTreino::with('categoria')
             ->where('status_grade_treino', 'ATIVO')
-            ->orderByRaw("FIELD(dia_semana_grade_treino, 'segunda_quarta', 'terca_quinta', 'sexta', 'sabado')")
-            ->orderBy('ordem_grade_treino')
+            ->ordenada()
             ->get()
             ->groupBy('dia_semana_grade_treino');
 

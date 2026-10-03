@@ -14,7 +14,7 @@ class CalendarioController extends Controller
     public function index()
     {
         $eventos = EventoCalendario::orderBy('data_evento_calendario', 'desc')->get();
-        $grades  = GradeTreino::with('categoria')->orderBy('ordem_grade_treino')->orderBy('dia_semana_grade_treino')->get();
+        $grades  = GradeTreino::with('categoria')->ordenada()->get();
         $categorias = Categoria::ativas()->get();
 
         return view('admin.calendario.index', compact('eventos', 'grades', 'categorias'));
