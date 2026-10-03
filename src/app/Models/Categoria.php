@@ -39,9 +39,4 @@ class Categoria extends Model
                         'observacao_categoria_atleta',
                     ]);
     }
-
-    public function inscricoes()
-    {
-        return $this->hasMany(Inscricao::class, 'id_categoria', 'id_categoria');
-    }
 }

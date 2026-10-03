@@ -91,11 +91,6 @@ class Atleta extends Authenticatable
             ]);
     }
 
-    public function inscricoes()
-    {
-        return $this->hasMany(Inscricao::class, 'id_atleta', 'id_atleta');
-    }
-
     public function cartoes()
     {
         return $this->hasMany(Cartao::class, 'id_atleta', 'id_atleta');
@@ -120,7 +115,6 @@ class Atleta extends Authenticatable
             $this->categorias()->detach();
             $this->times()->detach();
             $this->autorizacoes()->delete();
-            $this->inscricoes()->delete();
             $this->tokens()->delete(); // tokens do Sanctum (personal_access_tokens não tem FK)
             $this->delete();
         });

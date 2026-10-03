@@ -1,0 +1,97 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Tests\RefreshBancoDeTestes;
+use Tests\TestCase;
+
+class MatriculaExclusaoTest extends TestCase
+{
+    use RefreshBancoDeTestes;
+
+    public function test_admin_exclui_atleta_rejeitado_com_vinculos(): void
+    {
+        $idAtleta    = $this->criarAtleta('REJEITADO');
+        $idCategoria = $this->criarCategoria();
+
+        DB::table('tbl_categoria_atleta')->insert([
+            'id_categoria'                 => $idCategoria,
+            'id_atleta'                    => $idAtleta,
+            'data_inicio_categoria_atleta' => now(),
+            'status_categoria_atleta'      => 'ATIVO',
+        ]);
+
+        $this->comoAdmin()
+            ->delete(route('admin.matriculas.deletar', $idAtleta))
+            ->assertRedirect(route('admin.matriculas.rejeitadas'))
+            ->assertSessionHas('sucesso');
+
+        $this->assertDatabaseMissing('tbl_atletas', ['id_atleta' => $idAtleta]);
+        $this->assertDatabaseMissing('tbl_categoria_atleta', ['id_atleta' => $idAtleta]);
+    }
+
+    public function test_atleta_com_cartao_nao_e_excluido(): void
+    {
+        $idAtleta = $this->criarAtleta('REJEITADO');
+
+        DB::table('tbl_cartoes')->insert([
+            'id_atleta'   => $idAtleta,
+            'tipo_cartao' => 'AMARELO',
+        ]);
+
+        $this->comoAdmin()
+            ->delete(route('admin.matriculas.deletar', $idAtleta))
+            ->assertRedirect(route('admin.matriculas.rejeitadas'))
+            ->assertSessionHas('erro');
+
+        $this->assertDatabaseHas('tbl_atletas', ['id_atleta' => $idAtleta]);
+    }
+
+    public function test_tbl_inscricao_foi_descontinuada(): void
+    {
+        $this->assertFalse(Schema::hasTable('tbl_inscricao'));
+    }
+
+    // ---------- helpers ----------
+
+    private function comoAdmin(): static
+    {
+        return $this->actingAs(User::factory()->admin()->create(), 'admin');
+    }
+
+    private function criarAtleta(string $status): int
+    {
+        $idEndereco = DB::table('tbl_endereco')->insertGetId([
+            'rua_endereco'    => 'Rua de Teste',
+            'numero_endereco' => '100',
+            'bairro_endereco' => 'Centro',
+            'cep_endereco'    => '01000-000',
+            'cidade_endereco' => 'São Paulo',
+            'estado_endereco' => 'SP',
+        ]);
+
+        return DB::table('tbl_atletas')->insertGetId([
+            'id_endereco'      => $idEndereco,
+            'nome_atleta'      => 'Atleta de Teste',
+            'data_nasc_atleta' => '2013-05-10',
+            'cpf_atleta'       => '000.000.000-00',
+            'rg_atleta'        => '00.000.000-0',
+            'sexo_atleta'      => 'M',
+            'escola_atleta'    => 'Escola de Teste',
+            'status_atleta'    => $status,
+        ]);
+    }
+
+    private function criarCategoria(): int
+    {
+        return DB::table('tbl_categoria')->insertGetId([
+            'nome_categoria'      => 'Categoria de Teste',
+            'idade_min_categoria' => 12,
+            'idade_max_categoria' => 13,
+            'sexo_categoria'      => 'M',
+        ]);
+    }
+}
