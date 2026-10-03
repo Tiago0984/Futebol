@@ -43,7 +43,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Tipos de chave (FK exige o mesmo tipo e sinal):**
   - `id_atleta`, `id_categoria`, `id_time` e a maioria dos ids: `INT` com sinal.
   - `id_evento_calendario`: `INT UNSIGNED`.
-  - `tbl_usuarios.id`: `BIGINT UNSIGNED`.
+  - `tbl_usuarios.id_usuario`: `BIGINT UNSIGNED`.
   - Não usar `foreignId()` sem conferir o tipo da coluna referenciada.
 - Todas as FKs existentes estão em `NO ACTION`; não usar `ON DELETE CASCADE` sem discutir.
 - O banco nasceu de script SQL; as migrations `create_*` e `add_foreign_keys_*` estão com batch [0] (marcadas, nunca executadas).
@@ -60,8 +60,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Troca de categoria: **fechar a linha antiga** (data_fim + status) e **criar uma nova**, nunca só dar UPDATE.
 
 ### Usuários (dashboard)
-- Renomear `tbl_usuarios.id` para **`id_usuario`** (ajustar `$primaryKey`).
-- Novos campos: **`cargo_usuario`** (função exibida: Professor, Nutricionista, Fisiologista, Médico) e **`nivel_usuario`** (permissão no sistema).
+- PK de `tbl_usuarios` é **`id_usuario`** (feito na Fase 2).
+- **`cargo_usuario`** (função exibida, VARCHAR, lista em `User::CARGOS`) e **`nivel_usuario`** (permissão no sistema, ENUM). Valores provisórios (seção 8).
 - **Responsável pelo evento = usuário logado que o criou** (`id_usuario` no evento). Gravado só na criação, **nunca sobrescrito** na edição.
 
 ### Eventos (tudo vira evento)
@@ -128,6 +128,9 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `3b5ba93` test: testes de feature do calendário em banco MySQL próprio
 - `7b2171d` feat: site público mostra só JOGO, TREINO e CAMPEONATO
 - `1dd4b0b` chore: ignora `Zone.Identifier` também no git do Windows
+- `776ca56` docs: adiciona CLAUDE.md
+- `bc63372` feat: renomeia id de usuário e adiciona cargo e nível (Fase 2)
+- `5252c45` feat: checkbox "Lembrar-me" no login do admin (Fase 2)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -136,12 +139,18 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 ### Testes
 - Rodam no banco **`db_futebol_test`** (MySQL, `utf8mb4_general_ci`, `GRANT ALL` para o `user` do `.env`), configurado no `phpunit.xml`. Precisam do Docker ligado:
   `docker compose exec php php artisan config:clear && docker compose exec php php artisan test`
-- O `RefreshDatabase` roda `migrate:fresh`; o `CalendarioTest` tem uma **trava** que aborta se a conexão não for `db_futebol_test`. Testes novos que usem `RefreshDatabase` devem ter a mesma trava.
+- O `RefreshDatabase` roda `migrate:fresh`. Testes que usam o banco usam o trait **`Tests\RefreshBancoDeTestes`** (no lugar do `RefreshDatabase`), que aborta se a conexão não for `db_futebol_test`.
 - **As migrations montam o banco do zero** (conferido: 42 migrations, 31 tabelas, todas `general_ci`, 21 FKs, igual ao `db_futebol` exceto a tabela `users`). Isso vale para o primeiro deploy.
-- `UserFactory` usa as colunas de `tbl_usuarios`; `User` tem `HasFactory`.
+- `UserFactory` usa as colunas de `tbl_usuarios`, com estados `->admin()`, `->editor()` e `->leitura()` (padrão: `LEITURA`). Testes do admin usam `->admin()`.
+
+### Fase 2 concluída — usuários (`bc63372`, `5252c45`)
+- Migration aplicada no `db_futebol` (batch 9; backup em `backup/db_futebol_antes_fase2_20261003_091003.sql`). 28 testes passando; roteiro no navegador validado (login, lembrar-me, logout, nome no header e na sidebar).
+- `tbl_usuarios.id` → `id_usuario` (migration e `User::$primaryKey` **no mesmo commit**); índice `users_email_unique` → `email_usuario_unique`.
+- `nivel_usuario` ENUM `ADMIN/EDITOR/LEITURA`, `NOT NULL DEFAULT 'LEITURA'`; usuários existentes viram `ADMIN`. **Nesta fase não há restrição de rota por nível.** Fica fora do `$fillable` (evita autopromoção).
+- `cargo_usuario` VARCHAR(30) nullable; valores em `User::CARGOS`, validar com `Rule::in`.
+- Checkbox "Lembrar-me" no login do admin; `AdminLoginTest` cobre login, erro, visitante, logout, lembrar-me, nome no painel e schema.
 
 ### Próximas fases (ordem recomendada)
-2. Usuários: `id` → `id_usuario`, `cargo_usuario`, `nivel_usuario`.
 3. Categoria e grade: descontinuar `tbl_inscricao`; `tbl_grade_treino.id_categoria`; resolver categorias da grade que não existem.
 4. Evento base: `id_categoria`, `id_usuario` (BIGINT UNSIGNED), status ATIVO/CANCELADO/INATIVO, status derivados, histórico.
 5. Inscrição e conflito: `tbl_evento_atleta` (+ `id_time`), inscrição por categoria ou individual, alerta de conflito.
@@ -168,7 +177,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 
 ## 8. Perguntas em aberto para o professor
 
-1. Níveis de usuário: quais valores e o que cada um pode fazer?
+1. Níveis de usuário: quais valores e o que cada um pode fazer? **Provisório:** `nivel_usuario` = `ADMIN` / `EDITOR` / `LEITURA` e `User::CARGOS` = Professor, Nutricionista, Fisiologista, Médico, Coordenador. Valores de nível e cargo aguardam o professor.
 2. Sub-9, Sub-11, Sub-13 e Sub-17 existem? Cadastrar ou a grade está desatualizada?
 3. Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada?
 4. A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?
