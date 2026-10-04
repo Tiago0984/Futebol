@@ -9,7 +9,7 @@
         <div class="admin-page-header">
             <div>
                 <h1 class="page-title">Jogos</h1>
-                <p class="page-subtitle">Registre e gerencie partidas e resultados</p>
+                <p class="page-subtitle">Cada jogo é um evento do calendário, com times, campeonato e placar</p>
             </div>
             <div class="d-flex gap-2">
                 <button class="btn-filter-toggle" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false">
@@ -32,17 +32,19 @@
                         <label class="filter-label">Campeonato</label>
                         <select id="filtroCampeonato" class="form-select form-select-sm">
                             <option value="">Todos</option>
+                            <option value="amistoso">Amistosos</option>
                             @foreach($campeonatos as $camp)
                             <option value="{{ $camp->id_campeonato }}">{{ $camp->nome_campeonato }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="filter-label">Status</label>
+                        <label class="filter-label">Situação</label>
                         <select id="filtroStatus" class="form-select form-select-sm">
-                            <option value="">Todos</option>
-                            <option value="ATIVO">Ativo</option>
-                            <option value="INATIVO">Inativo</option>
+                            <option value="">Todas</option>
+                            @foreach(\App\Models\EventoCalendario::SITUACOES as $valor => $rotulo)
+                            <option value="{{ $valor }}">{{ $rotulo }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="col-md-auto">
@@ -62,15 +64,18 @@
         </div>
         @endif
 
-        @if($errors->any())
+        @if(session('erro') || $errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Erro!</strong>
+            @if(session('erro'))<div>{{ session('erro') }}</div>@endif
             <ul class="mb-0 mt-1">
                 @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
             </ul>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
         @endif
+
+        @include('admin.calendario._conflitos')
 
         <div class="table-card">
             <div class="table-card-toolbar">
@@ -80,22 +85,43 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
+                            <th>Data</th>
                             <th>Campeonato</th>
                             <th class="text-center">Mandante</th>
                             <th class="text-center" style="width:90px">Placar</th>
                             <th class="text-center">Visitante</th>
-                            <th>Data</th>
-                            <th class="text-center">Status</th>
-                            <th class="text-center" style="width:110px">Ações</th>
+                            <th class="text-center">Situação</th>
+                            <th class="text-center" style="width:150px">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($jogos as $jogo)
+                        @php
+                            $ev = $jogo->evento;
+                            // Situação = status do evento + derivados (Alterado, Concluído); só no admin
+                            $classeStatus = [
+                                'ATIVO' => 'ativo', 'ALTERADO' => 'pendente', 'CONCLUIDO' => 'concluido',
+                                'CANCELADO' => 'inativo', 'INATIVO' => 'rejeitado',
+                            ][$ev->situacao];
+                        @endphp
                         <tr class="linha-jogo"
                             data-time="{{ strtolower(($jogo->timeCasa->nome_time ?? '') . ' ' . ($jogo->timeVisitante->nome_time ?? '')) }}"
-                            data-campeonato="{{ $jogo->id_campeonato }}"
-                            data-status="{{ strtoupper($jogo->status_jogo) }}">
-                            <td><span class="badge-cat">{{ $jogo->campeonato->nome_campeonato ?? '—' }}</span></td>
+                            data-campeonato="{{ $jogo->id_campeonato ?? 'amistoso' }}"
+                            data-status="{{ $ev->situacao }}">
+                            <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
+                                {{ $ev->data_evento_calendario->format('d/m/Y') }}
+                                <div>{{ $ev->horario_texto }}</div>
+                            </td>
+                            <td>
+                                @if($jogo->ehAmistoso())
+                                    <span class="badge-cat">Amistoso</span>
+                                @else
+                                    <span class="badge-cat">{{ $jogo->campeonato->nome_campeonato }}</span>
+                                @endif
+                                @if($ev->categoria)
+                                    <div class="text-muted" style="font-size:0.75rem;">{{ $ev->categoria->rotulo }}</div>
+                                @endif
+                            </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-end gap-2">
                                     <span class="fw-semibold">{{ $jogo->timeCasa->nome_time ?? '—' }}</span>
@@ -121,51 +147,61 @@
                                     <span class="fw-semibold">{{ $jogo->timeVisitante->nome_time ?? '—' }}</span>
                                 </div>
                             </td>
-                            <td class="text-muted">
-                                {{ $jogo->data_jogo ? \Carbon\Carbon::parse($jogo->data_jogo)->format('d/m/Y H:i') : '—' }}
-                            </td>
                             <td class="text-center">
-                                @if(strtoupper($jogo->status_jogo) === 'ATIVO')
-                                    <span class="badge-status ativo">Ativo</span>
-                                @else
-                                    <span class="badge-status inativo">Inativo</span>
-                                @endif
+                                <span class="badge-status {{ $classeStatus }}">{{ $ev->situacao_label }}</span>
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
+                                    <a href="{{ route('admin.calendario.eventos.show', $ev->id_evento_calendario) }}"
+                                       class="btn-tbl view" title="Inscritos ({{ $ev->inscritos_ativos }})">
+                                        <i class="bi bi-people"></i><small class="ms-1">{{ $ev->inscritos_ativos }}</small>
+                                    </a>
                                     <button type="button" class="btn-tbl edit btn-editar-jogo"
                                         data-bs-toggle="modal" data-bs-target="#modalEditarJogo"
                                         data-id="{{ $jogo->id_jogo }}"
-                                        data-campeonato="{{ $jogo->id_campeonato }}"
+                                        data-campeonato="{{ $jogo->id_campeonato ?? \App\Http\Controllers\Admin\JogosController::AMISTOSO }}"
+                                        data-categoria="{{ $ev->id_categoria }}"
                                         data-casa="{{ $jogo->id_time_casa }}"
                                         data-visitante="{{ $jogo->id_time_visitante }}"
-                                        data-data="{{ $jogo->data_jogo ? \Carbon\Carbon::parse($jogo->data_jogo)->format('Y-m-d\TH:i') : '' }}"
+                                        data-data="{{ $ev->data_evento_calendario->format('Y-m-d') }}"
+                                        data-inicio="{{ substr((string) $ev->horario_inicio_evento_calendario, 0, 5) }}"
+                                        data-fim="{{ substr((string) $ev->horario_fim_evento_calendario, 0, 5) }}"
+                                        data-local="{{ $ev->local_evento_calendario }}"
                                         data-placar-casa="{{ $jogo->placar_time_casa_jogos }}"
                                         data-placar-visitante="{{ $jogo->placar_time_visitante_jogos }}"
                                         title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <form action="{{ route('admin.jogos.toggleStatus', $jogo->id_jogo) }}" method="POST" style="display:inline">
+                                    {{-- Status é do evento: cancelar <-> reativar (oculto precisa ser mostrado antes) --}}
+                                    @unless($ev->estaOculto())
+                                    <form action="{{ route('admin.calendario.eventos.cancelar', $ev->id_evento_calendario) }}" method="POST" style="display:inline"
+                                          onsubmit="return confirm(@js($ev->estaCancelado() ? 'Reativar este jogo?' : 'Cancelar este jogo? Ele continua visível no site, com o selo "Cancelado".'))">
                                         @csrf @method('PATCH')
-                                        @if(strtoupper($jogo->status_jogo) === 'ATIVO')
-                                            <button type="submit" class="btn-tbl deactivate" title="Inativar">
-                                                <i class="bi bi-eye-slash"></i>
+                                        @if($ev->estaCancelado())
+                                            <button type="submit" class="btn-tbl activate" title="Reativar jogo">
+                                                <i class="bi bi-check-circle"></i>
                                             </button>
                                         @else
-                                            <button type="submit" class="btn-tbl activate" title="Reativar">
-                                                <i class="bi bi-eye"></i>
+                                            <button type="submit" class="btn-tbl deactivate" title="Cancelar jogo">
+                                                <i class="bi bi-x-circle"></i>
                                             </button>
                                         @endif
                                     </form>
-                                    @if(strtoupper($jogo->status_jogo) !== 'ATIVO')
-                                    <form action="{{ route('admin.jogos.destroy', $jogo->id_jogo) }}" method="POST"
-                                          onsubmit="return confirm('Excluir permanentemente este jogo?');" style="display:inline">
-                                        @csrf @method('DELETE')
-                                        <button type="submit" class="btn-tbl delete" title="Excluir">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
+                                    @endunless
+                                    {{-- Ocultar <-> mostrar: substitui a exclusão (o registro e os cartões ficam) --}}
+                                    <form action="{{ route('admin.calendario.eventos.ocultar', $ev->id_evento_calendario) }}" method="POST" style="display:inline"
+                                          onsubmit="return confirm(@js($ev->estaOculto() ? 'Mostrar este jogo de novo?' : 'Ocultar este jogo? Ele some do calendário do site, mas o registro fica.'))">
+                                        @csrf @method('PATCH')
+                                        @if($ev->estaOculto())
+                                            <button type="submit" class="btn-tbl activate" title="Mostrar jogo">
+                                                <i class="bi bi-eye"></i>
+                                            </button>
+                                        @else
+                                            <button type="submit" class="btn-tbl deactivate" title="Ocultar jogo">
+                                                <i class="bi bi-eye-slash"></i>
+                                            </button>
+                                        @endif
                                     </form>
-                                    @endif
                                 </div>
                             </td>
                         </tr>
@@ -214,19 +250,48 @@ document.addEventListener('DOMContentLoaded', function () {
         aplicarFiltros();
     });
 
-});
+    // Campeonato: mostra a categoria dele; Amistoso: mostra o select de categoria,
+    // sugerindo a categoria do time mandante quando ainda está vazio
+    function atualizarCategoria(form) {
+        const campeonato = form.querySelector('.js-campeonato');
+        const amistoso   = campeonato.value === @js(\App\Http\Controllers\Admin\JogosController::AMISTOSO);
+        const bloco      = form.querySelector('.js-bloco-categoria');
+        const categoria  = form.querySelector('.js-categoria');
+        const dica       = form.querySelector('.js-categoria-campeonato');
 
-document.querySelectorAll('.btn-editar-jogo').forEach(btn => {
-    btn.addEventListener('click', function () {
-        const f = document.getElementById('formEditarJogo');
-        f.action = `{{ url('admin/jogos') }}/${this.dataset.id}`;
-        document.getElementById('edit_id_campeonato').value            = this.dataset.campeonato;
-        document.getElementById('edit_id_time_casa').value             = this.dataset.casa;
-        document.getElementById('edit_id_time_visitante').value        = this.dataset.visitante;
-        document.getElementById('edit_data_jogo').value                = this.dataset.data;
-        document.getElementById('edit_placar_casa').value              = this.dataset.placarCasa;
-        document.getElementById('edit_placar_visitante').value         = this.dataset.placarVisitante;
+        bloco.classList.toggle('d-none', !amistoso);
+        const rotulo = campeonato.selectedOptions[0]?.dataset.categoria;
+        dica.textContent = !amistoso && rotulo ? `Categoria do campeonato: ${rotulo} (atletas inscritos no jogo).` : '';
+
+        const casa = form.querySelector('.js-time-casa').selectedOptions[0];
+        if (amistoso && !categoria.value && casa?.dataset.categoria) {
+            categoria.value = casa.dataset.categoria;
+        }
+    }
+    document.querySelectorAll('.form-jogo').forEach(form => {
+        form.querySelector('.js-campeonato').addEventListener('change', () => atualizarCategoria(form));
+        form.querySelector('.js-time-casa').addEventListener('change', () => atualizarCategoria(form));
+        atualizarCategoria(form);
     });
+
+    document.querySelectorAll('.btn-editar-jogo').forEach(btn => {
+        btn.addEventListener('click', function () {
+            const f = document.getElementById('formEditarJogo');
+            f.action = `{{ url('admin/jogos') }}/${this.dataset.id}`;
+            document.getElementById('edit_id_campeonato').value    = this.dataset.campeonato;
+            document.getElementById('edit_id_categoria').value     = this.dataset.categoria;
+            document.getElementById('edit_id_time_casa').value     = this.dataset.casa;
+            document.getElementById('edit_id_time_visitante').value = this.dataset.visitante;
+            document.getElementById('edit_data').value             = this.dataset.data;
+            document.getElementById('edit_inicio').value           = this.dataset.inicio;
+            document.getElementById('edit_fim').value              = this.dataset.fim;
+            document.getElementById('edit_local').value            = this.dataset.local;
+            document.getElementById('edit_placar_casa').value      = this.dataset.placarCasa;
+            document.getElementById('edit_placar_visitante').value = this.dataset.placarVisitante;
+            atualizarCategoria(f.querySelector('.form-jogo'));
+        });
+    });
+
 });
 </script>
 @endsection

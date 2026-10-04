@@ -84,6 +84,17 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **`id_time`** (escalação no jogo): coluna criada na Fase 5 (nullable, FK); a tela de escalação por jogo fica para a Fase 6.
 - **Site público nunca mostra inscritos** (dados de menores).
 
+### Jogos (Fase 6)
+- **Jogo = evento JOGO** (`tbl_jogos.id_evento`, INT UNSIGNED, único, FK). **Data, horário, local e status ficam só no evento** (histórico, Alterado, Concluído, cancelar/ocultar, inscrição e conflito valem para o jogo). Em `tbl_jogos` ficam campeonato, times e placar.
+- **Jogos existentes:** ganham um evento cada (título "Casa x Visitante", data e hora do jogo, local e categoria do campeonato, responsável NULL), **sem inscrições** (já aconteceram).
+- **Eventos JOGO antigos sem `tbl_jogos`** continuam eventos comuns; jogos novos nascem pela tela de **Jogos**.
+- **Sem `status_jogo` e sem exclusão de jogo:** cancelar e ocultar são ações do evento (como na Fase 4). `status_jogo` e `data_jogo` saem na Etapa 2; até lá `data_jogo` é uma cópia mantida pelo evento.
+- **Placar nullable:** NULL = ainda não jogado (os dois ou nenhum). A classificação conta só jogos com placar e evento não cancelado nem oculto.
+- **Título do evento** gerado como "Casa x Visitante", na criação e quando os times mudam.
+- **Categoria do evento:** a do campeonato; no **amistoso** (sem campeonato, opção explícita "Amistoso" no formulário), o admin escolhe (sugestão: categoria do time mandante) ou deixa sem. Com categoria, os atletas ativos dela são inscritos (regra da Fase 5); a escalação marca quem joga em cada time.
+- **Escalação** (Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Escalar quem não está inscrito **inscreve** (INDIVIDUAL, com alerta de conflito).
+- **API:** continua devolvendo `data_jogo` no JSON (calculado do evento), para não quebrar o app.
+
 ### Status
 - **Gravado no evento:** `ATIVO` / `CANCELADO` / `INATIVO` (inativo = escondido, rótulo "Oculto"; cancelado = continua visível com o selo).
 - **Status muda só por ações** no admin: **Cancelar ↔ Reativar** (`CANCELADO` ↔ `ATIVO`) e **Ocultar ↔ Mostrar** (`INATIVO` ↔ `ATIVO`). A edição do evento não altera o status.

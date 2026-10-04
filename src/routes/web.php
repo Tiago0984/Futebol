@@ -93,8 +93,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::patch('campeonatos/{id}/toggle-status', [CampeonatosController::class, 'toggleStatus'])->name('campeonatos.toggleStatus');
     Route::resource('times',       TimesController::class);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
-    Route::resource('jogos',       JogosController::class);
-    Route::patch('jogos/{id}/toggle-status', [JogosController::class, 'toggleStatus'])->name('jogos.toggleStatus');
+    // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
+    Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
     Route::resource('categorias',  CategoriasController::class);
     Route::patch('categorias/{id}/toggle-status', [CategoriasController::class, 'toggleStatus'])->name('categorias.toggleStatus');
 

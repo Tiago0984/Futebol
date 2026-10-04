@@ -293,6 +293,33 @@ class EventoCalendario extends Model
             ->values();
     }
 
+    // Dados do jogo (times, campeonato, placar) quando o evento é um jogo cadastrado em Jogos
+    public function jogo()
+    {
+        return $this->hasOne(Jogo::class, 'id_evento', 'id_evento_calendario');
+    }
+
+    /**
+     * PROVISÓRIO (Fase 6, Etapa 1): o site ainda lê tbl_jogos.data_jogo. Enquanto a coluna existir,
+     * ela acompanha a data e o horário do evento, mesmo quando o evento é editado pelo Calendário.
+     * Sai na Etapa 2, junto com a coluna.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (self $evento) {
+            if ($evento->wasChanged(['data_evento_calendario', 'horario_inicio_evento_calendario'])) {
+                Jogo::where('id_evento', $evento->id_evento_calendario)->update(['data_jogo' => $evento->dataHoraDoJogo()]);
+            }
+        });
+    }
+
+    // Data e horário de início juntos ("Y-m-d H:i:s"), para tbl_jogos.data_jogo (provisório, ver booted)
+    public function dataHoraDoJogo(): string
+    {
+        return $this->data_evento_calendario->format('Y-m-d') . ' '
+            . substr(($this->horario_inicio_evento_calendario ?? '00:00') . ':00', 0, 8);
+    }
+
     // Categoria do evento; null em evento individual (exame, avaliação de um atleta)
     public function categoria()
     {
@@ -310,6 +337,14 @@ class EventoCalendario extends Model
         return $this->hasMany(EventoHistorico::class, 'id_evento_calendario', 'id_evento_calendario')
             ->orderByDesc('data_evento_historico')
             ->orderByDesc('id_evento_historico');
+    }
+
+    // Para listas: carrega "inscritos_ativos" (só atletas ATIVO contam; CLAUDE.md, seção 4)
+    public function scopeComInscritosAtivos($query)
+    {
+        return $query->withCount([
+            'inscricoes as inscritos_ativos' => fn ($q) => $q->whereHas('atleta', fn ($a) => $a->where('status_atleta', 'ATIVO')),
+        ]);
     }
 
     // Para listas: carrega "tem_alteracao" numa consulta só, no lugar de uma por evento

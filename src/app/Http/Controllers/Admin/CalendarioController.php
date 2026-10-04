@@ -2,24 +2,24 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\ConfirmaConflitos;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Arr;
-use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 class CalendarioController extends Controller
 {
+    use ConfirmaConflitos;
+
     public function index()
     {
         $eventos = EventoCalendario::with(['categoria', 'responsavel', 'historico.usuario'])
             ->comAlteracao()
-            ->withCount(['inscricoes as inscritos_ativos' => fn ($q) => $q->whereHas('atleta', fn ($a) => $a->where('status_atleta', 'ATIVO'))])
+            ->comInscritosAtivos()
             ->orderBy('data_evento_calendario', 'desc')
             ->get();
         $grades  = GradeTreino::with('categoria')->ordenada()->get();
@@ -41,13 +41,8 @@ class CalendarioController extends Controller
         $dados = [...$this->dadosEvento($request), 'status_evento_calendario' => 'ATIVO'];
 
         // Com categoria, os atletas dela serão inscritos: confere conflito antes de criar
-        if (! empty($dados['id_categoria'])) {
-            $simulado = new EventoCalendario($dados);
-            $conflitos = $simulado->conflitosPara(Atleta::idsAtivosNaCategoria((int) $dados['id_categoria']));
-
-            if ($confirmar = $this->confirmarConflitos($request, $conflitos)) {
-                return $confirmar;
-            }
+        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaCriacao($dados))) {
+            return $confirmar;
         }
 
         // Responsável = admin logado que criou o evento (gravado só aqui). Com categoria, os atletas
@@ -191,76 +186,11 @@ class CalendarioController extends Controller
         // O que mudar em data, horário, local, título, tipo ou categoria vai para o histórico.
         $evento->atualizarComHistorico($dados, auth('admin')->id());
 
-        $mensagem = 'Evento atualizado.';
-
         // Mudou de categoria (ou ficou sem): as inscrições automáticas acompanham; as individuais ficam.
         // Evento concluído não muda nada.
-        if ((int) $categoriaAntes !== (int) $evento->id_categoria && ! $evento->estaConcluido()) {
-            ['entraram' => $entraram, 'sairam' => $sairam] = $evento->sincronizarInscricoesPelaCategoria(auth('admin')->id());
-            $mensagem .= " Inscrições pela categoria: {$entraram} atleta(s) inscrito(s), {$sairam} removido(s)."
-                . ' As inscrições individuais foram mantidas.';
-        }
+        $mensagem = 'Evento atualizado.' . $this->sincronizarSeMudouCategoria($evento, $categoriaAntes);
 
         return redirect()->route('admin.calendario.index')->with('sucesso', $mensagem);
-    }
-
-    /**
-     * Alerta de conflito. Conflito real (horários sobrepostos) pede confirmação: volta para a tela com a
-     * lista e um formulário que reenvia os mesmos dados com confirmar_conflito=1. Aviso fraco (algum
-     * evento sem horário de início) não bloqueia: segue e mostra um aviso informativo na próxima tela.
-     * Com os dois tipos, pede confirmação e lista os dois, separados. Devolve null quando pode seguir.
-     */
-    private function confirmarConflitos(Request $request, Collection $conflitos): ?RedirectResponse
-    {
-        [$fracos, $fortes] = $conflitos->partition(fn ($c) => $c['fraco']);
-        $descrever = fn (Collection $lista) => $lista->map(fn ($c) => EventoCalendario::descreverConflito($c))->values()->all();
-
-        if ($fortes->isEmpty() || $request->boolean('confirmar_conflito')) {
-            if ($fortes->isEmpty() && $fracos->isNotEmpty()) {
-                session()->flash('avisos_mesmo_dia', $descrever($fracos));
-            }
-
-            return null;
-        }
-
-        return back()->withInput()->with('conflitos_pendentes', [
-            'url'    => $request->url(),
-            'metodo' => $request->method(), // PUT na edição (o _method é refeito no formulário)
-            'dados'  => Arr::except($request->all(), ['_token', '_method', 'confirmar_conflito']),
-            'fortes' => $descrever($fortes),
-            'fracos' => $descrever($fracos),
-        ]);
-    }
-
-    /**
-     * Conflitos que a edição criaria: só quando muda data, horário ou categoria. Confere os atletas que
-     * ficarão inscritos (com troca de categoria: individuais atuais + atletas ativos da categoria nova).
-     */
-    private function conflitosDaEdicao(EventoCalendario $evento, array $dados): Collection
-    {
-        $simulado = $evento->replicate()->fill($dados);
-        $simulado->id_evento_calendario = $evento->id_evento_calendario;
-
-        $hora = fn ($valor) => substr((string) $valor, 0, 5);
-        $mudouHorario = $evento->data_evento_calendario->toDateString() !== $simulado->data_evento_calendario->toDateString()
-            || $hora($evento->horario_inicio_evento_calendario) !== $hora($simulado->horario_inicio_evento_calendario)
-            || $hora($evento->horario_fim_evento_calendario) !== $hora($simulado->horario_fim_evento_calendario);
-        $mudouCategoria = (int) $evento->id_categoria !== (int) $simulado->id_categoria && ! $simulado->estaConcluido();
-
-        if (! $mudouHorario && ! $mudouCategoria) {
-            return collect();
-        }
-
-        $inscricoes = $evento->inscricoes()->get(['id_atleta', 'origem_evento_atleta']);
-        $ids = $inscricoes->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
-
-        if ($mudouCategoria) {
-            $individuais = $inscricoes->where('origem_evento_atleta', 'INDIVIDUAL')->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
-            $daNova      = $simulado->id_categoria ? Atleta::idsAtivosNaCategoria((int) $simulado->id_categoria) : [];
-            $ids         = array_values(array_unique([...$individuais, ...$daNova]));
-        }
-
-        return $simulado->conflitosPara($ids);
     }
 
     /**
