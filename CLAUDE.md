@@ -15,6 +15,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - Atleta: Sanctum (token), model `Atleta` → `tbl_atletas`. API em `routes/api.php` (`/api/v1/...`). O login exige `status_atleta = ATIVO`; os campos do login são `email` e `senha`.
 - **Fotos de atleta em dois lugares:** o cadastro do site grava no disco `public` (`storage/app/public/atletas/...`, servido em `/storage`); o do admin grava em `public/futebol/images/our-teams/` (e `default-player.jpg` quando não há foto). Use `Atleta::urlFoto()` nas telas.
 - **Deploy precisa rodar `php artisan storage:link`** (cria `public/storage`, fora do Git). Sem ele, as fotos enviadas pelo site ficam quebradas. Localmente já foi criado (link absoluto `/var/www/html/...`, válido dentro dos containers).
+- **Fuso horário de Brasília:** app em `America/Sao_Paulo` (`APP_TIMEZONE`, padrão em `config/app.php`) e sessão MySQL em `-03:00` (`DB_TIMEZONE`, em `config/database.php`), para `CURRENT_TIMESTAMP`/`NOW()` do banco baterem com o `now()` do Laravel. Datas no JSON da API em ISO 8601 com o deslocamento e sem milissegundos (`2099-05-01T19:00:00-03:00`), pelo trait `App\Models\Concerns\SerializaDatasComFuso`. Colunas DATETIME gravadas antes da troca estão em UTC (3 horas adiantadas; dados de teste).
 - **App do atleta:** fica em outro repositório (a tela Agenda ainda usa dados fixos).
 - **Branch de trabalho:** `feature/agenda-eventos`. **Nunca fazer push sem autorização.**
 
@@ -45,6 +46,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Tipos de chave (FK exige o mesmo tipo e sinal):**
   - `id_atleta`, `id_categoria`, `id_time` e a maioria dos ids: `INT` com sinal.
   - `id_evento_calendario`: `INT UNSIGNED`.
+  - `tbl_grade_treino.id_grade_treino` e `tbl_evento_calendario.id_grade_treino`: `INT UNSIGNED`.
   - `tbl_usuarios.id_usuario`: `BIGINT UNSIGNED`.
   - Não usar `foreignId()` sem conferir o tipo da coluna referenciada.
 - Todas as FKs existentes estão em `NO ACTION`; não usar `ON DELETE CASCADE` sem discutir.
@@ -60,6 +62,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Matrícula aprovada não volta para rejeitada.
 - Fonte oficial da categoria do atleta: **`tbl_categoria_atleta`** (com início, fim e status `ATIVO`/`ENCERRADO`). `tbl_inscricao` foi **descontinuada** (Fase 3).
 - Troca de categoria: **fechar a linha antiga** (data_fim + status) e **criar uma nova**, nunca só dar UPDATE.
+- **Atleta ATIVO sempre com categoria** (linha ATIVO em `tbl_categoria_atleta`): obrigatória no cadastro pelo admin e na edição de quem fica ATIVO (o campo vazio encerraria a linha); o botão de status não ativa quem está sem categoria; na edição, a categoria atual inativa aparece como "(inativa)" (manter é aceito, trocar exige categoria ativa). Inativo pode ficar sem; pendente e rejeitado recebem a categoria na aprovação.
 
 ### Usuários (dashboard)
 - PK de `tbl_usuarios` é **`id_usuario`** (feito na Fase 2).
@@ -120,6 +123,11 @@ O atleta é notificado em três casos: **inscrição, alteração e cancelamento
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
 - Vira **modelo**: gera **eventos reais por data**, já com os atletas da categoria inscritos.
+- **Origem do evento gerado:** linha da grade + data de origem (`id_grade_treino` + `data_grade_evento_calendario`), únicas juntas. A data de origem fica separada da data do evento (o treino pode mudar de dia sem ser gerado de novo). O formulário de evento nunca grava nem troca a origem (fora do `$fillable`).
+- **Mapeamento:** título "Treino {rótulo}" (rótulo que já começa com "Treino" fica como está); `LIVRE` vira `TREINO` com subtipo "Livre"; horários, local e categoria vêm direto da linha.
+- **Não gera:** tipo `JOGO`, linha inativa, categoria inativa e linha sem horário de início (`GradeTreino::motivoQueNaoGera()`).
+- **Linha que já gerou eventos não é excluída**, só inativada.
+- **Linhas sem categoria** (Integrado, Treino Livre): inscrevem **todos os atletas ATIVO**, origem `INDIVIDUAL` (provisório, seção 8, pergunta 15). Quem entra depois é adicionado pelo admin.
 
 ### Conflito de horário
 O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta num evento que **sobrepõe** outro em que ele já está, o admin recebe um **alerta**.
@@ -142,7 +150,15 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 
 - **Geração da grade:** manual, botão "gerar agenda do mês", com chave única (grade + data) para não duplicar. `segunda_quarta`/`terca_quinta` geram dois eventos.
 - **Notificação dos treinos gerados:** uma única por atleta ("agenda do mês disponível").
-- **Mudança na grade:** atualizar os eventos futuros já gerados, perguntando a partir de qual data.
+- **Mudança na grade:** atualizar os eventos futuros já gerados, perguntando a partir de qual data. Evento gerado e **editado à mão** não é sobrescrito; a tela lista os que ficaram de fora.
+- **Geração (Fase 7):**
+  - Só de hoje em diante, no mês atual ou num mês futuro.
+  - Feriado: gerar normalmente e o admin cancela o evento do dia.
+  - Evento gerado e depois cancelado ou oculto **não é recriado** (a chave grade + data continua existindo).
+  - Lote **tudo ou nada** (uma transação).
+  - Treinos gerados ficam **fora do site público**, na lista e no Próximo Evento (seção 8, pergunta 3).
+  - Inscrição em massa fora do `inscrever()` só na geração; a Fase 8 manda **uma notificação por atleta**.
+  - Conflito verificado também **entre os eventos do próprio lote**.
 - **Conflito:** verificar entre **todos** os eventos (menos cancelados/inativos); usar horário de fim de cada evento (duração padrão por tipo se vazio); sem margem de deslocamento por enquanto; **alerta com confirmação** (não bloqueia); verificar também quando um evento é alterado.
 - **Jogo ↔ evento:** `tbl_jogos.id_evento` (1:1); data, horário e local **só no evento**; `id_campeonato` nullable (amistoso = jogo sem campeonato). ⚠️ `stat-facts.blade.php:8` e a `HomeController` usam `campeonato`/`data_jogo`.
 - **Escalação:** `tbl_evento_atleta.id_time` (nullable) + único (evento, atleta). O atleta não pode estar nos dois times do mesmo jogo.
@@ -153,7 +169,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 
 ## 6. Estado atual
 
-### Commits na branch `feature/agenda-eventos` (sem push)
+### Commits na branch `feature/agenda-eventos`
 - `eb5e65a` wip: sidebar de Eventos com dados fictícios
 - `6f8a0b0` fix: centraliza exclusão de atleta e corrige erro de FK (Fase 1.3)
 - `5b28bc7` chore: deixa de versionar assinaturas
@@ -199,6 +215,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `74d4cf4` feat: jogo vinculado ao evento e amistoso (Fase 6, Etapa 1)
 - `63ba16b` feat: site, API e dashboard leem o jogo pelo evento (Fase 6, Etapa 2)
 - `ac2f632` feat: escalação do jogo na tela do evento (Fase 6, Etapa 3)
+- `60f11bf`, `d87335d` docs: Fase 6 concluída
+- `f65d58f` feat: base da geração de eventos pela grade (Fase 7, Etapa 1)
+- `69c5bed` fix: atleta ativo sempre com categoria no admin
+- `4854967` fix: horário de Brasília no app, no banco e nas datas da API
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -262,8 +282,16 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Backups** em `backup/`: `db_futebol_antes_fase6_jogos_20261004_092041.sql`, `..._remove_data_jogo_20261004_094426.sql`.
 - 238 testes passando; roteiros das Etapas 1, 2 e 3 validados no navegador.
 
-### Próxima: Fase 7 — grade → eventos
-(detalhes no item 7 abaixo e na seção 5)
+### Fase 7 em andamento — grade → eventos (regras na seção 4, "Grade de treino", e na seção 5)
+- **Etapa 1 — base** ✅ (`f65d58f`): `tbl_evento_calendario.id_grade_treino` (FK `fk_evento_grade`, NO ACTION) e `data_grade_evento_calendario`, único `evento_grade_data_unique`; `GradeTreino::datasNoMes()`, `dadosEventoPara()`, `motivoQueNaoGera()`/`geraEventos()`; exclusão da linha bloqueada quando já gerou eventos. Migration no `db_futebol`: batch 21; backup `backup/db_futebol_antes_fase7_grade_20261004_140325.sql`.
+- **Etapa 2 — prévia e gerar:** botão "Gerar agenda do mês" na aba Grade, com prévia (novos, já existentes, inscrições); site público ignora os eventos gerados.
+- **Etapa 3 — conflito em lote:** um único alerta para o lote, incluindo conflitos entre os eventos gerados.
+- **Etapa 4 (opcional) — mudança na grade:** atualizar os eventos futuros gerados a partir de uma data.
+
+### Entre as Etapas 1 e 2 da Fase 7 (`69c5bed`, `4854967`)
+- **Atleta ativo sempre com categoria** (`69c5bed`): regras na seção 4, "Atletas". Trait `CriaDadosDeAtleta`: `dadosCadastro` manda a Sub-13 M e `dadosEdicao` manda a categoria atual (como o modal).
+- **Fuso de Brasília** (`4854967`): seção 1. `FusoHorarioTest` confere o fuso e `now()` = `NOW()` do banco; `ApiDatasTest` confere as datas da API. Datas de verão antigas (antes de 2019) saem com `-02:00`.
+- 279 testes passando; roteiros validados no navegador.
 
 ### Próximas fases (ordem recomendada)
 7. Grade → eventos: botão "gerar mês".
@@ -281,6 +309,9 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
 - **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
 - **Camisa repetida na lista de atletas:** um atleta em dois times mostra "Camisa Nº 15" duas vezes, sem dizer de qual time é cada número.
+- **`novalidate` no formulário de cadastro de atleta do admin** (`atletas/modals/create.blade.php`): o `required` do HTML não atua ali; a validação é só do servidor. Os outros formulários do admin não usam `novalidate`.
+- **Datas do pivô `categorias` em `GET /api/v1/atleta`** (`data_inicio/fim/atualizacao_categoria_atleta`) saem como texto `Y-m-d H:i:s`, sem fuso (não têm cast). Ver na Fase 9 (classe de pivô com casts e o trait).
+- **Lista de eventos do admin sem filtro nem paginação:** com os treinos gerados (cerca de 50 por mês), fica longa. Ver na Etapa 2 da Fase 7.
 ---
 
 ## 8. Perguntas em aberto para o professor
@@ -291,7 +322,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
    - **Idade pelo ANO de nascimento:** idade = ano atual − ano de nascimento (a data exata não importa).
    - **Masculino e feminino com as mesmas 5 faixas:** total de **10 categorias** (cada faixa em `M` e `F`).
    - **Todos os dados do banco local são de teste**; nada precisa ser preservado (inclui a Sub-12, 10–12, e a Sub-15, 13–15, atuais).
-3. Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada?
+3. Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada? E os **treinos gerados pela grade** (cerca de 50 por mês): aparecem no site? Os cancelados (ex.: feriado) aparecem com o selo? **Provisório:** gerados ficam fora do site (seção 5).
 4. A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?
 5. Atleta com cartões: pode ser excluído (apagando histórico) ou só inativado?
 6. Responsável e endereço de atleta excluído: apagar quando não houver outro atleta vinculado, ou anonimizar?
@@ -303,6 +334,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 12. **Duração padrão dos eventos sem horário de fim** (usada no alerta de conflito), hoje provisória: JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h. Confirmar os valores com o professor.
 13. **Critério de desempate da classificação** (site: home e página do campeonato), hoje provisório em `Jogo::classificacao()`: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, por fim, nome do time (sem acentos e sem maiúsculas). Confirmar com o professor (confronto direto? cartões?).
 14. **Escalar ou inscrever num jogo atleta de outra categoria ou sexo** (ex.: Sub-15 Feminino num jogo Sub-11 Masculino): hoje só **avisa** (`EventoCalendario::avisosForaDaCategoria`), não bloqueia. Deve ser bloqueado? Há exceção (atleta acima da idade, como na pergunta 10)?
+15. **Quem participa das linhas da grade sem categoria:** o **Integrado** inclui o feminino? O **Treino Livre** vale para todos mesmo em dia de jogo? **Provisório:** todos os atletas ATIVO são inscritos (seção 4, "Grade de treino").
 
 ---
 
