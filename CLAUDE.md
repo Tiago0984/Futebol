@@ -88,11 +88,11 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Jogo = evento JOGO** (`tbl_jogos.id_evento`, INT UNSIGNED, único, FK). **Data, horário, local e status ficam só no evento** (histórico, Alterado, Concluído, cancelar/ocultar, inscrição e conflito valem para o jogo). Em `tbl_jogos` ficam campeonato, times e placar.
 - **Jogos existentes:** ganham um evento cada (título "Casa x Visitante", data e hora do jogo, local e categoria do campeonato, responsável NULL), **sem inscrições** (já aconteceram).
 - **Eventos JOGO antigos sem `tbl_jogos`** continuam eventos comuns; jogos novos nascem pela tela de **Jogos**.
-- **Sem `status_jogo` e sem exclusão de jogo:** cancelar e ocultar são ações do evento (como na Fase 4). `status_jogo` e `data_jogo` saem na Etapa 2; até lá `data_jogo` é uma cópia mantida pelo evento.
+- **Sem `status_jogo` e sem exclusão de jogo:** cancelar e ocultar são ações do evento (como na Fase 4). `status_jogo` e `data_jogo` saíram de `tbl_jogos` na Etapa 2 (batch 20).
 - **Placar nullable:** NULL = ainda não jogado (os dois ou nenhum). A classificação conta só jogos com placar e evento não cancelado nem oculto.
 - **Título do evento** gerado como "Casa x Visitante", na criação e quando os times mudam.
 - **Categoria do evento:** a do campeonato; no **amistoso** (sem campeonato, opção explícita "Amistoso" no formulário), o admin escolhe (sugestão: categoria do time mandante) ou deixa sem. Com categoria, os atletas ativos dela são inscritos (regra da Fase 5); a escalação marca quem joga em cada time.
-- **Escalação** (Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Escalar quem não está inscrito **inscreve** (INDIVIDUAL, com alerta de conflito).
+- **Escalação** (Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Escalar quem não está inscrito **inscreve** (INDIVIDUAL, com alerta de conflito). Na tela do evento do jogo: coluna "Time" e **"Preencher pelo elenco"** (`tbl_atleta_time`; quem já tem time não muda; quem está nos dois elencos entra **sem time** para o admin escolher). Trocar os times do jogo tira da escalação quem estava no time que saiu (continua inscrito). Atleta de outra categoria/sexo: **aviso**, sem bloquear (seção 8, pergunta 14).
 - **API:** continua devolvendo `data_jogo` no JSON (calculado do evento), para não quebrar o app.
 
 ### Status
@@ -191,6 +191,14 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `96f58a7` feat: inscrição de atletas em eventos (Fase 5, Etapa 1)
 - `5ce4c76` feat: regras das inscrições quando evento ou atleta mudam (Fase 5, Etapa 2)
 - `58afdaa` feat: alerta de conflito de horário nas inscrições (Fase 5, Etapa 3)
+- `70cdbf1` docs: Fase 5 concluída
+- `af55dce` fix: aprovação de matrícula exige autorização assinada e idade de 9 a 17
+- `87d186b` feat: reativar envia o link de assinatura e fotos do site no admin
+- `99c0d45` chore: deixa de versionar os dumps de `backup/`
+- `ec8d344` chore: `.gitattributes` com fim de linha LF na raiz
+- `74d4cf4` feat: jogo vinculado ao evento e amistoso (Fase 6, Etapa 1)
+- `63ba16b` feat: site, API e dashboard leem o jogo pelo evento (Fase 6, Etapa 2)
+- `ac2f632` feat: escalação do jogo na tela do evento (Fase 6, Etapa 3)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -241,11 +249,23 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Backup** em `backup/`: `db_futebol_antes_fase5_inscricao_20261003_191825.sql`.
 - 174 testes passando; roteiros das Etapas 1, 2 e 3 validados no navegador.
 
-### Próxima: Fase 6 — jogos ↔ evento
-(detalhes no item 6 abaixo e na seção 5)
+### Entre as Fases 5 e 6 (`af55dce`, `87d186b`, `99c0d45`, `ec8d344`)
+- **Matrículas** (`af55dce`): aprovar exige autorização assinada e idade de 9 a 17 anos (selo na lista e nos detalhes, botão desabilitado).
+- **Reativar** (`87d186b`): gera a autorização pendente/token se faltar e envia o link de assinatura ao responsável (sem e-mail ou com falha no envio, pede para copiar o link); fotos do site aparecem no admin.
+- **Repositório:** dumps de `backup/` fora do Git (`99c0d45`); `.gitattributes` com LF na raiz (`ec8d344`).
+
+### Fase 6 concluída — jogos ↔ evento (`74d4cf4`, `63ba16b`, `ac2f632`)
+- **Jogo vinculado ao evento** (`74d4cf4`): `tbl_jogos.id_evento` (INT UNSIGNED, único, FK); jogos existentes ganharam um evento cada, sem inscrições; amistoso (sem campeonato); título "Casa x Visitante"; alerta de conflito centralizado em `Admin\Concerns\ConfirmaConflitos`.
+- **Leitura pelo evento** (`63ba16b`): site (home, calendário, campeonato), API e dashboard leem data, horário, local e status do evento; `data_jogo` e `status_jogo` saíram de `tbl_jogos`; a API continua devolvendo `data_jogo` (calculado).
+- **Escalação** (`ac2f632`): coluna "Time" e "Preencher pelo elenco" na tela do evento do jogo; trocar os times limpa a escalação do time que saiu; aviso para atleta de outra categoria/sexo (seção 8, pergunta 14). Também: aviso de conflito com o tipo do evento e grade do admin com horário sem segundos.
+- **Migrations no `db_futebol`:** batches 19 (vincula jogos ao evento) e 20 (remove `data_jogo` e `status_jogo`). Etapa 3 sem migration.
+- **Backups** em `backup/`: `db_futebol_antes_fase6_jogos_20261004_092041.sql`, `..._remove_data_jogo_20261004_094426.sql`.
+- 238 testes passando; roteiro da Etapa 3 validado no navegador.
+
+### Próxima: Fase 7 — grade → eventos
+(detalhes no item 7 abaixo e na seção 5)
 
 ### Próximas fases (ordem recomendada)
-6. Jogos ↔ evento: `tbl_jogos.id_evento`, amistoso, migrar jogos, adaptar a home do site.
 7. Grade → eventos: botão "gerar mês".
 8. Notificações: tabela `notifications`, `Notifiable` no Atleta.
 9. API do app: `/v1/agenda`, `/v1/notificacoes`. **Pré-requisito:** acesso do atleta (abaixo).
@@ -282,6 +302,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 11. Atleta numa categoria **abaixo** da idade: hoje **bloqueado** (provisório). Confirmar com o professor se há exceção.
 12. **Duração padrão dos eventos sem horário de fim** (usada no alerta de conflito), hoje provisória: JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h. Confirmar os valores com o professor.
 13. **Critério de desempate da classificação** (site: home e página do campeonato), hoje provisório em `Jogo::classificacao()`: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, por fim, nome do time (sem acentos e sem maiúsculas). Confirmar com o professor (confronto direto? cartões?).
+14. **Escalar ou inscrever num jogo atleta de outra categoria ou sexo** (ex.: Sub-15 Feminino num jogo Sub-11 Masculino): hoje só **avisa** (`EventoCalendario::avisosForaDaCategoria`), não bloqueia. Deve ser bloqueado? Há exceção (atleta acima da idade, como na pergunta 10)?
 
 ---
 
