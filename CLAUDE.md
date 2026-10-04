@@ -74,6 +74,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Evento guarda **`id_categoria`** (nullable: preenchido em evento de categoria, vazio em evento individual).
 - Nova tabela **`tbl_evento_atleta`** (inscrição, **sem status**). **O atleta só vê na agenda os eventos em que está inscrito.**
 - Cancelar um treino de um dia específico: editar **aquele evento** e mudar para cancelado.
+- **Lista de eventos do admin por mês** (`?mes=AAAA-MM`, padrão o mês atual; setas e select), com filtro **Origem** (Grade/Manual). Depois de criar, editar, cancelar ou ocultar, a lista abre no mês do evento.
 
 ### Inscrição em eventos (Fase 5)
 - **Sem status:** remover a inscrição apaga a linha. Ficam registrados **origem** (`CATEGORIA` = automática pela categoria do evento; `INDIVIDUAL` = escolha do admin), **quem** inscreveu e **quando**. Único (evento, atleta).
@@ -115,6 +116,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 
 ### Site público (provisório até o professor decidir)
 - O calendário do site mostra só os tipos **JOGO, TREINO e CAMPEONATO** (`EventoCalendario::TIPOS_PUBLICOS`), na lista e no próximo evento. EVENTO, REUNIAO, CONFRATERNIZACAO e AVALIACAO ficam só no admin.
+- **Treinos gerados pela grade não aparecem no site** (escopo `foraDaGrade()`, na lista e no Próximo Evento); a grade continua na tabela da página. Treinos criados à mão aparecem.
 - Ligado à pergunta 3 da seção 8.
 
 ### Notificações
@@ -128,6 +130,9 @@ O atleta é notificado em três casos: **inscrição, alteração e cancelamento
 - **Não gera:** tipo `JOGO`, linha inativa, categoria inativa e linha sem horário de início (`GradeTreino::motivoQueNaoGera()`).
 - **Linha que já gerou eventos não é excluída**, só inativada.
 - **Linhas sem categoria** (Integrado, Treino Livre): inscrevem **todos os atletas ATIVO**, origem `INDIVIDUAL` (provisório, seção 8, pergunta 15). Quem entra depois é adicionado pelo admin.
+- **Geração:** botão **"Gerar agenda do mês"** na aba Grade, com **prévia** (datas novas, já geradas, não gera com o motivo, atletas e inscrições). Só o **mês atual e os 2 seguintes** (`GradeTreino::MESES_A_FRENTE`), de hoje em diante; o **treino de hoje já concluído é pulado** (a prévia avisa). Categoria sem atleta ATIVO **gera o evento vazio** (a prévia destaca "0 atletas"). Lote tudo ou nada, com trava nas linhas da grade; gerar de novo não duplica.
+- **Conflito na geração:** calculado **em lote** na prévia (`EventoCalendario::conflitosEmLote`), contra os eventos existentes e entre os eventos do próprio lote, **agrupado por par de eventos** (até 5 nomes; o resto em `<details>`). Conflito real: **confirmação única** ("Confirmar mesmo assim e gerar"); sem confirmar, **nada é gravado**. Aviso fraco só informa (na prévia e, depois de gerar, no aviso azul da lista).
+- **Mudar ou inativar um horário não altera os eventos já gerados:** a tela só avisa quantos eventos futuros ativos ele tem (editar na lista de eventos, filtro Origem: Grade; cancelar à mão os que não vão acontecer).
 
 ### Conflito de horário
 O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta num evento que **sobrepõe** outro em que ele já está, o admin recebe um **alerta**.
@@ -219,6 +224,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `f65d58f` feat: base da geração de eventos pela grade (Fase 7, Etapa 1)
 - `69c5bed` fix: atleta ativo sempre com categoria no admin
 - `4854967` fix: horário de Brasília no app, no banco e nas datas da API
+- `20566ba` docs: andamento da Fase 7
+- `c293a55` feat: gerar agenda do mês pela grade, com prévia (Fase 7, Etapa 2)
+- `c9929c9` feat: alerta de conflito em lote na geração da agenda (Fase 7, Etapa 3)
+- `e0c4c5b` feat: aviso ao mudar ou inativar horário da grade com eventos gerados (Fase 7)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -282,19 +291,24 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Backups** em `backup/`: `db_futebol_antes_fase6_jogos_20261004_092041.sql`, `..._remove_data_jogo_20261004_094426.sql`.
 - 238 testes passando; roteiros das Etapas 1, 2 e 3 validados no navegador.
 
-### Fase 7 em andamento — grade → eventos (regras na seção 4, "Grade de treino", e na seção 5)
-- **Etapa 1 — base** ✅ (`f65d58f`): `tbl_evento_calendario.id_grade_treino` (FK `fk_evento_grade`, NO ACTION) e `data_grade_evento_calendario`, único `evento_grade_data_unique`; `GradeTreino::datasNoMes()`, `dadosEventoPara()`, `motivoQueNaoGera()`/`geraEventos()`; exclusão da linha bloqueada quando já gerou eventos. Migration no `db_futebol`: batch 21; backup `backup/db_futebol_antes_fase7_grade_20261004_140325.sql`.
-- **Etapa 2 — prévia e gerar:** botão "Gerar agenda do mês" na aba Grade, com prévia (novos, já existentes, inscrições); site público ignora os eventos gerados.
-- **Etapa 3 — conflito em lote:** um único alerta para o lote, incluindo conflitos entre os eventos gerados.
-- **Etapa 4 (opcional) — mudança na grade:** atualizar os eventos futuros gerados a partir de uma data.
+### Fase 7 concluída — grade → eventos (regras na seção 4, "Grade de treino", e na seção 5)
+- **Etapa 1 — base** (`f65d58f`): `tbl_evento_calendario.id_grade_treino` (FK `fk_evento_grade`, NO ACTION) e `data_grade_evento_calendario`, único `evento_grade_data_unique`; `GradeTreino::datasNoMes()`, `dadosEventoPara()`, `motivoQueNaoGera()`/`geraEventos()`; exclusão da linha bloqueada quando já gerou eventos. Migration no `db_futebol`: batch 21.
+- **Etapa 2 — prévia e gerar** (`c293a55`): `GradeTreino::previaDoMes()`/`gerarMes()` e `EventoCalendario::criarDaGrade()` (junto do `criarPor`, mesma normalização e responsável); inscrição em massa fora do `inscrever()`; página `admin/calendario/gerar.blade.php`; lista de eventos por mês com filtro Origem; site sem os gerados.
+- **Etapa 3 — conflito em lote** (`c9929c9`): `EventoCalendario::compararIntervalos()` (regra única, usada também por `conflitosPara()`) e `conflitosEmLote()` (3 consultas, qualquer que seja o lote); partial `admin/calendario/_grupos_conflito.blade.php`.
+- **Fechamento** (`e0c4c5b`): aviso ao mudar ou inativar um horário com eventos futuros gerados (`GradeTreino::contarEventosFuturosAtivos()`). A atualização em massa dos eventos ficou como débito (seção 7).
+- **Backups** em `backup/`: `db_futebol_antes_fase7_grade_20261004_140325.sql`, `..._gerar_20261004_145943.sql`, `..._conflito_20261004_190552.sql`.
+- **Dados de teste no `db_futebol`:** outubro e novembro de 2026 gerados; dezembro livre.
+- 310 testes passando; roteiros das Etapas 1, 2 e 3 e do aviso do fechamento validados no navegador.
 
 ### Entre as Etapas 1 e 2 da Fase 7 (`69c5bed`, `4854967`)
 - **Atleta ativo sempre com categoria** (`69c5bed`): regras na seção 4, "Atletas". Trait `CriaDadosDeAtleta`: `dadosCadastro` manda a Sub-13 M e `dadosEdicao` manda a categoria atual (como o modal).
 - **Fuso de Brasília** (`4854967`): seção 1. `FusoHorarioTest` confere o fuso e `now()` = `NOW()` do banco; `ApiDatasTest` confere as datas da API. Datas de verão antigas (antes de 2019) saem com `-02:00`.
 - 279 testes passando; roteiros validados no navegador.
 
+### Próxima: Fase 8 — notificações
+(detalhes no item 8 abaixo; uma notificação por atleta para os treinos gerados, seção 5)
+
 ### Próximas fases (ordem recomendada)
-7. Grade → eventos: botão "gerar mês".
 8. Notificações: tabela `notifications`, `Notifiable` no Atleta.
 9. API do app: `/v1/agenda`, `/v1/notificacoes`. **Pré-requisito:** acesso do atleta (abaixo).
 10. Menu e telas finais com dados reais.
@@ -311,7 +325,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Camisa repetida na lista de atletas:** um atleta em dois times mostra "Camisa Nº 15" duas vezes, sem dizer de qual time é cada número.
 - **`novalidate` no formulário de cadastro de atleta do admin** (`atletas/modals/create.blade.php`): o `required` do HTML não atua ali; a validação é só do servidor. Os outros formulários do admin não usam `novalidate`.
 - **Datas do pivô `categorias` em `GET /api/v1/atleta`** (`data_inicio/fim/atualizacao_categoria_atleta`) saem como texto `Y-m-d H:i:s`, sem fuso (não têm cast). Ver na Fase 9 (classe de pivô com casts e o trait).
-- **Lista de eventos do admin sem filtro nem paginação:** com os treinos gerados (cerca de 50 por mês), fica longa. Ver na Etapa 2 da Fase 7.
+- **Manutenção da agenda gerada** (tratar depois da Fase 8):
+  - (a) Mudança na grade atualizar os eventos futuros gerados (a partir de uma data), **sem sobrescrever o que foi editado à mão**; hoje a tela só avisa.
+  - (b) Atleta aprovado no meio do mês **não entra** nos eventos já gerados (hoje: "Atualizar inscritos pela categoria" evento por evento).
+  - (c) Quem entra depois nas linhas sem categoria (Integrado, Treino Livre) só é adicionado **categoria por categoria** ("Adicionar todos de uma categoria").
 ---
 
 ## 8. Perguntas em aberto para o professor
