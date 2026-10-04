@@ -468,7 +468,15 @@ class CalendarioController extends Controller
 
     public function destroyGrade($id)
     {
-        GradeTreino::findOrFail($id)->delete();
+        $grade = GradeTreino::findOrFail($id);
+
+        // Linha que já gerou eventos fica (a FK não deixa excluir e os eventos guardam a origem): só inativar
+        if ($grade->eventos()->exists()) {
+            return redirect()->route('admin.calendario.index', ['tab' => 'grade'])
+                ->with('erro', 'Este horário já gerou eventos na agenda e não pode ser excluído. Use "Inativar" para tirá-lo da grade.');
+        }
+
+        $grade->delete();
 
         return redirect()->route('admin.calendario.index', ['tab' => 'grade'])->with('sucesso', 'Horário removido.');
     }

@@ -79,7 +79,8 @@ class EventoCalendario extends Model
     ];
 
     // id_usuario fica fora de propósito: o responsável é gravado só na criação (criarPor) e nenhum
-    // update() com os dados do formulário pode trocá-lo
+    // update() com os dados do formulário pode trocá-lo. O mesmo vale para id_grade_treino e
+    // data_grade_evento_calendario: só a geração pela grade grava a origem, e o formulário nunca a muda.
     protected $fillable = [
         'titulo_evento_calendario',
         'descricao_evento_calendario',
@@ -95,7 +96,8 @@ class EventoCalendario extends Model
     ];
 
     protected $casts = [
-        'data_evento_calendario' => 'date',
+        'data_evento_calendario'       => 'date',
+        'data_grade_evento_calendario' => 'date',
     ];
 
     /**
@@ -338,6 +340,12 @@ class EventoCalendario extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
+    }
+
+    // Linha da grade de treino que gerou o evento; null em evento criado à mão
+    public function grade()
+    {
+        return $this->belongsTo(GradeTreino::class, 'id_grade_treino', 'id_grade_treino');
     }
 
     // Usuário do admin que criou o evento; null nos eventos anteriores à Fase 4
