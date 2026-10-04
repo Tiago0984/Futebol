@@ -260,7 +260,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Escalação** (`ac2f632`): coluna "Time" e "Preencher pelo elenco" na tela do evento do jogo; trocar os times limpa a escalação do time que saiu; aviso para atleta de outra categoria/sexo (seção 8, pergunta 14). Também: aviso de conflito com o tipo do evento e grade do admin com horário sem segundos.
 - **Migrations no `db_futebol`:** batches 19 (vincula jogos ao evento) e 20 (remove `data_jogo` e `status_jogo`). Etapa 3 sem migration.
 - **Backups** em `backup/`: `db_futebol_antes_fase6_jogos_20261004_092041.sql`, `..._remove_data_jogo_20261004_094426.sql`.
-- 238 testes passando; roteiro da Etapa 3 validado no navegador.
+- 238 testes passando; roteiros das Etapas 1, 2 e 3 validados no navegador.
 
 ### Próxima: Fase 7 — grade → eventos
 (detalhes no item 7 abaixo e na seção 5)
