@@ -69,6 +69,20 @@ class GradeTreino extends Model
         };
     }
 
+    // Horário sem segundos, como na lista de eventos: "08:00 às 09:30"; sem início (ex.: "Jogos"), "—"
+    public function getHorarioTextoAttribute(): string
+    {
+        $formatar = fn ($hora) => substr((string) $hora, 0, 5);
+
+        if (! $this->horario_inicio_grade_treino) {
+            return '—';
+        }
+
+        return $this->horario_fim_grade_treino
+            ? $formatar($this->horario_inicio_grade_treino) . ' às ' . $formatar($this->horario_fim_grade_treino)
+            : $formatar($this->horario_inicio_grade_treino);
+    }
+
     public function getDiaLabelAttribute(): string
     {
         return self::DIAS_SEMANA[$this->dia_semana_grade_treino] ?? $this->dia_semana_grade_treino;

@@ -26,6 +26,19 @@
 
             @include('admin.calendario._conflitos')
 
+            {{-- Atleta de outra categoria/sexo escalado ou inscrito no jogo: só avisa (CLAUDE.md, seção 8, pergunta 14) --}}
+            @if ($avisosCategoria = session('avisos_categoria'))
+                <div class="alert alert-info alert-dismissible fade show" role="alert">
+                    <strong><i class="bi bi-info-circle"></i> Fora da categoria do jogo</strong>
+                    <ul class="mb-0 mt-2">
+                        @foreach ($avisosCategoria as $aviso)
+                        <li>{{ $aviso }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             @if (session('erro'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {{ session('erro') }}
@@ -59,6 +72,36 @@
                 </div>
             </div>
 
+            {{-- Escalação do jogo: cada inscrito em um time (mandante ou visitante interno) --}}
+            @if ($jogo)
+            @php
+                $escalaveis = $jogo->timesEscalaveis();
+                $porTime    = $inscricoes->countBy(fn ($i) => $i->id_time ?? 0);
+            @endphp
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-dark text-white fw-semibold">
+                    <i class="bi bi-diagram-3 me-2"></i> Escalação:
+                    {{ $jogo->timeCasa->nome_time }} x {{ $jogo->timeVisitante->nome_time }}
+                    @if ($jogo->ehAmistoso()) <span class="badge bg-secondary ms-1">Amistoso</span> @endif
+                </div>
+                <div class="card-body d-flex flex-wrap gap-4 align-items-center">
+                    @forelse ($escalaveis as $time)
+                        <div><span class="text-muted small d-block">{{ $time->nome_time }}</span><strong>{{ $porTime[$time->id_time] ?? 0 }}</strong> atleta(s)</div>
+                    @empty
+                        <div class="text-muted">Os dois times são externos: não há atletas da escolinha para escalar.</div>
+                    @endforelse
+                    @if ($escalaveis->isNotEmpty())
+                        <div><span class="text-muted small d-block">Sem time</span><strong>{{ $porTime[0] ?? 0 }}</strong> inscrito(s)</div>
+                        <form action="{{ route('admin.calendario.eventos.escalacao.elenco', $evento->id_evento_calendario) }}" method="POST" class="ms-auto"
+                              onsubmit="return confirm('Escalar pelo elenco dos times? Quem já tem time não muda; quem está no elenco e não está inscrito será inscrito.')">
+                            @csrf
+                            <button type="submit" class="btn btn-success"><i class="bi bi-people"></i> Preencher pelo elenco</button>
+                        </form>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <div class="row g-4">
 
                 {{-- Inscritos --}}
@@ -73,6 +116,7 @@
                                     <tr>
                                         <th class="ps-3">Atleta</th>
                                         <th>Categoria</th>
+                                        @if ($jogo && $escalaveis->isNotEmpty())<th>Time</th>@endif
                                         <th>Origem</th>
                                         <th>Inscrito por</th>
                                         <th class="text-center" style="width:60px"></th>
@@ -83,6 +127,24 @@
                                     <tr>
                                         <td class="ps-3 fw-semibold">{{ $inscricao->atleta->nome_atleta }}</td>
                                         <td class="text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</td>
+                                        @if ($jogo && $escalaveis->isNotEmpty())
+                                        <td>
+                                            <form action="{{ route('admin.calendario.eventos.inscricoes.time', [$evento->id_evento_calendario, $inscricao->id_atleta]) }}" method="POST">
+                                                @csrf @method('PATCH')
+                                                <select name="id_time" class="form-select form-select-sm" onchange="this.form.submit()"
+                                                        aria-label="Time de {{ $inscricao->atleta->nome_atleta }}">
+                                                    <option value="">— Sem time —</option>
+                                                    @foreach ($escalaveis as $time)
+                                                    <option value="{{ $time->id_time }}" @selected((int) $inscricao->id_time === (int) $time->id_time)>{{ $time->nome_time }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </form>
+                                            @php $doElenco = $escalaveis->whereIn('id_time', $elencos[$inscricao->id_atleta] ?? [])->pluck('nome_time'); @endphp
+                                            @if ($doElenco->isNotEmpty())
+                                                <small class="text-muted">Elenco: {{ $doElenco->implode(', ') }}</small>
+                                            @endif
+                                        </td>
+                                        @endif
                                         <td><span class="badge-cat">{{ $inscricao->origem_label }}</span></td>
                                         <td class="text-muted small">
                                             {{ $inscricao->usuario?->nome_usuario ?? '—' }}<br>
@@ -101,7 +163,7 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">Nenhum atleta inscrito.</td>
+                                        <td colspan="6" class="text-center text-muted py-4">Nenhum atleta inscrito.</td>
                                     </tr>
                                     @endforelse
                                 </tbody>
@@ -160,6 +222,14 @@
                                     </optgroup>
                                     @endforeach
                                 </select>
+                                @if ($jogo && $escalaveis->isNotEmpty())
+                                <select name="id_time" class="form-select" style="max-width:40%" aria-label="Time">
+                                    <option value="">Sem time</option>
+                                    @foreach ($escalaveis as $time)
+                                    <option value="{{ $time->id_time }}">{{ $time->nome_time }}</option>
+                                    @endforeach
+                                </select>
+                                @endif
                                 <button type="submit" class="btn btn-success">Inscrever</button>
                             </form>
                         </div>

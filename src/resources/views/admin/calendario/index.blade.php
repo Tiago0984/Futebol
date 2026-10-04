@@ -302,7 +302,7 @@
                             <td><span class="badge-cat">{{ $g->rotulo }}</span></td>
                             <td class="text-muted">{{ $g->tipo_grade_treino ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
-                                {{ $g->horario_inicio_grade_treino }} – {{ $g->horario_fim_grade_treino }}
+                                {{ $g->horario_texto }}
                             </td>
                             <td class="text-muted">{{ $g->local_grade_treino ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.8rem;">{{ $g->horario_obs_grade_treino ?? '—' }}</td>

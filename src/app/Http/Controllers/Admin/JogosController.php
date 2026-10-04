@@ -90,7 +90,11 @@ class JogosController extends Controller
             $jogo->update($dadosJogo);
         });
 
-        $mensagem = 'Jogo atualizado.' . $this->sincronizarSeMudouCategoria($evento, $categoriaAntes);
+        // Times trocados: quem estava escalado num time que saiu do jogo fica sem time (continua inscrito)
+        $foraDaEscalacao = $jogo->fresh(['timeCasa', 'timeVisitante'])->limparEscalacaoForaDosTimes();
+
+        $mensagem = 'Jogo atualizado.' . $this->sincronizarSeMudouCategoria($evento, $categoriaAntes)
+            . ($foraDaEscalacao ? " {$foraDaEscalacao} atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos." : '');
 
         return redirect()->route('admin.jogos.index')->with('sucesso', $mensagem);
     }

@@ -127,6 +127,19 @@ class GradeTreinoTest extends TestCase
             ->assertSee('Geral (sem categoria)');
     }
 
+    public function test_tela_do_admin_mostra_o_horario_sem_segundos(): void
+    {
+        $this->criarGrade(['categoria_grade_treino' => 'Integrado']); // 08:00 às 09:30
+        $this->criarGrade(['categoria_grade_treino' => 'Jogos', 'horario_inicio_grade_treino' => null,
+            'horario_fim_grade_treino' => null, 'horario_obs_grade_treino' => 'Conforme tabela']);
+
+        $this->comoAdmin()
+            ->get(route('admin.calendario.index', ['tab' => 'grade']))
+            ->assertOk()
+            ->assertSee('08:00 às 09:30')
+            ->assertDontSee('08:00:00 –', false);
+    }
+
     // ---------- site ----------
 
     public function test_site_mostra_a_grade_com_categoria_e_itens_gerais(): void

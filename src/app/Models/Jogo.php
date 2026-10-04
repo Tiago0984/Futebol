@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 /**
@@ -124,6 +125,61 @@ class Jogo extends Model
             <=> [$a['pontos'], $a['v'], $a['gm'] - $a['gc'], $a['gm'], $nome($b)]);
 
         return $tabela;
+    }
+
+    // ── Escalação (tbl_evento_atleta.id_time) ───────────────────────────────
+
+    /**
+     * Times em que se pode escalar: o mandante e o visitante, só INTERNO (time externo não tem atleta
+     * da escolinha). O atleta fica num time só: a inscrição é única por (evento, atleta), com um id_time.
+     */
+    public function timesEscalaveis(): Collection
+    {
+        return collect([$this->timeCasa, $this->timeVisitante])
+            ->filter(fn ($time) => $time && $time->tipo_time === 'INTERNO')
+            ->values();
+    }
+
+    // Motivo para não escalar no time, ou null se pode (null = tirar da escalação, sempre pode)
+    public function erroDeEscalacao(?int $idTime): ?string
+    {
+        if ($idTime === null) {
+            return null;
+        }
+
+        if (! in_array($idTime, [(int) $this->id_time_casa, (int) $this->id_time_visitante], true)) {
+            return 'Escolha o mandante ou o visitante deste jogo.';
+        }
+
+        return $this->timesEscalaveis()->contains('id_time', $idTime)
+            ? null
+            : 'Time externo não tem atletas da escolinha: não dá para escalar nele.';
+    }
+
+    /**
+     * Atletas do elenco (tbl_atleta_time) dos times escaláveis deste jogo, só atletas ATIVO:
+     * [id_atleta => [id_time, ...]]. Quem está nos dois elencos aparece com os dois times.
+     */
+    public function elencosDoJogo(): array
+    {
+        return DB::table('tbl_atleta_time as at')
+            ->join('tbl_atletas as a', 'a.id_atleta', '=', 'at.id_atleta')
+            ->where('a.status_atleta', 'ATIVO')
+            ->whereIn('at.id_time', $this->timesEscalaveis()->pluck('id_time'))
+            ->get(['at.id_atleta', 'at.id_time'])
+            ->groupBy('id_atleta')
+            ->map(fn ($linhas) => $linhas->pluck('id_time')->map(fn ($id) => (int) $id)->unique()->values()->all())
+            ->all();
+    }
+
+    // Depois de trocar os times: quem estava escalado num time que não está mais no jogo (ou não é
+    // escalável) fica sem time. A inscrição continua. Devolve quantos saíram da escalação.
+    public function limparEscalacaoForaDosTimes(): int
+    {
+        return EventoAtleta::where('id_evento_calendario', $this->id_evento)
+            ->whereNotNull('id_time')
+            ->whereNotIn('id_time', $this->timesEscalaveis()->pluck('id_time'))
+            ->update(['id_time' => null]);
     }
 
     // ── Dados do evento ─────────────────────────────────────────────────────

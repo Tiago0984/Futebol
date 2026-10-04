@@ -112,6 +112,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         Route::post('/eventos/{id}/inscricoes/categoria',    [AdminCalendarioController::class, 'inscreverCategoriaNoEvento'])->name('eventos.inscricoes.categoria');
         Route::post('/eventos/{id}/inscricoes/atualizar',    [AdminCalendarioController::class, 'atualizarInscritosPelaCategoria'])->name('eventos.inscricoes.atualizar');
         Route::delete('/eventos/{id}/inscricoes/{idAtleta}', [AdminCalendarioController::class, 'removerInscricao'])->name('eventos.inscricoes.destroy');
+        // Escalação do jogo (tbl_evento_atleta.id_time)
+        Route::patch('/eventos/{id}/inscricoes/{idAtleta}/time', [AdminCalendarioController::class, 'escalarAtleta'])->name('eventos.inscricoes.time');
+        Route::post('/eventos/{id}/escalacao/elenco',         [AdminCalendarioController::class, 'preencherPeloElenco'])->name('eventos.escalacao.elenco');
         Route::post('/grade',                  [AdminCalendarioController::class, 'storeGrade'])->name('grade.store');
         Route::put('/grade/{id}',              [AdminCalendarioController::class, 'updateGrade'])->name('grade.update');
         Route::patch('/grade/{id}/toggle',     [AdminCalendarioController::class, 'toggleStatusGrade'])->name('grade.toggleStatus');

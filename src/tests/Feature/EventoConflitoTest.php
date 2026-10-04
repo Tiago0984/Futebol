@@ -50,7 +50,7 @@ class EventoConflitoTest extends TestCase
 
         $this->assertCount(1, $conflitos);
         $this->assertFalse($conflitos[0]['fraco']);
-        $this->assertSame('Ana: horário sobrepõe "Jogo 10h" (' . now()->addWeek()->format('d/m') . ', 10:00 às 12:00).',
+        $this->assertSame('Ana: horário sobrepõe "Jogo 10h" (TREINO, ' . now()->addWeek()->format('d/m') . ', 10:00 às 12:00).',
             EventoCalendario::descreverConflito($conflitos[0]));
     }
 
@@ -74,14 +74,30 @@ class EventoConflitoTest extends TestCase
     public function test_evento_sem_inicio_gera_aviso_fraco(): void
     {
         $atleta = $this->atleta('Ana');
-        $this->eventoComAtleta($atleta, ['titulo_evento_calendario' => 'Jogo a definir', 'horario_inicio_evento_calendario' => null, 'horario_fim_evento_calendario' => null]);
+        $this->eventoComAtleta($atleta, ['titulo_evento_calendario' => 'Jogo a definir', 'tipo_evento_calendario' => 'JOGO',
+            'horario_inicio_evento_calendario' => null, 'horario_fim_evento_calendario' => null]);
 
         $conflitos = $this->eventoNaoSalvo()->conflitosPara([$atleta]);
 
         $this->assertCount(1, $conflitos);
         $this->assertTrue($conflitos[0]['fraco']);
-        $this->assertStringContainsString('mesmo dia', EventoCalendario::descreverConflito($conflitos[0]));
-        $this->assertStringContainsString('horário a definir', EventoCalendario::descreverConflito($conflitos[0]));
+        $this->assertSame('Ana: também está em "Jogo a definir" no mesmo dia (JOGO, ' . now()->addWeek()->format('d/m')
+            . ', A definir); horário a definir, confira.', EventoCalendario::descreverConflito($conflitos[0]));
+    }
+
+    public function test_eventos_com_o_mesmo_titulo_se_distinguem_pelo_tipo_no_aviso(): void
+    {
+        $atleta = $this->atleta('Ana');
+        $this->eventoComAtleta($atleta, ['titulo_evento_calendario' => 'Sub-13', 'tipo_evento_calendario' => 'JOGO']);
+        $this->eventoComAtleta($atleta, ['titulo_evento_calendario' => 'Sub-13', 'tipo_evento_calendario' => 'TREINO']);
+
+        $linhas = collect($this->eventoNaoSalvo()->conflitosPara([$atleta]))
+            ->map(fn ($c) => EventoCalendario::descreverConflito($c));
+
+        $this->assertCount(2, $linhas);
+        $this->assertCount(2, $linhas->unique());
+        $this->assertTrue($linhas->contains(fn ($l) => str_contains($l, '(JOGO, ')));
+        $this->assertTrue($linhas->contains(fn ($l) => str_contains($l, '(TREINO, ')));
     }
 
     public function test_evento_cancelado_nao_gera_conflito(): void

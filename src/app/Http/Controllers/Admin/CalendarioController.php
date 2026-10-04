@@ -86,9 +86,111 @@ class CalendarioController extends Controller
         // Atletas da categoria do evento que entraram depois e ainda não estão inscritos
         $faltantesDaCategoria = count($evento->idsFaltantesDaCategoria());
 
+        // Evento de jogo: escalação por time (mandante/visitante internos) e elenco de cada atleta
+        $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
+        $elencos = $jogo?->elencosDoJogo() ?? [];
+
         return view('admin.calendario.evento', compact(
-            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria'
+            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos'
         ));
+    }
+
+    // Escala (ou tira da escalação) um inscrito num dos times do jogo
+    public function escalarAtleta(Request $request, $id, $idAtleta)
+    {
+        $evento     = EventoCalendario::findOrFail($id);
+        $jogo       = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
+        $inscricao  = $evento->inscricoes()->where('id_atleta', $idAtleta)->firstOrFail();
+
+        if (! $jogo) {
+            return back()->with('erro', 'Este evento não é um jogo: não tem escalação.');
+        }
+
+        $request->validate(['id_time' => 'nullable|integer']);
+        $idTime = $request->filled('id_time') ? (int) $request->id_time : null;
+
+        if ($erro = $jogo->erroDeEscalacao($idTime)) {
+            return back()->with('erro', $erro);
+        }
+
+        $inscricao->update(['id_time' => $idTime]);
+        $nome = $inscricao->atleta->nome_atleta;
+
+        if ($idTime !== null) {
+            $this->avisarForaDaCategoria($evento, [(int) $idAtleta]);
+        }
+
+        return back()->with('sucesso', $idTime
+            ? "{$nome} escalado(a) no {$jogo->timesEscalaveis()->firstWhere('id_time', $idTime)->nome_time}."
+            : "{$nome} ficou sem time.");
+    }
+
+    /**
+     * "Preencher pelo elenco": quem está no elenco (tbl_atleta_time) de um só dos times do jogo é escalado
+     * nele; quem não está inscrito é inscrito (INDIVIDUAL, com alerta de conflito). Quem já tem time não
+     * muda. Quem está nos dois elencos é inscrito SEM time (se ainda não estava), para o admin escolher
+     * na lista. Atleta fora da categoria do jogo gera aviso, sem bloquear.
+     */
+    public function preencherPeloElenco(Request $request, $id)
+    {
+        $evento = EventoCalendario::findOrFail($id);
+        $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
+
+        if (! $jogo || $jogo->timesEscalaveis()->isEmpty()) {
+            return back()->with('erro', 'Este jogo não tem time interno para escalar.');
+        }
+
+        $elencos    = $jogo->elencosDoJogo();
+        $nosDois    = array_keys(array_filter($elencos, fn ($times) => count($times) > 1));
+        $deUmTime   = array_map(fn ($times) => $times[0], array_filter($elencos, fn ($times) => count($times) === 1));
+        $inscricoes = $evento->inscricoes()->get(['id_atleta', 'id_time'])->keyBy('id_atleta');
+        $jaInscritos = $inscricoes->keys()->map(fn ($id) => (int) $id)->all();
+        $entrariam  = array_values(array_diff(array_keys($elencos), $jaInscritos));
+
+        if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara($entrariam))) {
+            return $confirmar;
+        }
+
+        $idUsuario = auth('admin')->id();
+        $escalados = 0;
+        $inscritos = 0;
+        $mexidos   = [];
+        foreach ($deUmTime as $idAtleta => $idTime) {
+            $inscricao = $inscricoes->get($idAtleta);
+
+            if (! $inscricao) {
+                $inscritos += $evento->inscrever($idAtleta, 'INDIVIDUAL', $idUsuario, $idTime) ? 1 : 0;
+                $mexidos[] = $idAtleta;
+            } elseif ($inscricao->id_time === null) {
+                $escalados += $evento->inscricoes()->where('id_atleta', $idAtleta)->update(['id_time' => $idTime]);
+                $mexidos[] = $idAtleta;
+            }
+        }
+
+        $nosDoisInscritos = 0;
+        foreach (array_diff($nosDois, $jaInscritos) as $idAtleta) {
+            $nosDoisInscritos += $evento->inscrever($idAtleta, 'INDIVIDUAL', $idUsuario) ? 1 : 0;
+            $mexidos[] = $idAtleta;
+        }
+
+        $mensagem = "Escalação pelo elenco: {$escalados} inscrito(s) escalado(s), {$inscritos} atleta(s) inscrito(s) e escalado(s).";
+        if ($nosDois) {
+            $mensagem .= ' ' . count($nosDois) . ' atleta(s) estão nos elencos dos dois times'
+                . ($nosDoisInscritos ? " ({$nosDoisInscritos} inscrito(s) agora, sem time)" : '')
+                . ': escolha o time de cada um na lista.';
+        }
+
+        $this->avisarForaDaCategoria($evento, $mexidos);
+
+        return back()->with('sucesso', $mensagem);
+    }
+
+    // Aviso informativo (não bloqueia) para atletas fora da categoria/sexo do evento, na próxima tela
+    private function avisarForaDaCategoria(EventoCalendario $evento, array $idsAtletas): void
+    {
+        if ($avisos = $evento->avisosForaDaCategoria($idsAtletas)) {
+            session()->flash('avisos_categoria', $avisos);
+        }
     }
 
     // "Atualizar inscritos pela categoria": só acrescenta quem falta (não remove ninguém)
@@ -109,25 +211,45 @@ class CalendarioController extends Controller
         return back()->with('sucesso', "{$novos} atleta(s) da categoria inscrito(s).");
     }
 
-    // Inscrição individual: um atleta ativo escolhido no select
+    // Inscrição individual: um atleta ativo escolhido no select (num jogo, pode já escolher o time)
     public function inscreverAtleta(Request $request, $id)
     {
         $evento = EventoCalendario::findOrFail($id);
 
         $request->validate([
             'id_atleta' => ['required', 'integer', Rule::exists('tbl_atletas', 'id_atleta')->where('status_atleta', 'ATIVO')],
+            'id_time'   => 'nullable|integer',
         ], [
             'id_atleta.required' => 'Escolha um atleta.',
             'id_atleta.exists'   => 'Escolha um atleta ativo.',
         ]);
 
+        $idTime = $request->filled('id_time') ? (int) $request->id_time : null;
+        if ($idTime !== null) {
+            $jogo = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
+            $erro = $jogo ? $jogo->erroDeEscalacao($idTime) : 'Este evento não é um jogo: não tem escalação.';
+
+            if ($erro) {
+                return back()->with('erro', $erro)->withInput();
+            }
+        }
+
         if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara([(int) $request->id_atleta]))) {
             return $confirmar;
         }
 
-        $inscreveu = $evento->inscrever((int) $request->id_atleta, 'INDIVIDUAL', auth('admin')->id());
+        $inscreveu = $evento->inscrever((int) $request->id_atleta, 'INDIVIDUAL', auth('admin')->id(), $idTime);
 
-        return back()->with('sucesso', $inscreveu ? 'Atleta inscrito.' : 'O atleta já estava inscrito.');
+        // Em jogo, inscrever alguém de outra categoria/sexo gera aviso (não bloqueia)
+        if ($inscreveu && $evento->tipo_evento_calendario === 'JOGO') {
+            $this->avisarForaDaCategoria($evento, [(int) $request->id_atleta]);
+        }
+
+        return back()->with('sucesso', match (true) {
+            ! $inscreveu      => 'O atleta já estava inscrito.',
+            $idTime !== null  => 'Atleta inscrito e escalado.',
+            default           => 'Atleta inscrito.',
+        });
     }
 
     /**

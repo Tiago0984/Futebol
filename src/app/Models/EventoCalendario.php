@@ -128,9 +128,9 @@ class EventoCalendario extends Model
     /**
      * Inscreve um atleta. Já inscrito: não faz nada e devolve false (sem erro), para "adicionar
      * todos de uma categoria" poder ser usado várias vezes. Ponto único de inscrição: a notificação
-     * de inscrição (Fase 8) entra aqui.
+     * de inscrição (Fase 8) entra aqui. $idTime: escalação num jogo (quem chama valida o time).
      */
-    public function inscrever(int $idAtleta, string $origem, ?int $idUsuario): bool
+    public function inscrever(int $idAtleta, string $origem, ?int $idUsuario, ?int $idTime = null): bool
     {
         if ($this->inscricoes()->where('id_atleta', $idAtleta)->exists()) {
             return false;
@@ -139,6 +139,7 @@ class EventoCalendario extends Model
         try {
             $this->inscricoes()->create([
                 'id_atleta'            => $idAtleta,
+                'id_time'              => $idTime,
                 'origem_evento_atleta' => $origem,
                 'id_usuario'           => $idUsuario,
                 'data_evento_atleta'   => now(),
@@ -188,6 +189,32 @@ class EventoCalendario extends Model
 
             return ['entraram' => $entraram, 'sairam' => $sairam];
         });
+    }
+
+    /**
+     * Aviso (não bloqueia) para atletas fora da categoria do evento, que também cobre o sexo, porque
+     * cada categoria é M ou F. Ex.: "Fulana é Sub-15 Feminino; o jogo é Sub-11 Masculino."
+     * Evento sem categoria: nada a avisar. Se deve bloquear: CLAUDE.md, seção 8, pergunta 14.
+     */
+    public function avisosForaDaCategoria(array $idsAtletas): array
+    {
+        if (! $this->categoria || ! $idsAtletas) {
+            return [];
+        }
+
+        $rotuloEvento = $this->categoria->rotulo;
+        $oQue = $this->tipo_evento_calendario === 'JOGO' ? 'o jogo' : 'o evento';
+
+        return Atleta::with('categoriasAtivas')
+            ->whereIn('id_atleta', $idsAtletas)
+            ->orderBy('nome_atleta')
+            ->get()
+            ->reject(fn ($atleta) => $atleta->categoriasAtivas->contains('id_categoria', $this->id_categoria))
+            ->map(fn ($atleta) => ($categoria = $atleta->categoriasAtivas->first())
+                ? "{$atleta->nome_atleta} é {$categoria->rotulo}; {$oQue} é {$rotuloEvento}."
+                : "{$atleta->nome_atleta} está sem categoria; {$oQue} é {$rotuloEvento}.")
+            ->values()
+            ->all();
     }
 
     // Atletas ativos da categoria do evento que ainda não estão inscritos (quem entrou depois)
@@ -267,7 +294,8 @@ class EventoCalendario extends Model
     public static function descreverConflito(array $conflito): string
     {
         $outro = $conflito['evento'];
-        $quando = $outro->data_evento_calendario->format('d/m') . ', ' . $outro->horario_texto;
+        // O tipo diferencia dois eventos com o mesmo título (ex.: um jogo e um treino "Sub-13")
+        $quando = $outro->tipo_evento_calendario . ', ' . $outro->data_evento_calendario->format('d/m') . ', ' . $outro->horario_texto;
 
         return $conflito['fraco']
             ? "{$conflito['atleta']->nome_atleta}: também está em \"{$outro->titulo_evento_calendario}\" no mesmo dia ({$quando}); horário a definir, confira."
