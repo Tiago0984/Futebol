@@ -113,6 +113,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - Sobreposição: **mesmo dia** e `inícioA < fimB` e `inícioB < fimA`; cancelados e ocultos não contam; só atletas ATIVO.
 - **Sem horário de fim:** duração padrão por tipo, numa constante **provisória** (seção 8, pergunta 12): JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h.
 - **Sem horário de início:** não dá para calcular sobreposição; **aviso fraco** "mesmo dia, horário a definir".
+- **Conflito real:** alerta amarelo "Conflito de horário" com **"Confirmar mesmo assim"** (nada é salvo sem confirmar).
+- **Só aviso fraco:** **não pede confirmação**; salva direto e mostra um aviso informativo azul "Mesmo dia — confira o horário".
+- **Os dois tipos na mesma ação:** pede confirmação e lista os dois, separados por tipo.
+- **Onde é verificado:** criar evento com categoria, editar data/horário/categoria, inscrição individual, "Adicionar todos de uma categoria", "Atualizar inscritos pela categoria", Reativar/Mostrar (avisa sem bloquear) e "Mover inscrições" do atleta.
 
 ### Menu do dashboard
 - **Eventos** centraliza tudo: Campeonato → jogos; Amistoso → jogo; Individual → tipo (exame médico, avaliação física).
@@ -170,6 +174,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `003b27c` feat: status do evento ATIVO/CANCELADO/INATIVO (Fase 4, Etapa 1)
 - `8bce102` feat: evento com categoria e responsável (Fase 4, Etapa 2)
 - `bf72311` feat: histórico de alterações do evento e status derivados (Fase 4, Etapa 3)
+- `e5af80b` docs: Fase 4 concluída
+- `96f58a7` feat: inscrição de atletas em eventos (Fase 5, Etapa 1)
+- `5ce4c76` feat: regras das inscrições quando evento ou atleta mudam (Fase 5, Etapa 2)
+- `58afdaa` feat: alerta de conflito de horário nas inscrições (Fase 5, Etapa 3)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -212,11 +220,18 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Backups** em `backup/`: `db_futebol_antes_fase4_status_20261003_151316.sql`, `..._categoria_usuario_20261003_151851.sql`, `..._historico_20261003_185700.sql`.
 - 137 testes passando; roteiros das Etapas 1, 2 e 3 validados no navegador.
 
-### Próxima: Fase 5 — inscrição e conflito
-(detalhes no item 5 abaixo e na seção 4)
+### Fase 5 concluída — inscrição e conflito (`96f58a7`, `5ce4c76`, `58afdaa`)
+- **Inscrição** (`96f58a7`): `tbl_evento_atleta` (origem `CATEGORIA`/`INDIVIDUAL`, quem e quando, único (evento, atleta), `id_time` nullable com FK); evento com categoria já nasce com os atletas ativos inscritos (`EventoCalendario::criarPor`); tela do evento com inscrição individual, "Adicionar todos de uma categoria", remoção e "Atualizar inscritos pela categoria".
+- **Regras quando evento ou atleta mudam** (`5ce4c76`): troca de categoria do evento sincroniza só as automáticas (concluído não muda); "Mover inscrições" do atleta com confirmação; inativo/rejeitado mantém a linha mas não conta; exclusão definitiva apaga as inscrições; horário sem segundos na tela.
+- **Conflito de horário** (`58afdaa`): `EventoCalendario::DURACAO_PADRAO_MINUTOS` (provisória, seção 8, pergunta 12), `intervalo()`, `conflitosPara()`, `descreverConflito()`; partial `admin/calendario/_conflitos.blade.php`; regras na seção 4.
+- **Migration no `db_futebol`:** batch 18 (`tbl_evento_atleta`). Etapas 2 e 3 sem migration.
+- **Backup** em `backup/`: `db_futebol_antes_fase5_inscricao_20261003_191825.sql`.
+- 174 testes passando; roteiros das Etapas 1, 2 e 3 validados no navegador.
+
+### Próxima: Fase 6 — jogos ↔ evento
+(detalhes no item 6 abaixo e na seção 5)
 
 ### Próximas fases (ordem recomendada)
-5. Inscrição e conflito: `tbl_evento_atleta` (+ `id_time`), inscrição por categoria ou individual, alerta de conflito.
 6. Jogos ↔ evento: `tbl_jogos.id_evento`, amistoso, migrar jogos, adaptar a home do site.
 7. Grade → eventos: botão "gerar mês".
 8. Notificações: tabela `notifications`, `Notifiable` no Atleta.
