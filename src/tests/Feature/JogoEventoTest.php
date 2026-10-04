@@ -6,6 +6,7 @@ use App\Models\EventoCalendario;
 use App\Models\Jogo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use Tests\CriaDadosDeAtleta;
 use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
@@ -58,7 +59,7 @@ class JogoEventoTest extends TestCase
         $this->assertTrue($evento->inscricoes()->where('id_atleta', $idAtleta)->exists());
 
         $this->assertNull($jogo->placar_time_casa_jogos);                // vazio = não jogado
-        $this->assertSame("{$this->dia} 19:00:00", $jogo->data_jogo->format('Y-m-d H:i:s')); // cópia provisória
+        $this->assertSame("{$this->dia} 19:00:00", $jogo->data_jogo->format('Y-m-d H:i:s')); // vem do evento
     }
 
     public function test_amistoso_usa_a_categoria_escolhida_e_ignora_categoria_em_jogo_de_campeonato(): void
@@ -165,14 +166,14 @@ class JogoEventoTest extends TestCase
         $this->assertSame(0, $jogo->evento->inscricoes()->count());
     }
 
-    public function test_editar_a_data_pelo_calendario_atualiza_a_copia_em_data_jogo(): void
+    public function test_editar_a_data_pelo_calendario_muda_a_data_do_jogo(): void
     {
         $jogo = $this->criarJogo();
         $outroDia = now()->addDays(20)->toDateString();
 
         $jogo->evento->atualizarComHistorico(['data_evento_calendario' => $outroDia, 'horario_inicio_evento_calendario' => '08:15'], null);
 
-        $this->assertSame("{$outroDia} 08:15:00", $jogo->refresh()->data_jogo->format('Y-m-d H:i:s'));
+        $this->assertSame("{$outroDia} 08:15:00", $jogo->fresh('evento')->data_jogo->format('Y-m-d H:i:s'));
     }
 
     // ---------- lista, status e exclusão ----------
@@ -219,33 +220,18 @@ class JogoEventoTest extends TestCase
         $this->assertFalse(Route::has('admin.jogos.edit'));
     }
 
-    // ---------- migration: evento dos jogos que já existem ----------
+    // ---------- estrutura (Etapa 2) ----------
+    // O teste da migration da Etapa 1 (evento dos jogos existentes) saiu: ele gravava data_jogo e
+    // status_jogo, colunas que a Etapa 2 removeu. Ela foi ensaiada com o backup e aplicada (batch 19).
 
-    public function test_migration_cria_o_evento_dos_jogos_existentes(): void
+    public function test_jogo_sem_data_e_status_proprios_e_sempre_com_evento(): void
     {
-        $this->atletaSub11();
-        $antigo  = $this->jogoAntigo('2025-06-01 19:00:00', 'ATIVO', 2, 1);
-        $inativo = $this->jogoAntigo('2025-06-06 19:00:00', 'INATIVO', 1, 1);
+        $this->assertFalse(Schema::hasColumn('tbl_jogos', 'data_jogo'));
+        $this->assertFalse(Schema::hasColumn('tbl_jogos', 'status_jogo'));
 
-        $migration = require database_path('migrations/2026_10_04_000001_vincula_tbl_jogos_ao_evento.php');
-        $migration->criarEventosDosJogos();
-        $migration->criarEventosDosJogos(); // rodar de novo não duplica
-
-        $this->assertSame(2, EventoCalendario::count());
-
-        $evento = Jogo::find($antigo)->evento;
-        $this->assertSame('Time Azul x Time Visitante', $evento->titulo_evento_calendario);
-        $this->assertSame('JOGO', $evento->tipo_evento_calendario);
-        $this->assertSame('2025-06-01', $evento->data_evento_calendario->toDateString());
-        $this->assertSame('19:00:00', $evento->horario_inicio_evento_calendario);
-        $this->assertSame('Quadra A', $evento->local_evento_calendario);
-        $this->assertSame($this->idSub11M, (int) $evento->id_categoria);
-        $this->assertNull($evento->id_usuario);
-        $this->assertSame('ATIVO', $evento->status_evento_calendario);
-        $this->assertSame(0, $evento->inscricoes()->count()); // jogo passado: ninguém inscrito
-
-        $this->assertSame('INATIVO', Jogo::find($inativo)->evento->status_evento_calendario);
-        $this->assertSame(2, Jogo::find($antigo)->placar_time_casa_jogos); // placar mantido
+        $idEvento = DB::selectOne("SELECT IS_NULLABLE FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_jogos' AND COLUMN_NAME = 'id_evento'");
+        $this->assertSame('NO', $idEvento->IS_NULLABLE);
     }
 
     // ---------- ajudantes ----------
@@ -270,20 +256,6 @@ class JogoEventoTest extends TestCase
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo($extra))->assertSessionHasNoErrors();
 
         return Jogo::with('evento')->latest('id_jogo')->first();
-    }
-
-    // Jogo gravado como antes da Fase 6 (sem evento), para testar a migration
-    private function jogoAntigo(string $data, string $status, int $placarCasa, int $placarVisitante): int
-    {
-        return DB::table('tbl_jogos')->insertGetId([
-            'id_campeonato'               => $this->idCampeonato,
-            'id_time_casa'                => $this->azul,
-            'id_time_visitante'           => $this->visitante,
-            'placar_time_casa_jogos'      => $placarCasa,
-            'placar_time_visitante_jogos' => $placarVisitante,
-            'data_jogo'                   => $data,
-            'status_jogo'                 => $status,
-        ]);
     }
 
     private function atletaSub11(): int

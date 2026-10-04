@@ -244,14 +244,14 @@
                     {{ Str::limit($j->timeVisitante?->nome_time ?? '?', 10) }}
                   </span>
                   <span class="feed-meta">
-                    {{ \Carbon\Carbon::parse($j->data_jogo)->format('d/m/Y') }}
-                    &bull; {{ Str::limit($j->campeonato?->nome_campeonato ?? '—', 18) }}
+                    {{ $j->evento?->data_evento_calendario->format('d/m/Y') ?? '—' }}
+                    &bull; {{ Str::limit($j->campeonato?->nome_campeonato ?? 'Amistoso', 18) }}
                   </span>
                 </div>
                 @if(!is_null($j->placar_time_casa_jogos))
                   <span class="feed-score">{{ $j->placar_time_casa_jogos }}×{{ $j->placar_time_visitante_jogos }}</span>
                 @else
-                  <span class="feed-badge">{{ $j->status_jogo }}</span>
+                  <span class="feed-badge">{{ $j->evento?->situacao_label ?? '—' }}</span>
                 @endif
               </div>
               @empty

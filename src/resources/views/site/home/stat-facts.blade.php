@@ -9,6 +9,11 @@
                     <i class="fa fa-trophy"></i>
                     {{ strtoupper($proximoJogo->campeonato->nome_campeonato) }}
                 </a>
+                @elseif($proximoJogo)
+                <span class="lp-label">
+                    <i class="fa fa-handshake-o"></i>
+                    AMISTOSO
+                </span>
                 @else
                 <span class="lp-label">
                     <i class="fa fa-trophy"></i>
@@ -36,7 +41,10 @@
                 {{-- Centro: Placar ou VS + data + local --}}
                 <div class="col-sm-4 col-xs-12">
                     <div class="lp-center">
-                        @if($proximoJogo->placar_time_casa_jogos !== null && $proximoJogo->placar_time_visitante_jogos !== null)
+                        @if($proximoJogo->estaCancelado())
+                            <div class="lp-vs">VS</div>
+                            <span class="event-selo-cancelado"><i class="fa fa-ban"></i> Cancelado</span>
+                        @elseif($proximoJogo->temPlacar())
                             <div class="lp-score">
                                 <span class="lp-score-num">{{ $proximoJogo->placar_time_casa_jogos }}</span>
                                 <span class="lp-score-sep">:</span>
@@ -49,12 +57,12 @@
                         <div class="lp-divider"></div>
                         <div class="lp-date">
                             <i class="fa fa-calendar-o"></i>
-                            {{ $proximoJogo->data_jogo ? $proximoJogo->data_jogo->format('d M, H:i') : '—' }}
+                            {{ $proximoJogo->evento->data_evento_calendario->format('d M') }}, {{ $proximoJogo->horario_jogo }}
                         </div>
-                        @if($proximoJogo->campeonato && $proximoJogo->campeonato->local_evento)
+                        @if($proximoJogo->local_jogo)
                         <div class="lp-location">
                             <i class="fa fa-map-marker"></i>
-                            {{ strtoupper($proximoJogo->campeonato->local_evento) }}
+                            {{ strtoupper($proximoJogo->local_jogo) }}
                         </div>
                         @endif
                     </div>

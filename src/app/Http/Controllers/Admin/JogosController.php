@@ -58,12 +58,7 @@ class JogosController extends Controller
             // Responsável = admin logado; com categoria, os atletas ativos dela já são inscritos
             $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento);
 
-            Jogo::create([
-                ...$dadosJogo,
-                'id_evento'   => $evento->id_evento_calendario,
-                'data_jogo'   => $evento->dataHoraDoJogo(), // provisório até a Etapa 2
-                'status_jogo' => 'ATIVO',                   // provisório até a Etapa 2
-            ]);
+            Jogo::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
 
             return $evento;
         });
@@ -92,7 +87,7 @@ class JogosController extends Controller
         DB::transaction(function () use ($jogo, $evento, $dadosJogo, $dadosEvento) {
             // O que mudar em título, categoria, data, horário ou local vai para o histórico do evento
             $evento->atualizarComHistorico($dadosEvento, auth('admin')->id());
-            $jogo->update([...$dadosJogo, 'data_jogo' => $evento->dataHoraDoJogo()]);
+            $jogo->update($dadosJogo);
         });
 
         $mensagem = 'Jogo atualizado.' . $this->sincronizarSeMudouCategoria($evento, $categoriaAntes);

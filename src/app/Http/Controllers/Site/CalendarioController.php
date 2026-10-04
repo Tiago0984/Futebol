@@ -10,13 +10,16 @@ class CalendarioController extends Controller
 {
     public function calendario()
     {
-        $eventos = EventoCalendario::whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS)
+        // jogo.campeonato: para a etiqueta (nome do campeonato ou "Amistoso") sem uma consulta por evento
+        $eventos = EventoCalendario::with('jogo.campeonato')
+            ->whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS)
             ->whereIn('tipo_evento_calendario', EventoCalendario::TIPOS_PUBLICOS)
             ->orderBy('data_evento_calendario')
             ->get();
 
         // Destaque com contagem regressiva: só evento ativo (cancelado aparece na lista, com o selo)
-        $proximoEvento = EventoCalendario::where('status_evento_calendario', 'ATIVO')
+        $proximoEvento = EventoCalendario::with('jogo.campeonato')
+            ->where('status_evento_calendario', 'ATIVO')
             ->whereIn('tipo_evento_calendario', EventoCalendario::TIPOS_PUBLICOS)
             ->where('data_evento_calendario', '>=', now()->toDateString()) // Filtra eventos futuros ou do dia atual
             ->orderBy('data_evento_calendario')

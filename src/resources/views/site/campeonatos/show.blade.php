@@ -116,13 +116,15 @@
         </div>
 
         <div class="camp-matches-list">
-            @foreach ($jogos->sortBy('data_jogo') as $jogo)
+            {{-- Os jogos já vêm ordenados pela data do evento --}}
+            @foreach ($jogos as $jogo)
+            @php $dataJogo = $jogo->evento->data_evento_calendario; @endphp
             <div class="match-card">
 
                 <div class="match-date-col">
-                    <span class="match-day">{{ \Carbon\Carbon::parse($jogo->data_jogo)->format('d') }}</span>
-                    <span class="match-month">{{ \Carbon\Carbon::parse($jogo->data_jogo)->format('M') }}</span>
-                    <span class="match-year">{{ \Carbon\Carbon::parse($jogo->data_jogo)->format('Y') }}</span>
+                    <span class="match-day">{{ $dataJogo->format('d') }}</span>
+                    <span class="match-month">{{ $dataJogo->format('M') }}</span>
+                    <span class="match-year">{{ $dataJogo->format('Y') }}</span>
                 </div>
 
                 <div class="match-body">
@@ -134,7 +136,9 @@
                     </div>
 
                     <div class="match-score">
-                        @if($jogo->placar_time_casa_jogos !== null && $jogo->placar_time_visitante_jogos !== null)
+                        @if($jogo->estaCancelado())
+                            <span class="event-selo-cancelado"><i class="fa fa-ban"></i> Cancelado</span>
+                        @elseif($jogo->temPlacar())
                             <span class="score-value">{{ $jogo->placar_time_casa_jogos }}</span>
                             <span class="score-sep">×</span>
                             <span class="score-value">{{ $jogo->placar_time_visitante_jogos }}</span>

@@ -16,7 +16,7 @@
                 </div>
             </div>
             <div class="cal-next-right">
-                <span class="event-type-tag tag-{{ $proximoEvento->tipo_class }}" style="margin-bottom:10px; display:inline-block;">{{ $proximoEvento->subtipo_evento_calendario }}</span>
+                <span class="event-type-tag tag-{{ $proximoEvento->tipo_class }}" style="margin-bottom:10px; display:inline-block;">{{ $proximoEvento->etiqueta }}</span>
                 <h3 class="cal-next-title">{{ $proximoEvento->titulo_evento_calendario }}</h3>
                 <p class="cal-next-meta">
                     <i class="fa fa-clock-o"></i> {{ $proximoEvento->horario_texto }} &nbsp;&nbsp;
@@ -64,7 +64,7 @@
                     <span class="event-month">{{ $meses[$dt->month] }}</span>
                 </div>
                 <div class="event-details-block">
-                    <div class="event-type-tag tag-{{ $tipo }}">{{ $evento->subtipo_evento_calendario }}</div>
+                    <div class="event-type-tag tag-{{ $tipo }}">{{ $evento->etiqueta }}</div>
                     @if($evento->estaCancelado())
                     <span class="event-selo-cancelado"><i class="fa fa-ban"></i> Cancelado</span>
                     @endif

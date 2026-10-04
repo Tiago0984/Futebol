@@ -61,16 +61,19 @@
 
                     {{-- Aba: Jogos (prévia — 4 mais recentes) --}}
                     <div class="home-camp-tab-panel is-active" id="jogos-{{ $camp->id_campeonato }}">
-                        @php $jogosPrevia = $camp->jogos->sortByDesc('data_jogo')->take(4); @endphp
+                        {{-- Os jogos já vêm do mais recente para o mais antigo (data do evento) --}}
+                        @php $jogosPrevia = $camp->jogos->take(4); @endphp
                         @forelse($jogosPrevia as $jogo)
                         <div class="home-match-row">
                             <span class="home-match-date">
-                                {{ $jogo->data_jogo ? \Carbon\Carbon::parse($jogo->data_jogo)->format('d M') : '-' }}
+                                {{ $jogo->evento->data_evento_calendario->format('d M') }}
                             </span>
                             <div class="home-match-teams">
                                 <span class="home-match-home">{{ $jogo->timeCasa->nome_time ?? '-' }}</span>
                                 <span class="home-match-sep">
-                                    @if($jogo->placar_time_casa_jogos !== null && $jogo->placar_time_visitante_jogos !== null)
+                                    @if($jogo->estaCancelado())
+                                        <span class="event-selo-cancelado"><i class="fa fa-ban"></i> Cancelado</span>
+                                    @elseif($jogo->temPlacar())
                                         {{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}
                                     @else
                                         VS

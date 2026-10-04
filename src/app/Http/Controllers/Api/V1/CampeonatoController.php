@@ -38,7 +38,10 @@ class CampeonatoController extends Controller
         $campeonato = Campeonato::with([
                 'categoria:id_categoria,nome_categoria',
                 'times:tbl_time.id_time,nome_time,logo_time',
-                'jogos' => fn ($query) => $query->orderBy('data_jogo'),
+                // Jogos visíveis, pela data do evento; data_jogo, horario_jogo, local_jogo e status_jogo
+                // vêm do evento (Jogo::$appends), com os mesmos nomes de antes para não quebrar o app
+                'jogos' => fn ($query) => $query->visiveis()->ordenadosPelaData(),
+                'jogos.evento',
                 'jogos.timeCasa:id_time,nome_time,logo_time',
                 'jogos.timeVisitante:id_time,nome_time,logo_time',
             ])

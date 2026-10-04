@@ -299,21 +299,7 @@ class EventoCalendario extends Model
         return $this->hasOne(Jogo::class, 'id_evento', 'id_evento_calendario');
     }
 
-    /**
-     * PROVISÓRIO (Fase 6, Etapa 1): o site ainda lê tbl_jogos.data_jogo. Enquanto a coluna existir,
-     * ela acompanha a data e o horário do evento, mesmo quando o evento é editado pelo Calendário.
-     * Sai na Etapa 2, junto com a coluna.
-     */
-    protected static function booted(): void
-    {
-        static::saved(function (self $evento) {
-            if ($evento->wasChanged(['data_evento_calendario', 'horario_inicio_evento_calendario'])) {
-                Jogo::where('id_evento', $evento->id_evento_calendario)->update(['data_jogo' => $evento->dataHoraDoJogo()]);
-            }
-        });
-    }
-
-    // Data e horário de início juntos ("Y-m-d H:i:s"), para tbl_jogos.data_jogo (provisório, ver booted)
+    // Data e horário de início juntos ("Y-m-d H:i:s"; sem horário, meia-noite). Usado por Jogo::data_jogo
     public function dataHoraDoJogo(): string
     {
         return $this->data_evento_calendario->format('Y-m-d') . ' '
@@ -495,6 +481,24 @@ class EventoCalendario extends Model
     public function getTipoClassAttribute(): string
     {
         return mb_strtolower($this->tipo_evento_calendario);
+    }
+
+    /**
+     * Etiqueta acima do título no site (calendário e "Próximo Evento"); nada novo é gravado:
+     * subtipo preenchido → o subtipo; jogo de campeonato → nome do campeonato; amistoso → "Amistoso";
+     * outro evento → o rótulo do tipo. Para listas, carregar 'jogo.campeonato' junto (with).
+     */
+    public function getEtiquetaAttribute(): string
+    {
+        if (filled($this->subtipo_evento_calendario)) {
+            return $this->subtipo_evento_calendario;
+        }
+
+        if ($jogo = $this->jogo) {
+            return $jogo->campeonato?->nome_campeonato ?? 'Amistoso';
+        }
+
+        return $this->tipo_label;
     }
 
     public function getTipoLabelAttribute(): string

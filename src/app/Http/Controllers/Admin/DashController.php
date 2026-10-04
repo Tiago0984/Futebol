@@ -34,7 +34,7 @@ class DashController extends Controller
                 ->limit(5)
                 ->get();
 
-            $ultimosJogos = Jogo::with(['timeCasa', 'timeVisitante', 'campeonato'])
+            $ultimosJogos = Jogo::with(['evento', 'timeCasa', 'timeVisitante', 'campeonato'])
                 ->orderByDesc('id_jogo')
                 ->limit(5)
                 ->get();

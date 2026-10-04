@@ -281,6 +281,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 10. ~~Atleta pode jogar numa categoria acima da idade?~~ ✅ **RESOLVIDA** (professor): **pode, a critério do técnico** (atleta mais robusto). Escolher categoria **acima** da sugerida gera **aviso** (não bloqueia) e exige um **motivo**, gravado em `observacao_categoria_atleta`.
 11. Atleta numa categoria **abaixo** da idade: hoje **bloqueado** (provisório). Confirmar com o professor se há exceção.
 12. **Duração padrão dos eventos sem horário de fim** (usada no alerta de conflito), hoje provisória: JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h. Confirmar os valores com o professor.
+13. **Critério de desempate da classificação** (site: home e página do campeonato), hoje provisório em `Jogo::classificacao()`: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, por fim, nome do time (sem acentos e sem maiúsculas). Confirmar com o professor (confronto direto? cartões?).
 
 ---
 
