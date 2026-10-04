@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AutorizacaoAssinaturaMail;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Tests\CriaDadosDeAtleta;
 use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
@@ -195,6 +197,73 @@ class MatriculaAprovacaoTest extends TestCase
         }
     }
 
+    // ---------- reenvio do e-mail ao reativar ----------
+
+    public function test_reativar_com_link_novo_envia_o_email_ao_responsavel(): void
+    {
+        Mail::fake();
+        $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'REJEITADO');
+        $this->criarResponsavel($idAtleta);
+
+        $this->comoAdmin()->patch(route('admin.matriculas.reativar', $idAtleta))
+            ->assertSessionHas('sucesso', 'Matrícula de Atleta de Teste reativada. O link de assinatura foi enviado para o e-mail do responsável.');
+
+        $token = DB::table('tbl_autorizacoes')->where('id_atleta', $idAtleta)->value('token_assinatura');
+        Mail::assertSent(AutorizacaoAssinaturaMail::class, fn ($mail) => $mail->hasTo('responsavel@teste.com')
+            && $mail->linkAssinatura === route('assinar.show', $token));
+    }
+
+    public function test_reativar_que_so_gera_o_token_tambem_envia(): void
+    {
+        Mail::fake();
+        $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'REJEITADO');
+        $idAutorizacao = $this->criarAutorizacao($idAtleta, 'PENDENTE');
+        DB::table('tbl_autorizacoes')->where('id_autorizacao', $idAutorizacao)->update(['token_assinatura' => null]);
+
+        $this->comoAdmin()->patch(route('admin.matriculas.reativar', $idAtleta));
+
+        Mail::assertSent(AutorizacaoAssinaturaMail::class, 1);
+    }
+
+    public function test_reativar_com_link_ja_existente_nao_reenvia(): void
+    {
+        Mail::fake();
+        foreach (['PENDENTE', 'ASSINADO'] as $status) {
+            $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'REJEITADO');
+            $this->criarAutorizacao($idAtleta, $status, "token-{$status}");
+            $this->comoAdmin()->patch(route('admin.matriculas.reativar', $idAtleta));
+        }
+
+        Mail::assertNothingSent();
+    }
+
+    public function test_reativar_com_falha_no_envio_pede_para_copiar_o_link(): void
+    {
+        Mail::shouldReceive('to')->once()->andThrow(new \RuntimeException('SMTP fora do ar'));
+        $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'REJEITADO');
+        $this->criarResponsavel($idAtleta);
+
+        $this->comoAdmin()->patch(route('admin.matriculas.reativar', $idAtleta))
+            ->assertSessionHas('sucesso', 'Matrícula de Atleta de Teste reativada. Não foi possível enviar o e-mail ao responsável: copie o link de assinatura em "Ver" e envie a ele.');
+
+        // A reativação e o link continuam valendo
+        $this->assertSame('PENDENTE', $this->statusDo($idAtleta));
+        $this->assertDatabaseHas('tbl_autorizacoes', ['id_atleta' => $idAtleta, 'status_autorizacao' => 'PENDENTE']);
+    }
+
+    public function test_reativar_com_responsavel_sem_email_pede_para_copiar_o_link(): void
+    {
+        Mail::fake();
+        $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'REJEITADO');
+        $idResponsavel = $this->criarResponsavel($idAtleta);
+        DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->update(['email_responsavel' => null]);
+
+        $this->comoAdmin()->patch(route('admin.matriculas.reativar', $idAtleta))
+            ->assertSessionHas('sucesso', 'Matrícula de Atleta de Teste reativada. O responsável não tem e-mail cadastrado: copie o link de assinatura em "Ver" e envie a ele.');
+
+        Mail::assertNothingSent();
+    }
+
     public function test_reativar_sem_responsavel_avisa_e_nao_cria_autorizacao(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'REJEITADO');
@@ -223,6 +292,23 @@ class MatriculaAprovacaoTest extends TestCase
             ->assertSee('PZ')                                            // iniciais no lugar da foto padrão
             ->assertSee(asset('storage/atletas/foto-site.jpg'))          // cadastro do site: disco public
             ->assertSee(asset('futebol/images/our-teams/atleta_99.jpg')); // cadastro do admin: pasta pública
+    }
+
+    public function test_lista_de_atletas_usa_a_pasta_de_cada_cadastro(): void
+    {
+        $padrao = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $site   = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $admin  = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        DB::table('tbl_atletas')->where('id_atleta', $padrao)->update(['foto_atleta' => 'default-player.jpg']);
+        DB::table('tbl_atletas')->where('id_atleta', $site)->update(['foto_atleta' => 'atletas/foto-site.jpg']);
+        DB::table('tbl_atletas')->where('id_atleta', $admin)->update(['foto_atleta' => 'atleta_99.jpg']);
+
+        $this->comoAdmin()->get(route('admin.atletas.index'))
+            ->assertOk()
+            ->assertDontSee('our-teams/default-player.jpg')
+            ->assertDontSee('our-teams/atletas/foto-site.jpg')
+            ->assertSee(asset('storage/atletas/foto-site.jpg'))
+            ->assertSee(asset('futebol/images/our-teams/atleta_99.jpg'));
     }
 
     // ---------- ajudantes ----------

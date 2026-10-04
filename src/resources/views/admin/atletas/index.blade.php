@@ -188,8 +188,8 @@
                                          style="width:42px;height:42px;background:{{ $corAvatar }};font-size:0.8rem;position:absolute;top:0;left:0;">
                                         {{ $iniciais }}
                                     </div>
-                                    @if($atleta->foto_atleta)
-                                    <img src="{{ asset('futebol/images/our-teams/' . $atleta->foto_atleta) }}"
+                                    @if($foto = $atleta->urlFoto())
+                                    <img src="{{ $foto }}"
                                          alt="{{ $atleta->nome_atleta }}"
                                          class="rounded-circle object-fit-cover"
                                          style="width:42px;height:42px;position:absolute;top:0;left:0;"

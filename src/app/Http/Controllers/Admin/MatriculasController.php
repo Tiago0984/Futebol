@@ -3,11 +3,15 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Mail\AutorizacaoAssinaturaMail;
 use App\Models\Atleta;
+use App\Models\Autorizacao;
 use App\Models\Categoria;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class MatriculasController extends Controller
 {
@@ -105,14 +109,43 @@ class MatriculasController extends Controller
             return $atleta->garantirAutorizacaoPendente();
         });
 
+        // Link novo (autorização criada agora ou token gerado agora): envia ao responsável, como no cadastro do site
+        $linkNovo = $autorizacao
+            && ($autorizacao->wasRecentlyCreated || $autorizacao->wasChanged('token_assinatura'));
+
         $mensagem = "Matrícula de {$atleta->nome_atleta} reativada.";
         $mensagem .= match (true) {
-            ! $autorizacao                                    => ' Atenção: o atleta não tem responsável cadastrado para assinar a autorização.',
-            $autorizacao->status_autorizacao === 'ASSINADO'   => ' Agora é possível aprovar na seção de pendentes.',
-            default                                           => ' A aprovação fica liberada depois que o responsável assinar a autorização (link em "Ver").',
+            ! $autorizacao                                  => ' Atenção: o atleta não tem responsável cadastrado para assinar a autorização.',
+            $autorizacao->status_autorizacao === 'ASSINADO' => ' Agora é possível aprovar na seção de pendentes.',
+            $linkNovo                                       => $this->enviarLinkDeAssinatura($atleta, $autorizacao),
+            default                                         => ' A aprovação fica liberada depois que o responsável assinar a autorização (link em "Ver").',
         };
 
         return redirect()->route('admin.matriculas.index')->with('sucesso', $mensagem);
+    }
+
+    // Envia o link de assinatura ao responsável e devolve o trecho da mensagem com o resultado
+    private function enviarLinkDeAssinatura(Atleta $atleta, Autorizacao $autorizacao): string
+    {
+        $responsavel = $autorizacao->responsavel;
+
+        if (blank($responsavel->email_responsavel)) {
+            return ' O responsável não tem e-mail cadastrado: copie o link de assinatura em "Ver" e envie a ele.';
+        }
+
+        try {
+            Mail::to($responsavel->email_responsavel)
+                ->send(new AutorizacaoAssinaturaMail($atleta, $responsavel, route('assinar.show', $autorizacao->token_assinatura)));
+        } catch (\Throwable $e) {
+            Log::error('Falha ao reenviar e-mail de autorização de assinatura', [
+                'id_atleta' => $atleta->id_atleta,
+                'erro'      => $e->getMessage(),
+            ]);
+
+            return ' Não foi possível enviar o e-mail ao responsável: copie o link de assinatura em "Ver" e envie a ele.';
+        }
+
+        return ' O link de assinatura foi enviado para o e-mail do responsável.';
     }
 
     public function deletar($id)

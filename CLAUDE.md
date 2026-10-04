@@ -13,6 +13,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Dois logins:**
   - Admin: guard `admin` (sessão), model `User` → `tbl_usuarios`.
   - Atleta: Sanctum (token), model `Atleta` → `tbl_atletas`. API em `routes/api.php` (`/api/v1/...`). O login exige `status_atleta = ATIVO`; os campos do login são `email` e `senha`.
+- **Fotos de atleta em dois lugares:** o cadastro do site grava no disco `public` (`storage/app/public/atletas/...`, servido em `/storage`); o do admin grava em `public/futebol/images/our-teams/` (e `default-player.jpg` quando não há foto). Use `Atleta::urlFoto()` nas telas.
+- **Deploy precisa rodar `php artisan storage:link`** (cria `public/storage`, fora do Git). Sem ele, as fotos enviadas pelo site ficam quebradas. Localmente já foi criado (link absoluto `/var/www/html/...`, válido dentro dos containers).
 - **App do atleta:** fica em outro repositório (a tela Agenda ainda usa dados fixos).
 - **Branch de trabalho:** `feature/agenda-eventos`. **Nunca fazer push sem autorização.**
 
