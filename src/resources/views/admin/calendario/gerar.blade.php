@@ -53,6 +53,28 @@
                 </div>
             </div>
 
+            {{-- Conflitos de horário do lote (Etapa 3): real pede confirmação; mesmo dia só informa --}}
+            @php
+                $conflitos = $previa['conflitos'];
+                $reais     = $conflitos[\App\Models\EventoCalendario::CONFLITO_REAL];
+                $fracos    = $conflitos[\App\Models\EventoCalendario::CONFLITO_FRACO];
+            @endphp
+            @if ($reais->isNotEmpty())
+                <div class="alert alert-warning mb-3" role="alert">
+                    <strong><i class="bi bi-exclamation-triangle"></i> Conflito de horário</strong>:
+                    {{ $conflitos['totais']['reais'] }} conflito(s) em {{ $conflitos['totais']['dias'] }} dia(s), {{ $conflitos['totais']['atletas'] }} atleta(s).
+                    Nada é gerado sem confirmar.
+                    @include('admin.calendario._grupos_conflito', ['grupos' => $reais])
+                </div>
+            @endif
+            @if ($fracos->isNotEmpty())
+                <div class="alert alert-info mb-3" role="alert">
+                    <strong><i class="bi bi-info-circle"></i> Mesmo dia — confira o horário</strong>:
+                    {{ $conflitos['totais']['fracos'] }} aviso(s); algum evento sem horário de início. Não impede a geração.
+                    @include('admin.calendario._grupos_conflito', ['grupos' => $fracos])
+                </div>
+            @endif
+
             <div class="table-card mb-3">
                 <div class="table-responsive">
                     <table class="table align-middle mb-0">
@@ -112,12 +134,23 @@
                 </div>
             </div>
 
+            @php
+                $temConflito = $totais['conflitos_reais'] > 0;
+                $pergunta = 'Gerar ' . $totais['eventos'] . ' evento(s) e ' . $totais['inscricoes'] . ' inscrição(ões) em '
+                    . \App\Models\EventoCalendario::rotuloDoMes($previa['mes'])
+                    . ($temConflito ? ', com ' . $totais['conflitos_reais'] . ' conflito(s) de horário' : '')
+                    . '? Não dá para desfazer pela tela.';
+            @endphp
             <form method="POST" action="{{ route('admin.calendario.grade.gerar') }}" id="formGerarAgenda"
-                  onsubmit="return confirm(@js('Gerar ' . $totais['eventos'] . ' evento(s) e ' . $totais['inscricoes'] . ' inscrição(ões) em ' . \App\Models\EventoCalendario::rotuloDoMes($previa['mes']) . '? Não dá para desfazer pela tela.'))">
+                  onsubmit="return confirm(@js($pergunta))">
                 @csrf
                 <input type="hidden" name="mes" value="{{ $mes }}">
-                <button type="submit" class="btn btn-primary" @disabled($totais['eventos'] === 0)>
-                    <i class="bi bi-calendar-plus"></i> Gerar {{ $totais['eventos'] }} evento(s)
+                @if ($temConflito)
+                    <input type="hidden" name="confirmar_conflito" value="1">
+                @endif
+                <button type="submit" class="btn {{ $temConflito ? 'btn-warning' : 'btn-primary' }}" @disabled($totais['eventos'] === 0)>
+                    <i class="bi bi-calendar-plus"></i>
+                    {{ $temConflito ? 'Confirmar mesmo assim e gerar' : 'Gerar' }} {{ $totais['eventos'] }} evento(s)
                 </button>
                 @if ($totais['eventos'] === 0)
                     <span class="text-muted ms-2">Nada novo para gerar neste mês.</span>

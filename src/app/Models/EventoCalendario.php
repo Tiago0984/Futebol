@@ -304,16 +304,130 @@ class EventoCalendario extends Model
             ->get();
 
         return $inscricoes->map(function (EventoAtleta $inscricao) use ($meu) {
-            $outro = $inscricao->evento->intervalo();
+            $tipo = self::compararIntervalos($meu, $inscricao->evento->intervalo());
 
-            if ($meu === null || $outro === null) {
-                return ['atleta' => $inscricao->atleta, 'evento' => $inscricao->evento, 'fraco' => true];
-            }
-
-            $sobrepoe = $meu[0]->lt($outro[1]) && $outro[0]->lt($meu[1]);
-
-            return $sobrepoe ? ['atleta' => $inscricao->atleta, 'evento' => $inscricao->evento, 'fraco' => false] : null;
+            return $tipo === null ? null
+                : ['atleta' => $inscricao->atleta, 'evento' => $inscricao->evento, 'fraco' => $tipo === self::CONFLITO_FRACO];
         })->filter()->sortBy(fn ($c) => $c['atleta']->nome_atleta)->values();
+    }
+
+    public const CONFLITO_REAL  = 'REAL';
+    public const CONFLITO_FRACO = 'FRACO';
+
+    /**
+     * Regra única do conflito entre dois eventos do mesmo dia, pelos intervalos de intervalo():
+     * REAL = horários sobrepostos (inícioA < fimB e inícioB < fimA; só encostar não conta);
+     * FRACO = algum dos dois sem horário de início (mesmo dia, horário a definir); null = sem conflito.
+     */
+    public static function compararIntervalos(?array $meu, ?array $outro): ?string
+    {
+        if ($meu === null || $outro === null) {
+            return self::CONFLITO_FRACO;
+        }
+
+        return $meu[0]->lt($outro[1]) && $outro[0]->lt($meu[1]) ? self::CONFLITO_REAL : null;
+    }
+
+    /**
+     * Conflitos de um lote de eventos ainda não salvos (geração da grade, Fase 7), contra os eventos ATIVO
+     * já existentes em que os atletas estão inscritos e entre os próprios eventos do lote. Poucas consultas,
+     * qualquer que seja o tamanho do lote: inscrições existentes nos dias do lote, os eventos delas e os
+     * nomes dos atletas; o resto é em memória (só atletas ATIVO, como em conflitosPara()).
+     *
+     * $lote: lista de ['evento' => EventoCalendario não salvo, 'atletas' => [id_atleta, ...]].
+     * Devolve os grupos por par de eventos ([REAL => [...], FRACO => [...]]), cada um com a data, o evento
+     * novo, o outro evento, se o outro também é do lote e os nomes dos atletas; e os totais.
+     */
+    public static function conflitosEmLote(array $lote): array
+    {
+        $lote       = array_values($lote);
+        $idsAtletas = collect($lote)->flatMap(fn ($item) => $item['atletas'])->unique()->values()->all();
+        $dias       = collect($lote)->map(fn ($item) => $item['evento']->data_evento_calendario->toDateString())->unique()->values()->all();
+
+        $nomes = $idsAtletas ? Atleta::whereIn('id_atleta', $idsAtletas)->where('status_atleta', 'ATIVO')->pluck('nome_atleta', 'id_atleta') : collect();
+
+        // Existentes: [id_atleta][dia] => eventos
+        $existentes = [];
+        if ($nomes->isNotEmpty()) {
+            EventoAtleta::with('evento')
+                ->whereIn('id_atleta', $nomes->keys())
+                ->whereHas('evento', fn ($q) => $q->where('status_evento_calendario', 'ATIVO')->whereIn('data_evento_calendario', $dias))
+                ->get()
+                ->each(function (EventoAtleta $inscricao) use (&$existentes) {
+                    $existentes[$inscricao->id_atleta][$inscricao->evento->data_evento_calendario->toDateString()][] = $inscricao->evento;
+                });
+        }
+
+        $intervalos = [];
+        $intervalo  = function (self $evento, string $chave) use (&$intervalos) {
+            return array_key_exists($chave, $intervalos) ? $intervalos[$chave] : ($intervalos[$chave] = $evento->intervalo());
+        };
+
+        $grupos = [self::CONFLITO_REAL => [], self::CONFLITO_FRACO => []];
+        $anotar = function (?string $tipo, int $i, self $outro, string $chaveOutro, bool $outroNoLote, int $idAtleta) use (&$grupos, $lote) {
+            if ($tipo === null) {
+                return;
+            }
+            $grupos[$tipo]["{$i}|{$chaveOutro}"] ??= [
+                'data' => $lote[$i]['evento']->data_evento_calendario, 'novo' => $lote[$i]['evento'],
+                'outro' => $outro, 'outro_no_lote' => $outroNoLote, 'atletas' => [],
+            ];
+            $grupos[$tipo]["{$i}|{$chaveOutro}"]['atletas'][$idAtleta] = true;
+        };
+
+        $doLote = []; // [id_atleta][dia] => índices do lote
+        foreach ($lote as $i => $item) {
+            $dia = $item['evento']->data_evento_calendario->toDateString();
+            $meu = $intervalo($item['evento'], "lote{$i}");
+
+            foreach ($item['atletas'] as $idAtleta) {
+                if (! $nomes->has($idAtleta)) {
+                    continue; // inativo: não conta
+                }
+
+                foreach ($existentes[$idAtleta][$dia] ?? [] as $outro) {
+                    $chave = "ev{$outro->id_evento_calendario}";
+                    $anotar(self::compararIntervalos($meu, $intervalo($outro, $chave)), $i, $outro, $chave, false, $idAtleta);
+                }
+
+                // Dentro do lote: cada par uma vez só (o anterior com o atual)
+                foreach ($doLote[$idAtleta][$dia] ?? [] as $j) {
+                    $anotar(self::compararIntervalos($intervalo($lote[$j]['evento'], "lote{$j}"), $meu), $j, $item['evento'], "lote{$i}", true, $idAtleta);
+                }
+                $doLote[$idAtleta][$dia][] = $i;
+            }
+        }
+
+        $organizar = fn (array $lista) => collect($lista)
+            ->map(fn ($g) => [...$g, 'atletas' => collect(array_keys($g['atletas']))->map(fn ($id) => $nomes[$id])
+                ->sort(fn ($a, $b) => strnatcasecmp($a, $b))->values()->all()])
+            ->sortBy(fn ($g) => $g['data']->toDateString() . ' ' . $g['novo']->horario_inicio_evento_calendario)
+            ->values();
+
+        $reais  = $organizar($grupos[self::CONFLITO_REAL]);
+        $fracos = $organizar($grupos[self::CONFLITO_FRACO]);
+
+        return [
+            self::CONFLITO_REAL  => $reais,
+            self::CONFLITO_FRACO => $fracos,
+            'totais' => [
+                'reais'   => $reais->sum(fn ($g) => count($g['atletas'])),
+                'fracos'  => $fracos->sum(fn ($g) => count($g['atletas'])),
+                'dias'    => $reais->map(fn ($g) => $g['data']->toDateString())->unique()->count(),
+                'atletas' => collect($grupos[self::CONFLITO_REAL])->flatMap(fn ($g) => array_keys($g['atletas']))->unique()->count(),
+            ],
+        ];
+    }
+
+    // Texto de um grupo de conflito do lote (um par de eventos), para o aviso depois de gerar
+    public static function descreverGrupoDeConflito(array $grupo): string
+    {
+        $outro = $grupo['outro'];
+
+        return $grupo['data']->format('d/m') . " · {$grupo['novo']->titulo_evento_calendario} ({$grupo['novo']->horario_texto}) × "
+            . "{$outro->tipo_evento_calendario} \"{$outro->titulo_evento_calendario}\" ({$outro->horario_texto})"
+            . ($grupo['outro_no_lote'] ? ', também gerado' : '')
+            . ': ' . implode(', ', $grupo['atletas']);
     }
 
     // Texto de um conflito para a tela de confirmação

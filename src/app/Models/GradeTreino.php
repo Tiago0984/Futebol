@@ -154,8 +154,10 @@ class GradeTreino extends Model
      *  - existentes: datas que já têm evento desta linha (com o status; cancelado e oculto não voltam);
      *  - puladas: hoje, com o treino já concluído (não é gerado);
      *  - atletas: ids que serão inscritos em cada evento (ATIVO da categoria; sem categoria, todos os ATIVO);
-     *  - origem: CATEGORIA (linha com categoria) ou INDIVIDUAL (linha sem categoria).
-     * Mais os totais. gerarMes() usa esta mesma prévia, recalculada na hora de gravar.
+     *  - origem: CATEGORIA (linha com categoria) ou INDIVIDUAL (linha sem categoria);
+     *  - lote: os eventos novos ainda não salvos, com os atletas (para o conflito).
+     * Mais os conflitos de horário do lote (EventoCalendario::conflitosEmLote) e os totais.
+     * gerarMes() usa esta mesma prévia, recalculada na hora de gravar.
      */
     public static function previaDoMes(string $mes): array
     {
@@ -180,7 +182,7 @@ class GradeTreino extends Model
             $linha = [
                 'grade' => $grade, 'motivo' => $grade->motivoQueNaoGera(),
                 'novas' => collect(), 'existentes' => collect(), 'puladas' => collect(),
-                'atletas' => [], 'origem' => $grade->id_categoria ? 'CATEGORIA' : 'INDIVIDUAL',
+                'atletas' => [], 'origem' => $grade->id_categoria ? 'CATEGORIA' : 'INDIVIDUAL', 'lote' => [],
             ];
 
             if ($linha['motivo'] !== null) {
@@ -190,32 +192,42 @@ class GradeTreino extends Model
             $jaGeradas = ($existentes[$grade->id_grade_treino] ?? collect())
                 ->keyBy(fn ($e) => $e->data_grade_evento_calendario->toDateString());
 
-            foreach ($grade->datasNoMes((int) $inicio->year, (int) $inicio->month, $minimo) as $data) {
-                if ($existente = $jaGeradas[$data->toDateString()] ?? null) {
-                    $linha['existentes']->push(['data' => $data, 'status' => $existente->status_evento_calendario]);
-                } elseif ((new EventoCalendario($grade->dadosEventoPara($data)))->estaConcluido()) {
-                    $linha['puladas']->push($data); // hoje, com o horário já passado (regra de Concluído)
-                } else {
-                    $linha['novas']->push($data);
-                }
-            }
-
             $linha['atletas'] = $grade->id_categoria
                 ? ($porCategoria[$grade->id_categoria] ??= Atleta::idsAtivosNaCategoria($grade->id_categoria))
                 : ($todosAtivos ??= Atleta::where('status_atleta', 'ATIVO')->orderBy('nome_atleta')->pluck('id_atleta')->all());
 
+            foreach ($grade->datasNoMes((int) $inicio->year, (int) $inicio->month, $minimo) as $data) {
+                // Evento ainda não salvo: para a regra de Concluído e para o conflito em lote
+                $evento = new EventoCalendario($grade->dadosEventoPara($data));
+
+                if ($existente = $jaGeradas[$data->toDateString()] ?? null) {
+                    $linha['existentes']->push(['data' => $data, 'status' => $existente->status_evento_calendario]);
+                } elseif ($evento->estaConcluido()) {
+                    $linha['puladas']->push($data); // hoje, com o horário já passado (regra de Concluído)
+                } else {
+                    $linha['novas']->push($data);
+                    $linha['lote'][] = ['evento' => $evento, 'atletas' => $linha['atletas']];
+                }
+            }
+
             return $linha;
         });
 
+        // Conflitos de horário do lote (Etapa 3): contra o que já existe e entre os eventos novos
+        $conflitos = EventoCalendario::conflitosEmLote($linhas->flatMap(fn ($l) => $l['lote'])->all());
+
         return [
-            'mes'    => $inicio,
-            'linhas' => $linhas,
-            'totais' => [
+            'mes'       => $inicio,
+            'linhas'    => $linhas,
+            'conflitos' => $conflitos,
+            'totais'    => [
                 'eventos'      => $linhas->sum(fn ($l) => $l['novas']->count()),
                 'inscricoes'   => $linhas->sum(fn ($l) => $l['novas']->count() * count($l['atletas'])),
                 'existentes'   => $linhas->sum(fn ($l) => $l['existentes']->count()),
                 'puladas'      => $linhas->sum(fn ($l) => $l['puladas']->count()),
                 'nao_geram'    => $linhas->whereNotNull('motivo')->count(),
+                'conflitos_reais'  => $conflitos['totais']['reais'],
+                'conflitos_fracos' => $conflitos['totais']['fracos'],
             ],
         ];
     }
@@ -228,13 +240,21 @@ class GradeTreino extends Model
      *
      * A inscrição em massa passa por fora de EventoCalendario::inscrever() de propósito (só aqui): a
      * Fase 8 manda UMA notificação por atleta ("agenda do mês disponível"), não uma por inscrição.
+     *
+     * Conflito de horário (Etapa 3), recalculado aqui: com conflito real e sem $confirmarConflitos,
+     * nada é gravado e a prévia volta (com 'gerado' => false). Aviso fraco não bloqueia.
      */
-    public static function gerarMes(string $mes, ?int $idUsuario): array
+    public static function gerarMes(string $mes, ?int $idUsuario, bool $confirmarConflitos = false): array
     {
-        return DB::transaction(function () use ($mes, $idUsuario) {
+        return DB::transaction(function () use ($mes, $idUsuario, $confirmarConflitos) {
             self::query()->lockForUpdate()->get(['id_grade_treino']);
 
             $previa = self::previaDoMes($mes);
+
+            if ($previa['totais']['conflitos_reais'] > 0 && ! $confirmarConflitos) {
+                return ['gerado' => false, 'previa' => $previa];
+            }
+
             $agora  = now();
             $inscricoes = [];
 
@@ -258,7 +278,7 @@ class GradeTreino extends Model
                 EventoAtleta::insert($bloco);
             }
 
-            return $previa['totais'];
+            return ['gerado' => true, 'previa' => $previa];
         });
     }
 

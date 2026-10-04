@@ -475,7 +475,11 @@ class CalendarioController extends Controller
         return view('admin.calendario.gerar', compact('previa', 'mes', 'mesesGeracao'));
     }
 
-    // Gera de verdade: recalcula a prévia na hora (não confia na tela) e grava tudo ou nada
+    /**
+     * Gera de verdade: recalcula a prévia na hora (não confia na tela) e grava tudo ou nada.
+     * Conflito real sem confirmar_conflito=1: nada é gravado e a prévia volta com o alerta (como nas
+     * outras telas). Aviso fraco não bloqueia: depois de gerar, vai no aviso azul da lista.
+     */
     public function gerarAgenda(Request $request)
     {
         if (! $mes = $this->mesDeGeracao($request)) {
@@ -483,21 +487,37 @@ class CalendarioController extends Controller
         }
 
         try {
-            $totais = GradeTreino::gerarMes($mes, auth('admin')->id());
+            $resultado = GradeTreino::gerarMes($mes, auth('admin')->id(), $request->boolean('confirmar_conflito'));
         } catch (UniqueConstraintViolationException $e) {
             // Outro admin gerou o mesmo mês ao mesmo tempo: nada foi gravado (o lote foi desfeito)
             return redirect()->route('admin.calendario.grade.previa', ['mes' => $mes])
                 ->with('erro', 'Outro usuário gerou eventos deste mês ao mesmo tempo. Nada foi gravado; confira a prévia e gere de novo.');
         }
 
+        $totais = $resultado['previa']['totais'];
+
+        if (! $resultado['gerado']) {
+            return redirect()->route('admin.calendario.grade.previa', ['mes' => $mes])
+                ->with('erro', "Nada foi gerado: o lote tem {$totais['conflitos_reais']} conflito(s) de horário. Confira e use \"Confirmar mesmo assim e gerar\".");
+        }
+
         $mensagem = $totais['eventos'] === 0
             ? 'Nada novo para gerar neste mês.'
             : "{$totais['eventos']} evento(s) gerado(s), {$totais['inscricoes']} inscrição(ões).";
+        if ($totais['conflitos_reais'] > 0) {
+            $mensagem .= " O lote tinha {$totais['conflitos_reais']} conflito(s) de horário, confirmado(s).";
+        }
         if ($totais['existentes'] > 0) {
             $mensagem .= " {$totais['existentes']} já existia(m) e não foi(ram) recriado(s).";
         }
         if ($totais['puladas'] > 0) {
             $mensagem .= " {$totais['puladas']} de hoje já tinha(m) passado e não foi(ram) gerado(s).";
+        }
+
+        // Aviso fraco (mesmo dia, sem horário de início): só informa, no aviso azul da lista
+        $fracos = $resultado['previa']['conflitos'][EventoCalendario::CONFLITO_FRACO];
+        if ($fracos->isNotEmpty()) {
+            session()->flash('avisos_mesmo_dia', $fracos->map(fn ($g) => EventoCalendario::descreverGrupoDeConflito($g))->all());
         }
 
         return redirect()->route('admin.calendario.index', ['mes' => $mes])->with('sucesso', $mensagem);
