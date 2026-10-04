@@ -61,8 +61,8 @@
                         </div>
 
                         <div class="col-md-4">
-                            <label class="form-label">Categoria</label>
-                            <select name="id_categoria" id="cad_categoria" class="form-select @error('id_categoria') is-invalid @enderror">
+                            <label class="form-label">Categoria <span class="text-danger">*</span></label>
+                            <select name="id_categoria" id="cad_categoria" class="form-select @error('id_categoria') is-invalid @enderror" required>
                                 <option value="">— Selecionar —</option>
                                 @foreach($categorias as $cat)
                                 <option value="{{ $cat->id_categoria }}"

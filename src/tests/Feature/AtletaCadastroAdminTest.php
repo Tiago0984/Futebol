@@ -52,6 +52,7 @@ class AtletaCadastroAdminTest extends TestCase
     public function test_edicao_mantem_o_proprio_email(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M')); // atleta ativo tem categoria
         DB::table('tbl_atletas')->where('id_atleta', $idAtleta)->update(['email_atleta' => 'meu@email.com']);
 
         $this->comoAdmin()
@@ -82,6 +83,7 @@ class AtletaCadastroAdminTest extends TestCase
     public function test_edicao_pode_apagar_o_email(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M'));
         DB::table('tbl_atletas')->where('id_atleta', $idAtleta)->update(['email_atleta' => 'meu@email.com']);
 
         $this->comoAdmin()
@@ -139,6 +141,7 @@ class AtletaCadastroAdminTest extends TestCase
     public function test_edicao_grava_altera_e_apaga_o_email_do_responsavel(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M'));
 
         // Atleta sem responsável: a edição cria o responsável com o e-mail
         $this->comoAdmin()

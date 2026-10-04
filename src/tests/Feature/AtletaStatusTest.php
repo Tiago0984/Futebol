@@ -40,6 +40,7 @@ class AtletaStatusTest extends TestCase
     public function test_toggle_alterna_ativo_e_inativo(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M')); // reativar exige categoria
 
         $this->comoAdmin()->patch(route('admin.atletas.toggleStatus', $idAtleta))->assertSessionHas('sucesso');
         $this->assertDatabaseHas('tbl_atletas', ['id_atleta' => $idAtleta, 'status_atleta' => 'INATIVO']);

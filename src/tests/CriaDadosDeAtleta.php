@@ -108,6 +108,7 @@ trait CriaDadosDeAtleta
             'rg_atleta'                   => '22.222.222-2',
             'escola_atleta'               => 'Escola de Teste',
             'sexo_atleta'                 => 'M',
+            'id_categoria'                => $this->idCategoria('Sub-13', 'M'), // obrigatória; combina com 12 anos e M
             'nome_responsavel'            => 'Responsável de Teste',
             'cpf_responsavel'             => '111.111.111-11',
             'whatsapp_responsavel'        => '(11) 99999-9999',
@@ -121,12 +122,16 @@ trait CriaDadosDeAtleta
         ], $extra);
     }
 
-    // Formulário completo de edição do admin, com os dados atuais do atleta
+    // Formulário completo de edição do admin, com os dados atuais do atleta (a categoria vem
+    // selecionada com a atual, como no modal; vazia se ele não tiver)
     protected function dadosEdicao(int $idAtleta, array $extra = []): array
     {
         $atleta = DB::table('tbl_atletas')->where('id_atleta', $idAtleta)->first();
+        $idCategoriaAtual = DB::table('tbl_categoria_atleta')
+            ->where('id_atleta', $idAtleta)->where('status_categoria_atleta', 'ATIVO')->value('id_categoria');
 
         return array_merge([
+            'id_categoria'                => $idCategoriaAtual ?? '',
             'nome_atleta'                 => $atleta->nome_atleta,
             'data_nasc_atleta'            => $atleta->data_nasc_atleta,
             'cpf_atleta'                  => $atleta->cpf_atleta,

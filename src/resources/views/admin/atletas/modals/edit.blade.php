@@ -59,6 +59,13 @@
                                     {{ $cat->rotulo }}
                                 </option>
                                 @endforeach
+                                {{-- Inativas em uso: escondidas; o JS mostra só a do atleta aberto (manter é aceito, trocar para ela não) --}}
+                                @foreach($categoriasInativasEmUso as $cat)
+                                <option value="{{ $cat->id_categoria }}" class="js-categoria-inativa" hidden disabled
+                                    data-min="{{ $cat->idade_min_categoria }}" data-max="{{ $cat->idade_max_categoria }}" data-sexo="{{ $cat->sexo_categoria }}">
+                                    {{ $cat->rotulo }} (inativa)
+                                </option>
+                                @endforeach
                             </select>
                             <div class="form-text" id="edit_dica_categoria"></div>
                             <input type="text" name="motivo_categoria" id="edit_motivo_categoria" maxlength="500"

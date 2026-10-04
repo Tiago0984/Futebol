@@ -25,6 +25,9 @@ class AtletasController extends Controller
         'email_responsavel.email' => 'Informe um e-mail válido para o responsável.',
     ];
 
+    // Atleta ATIVO sempre tem categoria: é por ela que entra nos eventos (inscrição automática)
+    private const MENSAGEM_SEM_CATEGORIA = 'Escolha a categoria do atleta: todo atleta ativo precisa estar numa categoria.';
+
     public function index()
     {
         $atletas = Atleta::with([
@@ -37,7 +40,14 @@ class AtletasController extends Controller
         $categorias = Categoria::ativas()->get();
         $times      = Time::where('tipo_time', 'INTERNO')->orderBy('nome_time')->get();
 
-        return view('admin.atletas.index', compact('atletas', 'categorias', 'times'));
+        // Categorias inativadas em que algum atleta ainda está: aparecem no select da edição como
+        // "(inativa)", para editar outro campo não tirar o atleta da categoria (como no evento)
+        $categoriasInativasEmUso = Categoria::where('status_categoria', '<>', 'ATIVO')
+            ->whereIn('id_categoria', DB::table('tbl_categoria_atleta')
+                ->where('status_categoria_atleta', Atleta::CATEGORIA_ATIVA)->select('id_categoria'))
+            ->get();
+
+        return view('admin.atletas.index', compact('atletas', 'categorias', 'times', 'categoriasInativasEmUso'));
     }
 
     public function create()
@@ -59,7 +69,7 @@ class AtletasController extends Controller
             'email_atleta'                => 'nullable|email|max:255|unique:tbl_atletas,email_atleta',
             'escola_atleta'               => 'required|string|max:255',
             'sexo_atleta'                 => 'required|in:M,F',
-            'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
+            'id_categoria'                => 'required|integer|exists:tbl_categoria,id_categoria',
             'motivo_categoria'            => 'nullable|string|max:500',
             'foto_atleta'                 => 'nullable|image|max:2048',
             'nome_responsavel'            => 'required|string|max:255',
@@ -74,7 +84,7 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], [...$nascimento['mensagens'], ...self::MENSAGENS_EMAIL]);
+        ], [...$nascimento['mensagens'], ...self::MENSAGENS_EMAIL, 'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA]);
 
         $this->validarCategoria($request);
 
@@ -151,10 +161,8 @@ class AtletasController extends Controller
             'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
         ]);
 
-        // 5. Categoria (se selecionada; já validada em validarCategoria)
-        if ($request->filled('id_categoria')) {
-            $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
-        }
+        // 5. Categoria (obrigatória: o atleta já nasce ATIVO; validada em validarCategoria)
+        $atleta->trocarCategoria((int) $request->id_categoria, $request->motivo_categoria);
 
         // 6. Número de matrícula: o informado ou o próximo (A001, A002...)
         return $atleta->atribuirNumeroMatricula();
@@ -209,6 +217,13 @@ class AtletasController extends Controller
             $this->validarCategoria($request, 'edicao');
         }
 
+        // Atleta que fica ATIVO depois da edição sempre sai com categoria: o campo vazio encerraria a
+        // linha atual (trocarCategoria(null)). INATIVO segue como antes; pendente e rejeitado não passam
+        // por aqui (o status deles não muda na edição)
+        if (strtoupper($this->statusAposEdicao($request, $atleta)) === 'ATIVO' && ! $request->filled('id_categoria')) {
+            throw ValidationException::withMessages(['id_categoria' => self::MENSAGEM_SEM_CATEGORIA])->errorBag('edicao');
+        }
+
         DB::transaction(function () use ($request, $atleta) {
 
             // 1. Atualiza atleta
@@ -235,10 +250,7 @@ class AtletasController extends Controller
                 'posicao_atleta'          => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
                 'descricao_atleta'        => $request->descricao_atleta,
                 'sala_atleta'             => $request->sala_atleta,
-                // PENDENTE e REJEITADO só mudam pela tela de Matrículas: a edição mantém o status atual
-                'status_atleta'           => $atleta->foiAprovado() && $request->filled('status_atleta')
-                                                ? strtoupper($request->status_atleta)
-                                                : $atleta->status_atleta,
+                'status_atleta'           => $this->statusAposEdicao($request, $atleta),
                 'foto_atleta'             => $fotoPath,
             ]);
 
@@ -414,9 +426,23 @@ class AtletasController extends Controller
         }
 
         $novoStatus = strtoupper($atleta->status_atleta) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
+
+        // Ativar exige categoria ativa (é por ela que o atleta entra nos eventos)
+        if ($novoStatus === 'ATIVO' && ! $atleta->categoriasAtivas()->exists()) {
+            return back()->with('erro', "{$atleta->nome_atleta} está sem categoria. Edite o atleta, escolha a categoria e marque o status Ativo.");
+        }
+
         $atleta->update(['status_atleta' => $novoStatus]);
 
         return back()->with('sucesso', "Atleta {$novoStatus} com sucesso.");
+    }
+
+    // Status que a edição grava. PENDENTE e REJEITADO só mudam pela tela de Matrículas: a edição mantém o atual
+    private function statusAposEdicao(Request $request, Atleta $atleta): string
+    {
+        return $atleta->foiAprovado() && $request->filled('status_atleta')
+            ? strtoupper($request->status_atleta)
+            : $atleta->status_atleta;
     }
 
     // Categoria escolhida: mesmo sexo, não abaixo da idade e, se acima, com motivo (Categoria::erroParaAtleta)

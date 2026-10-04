@@ -352,13 +352,16 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_descricao').value = g('data-descricao');
             document.getElementById('edit_sexo').value      = g('data-sexo');
             document.getElementById('edit_periodo').value   = g('data-periodo');
-            document.getElementById('edit_categoria').value = g('data-categoria');
             document.getElementById('edit_id_atleta').value = g('data-id');
             document.getElementById('edit_motivo_categoria').value = '';
 
-            // Categoria atual e motivo gravado: o motivo só é exigido se a categoria MUDAR para uma acima
-            document.getElementById('edit_categoria').dataset.atual       = g('data-categoria');
-            document.getElementById('edit_categoria').dataset.motivoAtual = g('data-motivo-categoria');
+            // Categoria atual e motivo gravado: o motivo só é exigido se a categoria MUDAR para uma acima.
+            // A atual vem antes do valor: se estiver inativa, a opção "(inativa)" precisa aparecer para ser selecionada
+            const selCategoria = document.getElementById('edit_categoria');
+            selCategoria.dataset.atual       = g('data-categoria');
+            selCategoria.dataset.motivoAtual = g('data-motivo-categoria');
+            mostrarInativaAtual(selCategoria);
+            selCategoria.value = g('data-categoria');
 
             // Pendente/rejeitado: status só muda em Matrículas (select desabilitado não é enviado)
             const statusEl   = document.getElementById('edit_status');
@@ -414,6 +417,16 @@ document.addEventListener('DOMContentLoaded', function () {
     const IDADE_MIN = @js(\App\Models\Atleta::IDADE_MINIMA);
     const IDADE_MAX = @js(\App\Models\Atleta::IDADE_MAXIMA);
 
+    // Categorias inativas (só na edição): aparece e pode ficar selecionada só a atual do atleta aberto;
+    // nunca entram na sugestão (trocar exige categoria ativa)
+    function mostrarInativaAtual(select) {
+        select.querySelectorAll('.js-categoria-inativa').forEach(opt => {
+            const atual  = opt.value === (select.dataset.atual || '');
+            opt.hidden   = !atual;
+            opt.disabled = !atual;
+        });
+    }
+
     function ligarSugestaoCategoria(ids) {
         const nasc   = document.getElementById(ids.nasc);
         const sexo   = document.getElementById(ids.sexo);
@@ -428,8 +441,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const atual     = select.dataset.atual || '';
             let sugerida = null;
 
+            mostrarInativaAtual(select);
             Array.from(select.options).forEach(opt => {
-                if (!opt.value) return;
+                if (!opt.value || opt.classList.contains('js-categoria-inativa')) return;
                 const min = parseInt(opt.dataset.min, 10), max = parseInt(opt.dataset.max, 10);
                 const outroSexo = sexo.value && opt.dataset.sexo !== sexo.value;
                 const abaixo    = idade !== null && idade > max;
