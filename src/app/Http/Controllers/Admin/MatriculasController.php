@@ -41,7 +41,12 @@ class MatriculasController extends Controller
     // Aprova a matrícula e grava a categoria (a sugerida, ou outra acima da idade com motivo)
     public function aprovar(Request $request, $id)
     {
-        $atleta = Atleta::findOrFail($id);
+        $atleta = Atleta::with('autorizacoes')->findOrFail($id);
+
+        // Autorização assinada e idade de 9 a 17 no ano: conferido aqui, não só no botão da tela
+        if ($bloqueio = $atleta->bloqueioAprovacao()) {
+            return back()->with('erro', $bloqueio);
+        }
 
         $request->validate([
             'id_categoria'     => 'required|integer|exists:tbl_categoria,id_categoria',
@@ -94,10 +99,20 @@ class MatriculasController extends Controller
     public function reativar($id)
     {
         $atleta = Atleta::findOrFail($id);
-        $atleta->update(['status_atleta' => 'PENDENTE']);
+        $autorizacao = DB::transaction(function () use ($atleta) {
+            $atleta->update(['status_atleta' => 'PENDENTE']);
 
-        return redirect()->route('admin.matriculas.index')
-            ->with('sucesso', "Matrícula de {$atleta->nome_atleta} reativada. Agora é possível aprovar na seção de pendentes.");
+            return $atleta->garantirAutorizacaoPendente();
+        });
+
+        $mensagem = "Matrícula de {$atleta->nome_atleta} reativada.";
+        $mensagem .= match (true) {
+            ! $autorizacao                                    => ' Atenção: o atleta não tem responsável cadastrado para assinar a autorização.',
+            $autorizacao->status_autorizacao === 'ASSINADO'   => ' Agora é possível aprovar na seção de pendentes.',
+            default                                           => ' A aprovação fica liberada depois que o responsável assinar a autorização (link em "Ver").',
+        };
+
+        return redirect()->route('admin.matriculas.index')->with('sucesso', $mensagem);
     }
 
     public function deletar($id)

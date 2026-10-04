@@ -54,6 +54,7 @@
                             <option value="">Todas</option>
                             <option value="assinada">Assinada</option>
                             <option value="pendente">Pendente</option>
+                            <option value="sem">Sem autorização</option>
                         </select>
                     </div>
                     <div class="col-md-auto">
@@ -93,16 +94,16 @@
                             $paleta = ['#4361ee','#3a0ca3','#7209b7','#f72585','#4cc9f0','#2ec4b6','#e76f51','#457b9d'];
                             $corAvatar = $paleta[abs(crc32($atleta->nome_atleta)) % count($paleta)];
                             $responsavel = $atleta->responsaveis->first();
-                            $autorizacao = $atleta->autorizacoes->first();
-                            $autPendente = !$autorizacao || $autorizacao->status_autorizacao !== 'ASSINADO';
+                            $situacaoAut = $atleta->situacaoAutorizacao();
+                            $bloqueio    = $atleta->bloqueioAprovacao();
                         @endphp
                         <tr class="linha-matricula"
                             data-nome="{{ strtolower($atleta->nome_atleta) }}"
                             data-escola="{{ strtolower($atleta->escola_atleta ?? '') }}"
-                            data-autorizacao="{{ $autPendente ? 'pendente' : 'assinada' }}">
+                            data-autorizacao="{{ strtolower($situacaoAut) }}">
                             <td>
-                                @if($atleta->foto_atleta)
-                                    <img src="{{ asset('storage/' . $atleta->foto_atleta) }}"
+                                @if($foto = $atleta->urlFoto())
+                                    <img src="{{ $foto }}"
                                          alt="{{ $atleta->nome_atleta }}"
                                          class="rounded-circle object-fit-cover"
                                          style="width:42px;height:42px;">
@@ -131,11 +132,7 @@
                             </td>
                             <td class="text-muted small">{{ $atleta->criado_em ?? '—' }}</td>
                             <td class="text-center">
-                                @if(!$autPendente)
-                                    <span class="badge-status ativo"><i class="bi bi-pen me-1"></i>Assinada</span>
-                                @else
-                                    <span class="badge-status pendente"><i class="bi bi-hourglass-split me-1"></i>Pendente</span>
-                                @endif
+                                @include('admin.matriculas._selo-autorizacao', ['situacao' => $situacaoAut])
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
@@ -145,15 +142,20 @@
                                         Ver
                                     </a>
 
-                                    @if($sugerida = $sugeridas[$atleta->id_atleta] ?? null)
+                                    @if($bloqueio)
+                                    {{-- Sem autorização assinada ou fora de 9 a 17 anos: o servidor também recusa --}}
+                                    <button type="button" class="btn-tbl-action approve" disabled title="{{ $bloqueio }}">
+                                        <i class="bi bi-check-lg"></i>
+                                        Aprovar
+                                    </button>
+                                    @elseif($sugerida = $sugeridas[$atleta->id_atleta] ?? null)
                                     {{-- Aprovação rápida na categoria sugerida; outra categoria, pela tela de detalhes --}}
                                     <form action="{{ route('admin.matriculas.aprovar', $atleta->id_atleta) }}"
                                           method="POST" style="display:inline"
                                           onsubmit="return confirm(@js("Aprovar matrícula de {$atleta->nome_atleta} na {$sugerida->rotulo}?"))">
                                         @csrf @method('PATCH')
                                         <input type="hidden" name="id_categoria" value="{{ $sugerida->id_categoria }}">
-                                        <button type="submit" class="btn-tbl-action approve"
-                                                {{ $autPendente ? 'disabled title="Aguardando assinatura"' : 'title="Aprovar na ' . $sugerida->rotulo . '"' }}>
+                                        <button type="submit" class="btn-tbl-action approve" title="Aprovar na {{ $sugerida->rotulo }}">
                                             <i class="bi bi-check-lg"></i>
                                             Aprovar
                                         </button>

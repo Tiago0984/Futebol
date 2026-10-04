@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 class Atleta extends Authenticatable
@@ -291,6 +292,93 @@ class Atleta extends Authenticatable
     public function autorizacoes()
     {
         return $this->hasMany(Autorizacao::class, 'id_atleta', 'id_atleta');
+    }
+
+    // Situação da autorização para as telas de Matrículas:
+    // ASSINADA (alguma assinada), PENDENTE (há link para assinar) ou SEM (nenhum registro, ou pendente sem link)
+    public function situacaoAutorizacao(): string
+    {
+        if ($this->autorizacoes->contains('status_autorizacao', 'ASSINADO')) {
+            return 'ASSINADA';
+        }
+
+        return $this->autorizacoes->contains(fn ($a) => filled($a->token_assinatura)) ? 'PENDENTE' : 'SEM';
+    }
+
+    // Autorização que a tela mostra: a assinada, senão a pendente mais recente com link
+    public function autorizacaoAtual(): ?Autorizacao
+    {
+        return $this->autorizacoes->firstWhere('status_autorizacao', 'ASSINADO')
+            ?? $this->autorizacoes->sortByDesc('id_autorizacao')->first(fn ($a) => filled($a->token_assinatura))
+            ?? $this->autorizacoes->sortByDesc('id_autorizacao')->first();
+    }
+
+    // Motivo que impede aprovar a matrícula, ou null se pode aprovar. Vale para o servidor e para as telas.
+    public function bloqueioAprovacao(): ?string
+    {
+        $limites = self::limitesNascimento();
+        $nascimento = $this->data_nasc_atleta ? substr((string) $this->data_nasc_atleta, 0, 10) : null;
+
+        if (! $nascimento || $nascimento < $limites['min'] || $nascimento > $limites['max']) {
+            return $limites['mensagem'];
+        }
+
+        return match ($this->situacaoAutorizacao()) {
+            'ASSINADA' => null,
+            'PENDENTE' => 'Aguardando a assinatura da autorização pelo responsável.',
+            default    => 'Sem autorização do responsável: reative a matrícula para gerar o link de assinatura.',
+        };
+    }
+
+    /**
+     * Garante uma autorização pendente com link para o atleta que ainda não tem assinada
+     * (usado ao reativar uma matrícula). Retorna a autorização com link, ou null se o atleta
+     * não tem responsável para assinar.
+     */
+    public function garantirAutorizacaoPendente(): ?Autorizacao
+    {
+        $this->load('autorizacoes');
+
+        if ($this->situacaoAutorizacao() !== 'SEM') {
+            return $this->autorizacaoAtual();
+        }
+
+        // Pendente antiga sem token: só ganha o link, sem criar outra linha
+        if ($semToken = $this->autorizacoes->sortByDesc('id_autorizacao')->first()) {
+            $semToken->update(['token_assinatura' => Str::random(60)]);
+            return $semToken;
+        }
+
+        $responsavel = $this->responsaveis()->first();
+        if (! $responsavel) {
+            return null;
+        }
+
+        return $this->autorizacoes()->create([
+            'id_responsavel'              => $responsavel->id_responsavel,
+            'data_assinatura_autorizacao' => now(),
+            'token_assinatura'            => Str::random(60),
+            'status_autorizacao'          => 'PENDENTE',
+        ]);
+    }
+
+    /**
+     * URL da foto, ou null quando não há foto (a tela mostra as iniciais).
+     * O cadastro do site grava no disco public ('atletas/arquivo.jpg', servido em /storage);
+     * o do admin grava só o nome do arquivo em public/futebol/images/our-teams,
+     * e 'default-player.jpg' quando não envia foto.
+     */
+    public function urlFoto(): ?string
+    {
+        $foto = $this->foto_atleta;
+
+        if (blank($foto) || $foto === 'default-player.jpg') {
+            return null;
+        }
+
+        return str_contains($foto, '/')
+            ? asset('storage/' . $foto)
+            : asset('futebol/images/our-teams/' . $foto);
     }
 
     // Exclui o atleta e todos os vínculos dele (as FKs não têm ON DELETE CASCADE).

@@ -223,6 +223,7 @@ class AtletaCadastroAdminTest extends TestCase
         $idExistente = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
         DB::table('tbl_atletas')->where('id_atleta', $idExistente)->update(['numero_matricula_atleta' => 'A004']);
         $idPendente = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
+        $this->criarAutorizacao($idPendente); // aprovação exige autorização assinada
 
         $this->comoAdmin()
             ->patch(route('admin.matriculas.aprovar', $idPendente), ['id_categoria' => $this->idCategoria('Sub-13', 'M')])
@@ -257,6 +258,7 @@ class AtletaCadastroAdminTest extends TestCase
     public function test_aprovacao_mantem_numero_que_ja_existia(): void
     {
         $idPendente = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
+        $this->criarAutorizacao($idPendente); // aprovação exige autorização assinada
         DB::table('tbl_atletas')->where('id_atleta', $idPendente)->update(['numero_matricula_atleta' => 'A020']);
 
         $this->comoAdmin()

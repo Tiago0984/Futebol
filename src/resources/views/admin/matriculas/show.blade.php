@@ -40,11 +40,12 @@
                         $iniciais = strtoupper(substr($partes[0], 0, 1) . (count($partes) > 1 ? substr(end($partes), 0, 1) : ''));
                         $paleta = ['#4361ee','#3a0ca3','#7209b7','#f72585','#4cc9f0','#2ec4b6','#e76f51','#457b9d'];
                         $corAvatar = $paleta[abs(crc32($atleta->nome_atleta)) % count($paleta)];
-                        $autorizacao = $atleta->autorizacoes->first();
-                        $autorizacaoPendente = !$autorizacao || $autorizacao->status_autorizacao !== 'ASSINADO';
+                        $autorizacao = $atleta->autorizacaoAtual();
+                        $situacaoAut = $atleta->situacaoAutorizacao();
+                        $bloqueio    = $atleta->bloqueioAprovacao();
                     @endphp
-                    @if ($atleta->foto_atleta)
-                        <img src="{{ asset('storage/' . $atleta->foto_atleta) }}"
+                    @if ($foto = $atleta->urlFoto())
+                        <img src="{{ $foto }}"
                             alt="{{ $atleta->nome_atleta }}"
                             class="rounded-circle object-fit-cover"
                             style="width:80px;height:80px;">
@@ -57,12 +58,12 @@
                     <div>
                         <h3 class="mb-1">{{ $atleta->nome_atleta }}</h3>
                         <span class="badge bg-warning text-dark" style="font-size:0.85rem;">PENDENTE</span>
-                        @if ($autorizacao)
-                            @if ($autorizacao->status_autorizacao === 'ASSINADO')
-                                <span class="badge bg-success ms-1" style="font-size:0.85rem;">Autorização Assinada</span>
-                            @else
-                                <span class="badge bg-secondary ms-1" style="font-size:0.85rem;">Autorização Pendente</span>
-                            @endif
+                        @if ($situacaoAut === 'ASSINADA')
+                            <span class="badge bg-success ms-1" style="font-size:0.85rem;">Autorização Assinada</span>
+                        @elseif ($situacaoAut === 'PENDENTE')
+                            <span class="badge bg-secondary ms-1" style="font-size:0.85rem;">Autorização Pendente</span>
+                        @else
+                            <span class="badge bg-danger ms-1" style="font-size:0.85rem;">Sem autorização</span>
                         @endif
                     </div>
                     <div class="ms-auto d-flex flex-column align-items-end gap-2">
@@ -91,7 +92,7 @@
                                         value="{{ old('motivo_categoria') }}">
                                 </div>
                                 <button type="submit" class="btn btn-success px-4"
-                                    @if ($autorizacaoPendente) disabled title="Aguardando assinatura da autorização pelo responsável" @endif>
+                                    @if ($bloqueio) disabled title="{{ $bloqueio }}" @endif>
                                     <i class="bi bi-check-lg"></i> Aprovar
                                 </button>
                             </form>
@@ -103,10 +104,10 @@
                                 </button>
                             </form>
                         </div>
-                        @if ($autorizacaoPendente)
+                        @if ($bloqueio)
                             <small class="text-warning fw-semibold">
                                 <i class="bi bi-exclamation-triangle me-1"></i>
-                                Aprovação bloqueada — aguardando assinatura da autorização.
+                                Aprovação bloqueada: {{ $bloqueio }}
                             </small>
                         @endif
                     </div>

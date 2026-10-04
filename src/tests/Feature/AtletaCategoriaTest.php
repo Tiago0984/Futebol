@@ -40,6 +40,7 @@ class AtletaCategoriaTest extends TestCase
     public function test_aprovacao_grava_a_categoria_sugerida(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
+        $this->criarAutorizacao($idAtleta); // aprovação exige autorização assinada
         $idSub13M = $this->idCategoria('Sub-13', 'M');
 
         $this->comoAdmin()
@@ -56,6 +57,7 @@ class AtletaCategoriaTest extends TestCase
     public function test_aprovacao_exige_categoria(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
+        $this->criarAutorizacao($idAtleta); // aprovação exige autorização assinada
 
         $this->comoAdmin()
             ->patch(route('admin.matriculas.aprovar', $idAtleta), [])
@@ -67,6 +69,7 @@ class AtletaCategoriaTest extends TestCase
     public function test_aprovacao_acima_da_idade_exige_motivo_e_grava_a_observacao(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
+        $this->criarAutorizacao($idAtleta); // aprovação exige autorização assinada
         $idSub15M = $this->idCategoria('Sub-15', 'M');
 
         $this->comoAdmin()
@@ -92,6 +95,7 @@ class AtletaCategoriaTest extends TestCase
     public function test_aprovacao_abaixo_da_idade_e_bloqueada_mesmo_com_motivo(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(14), 'M', 'PENDENTE');
+        $this->criarAutorizacao($idAtleta); // aprovação exige autorização assinada
 
         $this->comoAdmin()
             ->patch(route('admin.matriculas.aprovar', $idAtleta), [
@@ -106,6 +110,7 @@ class AtletaCategoriaTest extends TestCase
     public function test_aprovacao_em_categoria_de_outro_sexo_e_bloqueada(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'F', 'PENDENTE');
+        $this->criarAutorizacao($idAtleta); // aprovação exige autorização assinada
 
         $this->comoAdmin()
             ->patch(route('admin.matriculas.aprovar', $idAtleta), ['id_categoria' => $this->idCategoria('Sub-13', 'M')])
@@ -271,6 +276,7 @@ class AtletaCategoriaTest extends TestCase
     public function test_matricula_mostra_a_categoria_sugerida(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'F', 'PENDENTE');
+        $this->criarAutorizacao($idAtleta); // aprovação exige autorização assinada
 
         $this->comoAdmin()
             ->get(route('admin.matriculas.show', $idAtleta))
