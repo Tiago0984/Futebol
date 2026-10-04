@@ -1,0 +1,6 @@
+# Fim de linha LF no repositorio e na pasta, para o Git do Windows e o do WSL verem o mesmo estado
+# (o Git do Windows tem core.autocrlf=true; esta regra vale por cima dele).
+* text=auto eol=lf
+*.bat eol=crlf
+*.cmd eol=crlf
+*.ps1 eol=crlf
