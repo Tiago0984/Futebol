@@ -7,6 +7,7 @@ use App\Models\Atleta;
 use App\Models\Responsavel;
 use App\Models\Endereco;
 use App\Models\Categoria;
+use App\Models\EventoCalendario;
 use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -351,11 +352,32 @@ class AtletasController extends Controller
                     'para_rotulo' => Categoria::find($idNova)?->rotulo,
                     'sair'      => $movimento['sair']->map(fn ($e) => $e->data_evento_calendario->format('d/m') . ' ' . $e->titulo_evento_calendario)->all(),
                     'entrar'    => $movimento['entrar']->map(fn ($e) => $e->data_evento_calendario->format('d/m') . ' ' . $e->titulo_evento_calendario)->all(),
+                    // Conflitos que entrar nos eventos da categoria nova criaria (o clique em "Mover" confirma):
+                    // reais (horário sobreposto) e de mesmo dia (algum evento sem horário), separados
+                    ...$this->conflitosAoMover($movimento['entrar'], $atleta->id_atleta),
                 ]);
             }
         }
 
         return $resposta;
+    }
+
+    // ['conflitos' => [...], 'mesmo_dia' => [...]] dos eventos em que o atleta entraria
+    private function conflitosAoMover($eventos, int $idAtleta): array
+    {
+        $todos = $eventos->flatMap(fn ($e) => $e->conflitosPara([$idAtleta])
+            ->map(fn ($c) => [
+                'fraco' => $c['fraco'],
+                'texto' => "{$e->titulo_evento_calendario} ({$e->data_evento_calendario->format('d/m')}): "
+                    . EventoCalendario::descreverConflito($c),
+            ]));
+
+        [$fracos, $fortes] = $todos->partition(fn ($c) => $c['fraco']);
+
+        return [
+            'conflitos' => $fortes->pluck('texto')->values()->all(),
+            'mesmo_dia' => $fracos->pluck('texto')->values()->all(),
+        ];
     }
 
     /**

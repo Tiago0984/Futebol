@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class EventoCalendario extends Model
@@ -48,6 +49,17 @@ class EventoCalendario extends Model
         'horario_fim_evento_calendario',
         'local_evento_calendario',
     ];
+
+    // Duração usada no alerta de conflito quando o evento não tem horário de fim, em minutos.
+    // PROVISÓRIA: confirmar com o professor (CLAUDE.md, seção 8, pergunta 12).
+    // DIA_TODO = até o fim do dia; tipos fora da lista usam DURACAO_PADRAO_OUTROS.
+    public const DURACAO_PADRAO_MINUTOS = [
+        'JOGO'       => 120,
+        'TREINO'     => 90,
+        'AVALIACAO'  => 60,
+        'CAMPEONATO' => 'DIA_TODO',
+    ];
+    public const DURACAO_PADRAO_OUTROS = 120;
 
     // Status que aparecem no site público: cancelado continua visível, com o selo
     public const STATUS_VISIVEIS = ['ATIVO', 'CANCELADO'];
@@ -188,6 +200,78 @@ class EventoCalendario extends Model
         $inscritos = $this->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
 
         return array_values(array_diff(Atleta::idsAtivosNaCategoria($this->id_categoria), $inscritos));
+    }
+
+    // ── Conflito de horário ─────────────────────────────────────────────────
+
+    /**
+     * Início e fim do evento para o alerta de conflito, ou null se não tem horário de início
+     * (aí só dá para avisar "mesmo dia, horário a definir"). Sem fim: duração padrão por tipo.
+     */
+    public function intervalo(): ?array
+    {
+        if (! $this->horario_inicio_evento_calendario) {
+            return null;
+        }
+
+        $dia    = $this->data_evento_calendario->toDateString();
+        $inicio = Carbon::parse("{$dia} {$this->horario_inicio_evento_calendario}");
+
+        if ($this->horario_fim_evento_calendario) {
+            return [$inicio, Carbon::parse("{$dia} {$this->horario_fim_evento_calendario}")];
+        }
+
+        $duracao = self::DURACAO_PADRAO_MINUTOS[$this->tipo_evento_calendario] ?? self::DURACAO_PADRAO_OUTROS;
+
+        return [$inicio, $duracao === 'DIA_TODO' ? $inicio->copy()->endOfDay() : $inicio->copy()->addMinutes($duracao)];
+    }
+
+    /**
+     * Conflitos dos atletas informados com outros eventos ATIVO do mesmo dia em que já estão inscritos
+     * (cancelados e ocultos não contam; só atletas ATIVO). Funciona também com um evento ainda não salvo
+     * ou com dados novos (simulação antes de criar/editar). Cada item: atleta, outro evento e se é
+     * "fraco" (algum dos dois sem horário de início: mesmo dia, horário a definir).
+     * Sobreposição: inícioA < fimB e inícioB < fimA (encostar não conta).
+     */
+    public function conflitosPara(array $idsAtletas): Collection
+    {
+        if ($this->status_evento_calendario !== 'ATIVO' || empty($idsAtletas)) {
+            return collect();
+        }
+
+        $meu = $this->intervalo();
+
+        $inscricoes = EventoAtleta::with(['atleta', 'evento'])
+            ->whereIn('id_atleta', $idsAtletas)
+            ->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))
+            ->whereHas('evento', fn ($q) => $q
+                ->where('status_evento_calendario', 'ATIVO')
+                ->whereDate('data_evento_calendario', $this->data_evento_calendario->toDateString())
+                ->when($this->id_evento_calendario, fn ($q) => $q->where('id_evento_calendario', '<>', $this->id_evento_calendario)))
+            ->get();
+
+        return $inscricoes->map(function (EventoAtleta $inscricao) use ($meu) {
+            $outro = $inscricao->evento->intervalo();
+
+            if ($meu === null || $outro === null) {
+                return ['atleta' => $inscricao->atleta, 'evento' => $inscricao->evento, 'fraco' => true];
+            }
+
+            $sobrepoe = $meu[0]->lt($outro[1]) && $outro[0]->lt($meu[1]);
+
+            return $sobrepoe ? ['atleta' => $inscricao->atleta, 'evento' => $inscricao->evento, 'fraco' => false] : null;
+        })->filter()->sortBy(fn ($c) => $c['atleta']->nome_atleta)->values();
+    }
+
+    // Texto de um conflito para a tela de confirmação
+    public static function descreverConflito(array $conflito): string
+    {
+        $outro = $conflito['evento'];
+        $quando = $outro->data_evento_calendario->format('d/m') . ', ' . $outro->horario_texto;
+
+        return $conflito['fraco']
+            ? "{$conflito['atleta']->nome_atleta}: também está em \"{$outro->titulo_evento_calendario}\" no mesmo dia ({$quando}); horário a definir, confira."
+            : "{$conflito['atleta']->nome_atleta}: horário sobrepõe \"{$outro->titulo_evento_calendario}\" ({$quando}).";
     }
 
     // Eventos ativos (não cancelados nem ocultos) que ainda não aconteceram

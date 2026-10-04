@@ -7,7 +7,10 @@ use App\Models\Atleta;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Validation\Rule;
 
 class CalendarioController extends Controller
@@ -35,12 +38,21 @@ class CalendarioController extends Controller
 
     public function storeEvento(Request $request)
     {
+        $dados = [...$this->dadosEvento($request), 'status_evento_calendario' => 'ATIVO'];
+
+        // Com categoria, os atletas dela serão inscritos: confere conflito antes de criar
+        if (! empty($dados['id_categoria'])) {
+            $simulado = new EventoCalendario($dados);
+            $conflitos = $simulado->conflitosPara(Atleta::idsAtivosNaCategoria((int) $dados['id_categoria']));
+
+            if ($confirmar = $this->confirmarConflitos($request, $conflitos)) {
+                return $confirmar;
+            }
+        }
+
         // Responsável = admin logado que criou o evento (gravado só aqui). Com categoria, os atletas
         // ativos dela já são inscritos (EventoCalendario::criarPor)
-        $evento = EventoCalendario::criarPor(auth('admin')->id(), [
-            ...$this->dadosEvento($request),
-            'status_evento_calendario' => 'ATIVO',
-        ]);
+        $evento = EventoCalendario::criarPor(auth('admin')->id(), $dados);
 
         $inscritos = $evento->inscricoes()->count();
         $mensagem  = 'Evento adicionado ao calendário.'
@@ -93,6 +105,10 @@ class CalendarioController extends Controller
             return back()->with('erro', 'Este evento não tem categoria.');
         }
 
+        if ($confirmar = $this->confirmarConflitos(request(), $evento->conflitosPara($evento->idsFaltantesDaCategoria()))) {
+            return $confirmar;
+        }
+
         $novos = $evento->inscreverCategoria($evento->id_categoria, 'CATEGORIA', auth('admin')->id());
 
         return back()->with('sucesso', "{$novos} atleta(s) da categoria inscrito(s).");
@@ -109,6 +125,10 @@ class CalendarioController extends Controller
             'id_atleta.required' => 'Escolha um atleta.',
             'id_atleta.exists'   => 'Escolha um atleta ativo.',
         ]);
+
+        if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara([(int) $request->id_atleta]))) {
+            return $confirmar;
+        }
 
         $inscreveu = $evento->inscrever((int) $request->id_atleta, 'INDIVIDUAL', auth('admin')->id());
 
@@ -132,7 +152,16 @@ class CalendarioController extends Controller
         ]);
 
         $categoria = Categoria::find($request->id_categoria);
-        $novos     = $evento->inscreverCategoria($categoria->id_categoria, 'INDIVIDUAL', auth('admin')->id());
+
+        // Só quem ainda não está inscrito entra; o conflito é conferido para esses
+        $inscritos = $evento->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+        $entrariam = array_values(array_diff(Atleta::idsAtivosNaCategoria($categoria->id_categoria), $inscritos));
+
+        if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara($entrariam))) {
+            return $confirmar;
+        }
+
+        $novos = $evento->inscreverCategoria($categoria->id_categoria, 'INDIVIDUAL', auth('admin')->id());
 
         return back()->with('sucesso', "{$categoria->rotulo}: {$novos} atleta(s) inscrito(s)"
             . ($novos === 0 ? ' (todos já estavam inscritos ou não há atletas ativos).' : '.'));
@@ -151,10 +180,16 @@ class CalendarioController extends Controller
         $evento = EventoCalendario::findOrFail($id);
 
         $categoriaAntes = $evento->id_categoria;
+        $dados          = $this->dadosEvento($request, $evento);
+
+        // Mudou data, horário ou categoria: confere conflito dos atletas que ficarão inscritos
+        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaEdicao($evento, $dados))) {
+            return $confirmar;
+        }
 
         // Nem o status (só pelas ações de cancelar e ocultar) nem o responsável mudam pela edição.
         // O que mudar em data, horário, local, título, tipo ou categoria vai para o histórico.
-        $evento->atualizarComHistorico($this->dadosEvento($request, $evento), auth('admin')->id());
+        $evento->atualizarComHistorico($dados, auth('admin')->id());
 
         $mensagem = 'Evento atualizado.';
 
@@ -167,6 +202,65 @@ class CalendarioController extends Controller
         }
 
         return redirect()->route('admin.calendario.index')->with('sucesso', $mensagem);
+    }
+
+    /**
+     * Alerta de conflito. Conflito real (horários sobrepostos) pede confirmação: volta para a tela com a
+     * lista e um formulário que reenvia os mesmos dados com confirmar_conflito=1. Aviso fraco (algum
+     * evento sem horário de início) não bloqueia: segue e mostra um aviso informativo na próxima tela.
+     * Com os dois tipos, pede confirmação e lista os dois, separados. Devolve null quando pode seguir.
+     */
+    private function confirmarConflitos(Request $request, Collection $conflitos): ?RedirectResponse
+    {
+        [$fracos, $fortes] = $conflitos->partition(fn ($c) => $c['fraco']);
+        $descrever = fn (Collection $lista) => $lista->map(fn ($c) => EventoCalendario::descreverConflito($c))->values()->all();
+
+        if ($fortes->isEmpty() || $request->boolean('confirmar_conflito')) {
+            if ($fortes->isEmpty() && $fracos->isNotEmpty()) {
+                session()->flash('avisos_mesmo_dia', $descrever($fracos));
+            }
+
+            return null;
+        }
+
+        return back()->withInput()->with('conflitos_pendentes', [
+            'url'    => $request->url(),
+            'metodo' => $request->method(), // PUT na edição (o _method é refeito no formulário)
+            'dados'  => Arr::except($request->all(), ['_token', '_method', 'confirmar_conflito']),
+            'fortes' => $descrever($fortes),
+            'fracos' => $descrever($fracos),
+        ]);
+    }
+
+    /**
+     * Conflitos que a edição criaria: só quando muda data, horário ou categoria. Confere os atletas que
+     * ficarão inscritos (com troca de categoria: individuais atuais + atletas ativos da categoria nova).
+     */
+    private function conflitosDaEdicao(EventoCalendario $evento, array $dados): Collection
+    {
+        $simulado = $evento->replicate()->fill($dados);
+        $simulado->id_evento_calendario = $evento->id_evento_calendario;
+
+        $hora = fn ($valor) => substr((string) $valor, 0, 5);
+        $mudouHorario = $evento->data_evento_calendario->toDateString() !== $simulado->data_evento_calendario->toDateString()
+            || $hora($evento->horario_inicio_evento_calendario) !== $hora($simulado->horario_inicio_evento_calendario)
+            || $hora($evento->horario_fim_evento_calendario) !== $hora($simulado->horario_fim_evento_calendario);
+        $mudouCategoria = (int) $evento->id_categoria !== (int) $simulado->id_categoria && ! $simulado->estaConcluido();
+
+        if (! $mudouHorario && ! $mudouCategoria) {
+            return collect();
+        }
+
+        $inscricoes = $evento->inscricoes()->get(['id_atleta', 'origem_evento_atleta']);
+        $ids = $inscricoes->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+
+        if ($mudouCategoria) {
+            $individuais = $inscricoes->where('origem_evento_atleta', 'INDIVIDUAL')->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+            $daNova      = $simulado->id_categoria ? Atleta::idsAtivosNaCategoria((int) $simulado->id_categoria) : [];
+            $ids         = array_values(array_unique([...$individuais, ...$daNova]));
+        }
+
+        return $simulado->conflitosPara($ids);
     }
 
     /**
@@ -212,7 +306,27 @@ class CalendarioController extends Controller
         $novo = $evento->estaCancelado() ? 'ATIVO' : 'CANCELADO';
         $evento->mudarStatus($novo, auth('admin')->id());
 
-        return back()->with('sucesso', $novo === 'CANCELADO' ? 'Evento cancelado.' : 'Evento reativado.');
+        return back()->with('sucesso', ($novo === 'CANCELADO' ? 'Evento cancelado.' : 'Evento reativado.')
+            . $this->avisoDeConflitoAoReativar($evento));
+    }
+
+    // Evento que volta a ficar ativo pode passar a conflitar: avisa sem bloquear (já está feito).
+    // Conflito real vai na mensagem; aviso fraco (sem horário) vai no aviso informativo.
+    private function avisoDeConflitoAoReativar(EventoCalendario $evento): string
+    {
+        if ($evento->status_evento_calendario !== 'ATIVO') {
+            return '';
+        }
+
+        $ids = $evento->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+        [$fracos, $fortes] = $evento->conflitosPara($ids)->partition(fn ($c) => $c['fraco']);
+
+        if ($fracos->isNotEmpty()) {
+            session()->flash('avisos_mesmo_dia', $fracos->map(fn ($c) => EventoCalendario::descreverConflito($c))->values()->all());
+        }
+
+        return $fortes->isEmpty() ? '' : ' Atenção, conflito de horário: '
+            . $fortes->map(fn ($c) => EventoCalendario::descreverConflito($c))->implode(' ');
     }
 
     // Ocultar <-> mostrar. Oculto (INATIVO) some do site e faz o papel da exclusão, sem perder o registro.
@@ -230,7 +344,7 @@ class CalendarioController extends Controller
             default     => 'Evento visível de novo.',
         };
 
-        return back()->with('sucesso', $mensagem);
+        return back()->with('sucesso', $mensagem . $this->avisoDeConflitoAoReativar($evento));
     }
 
     // ── Grade de Treinos ────────────────────────────────────────────────────

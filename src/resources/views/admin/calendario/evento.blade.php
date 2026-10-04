@@ -24,6 +24,8 @@
                 </div>
             @endif
 
+            @include('admin.calendario._conflitos')
+
             @if (session('erro'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {{ session('erro') }}

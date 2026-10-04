@@ -48,6 +48,20 @@
                 <div class="mt-1">Não está em {{ count($mover['entrar']) }} evento(s) futuro(s) da categoria nova:
                     {{ implode('; ', $mover['entrar']) }}.</div>
             @endif
+            @if(count($mover['conflitos'] ?? []))
+                <div class="mt-1"><i class="bi bi-exclamation-triangle"></i> <strong>Conflito de horário ao mover:</strong>
+                    <ul class="mb-0">
+                        @foreach($mover['conflitos'] as $conflito)<li>{{ $conflito }}</li>@endforeach
+                    </ul>
+                </div>
+            @endif
+            @if(count($mover['mesmo_dia'] ?? []))
+                <div class="mt-1"><i class="bi bi-info-circle"></i> <strong>Mesmo dia — confira o horário:</strong>
+                    <ul class="mb-0">
+                        @foreach($mover['mesmo_dia'] as $aviso)<li>{{ $aviso }}</li>@endforeach
+                    </ul>
+                </div>
+            @endif
             <form action="{{ route('admin.atletas.moverInscricoes', $mover['id_atleta']) }}" method="POST" class="mt-2"
                   onsubmit="return confirm('Mover as inscrições? Sai dos eventos da categoria antiga (só os automáticos) e entra nos da nova.')">
                 @csrf
