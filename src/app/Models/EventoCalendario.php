@@ -7,6 +7,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class EventoCalendario extends Model
 {
@@ -102,14 +103,13 @@ class EventoCalendario extends Model
 
     /**
      * Cria o evento já com o responsável (quem criou), que depois nunca muda. Evento com categoria
-     * já nasce com os atletas ativos da categoria inscritos (origem CATEGORIA). Usado também pela
-     * geração da grade (Fase 7).
+     * já nasce com os atletas ativos da categoria inscritos (origem CATEGORIA). Usado pelo formulário
+     * de evento e pela tela de Jogos; a geração da grade usa criarDaGrade().
      */
     public static function criarPor(?int $idUsuario, array $dados): self
     {
         return DB::transaction(function () use ($idUsuario, $dados) {
-            $evento = new self(self::normalizarHorarios($dados));
-            $evento->id_usuario = $idUsuario;
+            $evento = self::novoPor($idUsuario, $dados);
             $evento->save();
 
             if ($evento->id_categoria) {
@@ -118,6 +118,30 @@ class EventoCalendario extends Model
 
             return $evento;
         });
+    }
+
+    /**
+     * Cria o evento de uma linha da grade numa data (Fase 7), com o responsável e a origem (grade +
+     * data de origem, que não são fillable). Sem inscrições: GradeTreino::gerarMes() inscreve o lote
+     * de uma vez, dentro da mesma transação.
+     */
+    public static function criarDaGrade(GradeTreino $grade, Carbon $data, ?int $idUsuario): self
+    {
+        $evento = self::novoPor($idUsuario, $grade->dadosEventoPara($data));
+        $evento->id_grade_treino              = $grade->id_grade_treino;
+        $evento->data_grade_evento_calendario = $data->toDateString();
+        $evento->save();
+
+        return $evento;
+    }
+
+    // Evento ainda não salvo, com os horários normalizados e o responsável (quem criou)
+    private static function novoPor(?int $idUsuario, array $dados): self
+    {
+        $evento = new self(self::normalizarHorarios($dados));
+        $evento->id_usuario = $idUsuario;
+
+        return $evento;
     }
 
     // ── Inscrições ──────────────────────────────────────────────────────────
@@ -302,6 +326,31 @@ class EventoCalendario extends Model
         return $conflito['fraco']
             ? "{$conflito['atleta']->nome_atleta}: também está em \"{$outro->titulo_evento_calendario}\" no mesmo dia ({$quando}); horário a definir, confira."
             : "{$conflito['atleta']->nome_atleta}: horário sobrepõe \"{$outro->titulo_evento_calendario}\" ({$quando}).";
+    }
+
+    // Eventos criados à mão (ou pela tela de Jogos): o site público não mostra os treinos gerados pela grade
+    public function scopeForaDaGrade($query)
+    {
+        return $query->whereNull('id_grade_treino');
+    }
+
+    // Eventos de um mês (lista do admin, por mês)
+    public function scopeDoMes($query, Carbon $mes)
+    {
+        return $query->whereBetween('data_evento_calendario', [
+            $mes->copy()->startOfMonth()->toDateString(), $mes->copy()->endOfMonth()->toDateString(),
+        ]);
+    }
+
+    // "Outubro de 2026" (select de mês da lista e da geração)
+    public static function rotuloDoMes(Carbon $mes): string
+    {
+        return Str::ucfirst($mes->copy()->locale('pt_BR')->isoFormat('MMMM [de] YYYY'));
+    }
+
+    public function veioDaGrade(): bool
+    {
+        return $this->id_grade_treino !== null;
     }
 
     // Eventos ativos (não cancelados nem ocultos) que ainda não aconteceram

@@ -8,20 +8,28 @@ use App\Models\Atleta;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Validation\Rule;
 
 class CalendarioController extends Controller
 {
     use ConfirmaConflitos;
 
-    public function index()
+    public function index(Request $request)
     {
+        // Lista de eventos por mês (?mes=AAAA-MM; padrão: mês atual). Com os treinos gerados pela grade,
+        // a lista inteira ficaria longa demais
+        $mes = $this->mesDaLista($request->query('mes'));
+
         $eventos = EventoCalendario::with(['categoria', 'responsavel', 'historico.usuario'])
             ->comAlteracao()
             ->comInscritosAtivos()
+            ->doMes($mes)
             ->orderBy('data_evento_calendario', 'desc')
             ->get();
+        $mesesLista = $this->mesesDaLista($mes);
         $grades  = GradeTreino::with('categoria')->ordenada()->get();
         $categorias = Categoria::ativas()->get();
 
@@ -31,7 +39,59 @@ class CalendarioController extends Controller
             ->whereIn('id_categoria', EventoCalendario::whereNotNull('id_categoria')->select('id_categoria'))
             ->get();
 
-        return view('admin.calendario.index', compact('eventos', 'grades', 'categorias', 'categoriasInativasEmUso'));
+        $mesesGeracao = GradeTreino::mesesPermitidos();
+
+        return view('admin.calendario.index', compact(
+            'eventos', 'grades', 'categorias', 'categoriasInativasEmUso', 'mes', 'mesesLista', 'mesesGeracao',
+        ));
+    }
+
+    // Mês pedido na lista (AAAA-MM); vazio ou inválido = mês atual
+    private function mesDaLista(?string $valor): Carbon
+    {
+        if ($valor && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $valor)) {
+            return Carbon::createFromFormat('!Y-m', $valor);
+        }
+
+        return now()->startOfMonth();
+    }
+
+    /**
+     * Meses do select da lista: do primeiro ao último mês com evento, sempre incluindo o mês atual, os
+     * meses que podem ser gerados e o mês aberto. Do mais novo para o mais antigo (como a lista).
+     */
+    private function mesesDaLista(Carbon $aberto): array
+    {
+        $datas = collect([
+            EventoCalendario::min('data_evento_calendario'), EventoCalendario::max('data_evento_calendario'),
+            now(), now()->addMonthsNoOverflow(GradeTreino::MESES_A_FRENTE), $aberto,
+        ])->filter()->map(fn ($d) => Carbon::parse($d)->startOfMonth());
+
+        $meses = [];
+        for ($m = $datas->max()->copy(); $m->gte($datas->min()); $m->subMonthNoOverflow()) {
+            $meses[$m->format('Y-m')] = EventoCalendario::rotuloDoMes($m);
+        }
+
+        return $meses;
+    }
+
+    // Lista de eventos aberta no mês do evento (depois de criar ou editar)
+    private function listaNoMesDo(EventoCalendario $evento)
+    {
+        return redirect()->route('admin.calendario.index', ['mes' => $evento->data_evento_calendario->format('Y-m')]);
+    }
+
+    /**
+     * Depois de cancelar ou ocultar: veio da lista do calendário, volta para ela no mês do evento;
+     * veio de outra tela (Jogos, tela do evento), volta para ela.
+     */
+    private function voltarDoEvento(EventoCalendario $evento)
+    {
+        $caminho = fn (string $url) => rtrim((string) parse_url($url, PHP_URL_PATH), '/');
+
+        return $caminho(url()->previous()) === $caminho(route('admin.calendario.index'))
+            ? $this->listaNoMesDo($evento)
+            : back();
     }
 
     // ── Eventos ─────────────────────────────────────────────────────────────
@@ -53,7 +113,7 @@ class CalendarioController extends Controller
         $mensagem  = 'Evento adicionado ao calendário.'
             . ($evento->id_categoria ? " {$inscritos} atleta(s) da categoria inscrito(s)." : '');
 
-        return redirect()->route('admin.calendario.index')->with('sucesso', $mensagem);
+        return $this->listaNoMesDo($evento)->with('sucesso', $mensagem);
     }
 
     // Tela do evento: dados e inscritos (só atletas ATIVO aparecem; CLAUDE.md, seção 4)
@@ -312,7 +372,8 @@ class CalendarioController extends Controller
         // Evento concluído não muda nada.
         $mensagem = 'Evento atualizado.' . $this->sincronizarSeMudouCategoria($evento, $categoriaAntes);
 
-        return redirect()->route('admin.calendario.index')->with('sucesso', $mensagem);
+        // No mês da data nova (se a data mudou, o evento saiu do mês que estava aberto)
+        return $this->listaNoMesDo($evento)->with('sucesso', $mensagem);
     }
 
     /**
@@ -358,7 +419,7 @@ class CalendarioController extends Controller
         $novo = $evento->estaCancelado() ? 'ATIVO' : 'CANCELADO';
         $evento->mudarStatus($novo, auth('admin')->id());
 
-        return back()->with('sucesso', ($novo === 'CANCELADO' ? 'Evento cancelado.' : 'Evento reativado.')
+        return $this->voltarDoEvento($evento)->with('sucesso', ($novo === 'CANCELADO' ? 'Evento cancelado.' : 'Evento reativado.')
             . $this->avisoDeConflitoAoReativar($evento));
     }
 
@@ -396,7 +457,64 @@ class CalendarioController extends Controller
             default     => 'Evento visível de novo.',
         };
 
-        return back()->with('sucesso', $mensagem . $this->avisoDeConflitoAoReativar($evento));
+        return $this->voltarDoEvento($evento)->with('sucesso', $mensagem . $this->avisoDeConflitoAoReativar($evento));
+    }
+
+    // ── Geração da agenda pela grade (Fase 7) ───────────────────────────────
+
+    // Prévia: o que será gerado no mês escolhido, por linha da grade (nada é gravado aqui)
+    public function previaGeracao(Request $request)
+    {
+        if (! $mes = $this->mesDeGeracao($request)) {
+            return $this->mesNaoPermitido();
+        }
+
+        $previa = GradeTreino::previaDoMes($mes);
+        $mesesGeracao = GradeTreino::mesesPermitidos();
+
+        return view('admin.calendario.gerar', compact('previa', 'mes', 'mesesGeracao'));
+    }
+
+    // Gera de verdade: recalcula a prévia na hora (não confia na tela) e grava tudo ou nada
+    public function gerarAgenda(Request $request)
+    {
+        if (! $mes = $this->mesDeGeracao($request)) {
+            return $this->mesNaoPermitido();
+        }
+
+        try {
+            $totais = GradeTreino::gerarMes($mes, auth('admin')->id());
+        } catch (UniqueConstraintViolationException $e) {
+            // Outro admin gerou o mesmo mês ao mesmo tempo: nada foi gravado (o lote foi desfeito)
+            return redirect()->route('admin.calendario.grade.previa', ['mes' => $mes])
+                ->with('erro', 'Outro usuário gerou eventos deste mês ao mesmo tempo. Nada foi gravado; confira a prévia e gere de novo.');
+        }
+
+        $mensagem = $totais['eventos'] === 0
+            ? 'Nada novo para gerar neste mês.'
+            : "{$totais['eventos']} evento(s) gerado(s), {$totais['inscricoes']} inscrição(ões).";
+        if ($totais['existentes'] > 0) {
+            $mensagem .= " {$totais['existentes']} já existia(m) e não foi(ram) recriado(s).";
+        }
+        if ($totais['puladas'] > 0) {
+            $mensagem .= " {$totais['puladas']} de hoje já tinha(m) passado e não foi(ram) gerado(s).";
+        }
+
+        return redirect()->route('admin.calendario.index', ['mes' => $mes])->with('sucesso', $mensagem);
+    }
+
+    // Mês da geração (AAAA-MM), só entre os permitidos (mês atual e os seguintes); null se não for
+    private function mesDeGeracao(Request $request): ?string
+    {
+        $mes = (string) $request->input('mes');
+
+        return array_key_exists($mes, GradeTreino::mesesPermitidos()) ? $mes : null;
+    }
+
+    private function mesNaoPermitido()
+    {
+        return redirect()->route('admin.calendario.index', ['tab' => 'grade'])
+            ->with('erro', 'Escolha um mês entre o atual e os ' . GradeTreino::MESES_A_FRENTE . ' seguintes para gerar a agenda.');
     }
 
     // ── Grade de Treinos ────────────────────────────────────────────────────

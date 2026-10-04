@@ -136,10 +136,15 @@ class EventoCategoriaResponsavelTest extends TestCase
             'data_evento_calendario' => '2026-06-21', 'status_evento_calendario' => 'ATIVO',
         ]);
 
+        // A lista é por mês: cada evento aparece no mês dele
         $this->comoAdmin()
-            ->get(route('admin.calendario.index'))
+            ->get(route('admin.calendario.index', ['mes' => now()->addWeek()->format('Y-m')]))
             ->assertOk()
-            ->assertSee('Sub-15 Masculino · Responsável: Fulana Criadora')
+            ->assertSee('Sub-15 Masculino · Responsável: Fulana Criadora');
+
+        $this->comoAdmin()
+            ->get(route('admin.calendario.index', ['mes' => '2026-06']))
+            ->assertOk()
             ->assertSee('Sem categoria · Responsável: —');
     }
 

@@ -15,6 +15,11 @@
                 <button class="btn-filter-toggle" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false">
                     <i class="bi bi-funnel"></i> Filtrar
                 </button>
+                @if(request('tab') === 'grade')
+                <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalGerarAgenda">
+                    <i class="bi bi-calendar-plus"></i> Gerar agenda do mês
+                </button>
+                @endif
                 <button class="btn-admin-primary" data-bs-toggle="modal"
                     data-bs-target="{{ request('tab') === 'grade' ? '#modalCriarGrade' : '#modalCriarEvento' }}">
                     <i class="bi bi-plus-lg"></i>
@@ -48,6 +53,14 @@
                             @foreach(\App\Models\EventoCalendario::SITUACOES as $st => $rotuloStatus)
                             <option value="{{ $st }}">{{ $rotuloStatus }}</option>
                             @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="filter-label">Origem</label>
+                        <select id="filtroOrigem" class="form-select form-select-sm">
+                            <option value="">Todos</option>
+                            <option value="grade">Grade</option>
+                            <option value="manual">Manual</option>
                         </select>
                     </div>
                     <div class="col-md-auto">
@@ -152,8 +165,25 @@
         {{-- TAB: Eventos --}}
         @if(request('tab') !== 'grade')
         <div class="table-card">
-            <div class="table-card-toolbar">
-                <span class="tbl-count">{{ count($eventos) }} evento(s)</span>
+            <div class="table-card-toolbar d-flex flex-wrap align-items-center gap-2">
+                {{-- Lista por mês: setas e select (sem input type="month", que não funciona em todo navegador) --}}
+                @php
+                    $mesAnterior = $mes->copy()->subMonthNoOverflow()->format('Y-m');
+                    $mesSeguinte = $mes->copy()->addMonthNoOverflow()->format('Y-m');
+                @endphp
+                <form method="GET" action="{{ route('admin.calendario.index') }}" class="d-flex align-items-center gap-1" id="formMesLista">
+                    <a href="{{ route('admin.calendario.index', ['mes' => $mesAnterior]) }}" class="btn btn-sm btn-outline-secondary"
+                       title="Mês anterior" aria-label="Mês anterior"><i class="bi bi-chevron-left"></i></a>
+                    <select name="mes" class="form-select form-select-sm" style="width:auto" aria-label="Mês"
+                            onchange="this.form.submit()">
+                        @foreach($mesesLista as $valor => $rotulo)
+                        <option value="{{ $valor }}" @selected($valor === $mes->format('Y-m'))>{{ $rotulo }}</option>
+                        @endforeach
+                    </select>
+                    <a href="{{ route('admin.calendario.index', ['mes' => $mesSeguinte]) }}" class="btn btn-sm btn-outline-secondary"
+                       title="Próximo mês" aria-label="Próximo mês"><i class="bi bi-chevron-right"></i></a>
+                </form>
+                <span class="tbl-count">{{ count($eventos) }} evento(s) em {{ \App\Models\EventoCalendario::rotuloDoMes($mes) }}</span>
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -174,7 +204,8 @@
                         <tr class="linha-ev"
                             data-titulo="{{ strtolower($ev->titulo_evento_calendario) }}"
                             data-tipo="{{ $ev->tipo_evento_calendario }}"
-                            data-status="{{ $ev->situacao }}">
+                            data-status="{{ $ev->situacao }}"
+                            data-origem="{{ $ev->veioDaGrade() ? 'grade' : 'manual' }}">
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
                                 {{ $ev->data_evento_calendario->format('d/m/Y') }}
                             </td>
@@ -182,6 +213,7 @@
                                 <span class="fw-semibold">{{ $ev->titulo_evento_calendario }}</span>
                                 <div class="text-muted" style="font-size:0.75rem;">
                                     {{ $ev->categoria?->rotulo ?? 'Sem categoria' }} · Responsável: {{ $ev->responsavel?->nome_usuario ?? '—' }}
+                                    @if($ev->veioDaGrade()) · <i class="bi bi-clock-history"></i> Gerado pela grade @endif
                                 </div>
                             </td>
                             <td><span class="badge-cat">{{ $ev->tipo_label }}</span></td>
@@ -682,6 +714,36 @@
     </div>
 </div>
 
+{{-- ── Modal Gerar Agenda do Mês (Fase 7) ────────────────────────────────── --}}
+<div class="modal fade" id="modalGerarAgenda" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content text-start modal-admin">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-calendar-plus"></i> Gerar agenda do mês</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="GET" action="{{ route('admin.calendario.grade.previa') }}">
+                <div class="modal-body">
+                    <label class="form-label" for="gerar_mes">Mês <span class="text-danger">*</span></label>
+                    <select id="gerar_mes" name="mes" class="form-select" required>
+                        @foreach($mesesGeracao as $valor => $rotulo)
+                        <option value="{{ $valor }}">{{ $rotulo }}</option>
+                        @endforeach
+                    </select>
+                    <div class="form-text">
+                        Cria os eventos dos horários ativos da grade, de hoje em diante, já com os atletas inscritos.
+                        Antes de gravar, você vê a prévia.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-modal-submit"><i class="bi bi-eye"></i> Ver prévia</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -695,16 +757,18 @@ document.addEventListener('DOMContentLoaded', function () {
             const titulo = document.getElementById('filtroTitulo')?.value.toLowerCase().trim() ?? '';
             const tipo   = document.getElementById('filtroTipo')?.value ?? '';
             const status = document.getElementById('filtroStatus')?.value ?? '';
+            const origem = document.getElementById('filtroOrigem')?.value ?? '';
             document.querySelectorAll('.linha-ev').forEach(row => {
                 const ok = (!titulo || row.dataset.titulo.includes(titulo))
                         && (!tipo   || row.dataset.tipo === tipo)
-                        && (!status || row.dataset.status === status);
+                        && (!status || row.dataset.status === status)
+                        && (!origem || row.dataset.origem === origem);
                 row.style.display = ok ? '' : 'none';
                 if (ok) visiveis++;
             });
             const total = document.querySelectorAll('.linha-ev').length;
             const contador = document.getElementById('filtroContador');
-            if (contador) contador.textContent = (titulo || tipo || status)
+            if (contador) contador.textContent = (titulo || tipo || status || origem)
                 ? `${visiveis} de ${total} evento(s) encontrado(s)` : '';
         } else {
             const dia       = document.getElementById('filtroDia')?.value ?? '';
@@ -726,11 +790,11 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    ['filtroTitulo','filtroTipo','filtroStatus','filtroDia','filtroTipoGrade','filtroCategoria'].forEach(id =>
-        document.getElementById(id)?.addEventListener('input', aplicarFiltros));
+    const idsFiltros = ['filtroTitulo','filtroTipo','filtroStatus','filtroOrigem','filtroDia','filtroTipoGrade','filtroCategoria'];
+    idsFiltros.forEach(id => document.getElementById(id)?.addEventListener('input', aplicarFiltros));
 
     document.getElementById('btnLimparFiltros')?.addEventListener('click', () => {
-        ['filtroTitulo','filtroTipo','filtroStatus','filtroDia','filtroTipoGrade','filtroCategoria'].forEach(id => {
+        idsFiltros.forEach(id => {
             const el = document.getElementById(id);
             if (el) el.value = '';
         });

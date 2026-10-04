@@ -11,9 +11,11 @@ class CalendarioController extends Controller
     public function calendario()
     {
         // jogo.campeonato: para a etiqueta (nome do campeonato ou "Amistoso") sem uma consulta por evento
+        // Treinos gerados pela grade ficam fora do site (a grade já aparece na tabela da página)
         $eventos = EventoCalendario::with('jogo.campeonato')
             ->whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS)
             ->whereIn('tipo_evento_calendario', EventoCalendario::TIPOS_PUBLICOS)
+            ->foraDaGrade()
             ->orderBy('data_evento_calendario')
             ->get();
 
@@ -21,6 +23,7 @@ class CalendarioController extends Controller
         $proximoEvento = EventoCalendario::with('jogo.campeonato')
             ->where('status_evento_calendario', 'ATIVO')
             ->whereIn('tipo_evento_calendario', EventoCalendario::TIPOS_PUBLICOS)
+            ->foraDaGrade()
             ->where('data_evento_calendario', '>=', now()->toDateString()) // Filtra eventos futuros ou do dia atual
             ->orderBy('data_evento_calendario')
             ->first();
