@@ -69,6 +69,17 @@ class GradeTreino extends Model
         return $this->hasMany(EventoCalendario::class, 'id_grade_treino', 'id_grade_treino');
     }
 
+    /**
+     * Quantos eventos gerados por esta linha ainda vão acontecer (ativos, de hoje em diante e não
+     * concluídos). Mudar ou inativar a linha não altera esses eventos: a tela só avisa (Fase 7).
+     */
+    public function contarEventosFuturosAtivos(): int
+    {
+        return $this->eventos()->futurosAtivos()->get()
+            ->reject(fn (EventoCalendario $evento) => $evento->estaConcluido())
+            ->count();
+    }
+
     // ── Geração de eventos (Fase 7) ─────────────────────────────────────────
 
     /**

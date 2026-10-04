@@ -549,13 +549,43 @@ class CalendarioController extends Controller
         return redirect()->route('admin.calendario.index', ['tab' => 'grade'])->with('sucesso', 'Horário adicionado à grade.');
     }
 
+    // Campos da grade que mudam os eventos gerados (observação e ordem não mudam)
+    private const CAMPOS_GRADE_DO_EVENTO = [
+        'dia_semana_grade_treino', 'horario_inicio_grade_treino', 'horario_fim_grade_treino',
+        'local_grade_treino', 'id_categoria', 'categoria_grade_treino', 'tipo_grade_treino',
+    ];
+
     public function updateGrade(Request $request, $id)
     {
         $grade = GradeTreino::findOrFail($id);
 
+        $antes = $this->camposDoEvento($grade);
         $grade->update($this->dadosGrade($request));
 
-        return redirect()->route('admin.calendario.index', ['tab' => 'grade'])->with('sucesso', 'Horário atualizado.');
+        // Mudou algo que o evento copia: os eventos futuros já gerados NÃO acompanham (só avisa)
+        $mensagem = 'Horário atualizado.';
+        if ($antes !== $this->camposDoEvento($grade) && ($futuros = $grade->contarEventosFuturosAtivos()) > 0) {
+            $mensagem .= " Atenção: {$futuros} evento(s) futuro(s) já gerado(s) por este horário não foram alterados;"
+                . ' edite-os na lista de eventos (filtro Origem: Grade).';
+        }
+
+        return redirect()->route('admin.calendario.index', ['tab' => 'grade'])->with('sucesso', $mensagem);
+    }
+
+    // Campos que o evento gerado copia, comparáveis ("08:00" e "08:00:00" são o mesmo horário)
+    private function camposDoEvento(GradeTreino $grade): array
+    {
+        $valores = [];
+        foreach (self::CAMPOS_GRADE_DO_EVENTO as $campo) {
+            $valor = $grade->getAttribute($campo);
+            $valores[$campo] = match (true) {
+                $valor === null || $valor === ''    => null,
+                str_starts_with($campo, 'horario_') => substr((string) $valor, 0, 5),
+                default                             => (string) $valor,
+            };
+        }
+
+        return $valores;
     }
 
     /**
@@ -601,7 +631,14 @@ class CalendarioController extends Controller
         $novo = strtoupper($grade->status_grade_treino) === 'ATIVO' ? 'INATIVO' : 'ATIVO';
         $grade->update(['status_grade_treino' => $novo]);
 
-        return back()->with('sucesso', "Horário {$novo} com sucesso.");
+        // Inativar não cancela os eventos futuros já gerados: só avisa
+        $mensagem = "Horário {$novo} com sucesso.";
+        if ($novo === 'INATIVO' && ($futuros = $grade->contarEventosFuturosAtivos()) > 0) {
+            $mensagem .= " Atenção: {$futuros} evento(s) futuro(s) já gerado(s) por este horário continuam na agenda;"
+                . ' cancele-os à mão se não forem acontecer.';
+        }
+
+        return back()->with('sucesso', $mensagem);
     }
 
     public function destroyGrade($id)
