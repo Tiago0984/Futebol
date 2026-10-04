@@ -1,1 +1,0 @@
-ALTER TABLE tbl_noticias ADD COLUMN status_noticia VARCHAR(10) DEFAULT 'ATIVO' AFTER autor_noticia;
