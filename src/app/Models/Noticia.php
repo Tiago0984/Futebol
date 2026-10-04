@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializaDatasComFuso;
 use Illuminate\Database\Eloquent\Model;
 
 class Noticia extends Model
 {
+    use SerializaDatasComFuso; // datas no JSON da API: 2026-05-15T16:00:00-03:00
+
     // 1. Indica ao Laravel o nome exato da tua tabela no banco
     protected $table = 'tbl_noticias';
 

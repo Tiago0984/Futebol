@@ -177,7 +177,7 @@ class JogoSiteTest extends TestCase
         $jogos = $this->getJson("/api/v1/campeonatos/{$this->idCampeonato}")->assertOk()->json('data.jogos');
 
         $this->assertCount(2, $jogos); // oculto não vai
-        $this->assertSame('2099-05-01T19:00:00.000000Z', $jogos[0]['data_jogo']);
+        $this->assertSame('2099-05-01T19:00:00-03:00', $jogos[0]['data_jogo']); // hora local com o deslocamento
         $this->assertSame('19:00 às 20:30', $jogos[0]['horario_jogo']);
         $this->assertSame('Quadra A', $jogos[0]['local_jogo']);
         $this->assertSame('ATIVO', $jogos[0]['status_jogo']);

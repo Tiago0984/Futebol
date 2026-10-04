@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializaDatasComFuso;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +12,8 @@ use Laravel\Sanctum\HasApiTokens;
 class Atleta extends Authenticatable
 {
     // HasApiTokens: permite gerar e gerenciar tokens do Sanctum (login pela API)
-    use HasApiTokens;
+    // SerializaDatasComFuso: data_nasc_atleta no JSON da API como 2014-01-01T00:00:00-02:00
+    use HasApiTokens, SerializaDatasComFuso;
 
     protected $table = 'tbl_atletas';
     protected $primaryKey = 'id_atleta';

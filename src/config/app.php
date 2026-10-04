@@ -63,9 +63,13 @@ return [
     | will be used by the PHP date and date-time functions. The timezone
     | is set to "UTC" by default as it is suitable for most use cases.
     |
+    | Escolinha: horário de Brasília. Em UTC, depois das 21h o sistema já estava
+    | no dia seguinte ("hoje", Concluído, Próximo Evento, idade pelo ano). O fuso
+    | da conexão MySQL acompanha este (DB_TIMEZONE em config/database.php).
+    |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'America/Sao_Paulo'),
 
     /*
     |--------------------------------------------------------------------------

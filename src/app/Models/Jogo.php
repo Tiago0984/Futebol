@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializaDatasComFuso;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
@@ -14,6 +15,8 @@ use Illuminate\Support\Str;
  */
 class Jogo extends Model
 {
+    use SerializaDatasComFuso; // data_jogo no JSON da API: 2099-05-01T19:00:00-03:00
+
     protected $table = 'tbl_jogos';
     protected $primaryKey = 'id_jogo';
     public $timestamps = false;

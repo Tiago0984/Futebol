@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\SerializaDatasComFuso;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\Time;
 use App\Models\Jogo;
 
 class Campeonato extends Model
 {
+    use SerializaDatasComFuso; // datas no JSON da API: 2025-01-01T00:00:00-03:00
+
     protected $table = 'tbl_campeonato';
     protected $primaryKey = 'id_campeonato';
     public $timestamps = false;

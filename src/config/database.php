@@ -55,6 +55,10 @@ return [
             'unix_socket' => env('DB_SOCKET', ''),
             'charset' => env('DB_CHARSET', 'utf8mb4'),
             'collation' => env('DB_COLLATION', 'utf8mb4_general_ci'),
+            // Fuso da sessão MySQL igual ao do app (America/Sao_Paulo, sem horário de verão desde 2019):
+            // CURRENT_TIMESTAMP/NOW() do banco batem com o now() do Laravel. Deslocamento fixo, porque nome
+            // de fuso exige as tabelas de fuso carregadas no MySQL
+            'timezone' => env('DB_TIMEZONE', '-03:00'),
             'prefix' => '',
             'prefix_indexes' => true,
             'strict' => true,
