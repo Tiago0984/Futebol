@@ -53,6 +53,26 @@ class MatriculaExclusaoTest extends TestCase
         $this->assertDatabaseHas('tbl_evento_calendario', ['id_evento_calendario' => $idEvento]);
     }
 
+    public function test_exclusao_remove_as_notificacoes(): void
+    {
+        $idAtleta = $this->criarAtleta('REJEITADO');
+        $idOutro  = $this->criarAtleta('ATIVO');
+        foreach ([$idAtleta, $idAtleta, $idOutro] as $id) {
+            DB::table('tbl_notificacao')->insert([
+                'id_atleta' => $id, 'tipo_notificacao' => 'AGENDA',
+                'titulo_notificacao' => 'Agenda de dezembro disponível', 'mensagem_notificacao' => 'Seus treinos já estão na agenda.',
+            ]);
+        }
+
+        $this->comoAdmin()
+            ->delete(route('admin.matriculas.deletar', $idAtleta))
+            ->assertSessionHas('sucesso');
+
+        $this->assertDatabaseMissing('tbl_atletas', ['id_atleta' => $idAtleta]);
+        $this->assertDatabaseMissing('tbl_notificacao', ['id_atleta' => $idAtleta]);
+        $this->assertSame(1, DB::table('tbl_notificacao')->where('id_atleta', $idOutro)->count()); // as dos outros ficam
+    }
+
     public function test_atleta_com_cartao_nao_e_excluido(): void
     {
         $idAtleta = $this->criarAtleta('REJEITADO');

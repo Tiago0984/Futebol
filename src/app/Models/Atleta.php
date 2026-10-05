@@ -202,6 +202,14 @@ class Atleta extends Authenticatable
         return $this->hasMany(EventoAtleta::class, 'id_atleta', 'id_atleta');
     }
 
+    // Notificações do atleta (Fase 8), da mais nova para a mais antiga
+    public function notificacoes()
+    {
+        return $this->hasMany(Notificacao::class, 'id_atleta', 'id_atleta')
+            ->orderByDesc('data_notificacao')
+            ->orderByDesc('id_notificacao');
+    }
+
     /**
      * Para o aviso de troca de categoria: eventos futuros e não cancelados da categoria antiga em que
      * o atleta está inscrito pela categoria (sair) e da nova em que ainda não está (entrar).
@@ -398,6 +406,7 @@ class Atleta extends Authenticatable
             $this->times()->detach();
             $this->autorizacoes()->delete();
             $this->inscricoesEmEventos()->delete(); // tbl_evento_atleta (FK sem cascade)
+            $this->notificacoes()->delete(); // tbl_notificacao (FK sem cascade)
             $this->tokens()->delete(); // tokens do Sanctum (personal_access_tokens não tem FK)
             $this->delete();
         });
