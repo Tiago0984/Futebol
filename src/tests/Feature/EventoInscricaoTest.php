@@ -39,7 +39,7 @@ class EventoInscricaoTest extends TestCase
         $admin = User::factory()->admin()->create();
         $this->actingAs($admin, 'admin')
             ->post(route('admin.calendario.eventos.store'), $this->dadosEvento(['id_categoria' => $idSub13M]))
-            ->assertSessionHas('sucesso', 'Evento adicionado ao calendário. 2 atleta(s) da categoria inscrito(s).');
+            ->assertSessionHas('sucesso', 'Evento adicionado ao calendário. 2 atleta(s) da categoria inscrito(s). 2 atleta(s) notificado(s).');
 
         $inscritos = DB::table('tbl_evento_atleta')->orderBy('id_atleta')->get();
         $this->assertSame([$ativo1, $ativo2], $inscritos->pluck('id_atleta')->map(fn ($id) => (int) $id)->all());
@@ -68,7 +68,7 @@ class EventoInscricaoTest extends TestCase
 
         $this->comoAdmin()
             ->post(route('admin.calendario.eventos.inscricoes.store', $evento->id_evento_calendario), ['id_atleta' => $atleta])
-            ->assertSessionHas('sucesso', 'Atleta inscrito.');
+            ->assertSessionHas('sucesso', 'Atleta inscrito. 1 atleta(s) notificado(s).');
 
         $this->comoAdmin()
             ->post(route('admin.calendario.eventos.inscricoes.store', $evento->id_evento_calendario), ['id_atleta' => $atleta])
@@ -99,9 +99,9 @@ class EventoInscricaoTest extends TestCase
         $rota = route('admin.calendario.eventos.inscricoes.categoria', $evento->id_evento_calendario);
 
         $this->comoAdmin()->post($rota, ['id_categoria' => $this->idCategoria('Sub-13', 'M')])
-            ->assertSessionHas('sucesso', 'Sub-13 Masculino: 2 atleta(s) inscrito(s).');
+            ->assertSessionHas('sucesso', 'Sub-13 Masculino: 2 atleta(s) inscrito(s). 2 atleta(s) notificado(s).');
         $this->comoAdmin()->post($rota, ['id_categoria' => $this->idCategoria('Sub-15', 'M')])
-            ->assertSessionHas('sucesso', 'Sub-15 Masculino: 1 atleta(s) inscrito(s).');
+            ->assertSessionHas('sucesso', 'Sub-15 Masculino: 1 atleta(s) inscrito(s). 1 atleta(s) notificado(s).');
 
         // De novo: ninguém novo, sem erro
         $this->comoAdmin()->post($rota, ['id_categoria' => $this->idCategoria('Sub-13', 'M')])
@@ -121,7 +121,7 @@ class EventoInscricaoTest extends TestCase
 
         $this->comoAdmin()
             ->delete(route('admin.calendario.eventos.inscricoes.destroy', [$evento->id_evento_calendario, $atleta]))
-            ->assertSessionHas('sucesso', 'Inscrição removida.');
+            ->assertSessionHas('sucesso', 'Inscrição removida. 1 atleta(s) notificado(s).');
 
         $this->assertSame(0, DB::table('tbl_evento_atleta')->count());
     }

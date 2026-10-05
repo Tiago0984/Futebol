@@ -103,7 +103,7 @@ class JogoEscalacaoTest extends TestCase
 
         $this->comoAdmin()->post(route('admin.calendario.eventos.inscricoes.store', $jogo->id_evento), [
             'id_atleta' => $idAtleta, 'id_time' => $this->azul,
-        ])->assertSessionHas('sucesso', 'Atleta inscrito e escalado.');
+        ])->assertSessionHas('sucesso', 'Atleta inscrito e escalado. 1 atleta(s) notificado(s).');
 
         $inscricao = $jogo->evento->inscricoes()->where('id_atleta', $idAtleta)->sole();
         $this->assertSame('INDIVIDUAL', $inscricao->origem_evento_atleta);
@@ -137,7 +137,7 @@ class JogoEscalacaoTest extends TestCase
 
         $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
             ->assertSessionHas('sucesso', 'Escalação pelo elenco: 1 inscrito(s) escalado(s), 1 atleta(s) inscrito(s) e escalado(s).'
-                . ' 1 atleta(s) estão nos elencos dos dois times: escolha o time de cada um na lista.');
+                . ' 1 atleta(s) estão nos elencos dos dois times: escolha o time de cada um na lista. 1 atleta(s) notificado(s).');
 
         $this->assertSame($this->azul, $this->timeDe($jogo, $naoInscrito));
         $this->assertSame('INDIVIDUAL', $ev->inscricoes()->where('id_atleta', $naoInscrito)->value('origem_evento_atleta'));
@@ -146,6 +146,11 @@ class JogoEscalacaoTest extends TestCase
         $this->assertNull($this->timeDe($jogo, $nosDois));
         $this->assertFalse($ev->inscricoes()->where('id_atleta', $inativo)->exists());
         $this->assertFalse($ev->inscricoes()->where('id_atleta', $foraDoJogo)->exists());
+
+        // Notificação só para quem foi inscrito agora (Gil); escalar quem já estava inscrito não avisa
+        $peloElenco = DB::table('tbl_notificacao')->whereNotNull('id_usuario')->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+        $this->assertSame([$naoInscrito], $peloElenco);
+        $this->assertSame(1, DB::table('tbl_notificacao')->where('id_atleta', $semTime)->count()); // a da inscrição inicial
     }
 
     public function test_nos_dois_elencos_e_nao_inscrito_entra_sem_time_e_aparece_na_lista(): void
@@ -156,7 +161,7 @@ class JogoEscalacaoTest extends TestCase
 
         $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
             ->assertSessionHas('sucesso', 'Escalação pelo elenco: 0 inscrito(s) escalado(s), 0 atleta(s) inscrito(s) e escalado(s).'
-                . ' 1 atleta(s) estão nos elencos dos dois times (1 inscrito(s) agora, sem time): escolha o time de cada um na lista.');
+                . ' 1 atleta(s) estão nos elencos dos dois times (1 inscrito(s) agora, sem time): escolha o time de cada um na lista. 1 atleta(s) notificado(s).');
 
         $inscricao = $jogo->evento->inscricoes()->where('id_atleta', $nosDois)->sole();
         $this->assertSame('INDIVIDUAL', $inscricao->origem_evento_atleta);

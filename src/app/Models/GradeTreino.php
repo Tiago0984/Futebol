@@ -249,8 +249,9 @@ class GradeTreino extends Model
      * cada vez, e o segundo encontra tudo já gerado. O índice único (grade, data de origem) é a última
      * garantia: se escapar, a exceção desfaz o lote inteiro.
      *
-     * A inscrição em massa passa por fora de EventoCalendario::inscrever() de propósito (só aqui): a
-     * Fase 8 manda UMA notificação por atleta ("agenda do mês disponível"), não uma por inscrição.
+     * A inscrição em massa passa por fora de EventoCalendario::inscrever() de propósito (só aqui): cada
+     * atleta do lote recebe UMA notificação AGENDA ("agenda do mês disponível", com quantos treinos ganhou),
+     * não uma por inscrição, gravada em massa na mesma transação. Devolve também 'notificados'.
      *
      * Conflito de horário (Etapa 3), recalculado aqui: com conflito real e sem $confirmarConflitos,
      * nada é gravado e a prévia volta (com 'gerado' => false). Aviso fraco não bloqueia.
@@ -263,11 +264,12 @@ class GradeTreino extends Model
             $previa = self::previaDoMes($mes);
 
             if ($previa['totais']['conflitos_reais'] > 0 && ! $confirmarConflitos) {
-                return ['gerado' => false, 'previa' => $previa];
+                return ['gerado' => false, 'previa' => $previa, 'notificados' => 0];
             }
 
             $agora  = now();
             $inscricoes = [];
+            $treinosPorAtleta = []; // [id_atleta => treinos novos], para a notificação AGENDA
 
             foreach ($previa['linhas'] as $linha) {
                 foreach ($linha['novas'] as $data) {
@@ -281,6 +283,7 @@ class GradeTreino extends Model
                             'id_usuario'           => $idUsuario,
                             'data_evento_atleta'   => $agora,
                         ];
+                        $treinosPorAtleta[$idAtleta] = ($treinosPorAtleta[$idAtleta] ?? 0) + 1;
                     }
                 }
             }
@@ -289,7 +292,9 @@ class GradeTreino extends Model
                 EventoAtleta::insert($bloco);
             }
 
-            return ['gerado' => true, 'previa' => $previa];
+            $notificados = Notificacao::agendaDoMes($previa['mes'], $treinosPorAtleta, $idUsuario);
+
+            return ['gerado' => true, 'previa' => $previa, 'notificados' => $notificados];
         });
     }
 

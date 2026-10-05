@@ -133,7 +133,7 @@ class EventoConflitoTest extends TestCase
 
         // Confirmando: inscreve
         $this->comoAdmin()->post($rota, ['id_atleta' => $atleta, 'confirmar_conflito' => '1'])
-            ->assertSessionHas('sucesso', 'Atleta inscrito.');
+            ->assertSessionHas('sucesso', 'Atleta inscrito. 1 atleta(s) notificado(s).');
         $this->assertTrue($this->inscrito($evento, $atleta));
     }
 
@@ -148,7 +148,7 @@ class EventoConflitoTest extends TestCase
         // Salva direto, sem pedir confirmação
         $this->comoAdmin()->from($tela)->post($rota, ['id_atleta' => $atleta])
             ->assertSessionMissing('conflitos_pendentes')
-            ->assertSessionHas('sucesso', 'Atleta inscrito.')
+            ->assertSessionHas('sucesso', 'Atleta inscrito. 1 atleta(s) notificado(s).')
             ->assertSessionHas('avisos_mesmo_dia', fn ($avisos) => count($avisos) === 1 && str_contains($avisos[0], 'Jogo a definir'));
         $this->assertTrue($this->inscrito($evento, $atleta));
 
@@ -200,7 +200,7 @@ class EventoConflitoTest extends TestCase
         $this->comoAdmin()
             ->post(route('admin.calendario.eventos.inscricoes.store', $evento->id_evento_calendario), ['id_atleta' => $atleta])
             ->assertSessionMissing('conflitos_pendentes')
-            ->assertSessionHas('sucesso', 'Atleta inscrito.');
+            ->assertSessionHas('sucesso', 'Atleta inscrito. 1 atleta(s) notificado(s).');
     }
 
     public function test_criar_evento_com_categoria_em_conflito_pede_confirmacao(): void
@@ -217,7 +217,7 @@ class EventoConflitoTest extends TestCase
         $this->assertDatabaseMissing('tbl_evento_calendario', ['titulo_evento_calendario' => 'Treino Novo']);
 
         $this->comoAdmin()->post(route('admin.calendario.eventos.store'), [...$dados, 'confirmar_conflito' => '1'])
-            ->assertSessionHas('sucesso', 'Evento adicionado ao calendário. 1 atleta(s) da categoria inscrito(s).');
+            ->assertSessionHas('sucesso', 'Evento adicionado ao calendário. 1 atleta(s) da categoria inscrito(s). 1 atleta(s) notificado(s).');
     }
 
     public function test_editar_horario_com_conflito_pede_confirmacao_e_editar_titulo_nao(): void

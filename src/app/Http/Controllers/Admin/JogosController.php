@@ -8,6 +8,7 @@ use App\Models\Campeonato;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\Jogo;
+use App\Models\Notificacao;
 use App\Models\Time;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -63,8 +64,10 @@ class JogosController extends Controller
             return $evento;
         });
 
-        $mensagem = 'Jogo registrado.'
-            . ($evento->id_categoria ? ' ' . $evento->inscricoes()->count() . ' atleta(s) da categoria inscrito(s).' : '');
+        $inscritos = $evento->inscricoes()->count();
+        $mensagem  = 'Jogo registrado.'
+            . ($evento->id_categoria ? " {$inscritos} atleta(s) da categoria inscrito(s)." : '')
+            . ($inscritos ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
 
         return redirect()->route('admin.jogos.index')->with('sucesso', $mensagem);
     }

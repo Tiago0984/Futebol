@@ -45,7 +45,7 @@ class JogoEventoTest extends TestCase
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
             ->assertRedirect(route('admin.jogos.index'))
-            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) da categoria inscrito(s).');
+            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) da categoria inscrito(s). 1 atleta(s) notificado(s).');
 
         $jogo   = Jogo::with('evento')->sole();
         $evento = $jogo->evento;
@@ -57,6 +57,13 @@ class JogoEventoTest extends TestCase
         $this->assertSame('ATIVO', $evento->status_evento_calendario);
         $this->assertNotNull($evento->id_usuario);                       // responsável = admin logado
         $this->assertTrue($evento->inscricoes()->where('id_atleta', $idAtleta)->exists());
+
+        // O atleta inscrito pela categoria recebe a INSCRICAO do jogo
+        $notificacao = \App\Models\Notificacao::where('id_atleta', $idAtleta)->sole();
+        $this->assertSame('INSCRICAO', $notificacao->tipo_notificacao);
+        $this->assertSame($evento->id_evento_calendario, $notificacao->id_evento_calendario);
+        $this->assertStringStartsWith('Time Azul x Time Visitante · ', $notificacao->mensagem_notificacao);
+        $this->assertStringEndsWith(' · 19:00 · Quadra A', $notificacao->mensagem_notificacao);
 
         $this->assertNull($jogo->placar_time_casa_jogos);                // vazio = não jogado
         $this->assertSame("{$this->dia} 19:00:00", $jogo->data_jogo->format('Y-m-d H:i:s')); // vem do evento

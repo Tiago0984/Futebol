@@ -146,6 +146,7 @@ class GradeGeracaoConflitoTest extends TestCase
 
         $this->assertSame(0, EventoCalendario::whereNotNull('id_grade_treino')->count());
         $this->assertSame(2, DB::table('tbl_evento_atleta')->count()); // só as do jogo
+        $this->assertSame(0, DB::table('tbl_notificacao')->where('tipo_notificacao', 'AGENDA')->count());
     }
 
     public function test_confirmando_gera_o_lote_inteiro_e_informa_os_conflitos(): void

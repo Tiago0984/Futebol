@@ -8,6 +8,7 @@ use App\Models\Atleta;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
+use App\Models\Notificacao;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -111,7 +112,8 @@ class CalendarioController extends Controller
 
         $inscritos = $evento->inscricoes()->count();
         $mensagem  = 'Evento adicionado ao calendário.'
-            . ($evento->id_categoria ? " {$inscritos} atleta(s) da categoria inscrito(s)." : '');
+            . ($evento->id_categoria ? " {$inscritos} atleta(s) da categoria inscrito(s)." : '')
+            . ($inscritos ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
 
         return $this->listaNoMesDo($evento)->with('sucesso', $mensagem);
     }
@@ -239,6 +241,9 @@ class CalendarioController extends Controller
                 . ($nosDoisInscritos ? " ({$nosDoisInscritos} inscrito(s) agora, sem time)" : '')
                 . ': escolha o time de cada um na lista.';
         }
+        if ($inscritos + $nosDoisInscritos > 0) {
+            $mensagem .= Notificacao::textoNotificados($evento->atletasNotificados);
+        }
 
         $this->avisarForaDaCategoria($evento, $mexidos);
 
@@ -268,7 +273,8 @@ class CalendarioController extends Controller
 
         $novos = $evento->inscreverCategoria($evento->id_categoria, 'CATEGORIA', auth('admin')->id());
 
-        return back()->with('sucesso', "{$novos} atleta(s) da categoria inscrito(s).");
+        return back()->with('sucesso', "{$novos} atleta(s) da categoria inscrito(s)."
+            . ($novos ? Notificacao::textoNotificados($evento->atletasNotificados) : ''));
     }
 
     // Inscrição individual: um atleta ativo escolhido no select (num jogo, pode já escolher o time)
@@ -309,7 +315,7 @@ class CalendarioController extends Controller
             ! $inscreveu      => 'O atleta já estava inscrito.',
             $idTime !== null  => 'Atleta inscrito e escalado.',
             default           => 'Atleta inscrito.',
-        });
+        } . ($inscreveu ? Notificacao::textoNotificados($evento->atletasNotificados) : ''));
     }
 
     /**
@@ -341,15 +347,16 @@ class CalendarioController extends Controller
         $novos = $evento->inscreverCategoria($categoria->id_categoria, 'INDIVIDUAL', auth('admin')->id());
 
         return back()->with('sucesso', "{$categoria->rotulo}: {$novos} atleta(s) inscrito(s)"
-            . ($novos === 0 ? ' (todos já estavam inscritos ou não há atletas ativos).' : '.'));
+            . ($novos === 0 ? ' (todos já estavam inscritos ou não há atletas ativos).' : '.' . Notificacao::textoNotificados($evento->atletasNotificados)));
     }
 
     public function removerInscricao($id, $idAtleta)
     {
-        $evento = EventoCalendario::findOrFail($id);
-        $evento->removerInscricao((int) $idAtleta);
+        $evento  = EventoCalendario::findOrFail($id);
+        $removeu = $evento->removerInscricao((int) $idAtleta, auth('admin')->id());
 
-        return back()->with('sucesso', 'Inscrição removida.');
+        return back()->with('sucesso', 'Inscrição removida.'
+            . ($removeu ? Notificacao::textoNotificados($evento->atletasNotificados) : ''));
     }
 
     public function updateEvento(Request $request, $id)
@@ -503,7 +510,8 @@ class CalendarioController extends Controller
 
         $mensagem = $totais['eventos'] === 0
             ? 'Nada novo para gerar neste mês.'
-            : "{$totais['eventos']} evento(s) gerado(s), {$totais['inscricoes']} inscrição(ões).";
+            : "{$totais['eventos']} evento(s) gerado(s), {$totais['inscricoes']} inscrição(ões)."
+                . Notificacao::textoNotificados($resultado['notificados']);
         if ($totais['conflitos_reais'] > 0) {
             $mensagem .= " O lote tinha {$totais['conflitos_reais']} conflito(s) de horário, confirmado(s).";
         }

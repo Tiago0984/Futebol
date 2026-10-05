@@ -31,7 +31,7 @@ class EventoInscricaoRegrasTest extends TestCase
             ->put(route('admin.calendario.eventos.update', $evento->id_evento_calendario), $this->dadosEdicaoEvento($evento, [
                 'id_categoria' => $this->idCategoria('Sub-15', 'M'),
             ]))
-            ->assertSessionHas('sucesso', 'Evento atualizado. Inscrições pela categoria: 1 atleta(s) inscrito(s), 1 removido(s). As inscrições individuais foram mantidas.');
+            ->assertSessionHas('sucesso', 'Evento atualizado. Inscrições pela categoria: 1 atleta(s) inscrito(s), 1 removido(s). As inscrições individuais foram mantidas. 2 atleta(s) notificado(s).');
 
         $this->assertInscritos($evento, [$sub15Bia => 'CATEGORIA', $convidado => 'INDIVIDUAL']);
         $this->assertDatabaseMissing('tbl_evento_atleta', ['id_atleta' => $sub13Ana]);
@@ -109,7 +109,7 @@ class EventoInscricaoRegrasTest extends TestCase
 
         $this->comoAdmin()
             ->post(route('admin.calendario.eventos.inscricoes.atualizar', $evento->id_evento_calendario))
-            ->assertSessionHas('sucesso', '2 atleta(s) da categoria inscrito(s).');
+            ->assertSessionHas('sucesso', '2 atleta(s) da categoria inscrito(s). 2 atleta(s) notificado(s).');
 
         $this->assertInscritos($evento, [$convidado => 'INDIVIDUAL', $novo1 => 'CATEGORIA', $novo2 => 'CATEGORIA']);
 
@@ -159,7 +159,7 @@ class EventoInscricaoRegrasTest extends TestCase
         // Confirma: sai do futuro automático da Sub-13, entra no da Sub-15; o resto fica
         $this->comoAdmin()
             ->post(route('admin.atletas.moverInscricoes', $atleta), ['de' => $idSub13, 'para' => $idSub15])
-            ->assertSessionHas('sucesso', 'Inscrições de Davi movidas: saiu de 1 evento(s) e entrou em 1.');
+            ->assertSessionHas('sucesso', 'Inscrições de Davi movidas: saiu de 1 evento(s) e entrou em 1. 1 atleta(s) notificado(s).');
 
         $this->assertFalse($this->inscrito($futuroSub13, $atleta));
         $this->assertTrue($this->inscrito($futuroSub15, $atleta));

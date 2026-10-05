@@ -101,6 +101,10 @@ class EventoCalendario extends Model
         'data_grade_evento_calendario' => 'date',
     ];
 
+    // Quantos atletas foram notificados pelas inscrições e remoções feitas nesta instância (não é coluna:
+    // serve só para a mensagem de sucesso do admin, ex.: "5 atleta(s) notificado(s)")
+    public int $atletasNotificados = 0;
+
     /**
      * Cria o evento já com o responsável (quem criou), que depois nunca muda. Evento com categoria
      * já nasce com os atletas ativos da categoria inscritos (origem CATEGORIA). Usado pelo formulário
@@ -153,61 +157,94 @@ class EventoCalendario extends Model
 
     /**
      * Inscreve um atleta. Já inscrito: não faz nada e devolve false (sem erro), para "adicionar
-     * todos de uma categoria" poder ser usado várias vezes. Ponto único de inscrição: a notificação
-     * de inscrição (Fase 8) entra aqui. $idTime: escalação num jogo (quem chama valida o time).
+     * todos de uma categoria" poder ser usado várias vezes. Ponto único de inscrição: inscrição criada
+     * gera a notificação INSCRICAO na mesma transação (Notificacao::inscricao decide se avisa).
+     * $idTime: escalação num jogo (quem chama valida o time). $notificar = false: "Mover inscrições",
+     * que manda um resumo só (AGENDA).
      */
-    public function inscrever(int $idAtleta, string $origem, ?int $idUsuario, ?int $idTime = null): bool
+    public function inscrever(int $idAtleta, string $origem, ?int $idUsuario, ?int $idTime = null, bool $notificar = true): bool
     {
         if ($this->inscricoes()->where('id_atleta', $idAtleta)->exists()) {
             return false;
         }
 
-        try {
-            $this->inscricoes()->create([
-                'id_atleta'            => $idAtleta,
-                'id_time'              => $idTime,
-                'origem_evento_atleta' => $origem,
-                'id_usuario'           => $idUsuario,
-                'data_evento_atleta'   => now(),
-            ]);
-        } catch (UniqueConstraintViolationException $e) {
-            return false; // outro admin inscreveu o mesmo atleta ao mesmo tempo
-        }
+        return DB::transaction(function () use ($idAtleta, $origem, $idUsuario, $idTime, $notificar) {
+            try {
+                $this->inscricoes()->create([
+                    'id_atleta'            => $idAtleta,
+                    'id_time'              => $idTime,
+                    'origem_evento_atleta' => $origem,
+                    'id_usuario'           => $idUsuario,
+                    'data_evento_atleta'   => now(),
+                ]);
+            } catch (UniqueConstraintViolationException $e) {
+                return false; // outro admin inscreveu o mesmo atleta ao mesmo tempo
+            }
 
-        return true;
+            if ($notificar) {
+                $this->atletasNotificados += Notificacao::inscricao($this, $idAtleta, $idUsuario);
+            }
+
+            return true;
+        });
     }
 
     // Inscreve os atletas ativos com categoria ativa nesta categoria; devolve quantos entraram
     public function inscreverCategoria(int $idCategoria, string $origem, ?int $idUsuario): int
     {
-        $novos = 0;
+        return DB::transaction(function () use ($idCategoria, $origem, $idUsuario) {
+            $novos = 0;
 
-        foreach (Atleta::idsAtivosNaCategoria($idCategoria) as $idAtleta) {
-            $novos += $this->inscrever($idAtleta, $origem, $idUsuario) ? 1 : 0;
-        }
+            foreach (Atleta::idsAtivosNaCategoria($idCategoria) as $idAtleta) {
+                $novos += $this->inscrever($idAtleta, $origem, $idUsuario) ? 1 : 0;
+            }
 
-        return $novos;
+            return $novos;
+        });
     }
 
-    public function removerInscricao(int $idAtleta): bool
+    // Remove a inscrição; removida, gera a notificação REMOCAO na mesma transação ($notificar: ver inscrever)
+    public function removerInscricao(int $idAtleta, ?int $idUsuario = null, bool $notificar = true): bool
     {
-        return $this->inscricoes()->where('id_atleta', $idAtleta)->delete() > 0;
+        return DB::transaction(function () use ($idAtleta, $idUsuario, $notificar) {
+            $removeu = $this->inscricoes()->where('id_atleta', $idAtleta)->delete() > 0;
+
+            if ($removeu && $notificar) {
+                $this->atletasNotificados += Notificacao::remocao($this, [$idAtleta], $idUsuario);
+            }
+
+            return $removeu;
+        });
+    }
+
+    // Avisa os atletas de inscrição e remoção: só evento ATIVO que ainda não aconteceu (concluído,
+    // cancelado e oculto não avisam)
+    public function avisaAtletas(): bool
+    {
+        return $this->status_evento_calendario === 'ATIVO' && ! $this->estaConcluido();
     }
 
     /**
      * Evento que mudou de categoria (ou ficou sem): as inscrições AUTOMÁTICAS acompanham a categoria
      * nova (sai quem não é dela, entra quem é); as individuais ficam. Quem chama decide se o evento
-     * ainda pode mudar (concluído não muda). Devolve ['entraram' => n, 'sairam' => n].
+     * ainda pode mudar (concluído não muda). Quem entra recebe INSCRICAO (pelo inscrever()) e quem sai,
+     * REMOCAO. Devolve ['entraram' => n, 'sairam' => n].
      */
     public function sincronizarInscricoesPelaCategoria(?int $idUsuario): array
     {
         return DB::transaction(function () use ($idUsuario) {
             $daCategoria = $this->id_categoria ? Atleta::idsAtivosNaCategoria($this->id_categoria) : [];
 
-            $sairam = $this->inscricoes()
+            // Quem sai é lido antes do delete em massa, para a notificação
+            $saindo = $this->inscricoes()
                 ->where('origem_evento_atleta', 'CATEGORIA')
                 ->whereNotIn('id_atleta', $daCategoria)
-                ->delete();
+                ->pluck('id_atleta')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $sairam = $saindo ? $this->inscricoes()->whereIn('id_atleta', $saindo)->delete() : 0;
+            $this->atletasNotificados += Notificacao::remocao($this, $saindo, $idUsuario);
 
             $entraram = $this->id_categoria
                 ? $this->inscreverCategoria($this->id_categoria, 'CATEGORIA', $idUsuario)

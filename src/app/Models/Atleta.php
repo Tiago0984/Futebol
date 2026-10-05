@@ -230,22 +230,32 @@ class Atleta extends Authenticatable
         return ['sair' => $sair, 'entrar' => $entrar];
     }
 
-    // "Mover inscrições" (confirmado pelo admin): sai dos eventos da categoria antiga e entra nos da nova
+    /**
+     * "Mover inscrições" (confirmado pelo admin): sai dos eventos da categoria antiga e entra nos da nova.
+     * O atleta recebe UMA notificação de resumo (AGENDA), não uma por evento.
+     */
     public function moverInscricoes(int $idCategoriaAntiga, int $idCategoriaNova, ?int $idUsuario): array
     {
         return DB::transaction(function () use ($idCategoriaAntiga, $idCategoriaNova, $idUsuario) {
             ['sair' => $sair, 'entrar' => $entrar] = $this->eventosParaMoverInscricoes($idCategoriaAntiga, $idCategoriaNova);
 
+            $saiu = [];
             foreach ($sair as $evento) {
-                $evento->removerInscricao($this->id_atleta);
+                if ($evento->removerInscricao($this->id_atleta, $idUsuario, notificar: false)) {
+                    $saiu[] = $evento->id_evento_calendario;
+                }
             }
 
-            $entraram = 0;
+            $entrou = [];
             foreach ($entrar as $evento) {
-                $entraram += $evento->inscrever($this->id_atleta, 'CATEGORIA', $idUsuario) ? 1 : 0;
+                if ($evento->inscrever($this->id_atleta, 'CATEGORIA', $idUsuario, notificar: false)) {
+                    $entrou[] = $evento->id_evento_calendario;
+                }
             }
 
-            return ['sairam' => $sair->count(), 'entraram' => $entraram];
+            $notificados = Notificacao::inscricoesMovidas($this->id_atleta, $idCategoriaAntiga, $idCategoriaNova, $saiu, $entrou, $idUsuario);
+
+            return ['sairam' => count($saiu), 'entraram' => count($entrou), 'notificados' => $notificados];
         });
     }
 

@@ -173,9 +173,47 @@ class GradeGeracaoMesTest extends TestCase
             ->assertRedirect(route('admin.calendario.grade.previa', ['mes' => '2026-11']))
             ->assertSessionHas('erro', fn ($msg) => str_contains($msg, 'Nada foi gravado'));
 
-        // Nada ficou: nem os 2 primeiros eventos, nem inscrições
+        // Nada ficou: nem os 2 primeiros eventos, nem inscrições, nem notificações
         $this->assertSame(0, EventoCalendario::count());
         $this->assertSame(0, DB::table('tbl_evento_atleta')->count());
+        $this->assertSame(0, DB::table('tbl_notificacao')->count());
+    }
+
+    public function test_gerar_manda_uma_agenda_por_atleta_com_os_treinos_dele(): void
+    {
+        [, , , , $ana, $bia, $caio] = $this->cenario();
+
+        $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-11'])
+            ->assertSessionHas('sucesso', fn ($msg) => str_contains($msg, '10 evento(s) gerado(s), 14 inscrição(ões). 3 atleta(s) notificado(s).'));
+
+        // Uma AGENDA por atleta (não uma por inscrição); Duda, inativa, não está no lote
+        $notificacoes = DB::table('tbl_notificacao')->get()->keyBy('id_atleta');
+        $this->assertEqualsCanonicalizing([$ana, $bia, $caio], $notificacoes->keys()->all());
+        $this->assertSame(['AGENDA'], $notificacoes->pluck('tipo_notificacao')->unique()->values()->all());
+
+        // Ana: 4 treinos da Sub-13 + 2 Integrados; Caio (Sub-15): só os 2 Integrados
+        $anaAgenda = \App\Models\Notificacao::where('id_atleta', $ana)->sole();
+        $this->assertSame('Agenda de novembro disponível', $anaAgenda->titulo_notificacao);
+        $this->assertSame('Seus 6 treinos de novembro de 2026 já estão na agenda.', $anaAgenda->mensagem_notificacao);
+        $this->assertSame(['mes' => '2026-11', 'eventos' => 6], $anaAgenda->dados_notificacao);
+        $this->assertNull($anaAgenda->id_evento_calendario);
+        $this->assertSame($this->admin->id_usuario, $anaAgenda->id_usuario);
+        $this->assertSame('Seus 2 treinos de novembro de 2026 já estão na agenda.', $notificacoes[$caio]->mensagem_notificacao);
+
+        // Gerar de novo: nada novo, ninguém notificado de novo
+        $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-11'])
+            ->assertSessionHas('sucesso', fn ($msg) => str_starts_with($msg, 'Nada novo para gerar neste mês.'));
+        $this->assertSame(3, DB::table('tbl_notificacao')->count());
+    }
+
+    public function test_agenda_com_um_treino_so_fica_no_singular(): void
+    {
+        $id = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $this->colocarNaCategoria($id, $this->idCategoria('Sub-13', 'M'));
+
+        \App\Models\Notificacao::agendaDoMes(\Illuminate\Support\Carbon::parse('2026-12-01'), [$id => 1], null);
+
+        $this->assertSame('Seu treino de dezembro de 2026 já está na agenda.', DB::table('tbl_notificacao')->value('mensagem_notificacao'));
     }
 
     public function test_mes_futuro_gera_todas_as_datas(): void

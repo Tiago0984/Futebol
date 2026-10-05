@@ -8,6 +8,7 @@ use App\Models\Responsavel;
 use App\Models\Endereco;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
+use App\Models\Notificacao;
 use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -410,9 +411,12 @@ class AtletasController extends Controller
             return back()->with('erro', 'A categoria do atleta mudou de novo. Edite o atleta e confira os eventos.');
         }
 
-        ['sairam' => $sairam, 'entraram' => $entraram] = $atleta->moverInscricoes((int) $request->de, (int) $request->para, auth('admin')->id());
+        ['sairam' => $sairam, 'entraram' => $entraram, 'notificados' => $notificados]
+            = $atleta->moverInscricoes((int) $request->de, (int) $request->para, auth('admin')->id());
 
-        return back()->with('sucesso', "Inscrições de {$atleta->nome_atleta} movidas: saiu de {$sairam} evento(s) e entrou em {$entraram}.");
+        // Uma notificação de resumo (AGENDA) para o atleta, não uma por evento
+        return back()->with('sucesso', "Inscrições de {$atleta->nome_atleta} movidas: saiu de {$sairam} evento(s) e entrou em {$entraram}."
+            . ($sairam + $entraram > 0 ? Notificacao::textoNotificados($notificados) : ''));
     }
 
     public function toggleStatus($id)

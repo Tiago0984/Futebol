@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Concerns;
 
 use App\Models\Atleta;
 use App\Models\EventoCalendario;
+use App\Models\Notificacao;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -97,6 +98,7 @@ trait ConfirmaConflitos
         ['entraram' => $entraram, 'sairam' => $sairam] = $evento->sincronizarInscricoesPelaCategoria(auth('admin')->id());
 
         return " Inscrições pela categoria: {$entraram} atleta(s) inscrito(s), {$sairam} removido(s)."
-            . ' As inscrições individuais foram mantidas.';
+            . ' As inscrições individuais foram mantidas.'
+            . ($entraram + $sairam > 0 ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
     }
 }
