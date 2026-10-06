@@ -109,14 +109,15 @@ class EventoCalendario extends Model
      * Cria o evento já com o responsável (quem criou), que depois nunca muda. Evento com categoria
      * já nasce com os atletas ativos da categoria inscritos (origem CATEGORIA). Usado pelo formulário
      * de evento e pela tela de Jogos; a geração da grade usa criarDaGrade().
+     * $inscreverCategoria = false: o jogo, que inscreve o elenco dos times (Jogo::inscreverElenco).
      */
-    public static function criarPor(?int $idUsuario, array $dados): self
+    public static function criarPor(?int $idUsuario, array $dados, bool $inscreverCategoria = true): self
     {
-        return DB::transaction(function () use ($idUsuario, $dados) {
+        return DB::transaction(function () use ($idUsuario, $dados, $inscreverCategoria) {
             $evento = self::novoPor($idUsuario, $dados);
             $evento->save();
 
-            if ($evento->id_categoria) {
+            if ($inscreverCategoria && $evento->id_categoria) {
                 $evento->inscreverCategoria($evento->id_categoria, 'CATEGORIA', $idUsuario);
             }
 
@@ -287,10 +288,20 @@ class EventoCalendario extends Model
             ->all();
     }
 
-    // Atletas ativos da categoria do evento que ainda não estão inscritos (quem entrou depois)
+    /**
+     * Evento de um jogo cadastrado em Jogos (tbl_jogos): inscreve o elenco dos times, não a categoria.
+     * A categoria fica só para exibição. Evento JOGO sem tbl_jogos continua um evento comum.
+     */
+    public function ehJogo(): bool
+    {
+        return $this->id_evento_calendario !== null && $this->jogo()->exists();
+    }
+
+    // Atletas ativos da categoria do evento que ainda não estão inscritos (quem entrou depois).
+    // No jogo, ninguém falta pela categoria: quem falta é do elenco (Jogo::idsFaltantesDoElenco)
     public function idsFaltantesDaCategoria(): array
     {
-        if (! $this->id_categoria) {
+        if (! $this->id_categoria || $this->ehJogo()) {
             return [];
         }
 
@@ -520,11 +531,13 @@ class EventoCalendario extends Model
             ->orderBy('horario_inicio_evento_calendario');
     }
 
-    // Mesma lista, já sem os que terminaram hoje (regra de "Concluído")
+    // Mesma lista, já sem os que terminaram hoje (regra de "Concluído"). Sem os jogos: quem joga é o
+    // elenco, não a categoria ("Mover inscrições" do atleta não mexe neles)
     public static function futurosAtivosDaCategoria(int $idCategoria)
     {
         return self::futurosAtivos()
             ->where('id_categoria', $idCategoria)
+            ->whereDoesntHave('jogo')
             ->get()
             ->reject(fn (self $evento) => $evento->estaConcluido())
             ->values();

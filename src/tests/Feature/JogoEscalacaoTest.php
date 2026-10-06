@@ -140,7 +140,7 @@ class JogoEscalacaoTest extends TestCase
                 . ' 1 atleta(s) estão nos elencos dos dois times: escolha o time de cada um na lista. 1 atleta(s) notificado(s).');
 
         $this->assertSame($this->azul, $this->timeDe($jogo, $naoInscrito));
-        $this->assertSame('INDIVIDUAL', $ev->inscricoes()->where('id_atleta', $naoInscrito)->value('origem_evento_atleta'));
+        $this->assertSame('ELENCO', $ev->inscricoes()->where('id_atleta', $naoInscrito)->value('origem_evento_atleta'));
         $this->assertSame($this->preto, $this->timeDe($jogo, $semTime));
         $this->assertSame($this->preto, $this->timeDe($jogo, $comTime));
         $this->assertNull($this->timeDe($jogo, $nosDois));
@@ -164,7 +164,7 @@ class JogoEscalacaoTest extends TestCase
                 . ' 1 atleta(s) estão nos elencos dos dois times (1 inscrito(s) agora, sem time): escolha o time de cada um na lista. 1 atleta(s) notificado(s).');
 
         $inscricao = $jogo->evento->inscricoes()->where('id_atleta', $nosDois)->sole();
-        $this->assertSame('INDIVIDUAL', $inscricao->origem_evento_atleta);
+        $this->assertSame('ELENCO', $inscricao->origem_evento_atleta);
         $this->assertNull($inscricao->id_time);
 
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))

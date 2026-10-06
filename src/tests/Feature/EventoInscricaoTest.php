@@ -188,6 +188,10 @@ class EventoInscricaoTest extends TestCase
         $this->assertSame('int', $colunas['id_time']['type']);
         $this->assertTrue($colunas['id_time']['nullable']);
         $this->assertSame('bigint unsigned', $colunas['id_usuario']['type']);
+        // ELENCO: inscrição do jogo pelo elenco dos times (valores = chaves de EventoAtleta::ORIGENS)
+        $this->assertSame("enum('CATEGORIA','INDIVIDUAL','ELENCO')", $colunas['origem_evento_atleta']['type']);
+        $this->assertSame(['CATEGORIA', 'INDIVIDUAL', 'ELENCO'], array_keys(\App\Models\EventoAtleta::ORIGENS));
+        $this->assertFalse($colunas['origem_evento_atleta']['nullable']);
 
         $fks = collect(Schema::getForeignKeys('tbl_evento_atleta'))->pluck('name')->sort()->values()->all();
         $this->assertSame(['fk_evento_atleta_atleta', 'fk_evento_atleta_evento', 'fk_evento_atleta_time', 'fk_evento_atleta_usuario'], $fks);

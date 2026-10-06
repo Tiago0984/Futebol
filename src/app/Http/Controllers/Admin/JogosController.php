@@ -50,26 +50,29 @@ class JogosController extends Controller
             $dadosEvento['local_evento_calendario'] = Campeonato::find($dadosJogo['id_campeonato'])?->local_evento;
         }
 
-        // Com categoria, os atletas dela serão inscritos: confere conflito antes de criar
-        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaCriacao($dadosEvento))) {
+        // O elenco ativo dos times internos será inscrito: confere conflito antes de criar
+        $times = [$dadosJogo['id_time_casa'], $dadosJogo['id_time_visitante']];
+        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaCriacaoDoJogo($dadosEvento, $times))) {
             return $confirmar;
         }
 
-        $evento = DB::transaction(function () use ($dadosJogo, $dadosEvento) {
-            // Responsável = admin logado; com categoria, os atletas ativos dela já são inscritos
-            $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento);
+        [$evento, $jogo, $elenco] = DB::transaction(function () use ($dadosJogo, $dadosEvento) {
+            // Responsável = admin logado. A categoria fica no evento só para exibição: quem joga é o elenco
+            $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento, inscreverCategoria: false);
 
-            Jogo::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
+            $jogo = Jogo::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
+            $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
 
-            return $evento;
+            return [$evento, $jogo, $jogo->inscreverElenco(auth('admin')->id())];
         });
 
-        $inscritos = $evento->inscricoes()->count();
+        $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
         $mensagem  = 'Jogo registrado.'
-            . ($evento->id_categoria ? " {$inscritos} atleta(s) da categoria inscrito(s)." : '')
+            . ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) do elenco inscrito(s)." : '')
+            . ($elenco['nos_dois'] ? " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times: escolha o time de cada um na tela do jogo." : '')
             . ($inscritos ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
 
-        return redirect()->route('admin.jogos.index')->with('sucesso', $mensagem);
+        return $this->comAvisoSemElenco(redirect()->route('admin.jogos.index')->with('sucesso', $mensagem), $jogo);
     }
 
     public function update(Request $request, $id)
@@ -79,22 +82,66 @@ class JogosController extends Controller
 
         $dadosJogo   = $this->dadosJogo($request, $evento);
         $dadosEvento = $this->dadosEvento($request, $dadosJogo);
+        $timesAntes  = [(int) $jogo->id_time_casa, (int) $jogo->id_time_visitante];
+        $timesNovos  = [$dadosJogo['id_time_casa'], $dadosJogo['id_time_visitante']];
 
-        // Mudou data, horário ou categoria: confere conflito dos atletas que ficarão inscritos
-        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaEdicao($evento, $dadosEvento))) {
+        // Mudou data, horário ou times: confere conflito dos atletas que ficarão inscritos
+        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaEdicao($evento, $dadosEvento, $timesNovos))) {
             return $confirmar;
         }
 
         // Evento e jogo juntos: o que mudar em título, categoria, data, horário ou local vai para o histórico
-        // do evento; mudou de categoria, as inscrições acompanham; os atletas são avisados
-        $mensagem = 'Jogo atualizado.' . $this->salvarEdicaoDoEvento($evento, $dadosEvento, fn () => $jogo->update($dadosJogo));
+        // do evento; times trocados, as inscrições acompanham o elenco; os atletas são avisados
+        $mensagem = 'Jogo atualizado.' . $this->salvarEdicaoDoEvento($evento, $dadosEvento,
+            fn () => $this->gravarJogoETrocarTimes($jogo, $dadosJogo, $timesAntes));
 
-        // Times trocados: quem estava escalado num time que saiu do jogo fica sem time (continua inscrito)
-        $foraDaEscalacao = $jogo->fresh(['timeCasa', 'timeVisitante'])->limparEscalacaoForaDosTimes();
+        $resposta = redirect()->route('admin.jogos.index')->with('sucesso', $mensagem);
 
-        $mensagem .= $foraDaEscalacao ? " {$foraDaEscalacao} atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos." : '';
+        return $this->timesMudaram($timesAntes, $timesNovos) ? $this->comAvisoSemElenco($resposta, $jogo) : $resposta;
+    }
 
-        return redirect()->route('admin.jogos.index')->with('sucesso', $mensagem);
+    /**
+     * Grava o jogo (dentro da transação da edição). Times trocados: sai quem veio pelo elenco do time que
+     * saiu, entra o elenco do time novo e as INDIVIDUAL ficam (sem time, se estavam no que saiu). Jogo
+     * concluído não muda as inscrições: só tira da escalação quem estava num time que saiu.
+     * Devolve o trecho da mensagem e quem entrou (para salvarEdicaoDoEvento), ou null se os times não mudaram.
+     */
+    private function gravarJogoETrocarTimes(Jogo $jogo, array $dadosJogo, array $timesAntes): ?array
+    {
+        $jogo->update($dadosJogo);
+        $jogo->load(['timeCasa', 'timeVisitante']);
+        $timesAgora = [(int) $jogo->id_time_casa, (int) $jogo->id_time_visitante];
+
+        if (! $this->timesMudaram($timesAntes, $timesAgora)) {
+            return null;
+        }
+
+        $foraDaEscalacao = fn (int $n) => $n ? " {$n} atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos." : '';
+
+        if ($jogo->evento->estaConcluido()) {
+            return ['mensagem' => $foraDaEscalacao($jogo->limparEscalacaoForaDosTimes()), 'ids_entraram' => [], 'mexeu' => false];
+        }
+
+        $troca    = $jogo->sincronizarPeloElenco(array_values(array_diff($timesAntes, $timesAgora)), auth('admin')->id());
+        $entraram = $troca['inscritos_com_time'] + $troca['inscritos_sem_time'];
+
+        return [
+            'mensagem'     => " Inscrições pelo elenco: {$entraram} atleta(s) inscrito(s), {$troca['sairam']} removido(s)."
+                . ' As inscrições individuais foram mantidas.' . $foraDaEscalacao($troca['sem_time']),
+            'ids_entraram' => $troca['ids_entraram'],
+            'mexeu'        => $entraram + $troca['sairam'] > 0,
+        ];
+    }
+
+    // Time interno sem atleta ativo no elenco: o jogo fica sem inscritos daquele lado; avisa o admin
+    private function comAvisoSemElenco($resposta, Jogo $jogo)
+    {
+        $semElenco = $jogo->timesSemElenco();
+
+        return $semElenco->isEmpty() ? $resposta : $resposta->with('aviso', 'Sem elenco cadastrado: '
+            . $semElenco->pluck('nome_time')->implode(', ') . '. Nenhum atleta foi inscrito por '
+            . ($semElenco->count() === 1 ? 'esse time' : 'esses times')
+            . '; cadastre o elenco e use "Preencher pelo elenco" na tela do jogo, ou inscreva à mão.');
     }
 
     // Campos do jogo: campeonato (vazio = amistoso), times e placar (os dois ou nenhum)

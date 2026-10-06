@@ -64,6 +64,13 @@
         </div>
         @endif
 
+        @if(session('aviso'))
+        <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+            <strong>Atenção!</strong> {{ session('aviso') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+
         @if(session('erro') || $errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Erro!</strong>

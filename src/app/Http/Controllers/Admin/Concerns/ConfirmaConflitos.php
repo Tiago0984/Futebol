@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Concerns;
 
 use App\Models\Atleta;
 use App\Models\EventoCalendario;
+use App\Models\Jogo;
 use App\Models\Notificacao;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -48,8 +49,10 @@ trait ConfirmaConflitos
     /**
      * Conflitos que a edição criaria: só quando muda data, horário ou categoria. Confere os atletas que
      * ficarão inscritos (com troca de categoria: individuais atuais + atletas ativos da categoria nova).
+     * Jogo ($timesDoJogo = mandante e visitante novos): a categoria não muda quem joga; a troca de time,
+     * sim (sai o elenco do time que saiu, entra o do novo; Jogo::idsInscritosDepoisDaTroca).
      */
-    private function conflitosDaEdicao(EventoCalendario $evento, array $dados): Collection
+    private function conflitosDaEdicao(EventoCalendario $evento, array $dados, ?array $timesDoJogo = null): Collection
     {
         $simulado = $evento->replicate()->fill($dados);
         $simulado->id_evento_calendario = $evento->id_evento_calendario;
@@ -58,6 +61,25 @@ trait ConfirmaConflitos
         $mudouHorario = $evento->data_evento_calendario->toDateString() !== $simulado->data_evento_calendario->toDateString()
             || $hora($evento->horario_inicio_evento_calendario) !== $hora($simulado->horario_inicio_evento_calendario)
             || $hora($evento->horario_fim_evento_calendario) !== $hora($simulado->horario_fim_evento_calendario);
+
+        // Jogo editado pela tela do calendário: os times continuam os mesmos
+        if ($timesDoJogo === null && $evento->ehJogo()) {
+            $timesDoJogo = [$evento->jogo->id_time_casa, $evento->jogo->id_time_visitante];
+        }
+
+        if ($timesDoJogo !== null) {
+            $jogo = $evento->jogo;
+            $mudouTimes = $this->timesMudaram([$jogo->id_time_casa, $jogo->id_time_visitante], $timesDoJogo) && ! $simulado->estaConcluido();
+
+            if (! $mudouHorario && ! $mudouTimes) {
+                return collect();
+            }
+
+            return $simulado->conflitosPara($mudouTimes
+                ? $jogo->idsInscritosDepoisDaTroca($timesDoJogo)
+                : $evento->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all());
+        }
+
         $mudouCategoria = (int) $evento->id_categoria !== (int) $simulado->id_categoria && ! $simulado->estaConcluido();
 
         if (! $mudouHorario && ! $mudouCategoria) {
@@ -86,11 +108,28 @@ trait ConfirmaConflitos
         return (new EventoCalendario($dados))->conflitosPara(Atleta::idsAtivosNaCategoria((int) $dados['id_categoria']));
     }
 
+    // Jogo novo: o elenco ativo dos times internos será inscrito; confere conflito antes de criar
+    private function conflitosDaCriacaoDoJogo(array $dados, array $idsTimes): Collection
+    {
+        return (new EventoCalendario($dados))->conflitosPara(array_keys(Jogo::elencoDosTimes(Jogo::idsInternos($idsTimes))));
+    }
+
+    // Mandante e visitante mudaram (em qualquer ordem: inverter o mando não troca ninguém)
+    private function timesMudaram(array $antes, array $depois): bool
+    {
+        $normalizar = fn (array $times) => collect($times)->map(fn ($id) => (int) $id)->sort()->values()->all();
+
+        return $normalizar($antes) !== $normalizar($depois);
+    }
+
     /**
-     * Grava a edição do evento (com histórico) e o que vem junto ($tambem: os dados do jogo), numa transação:
-     *  - categoria mudou (e o evento não está concluído): as inscrições automáticas acompanham e as
-     *    individuais ficam; quem entra recebe só a INSCRICAO (já com os dados novos), quem sai só a REMOCAO;
-     *  - data, horário ou local mudaram: quem ficou inscrito recebe a ALTERACAO (depois da sincronização,
+     * Grava a edição do evento (com histórico) e o que vem junto, numa transação:
+     *  - $tambem (tela de Jogos): grava o jogo e, se os times mudaram, sincroniza pelo elenco; devolve
+     *    ['mensagem' => ..., 'ids_entraram' => [...], 'mexeu' => bool] ou null;
+     *  - categoria mudou (evento comum, não concluído): as inscrições automáticas acompanham e as
+     *    individuais ficam. No jogo, a categoria é só exibição e não mexe nas inscrições;
+     *  - quem entra recebe só a INSCRICAO (já com os dados novos), quem sai só a REMOCAO;
+     *  - data, horário ou local mudaram: quem ficou inscrito recebe a ALTERACAO (depois das sincronizações,
      *    para ninguém receber duas).
      * Devolve o trecho da mensagem de sucesso ('' se nada disso mudou).
      */
@@ -102,14 +141,12 @@ trait ConfirmaConflitos
             $categoriaAntes = $evento->id_categoria;
             $mudancas = $evento->atualizarComHistorico($dados, $idUsuario);
 
-            if ($tambem) {
-                $tambem();
-            }
+            $doJogo = $tambem ? $tambem() : null;
 
-            $mensagem = '';
-            $mexeuNasInscricoes = false;
-            $entraram = [];
-            if ((int) $categoriaAntes !== (int) $evento->id_categoria && ! $evento->estaConcluido()) {
+            $mensagem = $doJogo['mensagem'] ?? '';
+            $mexeuNasInscricoes = $doJogo['mexeu'] ?? false;
+            $entraram = $doJogo['ids_entraram'] ?? [];
+            if ((int) $categoriaAntes !== (int) $evento->id_categoria && ! $evento->estaConcluido() && ! $evento->ehJogo()) {
                 $sincronizacao = $evento->sincronizarInscricoesPelaCategoria($idUsuario);
                 $entraram = $sincronizacao['ids_entraram'];
                 $mexeuNasInscricoes = $sincronizacao['entraram'] + $sincronizacao['sairam'] > 0;

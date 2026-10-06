@@ -42,10 +42,12 @@ class JogoEventoTest extends TestCase
     public function test_jogo_de_campeonato_cria_o_evento_com_titulo_categoria_local_e_inscritos(): void
     {
         $idAtleta = $this->atletaSub11();
+        $this->atletaSub11([]); // da categoria do campeonato, mas fora do elenco: não entra
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
             ->assertRedirect(route('admin.jogos.index'))
-            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) da categoria inscrito(s). 1 atleta(s) notificado(s).');
+            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) do elenco inscrito(s). 1 atleta(s) notificado(s).')
+            ->assertSessionMissing('aviso');
 
         $jogo   = Jogo::with('evento')->sole();
         $evento = $jogo->evento;
@@ -56,9 +58,9 @@ class JogoEventoTest extends TestCase
         $this->assertSame('Quadra A', $evento->local_evento_calendario); // vazio = local do campeonato
         $this->assertSame('ATIVO', $evento->status_evento_calendario);
         $this->assertNotNull($evento->id_usuario);                       // responsável = admin logado
-        $this->assertTrue($evento->inscricoes()->where('id_atleta', $idAtleta)->exists());
+        $this->assertSame([$idAtleta => ['ELENCO', $this->azul]], $this->inscricoesDo($jogo)); // já escalado no Azul
 
-        // O atleta inscrito pela categoria recebe a INSCRICAO do jogo
+        // O atleta inscrito pelo elenco recebe a INSCRICAO do jogo
         $notificacao = \App\Models\Notificacao::where('id_atleta', $idAtleta)->sole();
         $this->assertSame('INSCRICAO', $notificacao->tipo_notificacao);
         $this->assertSame($evento->id_evento_calendario, $notificacao->id_evento_calendario);
@@ -87,14 +89,16 @@ class JogoEventoTest extends TestCase
         $this->assertSame($this->idSub11M, (int) Jogo::where('id_campeonato', $this->idCampeonato)->sole()->evento->id_categoria);
     }
 
-    public function test_amistoso_sem_categoria_nao_inscreve_ninguem(): void
+    public function test_amistoso_sem_categoria_inscreve_o_elenco(): void
     {
         $this->atletaSub11();
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_campeonato' => 'AMISTOSO']))
-            ->assertSessionHas('sucesso', 'Jogo registrado.');
+            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) do elenco inscrito(s). 1 atleta(s) notificado(s).');
 
-        $this->assertSame(0, Jogo::sole()->evento->inscricoes()->count());
+        $jogo = Jogo::sole();
+        $this->assertNull($jogo->evento->id_categoria);
+        $this->assertSame(1, $jogo->evento->inscricoes()->count());
     }
 
     public function test_validacoes_do_jogo(): void
@@ -146,7 +150,9 @@ class JogoEventoTest extends TestCase
             'local_evento_calendario'          => 'Campo C',
             'placar_time_casa_jogos'           => 3,
             'placar_time_visitante_jogos'      => 1,
-        ]))->assertSessionHas('sucesso', 'Jogo atualizado. 0 atleta(s) notificado(s).');
+        ]))->assertSessionHas('sucesso', 'Jogo atualizado. Inscrições pelo elenco: 0 atleta(s) inscrito(s), 0 removido(s).'
+            . ' As inscrições individuais foram mantidas. 0 atleta(s) notificado(s).')
+            ->assertSessionHas('aviso', fn ($aviso) => str_starts_with($aviso, 'Sem elenco cadastrado: Time Verde.'));
 
         $jogo->refresh();
         $evento = $jogo->evento;
@@ -184,17 +190,31 @@ class JogoEventoTest extends TestCase
         $this->assertSame(1, \App\Models\Notificacao::count());
     }
 
-    public function test_virar_amistoso_sem_categoria_tira_as_inscricoes_automaticas(): void
+    public function test_mudar_a_categoria_do_jogo_nao_mexe_nas_inscricoes(): void
     {
         $this->atletaSub11();
         $jogo = $this->criarJogo();
         $this->assertSame(1, $jogo->evento->inscricoes()->count());
 
-        $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo(['id_campeonato' => 'AMISTOSO']))
-            ->assertSessionHas('sucesso', fn ($msg) => str_contains($msg, '0 atleta(s) inscrito(s), 1 removido(s)'));
+        // Virar amistoso sem categoria: a categoria é só exibição no jogo; quem joga é o elenco
+        // (o local fica o mesmo: vazio no amistoso seria uma mudança de local, que avisa)
+        $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo(['id_campeonato' => 'AMISTOSO', 'local_evento_calendario' => 'Quadra A']))
+            ->assertSessionHas('sucesso', 'Jogo atualizado.');
 
         $this->assertNull($jogo->refresh()->id_campeonato);
-        $this->assertSame(0, $jogo->evento->inscricoes()->count());
+        $this->assertNull($jogo->evento->id_categoria);
+        $this->assertSame(1, $jogo->evento->inscricoes()->count());
+
+        // Pela tela do calendário também não (e o "Atualizar inscritos pela categoria" é recusado no jogo)
+        $this->comoAdmin()->put(route('admin.calendario.eventos.update', $jogo->id_evento), [
+            'titulo_evento_calendario' => $jogo->evento->titulo_evento_calendario, 'tipo_evento_calendario' => 'JOGO',
+            'id_categoria' => $this->idCategoria('Sub-13', 'M'), 'data_evento_calendario' => $this->dia,
+            'horario_inicio_evento_calendario' => '19:00', 'local_evento_calendario' => 'Quadra A',
+        ])->assertSessionHas('sucesso', 'Evento atualizado.');
+        $this->assertSame(1, $jogo->evento->inscricoes()->count());
+
+        $this->comoAdmin()->post(route('admin.calendario.eventos.inscricoes.atualizar', $jogo->id_evento))
+            ->assertSessionHas('erro', 'No jogo, os inscritos vêm do elenco dos times: use "Preencher pelo elenco".');
     }
 
     public function test_editar_a_data_pelo_calendario_muda_a_data_do_jogo(): void
@@ -289,12 +309,27 @@ class JogoEventoTest extends TestCase
         return Jogo::with('evento')->latest('id_jogo')->first();
     }
 
-    private function atletaSub11(): int
+    // Atleta ativo da Sub-11 M no elenco (tbl_atleta_time) dos times indicados; padrão: o Time Azul (mandante)
+    private function atletaSub11(?array $elencos = null): int
     {
         $id = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         $this->colocarNaCategoria($id, $this->idSub11M);
 
+        foreach ($elencos ?? [$this->azul] as $idTime) {
+            DB::table('tbl_atleta_time')->insert([
+                'id_time' => $idTime, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '',
+            ]);
+        }
+
         return $id;
+    }
+
+    // Inscrições do jogo: [id_atleta => [origem, id_time]]
+    private function inscricoesDo(Jogo $jogo): array
+    {
+        return DB::table('tbl_evento_atleta')->where('id_evento_calendario', $jogo->id_evento)->orderBy('id_atleta')->get()
+            ->mapWithKeys(fn ($i) => [(int) $i->id_atleta => [$i->origem_evento_atleta, $i->id_time === null ? null : (int) $i->id_time]])
+            ->all();
     }
 
     private function campeonato(string $nome, int $idCategoria, string $local): int

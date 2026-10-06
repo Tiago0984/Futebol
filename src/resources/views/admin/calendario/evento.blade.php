@@ -92,9 +92,16 @@
                     @endforelse
                     @if ($escalaveis->isNotEmpty())
                         <div><span class="text-muted small d-block">Sem time</span><strong>{{ $porTime[0] ?? 0 }}</strong> inscrito(s)</div>
-                        <form action="{{ route('admin.calendario.eventos.escalacao.elenco', $evento->id_evento_calendario) }}" method="POST" class="ms-auto"
+                        <form action="{{ route('admin.calendario.eventos.escalacao.elenco', $evento->id_evento_calendario) }}" method="POST" class="ms-auto d-flex align-items-center gap-2"
                               onsubmit="return confirm('Escalar pelo elenco dos times? Quem já tem time não muda; quem está no elenco e não está inscrito será inscrito.')">
                             @csrf
+                            <span class="text-muted small">
+                                @if ($faltantesDoElenco > 0)
+                                    <strong>{{ $faltantesDoElenco }}</strong> atleta(s) do elenco ainda não {{ $faltantesDoElenco === 1 ? 'está inscrito' : 'estão inscritos' }}
+                                @else
+                                    Todo o elenco ativo está inscrito
+                                @endif
+                            </span>
                             <button type="submit" class="btn btn-success"><i class="bi bi-people"></i> Preencher pelo elenco</button>
                         </form>
                     @endif
@@ -142,6 +149,9 @@
                                             @php $doElenco = $escalaveis->whereIn('id_time', $elencos[$inscricao->id_atleta] ?? [])->pluck('nome_time'); @endphp
                                             @if ($doElenco->isNotEmpty())
                                                 <small class="text-muted">Elenco: {{ $doElenco->implode(', ') }}</small>
+                                            @else
+                                                {{-- Não é do elenco de nenhum time do jogo (saiu do elenco ou foi inscrito à mão) --}}
+                                                <small class="text-warning fw-semibold">Fora do elenco</small>
                                             @endif
                                         </td>
                                         @endif
@@ -181,7 +191,8 @@
 
                 {{-- Adicionar --}}
                 <div class="col-lg-5">
-                    @if ($evento->categoria)
+                    {{-- No jogo, os inscritos vêm do elenco ("Preencher pelo elenco"), não da categoria --}}
+                    @if ($evento->categoria && ! $jogo)
                     <div class="card shadow-sm mb-4">
                         <div class="card-header bg-dark text-white fw-semibold">
                             <i class="bi bi-arrow-repeat me-2"></i> Pela categoria ({{ $evento->categoria->rotulo }})

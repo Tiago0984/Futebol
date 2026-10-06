@@ -145,15 +145,18 @@ class CalendarioController extends Controller
 
         $categorias = Categoria::ativas()->get();
 
-        // Atletas da categoria do evento que entraram depois e ainda não estão inscritos
+        // Atletas da categoria do evento que entraram depois e ainda não estão inscritos (no jogo, nenhum)
         $faltantesDaCategoria = count($evento->idsFaltantesDaCategoria());
 
-        // Evento de jogo: escalação por time (mandante/visitante internos) e elenco de cada atleta
+        // Evento de jogo: escalação por time (mandante/visitante internos), elenco de cada atleta e quantos
+        // do elenco ainda não estão inscritos (ao lado do "Preencher pelo elenco")
         $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
         $elencos = $jogo?->elencosDoJogo() ?? [];
+        $faltantesDoElenco = $jogo ? count($jogo->idsFaltantesDoElenco()) : 0;
 
         return view('admin.calendario.evento', compact(
-            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos'
+            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos',
+            'faltantesDoElenco'
         ));
     }
 
@@ -188,10 +191,10 @@ class CalendarioController extends Controller
     }
 
     /**
-     * "Preencher pelo elenco": quem está no elenco (tbl_atleta_time) de um só dos times do jogo é escalado
-     * nele; quem não está inscrito é inscrito (INDIVIDUAL, com alerta de conflito). Quem já tem time não
-     * muda. Quem está nos dois elencos é inscrito SEM time (se ainda não estava), para o admin escolher
-     * na lista. Atleta fora da categoria do jogo gera aviso, sem bloquear.
+     * "Preencher pelo elenco" (Jogo::inscreverElenco): inscreve quem falta do elenco (tbl_atleta_time) dos
+     * times internos do jogo (origem ELENCO, com alerta de conflito) e escala quem está inscrito sem time.
+     * Quem é de um time só entra escalado nele; quem está nos dois elencos entra SEM time, para o admin
+     * escolher na lista. Quem já tem time não muda; ninguém sai. Atleta fora da categoria do jogo gera aviso.
      */
     public function preencherPeloElenco(Request $request, $id)
     {
@@ -202,50 +205,26 @@ class CalendarioController extends Controller
             return back()->with('erro', 'Este jogo não tem time interno para escalar.');
         }
 
-        $elencos    = $jogo->elencosDoJogo();
-        $nosDois    = array_keys(array_filter($elencos, fn ($times) => count($times) > 1));
-        $deUmTime   = array_map(fn ($times) => $times[0], array_filter($elencos, fn ($times) => count($times) === 1));
-        $inscricoes = $evento->inscricoes()->get(['id_atleta', 'id_time'])->keyBy('id_atleta');
-        $jaInscritos = $inscricoes->keys()->map(fn ($id) => (int) $id)->all();
-        $entrariam  = array_values(array_diff(array_keys($elencos), $jaInscritos));
+        $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
 
-        if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara($entrariam))) {
+        if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara($jogo->idsFaltantesDoElenco()))) {
             return $confirmar;
         }
 
-        $idUsuario = auth('admin')->id();
-        $escalados = 0;
-        $inscritos = 0;
-        $mexidos   = [];
-        foreach ($deUmTime as $idAtleta => $idTime) {
-            $inscricao = $inscricoes->get($idAtleta);
+        $elenco    = $jogo->inscreverElenco(auth('admin')->id());
+        $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
 
-            if (! $inscricao) {
-                $inscritos += $evento->inscrever($idAtleta, 'INDIVIDUAL', $idUsuario, $idTime) ? 1 : 0;
-                $mexidos[] = $idAtleta;
-            } elseif ($inscricao->id_time === null) {
-                $escalados += $evento->inscricoes()->where('id_atleta', $idAtleta)->update(['id_time' => $idTime]);
-                $mexidos[] = $idAtleta;
-            }
-        }
-
-        $nosDoisInscritos = 0;
-        foreach (array_diff($nosDois, $jaInscritos) as $idAtleta) {
-            $nosDoisInscritos += $evento->inscrever($idAtleta, 'INDIVIDUAL', $idUsuario) ? 1 : 0;
-            $mexidos[] = $idAtleta;
-        }
-
-        $mensagem = "Escalação pelo elenco: {$escalados} inscrito(s) escalado(s), {$inscritos} atleta(s) inscrito(s) e escalado(s).";
-        if ($nosDois) {
-            $mensagem .= ' ' . count($nosDois) . ' atleta(s) estão nos elencos dos dois times'
-                . ($nosDoisInscritos ? " ({$nosDoisInscritos} inscrito(s) agora, sem time)" : '')
+        $mensagem = "Escalação pelo elenco: {$elenco['escalados']} inscrito(s) escalado(s), {$elenco['inscritos_com_time']} atleta(s) inscrito(s) e escalado(s).";
+        if ($elenco['nos_dois']) {
+            $mensagem .= " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times"
+                . ($elenco['inscritos_sem_time'] ? " ({$elenco['inscritos_sem_time']} inscrito(s) agora, sem time)" : '')
                 . ': escolha o time de cada um na lista.';
         }
-        if ($inscritos + $nosDoisInscritos > 0) {
+        if ($inscritos > 0) {
             $mensagem .= Notificacao::textoNotificados($evento->atletasNotificados);
         }
 
-        $this->avisarForaDaCategoria($evento, $mexidos);
+        $this->avisarForaDaCategoria($evento, $elenco['ids_mexidos']);
 
         return back()->with('sucesso', $mensagem);
     }
@@ -265,6 +244,11 @@ class CalendarioController extends Controller
 
         if (! $evento->id_categoria) {
             return back()->with('erro', 'Este evento não tem categoria.');
+        }
+
+        // No jogo, quem joga é o elenco dos times, não a categoria
+        if ($evento->ehJogo()) {
+            return back()->with('erro', 'No jogo, os inscritos vêm do elenco dos times: use "Preencher pelo elenco".');
         }
 
         if ($confirmar = $this->confirmarConflitos(request(), $evento->conflitosPara($evento->idsFaltantesDaCategoria()))) {

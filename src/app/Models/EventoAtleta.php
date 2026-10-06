@@ -11,10 +11,12 @@ class EventoAtleta extends Model
     protected $primaryKey = 'id_evento_atleta';
     public    $timestamps = false;
 
-    // Valores de origem_evento_atleta => rótulo
+    // Valores de origem_evento_atleta => rótulo. CATEGORIA e ELENCO são automáticas (acompanham a categoria
+    // do evento ou os times do jogo); INDIVIDUAL é escolha do admin e nenhuma sincronização mexe nela.
     public const ORIGENS = [
         'CATEGORIA'  => 'Pela categoria',
         'INDIVIDUAL' => 'Individual',
+        'ELENCO'     => 'Pelo elenco',
     ];
 
     protected $fillable = [
