@@ -99,6 +99,76 @@ class ResponsavelUnicoTest extends TestCase
         $this->assertSame(' mae@familia.com', DB::table('tbl_responsavel')->where('id_responsavel', $b)->value('email_responsavel'));
     }
 
+    public function test_migration_de_limpeza_funde_por_cpf_e_tira_os_emails_repetidos(): void
+    {
+        $atleta1 = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $atleta2 = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        $atleta3 = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+
+        // Mesmo CPF em três formatos; o de menor id está sem e-mail
+        $fica = $this->responsavel('034.466.148-26', null);
+        $repetido = $this->responsavel('03446614826', 'Mae@Familia.com ');
+        $outroRepetido = $this->responsavel('034.466.148-26', 'outro@familia.com');
+        $semAtleta = $this->responsavel('22222222222', 'sem.atleta@familia.com');
+        // Repetido só depois de normalizar: o índice do banco de testes já existe e aceita o espaço no começo
+        $mesmoEmail = $this->responsavel('33333333333', ' mae@familia.com');
+        $semCpfA = $this->responsavel('', 'a@familia.com');
+        $semCpfB = $this->responsavel('', 'b@familia.com');
+
+        $vinculo = fn ($idAtleta, $idResponsavel) => DB::table('tbl_atleta_responsavel')->insert(
+            ['id_atleta' => $idAtleta, 'id_responsavel' => $idResponsavel, 'grau_parentesco_responsavel' => 'Mãe']
+        );
+        $vinculo($atleta1, $fica);
+        $vinculo($atleta1, $repetido);      // par que vai repetir
+        $vinculo($atleta2, $repetido);
+        $vinculo($atleta3, $mesmoEmail);
+        $vinculo($atleta3, $semCpfA);
+        $vinculo($atleta3, $semCpfB);
+
+        $autorizacao = fn ($idAtleta, $idResponsavel, $status) => DB::table('tbl_autorizacoes')->insertGetId(
+            ['id_atleta' => $idAtleta, 'id_responsavel' => $idResponsavel, 'status_autorizacao' => $status]
+        );
+        $autorizacao($atleta1, $fica, 'PENDENTE');
+        $assinada = $autorizacao($atleta1, $repetido, 'ASSINADO');   // a assinada vale mais que a pendente
+        $autorizacao($atleta2, $outroRepetido, 'PENDENTE');
+
+        $notificacao = Notificacao::create([
+            'id_atleta' => $atleta1, 'tipo_notificacao' => 'AGENDA', 'titulo_notificacao' => 'Agenda', 'mensagem_notificacao' => 'Texto',
+        ])->id_notificacao;
+        DB::table('tbl_notificacao_leitura')->insert([
+            ['id_notificacao' => $notificacao, 'id_responsavel' => $fica],
+            ['id_notificacao' => $notificacao, 'id_responsavel' => $repetido],
+        ]);
+
+        (require database_path('migrations/2026_10_07_000005_limpa_responsaveis_repetidos.php'))->up();
+
+        // Regra 1: os repetidos do CPF somem e tudo passa para o de menor id, sem repetir o par
+        $this->assertSame(
+            [$fica, $semAtleta, $mesmoEmail, $semCpfA, $semCpfB],
+            DB::table('tbl_responsavel')->orderBy('id_responsavel')->pluck('id_responsavel')->all()
+        );
+        $pares = fn ($tabela) => DB::table($tabela)->orderBy('id_atleta')->orderBy('id_responsavel')
+            ->get(['id_atleta', 'id_responsavel'])->map(fn ($l) => [$l->id_atleta, $l->id_responsavel])->all();
+        $this->assertSame([[$atleta1, $fica], [$atleta2, $fica], [$atleta3, $mesmoEmail], [$atleta3, $semCpfA], [$atleta3, $semCpfB]], $pares('tbl_atleta_responsavel'));
+        $this->assertSame([[$atleta1, $fica], [$atleta2, $fica]], $pares('tbl_autorizacoes'));
+        $this->assertSame('ASSINADO', DB::table('tbl_autorizacoes')->where('id_atleta', $atleta1)->sole()->status_autorizacao);
+        $this->assertSame($assinada, DB::table('tbl_autorizacoes')->where('id_atleta', $atleta1)->value('id_autorizacao'));
+        $this->assertSame([$fica], DB::table('tbl_notificacao_leitura')->pluck('id_responsavel')->all());
+
+        // Herdou o e-mail do primeiro repetido; regra 3: sem atleta, fica só sem e-mail;
+        // regra 2: o mesmo e-mail (normalizado) fica com o de menor id; CPF vazio não funde
+        $emails = DB::table('tbl_responsavel')->pluck('email_responsavel', 'id_responsavel');
+        $this->assertSame('Mae@Familia.com ', $emails[$fica]);
+        $this->assertNull($emails[$semAtleta]);
+        $this->assertNull($emails[$mesmoEmail]);
+        $this->assertSame('a@familia.com', $emails[$semCpfA]);
+        $this->assertSame('b@familia.com', $emails[$semCpfB]);
+
+        // Depois da limpeza, a conferência da migration do índice não acha repetidos
+        $this->assertSame(0, DB::table('tbl_responsavel')->selectRaw("LOWER(TRIM(email_responsavel)) e")->whereNotNull('email_responsavel')
+            ->groupBy('e')->havingRaw('COUNT(*) > 1')->get()->count());
+    }
+
     // ---------- model ----------
 
     public function test_cpf_por_digitos_email_normalizado_e_senha_fora_do_json(): void
