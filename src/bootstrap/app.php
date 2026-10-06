@@ -13,6 +13,9 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
+
+        // API do app: recusa atleta que não está ATIVO, mesmo com token válido
+        $middleware->alias(['atleta.ativo' => \App\Http\Middleware\AtletaAtivo::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Na API, erros (401, 404, 422...) sempre voltam em JSON, mesmo sem o header Accept

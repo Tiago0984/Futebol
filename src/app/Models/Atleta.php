@@ -31,6 +31,23 @@ class Atleta extends Authenticatable
     public const IDADE_MINIMA = 9;
     public const IDADE_MAXIMA = 17;
 
+    // Validade do token do app (Sanctum), em dias: gravada em expires_at no login
+    public const VALIDADE_TOKEN_DIAS = 30;
+
+    /**
+     * Atleta que deixa de ser ATIVO (inativado, rejeitado, de volta a pendente) perde os tokens do app,
+     * em qualquer caminho que mude o status pelo model (botão de status, edição, Matrículas). A rota
+     * protegida também confere o status a cada requisição (middleware atleta.ativo).
+     */
+    protected static function booted(): void
+    {
+        static::updated(function (Atleta $atleta) {
+            if ($atleta->wasChanged('status_atleta') && strtoupper((string) $atleta->status_atleta) !== 'ATIVO') {
+                $atleta->tokens()->delete();
+            }
+        });
+    }
+
     protected $fillable = [
         'nome_atleta',
         'data_nasc_atleta',

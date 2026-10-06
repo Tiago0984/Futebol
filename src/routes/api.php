@@ -30,11 +30,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/campeonatos', [CampeonatoController::class, 'index']);
     Route::get('/campeonatos/{id}', [CampeonatoController::class, 'show']);
 
-    // LOGIN - rota pública (limite de 5 tentativas por minuto)
-    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:5,1');
+    // LOGIN - rota pública (limite de 5 tentativas por minuto por IP e 5 por e-mail: limitador
+    // "login-api", no AppServiceProvider)
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login-api');
 
-    // ROTAS COM CREDENCIAL
-    Route::middleware('auth:sanctum')->group(function () {
+    // ROTAS COM CREDENCIAL (token válido e atleta ATIVO)
+    Route::middleware(['auth:sanctum', 'atleta.ativo'])->group(function () {
 
         // Atleta logado
         Route::get('/atleta', [AtletaController::class, 'show']);

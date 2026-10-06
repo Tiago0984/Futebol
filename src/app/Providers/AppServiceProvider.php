@@ -2,6 +2,9 @@
 
 namespace App\Providers;
 
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
@@ -33,5 +36,16 @@ class AppServiceProvider extends ServiceProvider
         });
 
         URL::forceRootUrl(config('app.url'));
+
+        // Login da API: 5 tentativas por minuto por IP e, à parte, 5 por e-mail (quem tenta muitas senhas
+        // de uma conta trocando de IP também para). Passou do limite: 429 em JSON
+        RateLimiter::for('login-api', function (Request $request) {
+            $email = mb_strtolower(trim((string) $request->input('email')));
+
+            return array_filter([
+                Limit::perMinute(5)->by('ip:' . $request->ip()),
+                $email !== '' ? Limit::perMinute(5)->by('email:' . $email) : null,
+            ]);
+        });
     }
 }

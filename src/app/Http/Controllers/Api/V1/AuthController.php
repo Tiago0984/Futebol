@@ -38,11 +38,11 @@ class AuthController extends Controller
             ], 403);
         }
 
-        // 5. Gerar um token usando createToken()
+        // 5. Gerar um token usando createToken(), válido por 30 dias (expires_at; o Sanctum recusa depois)
         $nomeToken = $dados['device_name'] ?? 'app';
 
         $token = $atleta
-            ->createToken($nomeToken)
+            ->createToken($nomeToken, ['*'], now()->addDays(Atleta::VALIDADE_TOKEN_DIAS))
             ->plainTextToken;
 
         // 6. Retornar o token e os dados básicos do atleta em JSON
