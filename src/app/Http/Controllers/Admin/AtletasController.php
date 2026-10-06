@@ -18,12 +18,13 @@ use Illuminate\Validation\ValidationException;
 
 class AtletasController extends Controller
 {
-    // E-mails opcionais (CLAUDE.md, seção 8, pergunta 7). O do atleta é o login do app, por isso único;
-    // o do responsável não: um responsável pode ter mais de um atleta
+    // E-mails opcionais no admin. Os dois são login do app (Fase 9), por isso únicos: o do atleta entre
+    // atletas e o do responsável entre responsáveis (um responsável com dois filhos é um cadastro só)
     private const MENSAGENS_EMAIL = [
-        'email_atleta.email'      => 'Informe um e-mail válido para o atleta.',
-        'email_atleta.unique'     => 'Este e-mail já está cadastrado para outro atleta.',
-        'email_responsavel.email' => 'Informe um e-mail válido para o responsável.',
+        'email_atleta.email'       => 'Informe um e-mail válido para o atleta.',
+        'email_atleta.unique'      => 'Este e-mail já está cadastrado para outro atleta.',
+        'email_responsavel.email'  => 'Informe um e-mail válido para o responsável.',
+        'email_responsavel.unique' => 'Este e-mail já está cadastrado para outro responsável.',
     ];
 
     // Atleta ATIVO sempre tem categoria: é por ela que entra nos eventos (inscrição automática)
@@ -61,6 +62,9 @@ class AtletasController extends Controller
     {
         $nascimento = Atleta::regrasNascimento();
 
+        // Responsável já cadastrado com o CPF (só os dígitos): o atleta é vinculado a ele
+        $responsavelExistente = Responsavel::porCpf($request->cpf_responsavel);
+
         $request->validate([
             'nome_atleta'                 => 'required|string|max:255',
             'data_nasc_atleta'            => $nascimento['regra'],
@@ -75,7 +79,7 @@ class AtletasController extends Controller
             'foto_atleta'                 => 'nullable|image|max:2048',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
-            'email_responsavel'           => 'nullable|email|max:150',
+            'email_responsavel'           => ['nullable', 'email', 'max:150', $this->emailResponsavelUnico($responsavelExistente)],
             'whatsapp_responsavel'        => 'required|string|max:20',
             'grau_parentesco_responsavel' => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
             'cep_endereco'                => 'required|string|max:9',
@@ -90,18 +94,34 @@ class AtletasController extends Controller
         $this->validarCategoria($request);
 
         try {
-            $numero = DB::transaction(fn () => $this->cadastrarAtleta($request));
+            $numero = DB::transaction(fn () => $this->cadastrarAtleta($request, $responsavelExistente));
         } catch (UniqueConstraintViolationException $e) {
             return back()->withInput()
                 ->with('erro', 'Não foi possível gerar o número de matrícula agora. Tente salvar de novo.');
         }
 
-        return redirect()->route('admin.atletas.index')
-            ->with('sucesso', "Atleta cadastrado com sucesso. Matrícula: {$numero}");
+        $mensagem = "Atleta cadastrado com sucesso. Matrícula: {$numero}";
+        if ($responsavelExistente) {
+            $mensagem .= " O responsável {$responsavelExistente->nome_responsavel} já estava cadastrado com este CPF:"
+                . ' o atleta foi vinculado a ele e os dados do responsável não foram alterados'
+                . ($responsavelExistente->wasChanged('email_responsavel') ? ' (só o e-mail, que estava vazio, foi preenchido).' : '.');
+        }
+
+        return redirect()->route('admin.atletas.index')->with('sucesso', $mensagem);
     }
 
-    // Grava endereço, responsável, atleta, categoria e número de matrícula; devolve o número
-    private function cadastrarAtleta(Request $request): string
+    // E-mail do responsável único entre responsáveis, sem acusar o próprio cadastro dele
+    private function emailResponsavelUnico(?Responsavel $responsavel)
+    {
+        return Rule::unique('tbl_responsavel', 'email_responsavel')->ignore($responsavel?->id_responsavel, 'id_responsavel');
+    }
+
+    /**
+     * Grava endereço, responsável, atleta, categoria e número de matrícula; devolve o número.
+     * Responsável já cadastrado com o CPF: o atleta é vinculado a ele, sem mudar os dados dele (o cadastro
+     * é de outro atleta, da mesma família); só o e-mail é preenchido se estava vazio (é o login do app).
+     */
+    private function cadastrarAtleta(Request $request, ?Responsavel $responsavelExistente): string
     {
         // 1. Endereço do atleta
         $endereco = Endereco::create([
@@ -114,18 +134,25 @@ class AtletasController extends Controller
             'estado_endereco'      => strtoupper($request->estado_endereco),
         ]);
 
-        // 2. Responsável
-        $responsavel = Responsavel::create([
-            'nome_responsavel'       => $request->nome_responsavel,
-            'cpf_responsavel'        => $request->cpf_responsavel,
-            'email_responsavel'      => $request->email_responsavel,
-            'rg_responsavel'         => '',
-            'telefone_responsavel'   => $request->whatsapp_responsavel,
-            'whatsapp_responsavel'   => $request->whatsapp_responsavel,
-            'assinatura_responsavel' => '',
-            'aceite_responsavel'     => 'N',
-            'id_endereco'            => $endereco->id_endereco,
-        ]);
+        // 2. Responsável: o já cadastrado (completa só o e-mail vazio) ou um novo
+        if ($responsavelExistente) {
+            $responsavel = $responsavelExistente;
+            if (blank($responsavel->email_responsavel) && filled($request->email_responsavel)) {
+                $responsavel->update(['email_responsavel' => $request->email_responsavel]);
+            }
+        } else {
+            $responsavel = Responsavel::create([
+                'nome_responsavel'       => $request->nome_responsavel,
+                'cpf_responsavel'        => $request->cpf_responsavel,
+                'email_responsavel'      => $request->email_responsavel,
+                'rg_responsavel'         => '',
+                'telefone_responsavel'   => $request->whatsapp_responsavel,
+                'whatsapp_responsavel'   => $request->whatsapp_responsavel,
+                'assinatura_responsavel' => '',
+                'aceite_responsavel'     => 'N',
+                'id_endereco'            => $endereco->id_endereco,
+            ]);
+        }
 
         // 3. Atleta
         $fotoPath = 'default-player.jpg';
@@ -184,6 +211,10 @@ class AtletasController extends Controller
         $atleta     = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas', 'times'])->findOrFail($id);
         $nascimento = Atleta::regrasNascimento();
 
+        // Responsável que esta edição altera: o atual do atleta, ou (sem nenhum) o já cadastrado com o CPF
+        $responsavelAtual     = $atleta->responsaveis->first();
+        $responsavelExistente = $responsavelAtual ? null : Responsavel::porCpf($request->cpf_responsavel);
+
         // Bag "edicao": os erros da edição não podem abrir o modal de cadastro (que usa a bag padrão)
         $request->validateWithBag('edicao', [
             'nome_atleta'                 => 'required|string|max:255',
@@ -199,7 +230,7 @@ class AtletasController extends Controller
             'camisa_atleta_time'          => 'nullable|string|max:10',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
-            'email_responsavel'           => 'nullable|email|max:150',
+            'email_responsavel'           => ['nullable', 'email', 'max:150', $this->emailResponsavelUnico($responsavelAtual ?? $responsavelExistente)],
             'whatsapp_responsavel'        => 'required|string|max:20',
             'grau_parentesco_responsavel' => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
             'cep_endereco'                => 'required|string|max:9',
@@ -210,6 +241,16 @@ class AtletasController extends Controller
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
         ], [...$nascimento['mensagens'], ...self::MENSAGENS_EMAIL]);
+
+        // CPF do responsável trocado para o de OUTRO responsável já cadastrado: recusa (viraria um cadastro
+        // repetido). Trocar o responsável do atleta por um já cadastrado ainda não é possível pela edição
+        if ($responsavelAtual
+            && Responsavel::digitosCpf($request->cpf_responsavel) !== Responsavel::digitosCpf($responsavelAtual->cpf_responsavel)
+            && ($outro = Responsavel::porCpf($request->cpf_responsavel, exceto: $responsavelAtual->id_responsavel))) {
+            throw ValidationException::withMessages([
+                'cpf_responsavel' => "Este CPF já é do responsável {$outro->nome_responsavel}, de outro cadastro. Confira o CPF.",
+            ])->errorBag('edicao');
+        }
 
         // Só valida a categoria quando ela muda: editar outro campo de um atleta que já está
         // numa categoria (por exemplo, acima da idade, com motivo) não pode ser bloqueado
@@ -225,7 +266,7 @@ class AtletasController extends Controller
             throw ValidationException::withMessages(['id_categoria' => self::MENSAGEM_SEM_CATEGORIA])->errorBag('edicao');
         }
 
-        DB::transaction(function () use ($request, $atleta) {
+        DB::transaction(function () use ($request, $atleta, $responsavelExistente) {
 
             // 1. Atualiza atleta
             $fotoPath = $atleta->foto_atleta;
@@ -268,7 +309,7 @@ class AtletasController extends Controller
                 ]);
             }
 
-            // 3. Atualiza responsável (ou cria se ainda não existe)
+            // 3. Atualiza responsável (ou, se o atleta não tem, vincula o já cadastrado com o CPF ou cria)
             $responsavel = $atleta->responsaveis->first();
             if ($responsavel) {
                 $responsavel->update([
@@ -280,6 +321,11 @@ class AtletasController extends Controller
                 ]);
 
                 $atleta->responsaveis()->updateExistingPivot($responsavel->id_responsavel, [
+                    'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
+                ]);
+            } elseif ($responsavelExistente) {
+                // Mesmo CPF de um responsável já cadastrado: vincula sem mudar os dados dele
+                $atleta->responsaveis()->attach($responsavelExistente->id_responsavel, [
                     'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
                 ]);
             } else {

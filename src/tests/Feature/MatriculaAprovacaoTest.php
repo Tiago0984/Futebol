@@ -209,7 +209,7 @@ class MatriculaAprovacaoTest extends TestCase
             ->assertSessionHas('sucesso', 'Matrícula de Atleta de Teste reativada. O link de assinatura foi enviado para o e-mail do responsável.');
 
         $token = DB::table('tbl_autorizacoes')->where('id_atleta', $idAtleta)->value('token_assinatura');
-        Mail::assertSent(AutorizacaoAssinaturaMail::class, fn ($mail) => $mail->hasTo('responsavel@teste.com')
+        Mail::assertSent(AutorizacaoAssinaturaMail::class, fn ($mail) => $mail->hasTo("responsavel{$idAtleta}@teste.com")
             && $mail->linkAssinatura === route('assinar.show', $token));
     }
 

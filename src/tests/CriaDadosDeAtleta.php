@@ -49,7 +49,8 @@ trait CriaDadosDeAtleta
         ]);
     }
 
-    // Responsável vinculado ao atleta (Mãe), com endereço próprio
+    // Responsável vinculado ao atleta (Mãe), com endereço próprio. E-mail com o id do atleta: o e-mail do
+    // responsável é único (Fase 9)
     protected function criarResponsavel(int $idAtleta): int
     {
         $idEndereco = DB::table('tbl_endereco')->insertGetId([
@@ -63,7 +64,7 @@ trait CriaDadosDeAtleta
             'cpf_responsavel'      => '111.111.111-11',
             'rg_responsavel'       => '11.111.111-1',
             'whatsapp_responsavel' => '(11) 99999-9999',
-            'email_responsavel'    => 'responsavel@teste.com',
+            'email_responsavel'    => "responsavel{$idAtleta}@teste.com",
         ]);
 
         DB::table('tbl_atleta_responsavel')->insert([

@@ -60,6 +60,12 @@ class Notificacao extends Model
         return $this->belongsTo(EventoCalendario::class, 'id_evento_calendario', 'id_evento_calendario');
     }
 
+    // Leituras pelos responsáveis do atleta (a do atleta é data_leitura_notificacao)
+    public function leiturasDosResponsaveis()
+    {
+        return $this->hasMany(NotificacaoLeitura::class, 'id_notificacao', 'id_notificacao');
+    }
+
     // Usuário do admin que fez a ação que gerou a notificação
     public function usuario()
     {

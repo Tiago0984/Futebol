@@ -433,7 +433,9 @@ class Atleta extends Authenticatable
             $this->times()->detach();
             $this->autorizacoes()->delete();
             $this->inscricoesEmEventos()->delete(); // tbl_evento_atleta (FK sem cascade)
-            $this->notificacoes()->delete(); // tbl_notificacao (FK sem cascade)
+            // tbl_notificacao_leitura e tbl_notificacao (FKs sem cascade): primeiro as leituras dos responsáveis
+            NotificacaoLeitura::whereIn('id_notificacao', Notificacao::where('id_atleta', $this->id_atleta)->select('id_notificacao'))->delete();
+            $this->notificacoes()->delete();
             $this->tokens()->delete(); // tokens do Sanctum (personal_access_tokens não tem FK)
             $this->delete();
         });

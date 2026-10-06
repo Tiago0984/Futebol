@@ -106,6 +106,7 @@ class AtletaCadastroAdminTest extends TestCase
         $this->comoAdmin()
             ->post(route('admin.atletas.store'), $this->dadosCadastro([
                 'cpf_atleta' => '333.333.333-33', 'nome_responsavel' => 'Resp Sem Email', 'email_responsavel' => '',
+                'cpf_responsavel' => '444.444.444-44', // outro responsável (o mesmo CPF seria reaproveitado)
             ]))
             ->assertSessionHasNoErrors();
 
@@ -122,9 +123,9 @@ class AtletaCadastroAdminTest extends TestCase
         $this->assertDatabaseMissing('tbl_atletas', ['nome_atleta' => 'Atleta Novo']);
     }
 
-    public function test_responsavel_pode_repetir_email_entre_atletas(): void
+    public function test_irmaos_com_o_mesmo_responsavel_viram_um_cadastro_so(): void
     {
-        // Irmãos com o mesmo responsável (ou responsáveis diferentes com e-mail da família)
+        // Fase 9: o responsável é reaproveitado pelo CPF e o e-mail dele é único (é o login do app)
         $this->comoAdmin()
             ->post(route('admin.atletas.store'), $this->dadosCadastro(['email_responsavel' => 'familia@email.com']))
             ->assertSessionHasNoErrors();
@@ -135,7 +136,15 @@ class AtletaCadastroAdminTest extends TestCase
             ]))
             ->assertSessionHasNoErrors();
 
-        $this->assertSame(2, DB::table('tbl_responsavel')->where('email_responsavel', 'familia@email.com')->count());
+        $this->assertSame(1, DB::table('tbl_responsavel')->where('email_responsavel', 'familia@email.com')->count());
+        $this->assertSame(2, DB::table('tbl_atleta_responsavel')->count());
+
+        // Outro responsável (outro CPF) com o mesmo e-mail: recusado
+        $this->comoAdmin()
+            ->post(route('admin.atletas.store'), $this->dadosCadastro([
+                'cpf_atleta' => '555.555.555-55', 'cpf_responsavel' => '999.999.999-99', 'email_responsavel' => 'FAMILIA@email.com',
+            ]))
+            ->assertSessionHasErrors(['email_responsavel' => 'Este e-mail já está cadastrado para outro responsável.']);
     }
 
     public function test_edicao_grava_altera_e_apaga_o_email_do_responsavel(): void

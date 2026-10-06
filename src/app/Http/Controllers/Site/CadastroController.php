@@ -57,6 +57,10 @@ class CadastroController extends Controller
         // Idade pelo ano (9 a 17 anos no ano), mesma regra do cadastro pelo admin
         $nascimento = Atleta::regrasNascimento();
 
+        // Responsável já cadastrado com o mesmo CPF (só os dígitos): é reaproveitado se o e-mail bater
+        // (irmãos), e o e-mail único não acusa o próprio cadastro dele
+        $responsavelExistente = Responsavel::porCpf($request->cpf_responsavel);
+
         $request->validate([
             // Atleta
             'nome_atleta'            => 'required|string|max:100',
@@ -79,7 +83,8 @@ class CadastroController extends Controller
             'nome_responsavel'       => 'required|string|max:100',
             'cpf_responsavel'        => ['required', 'string', 'max:14', 'regex:' . $cpfRegex],
             'rg_responsavel'         => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
-            'email_responsavel'      => 'required|email|max:150',
+            'email_responsavel'      => ['required', 'email', 'max:150',
+                Rule::unique('tbl_responsavel', 'email_responsavel')->ignore($responsavelExistente?->id_responsavel, 'id_responsavel')],
             'telefone_responsavel'   => ['nullable', 'string', 'max:15', 'regex:' . $foneRegex],
             'whatsapp_responsavel'   => ['required', 'string', 'max:15', 'regex:' . $foneRegex],
             'grau_parentesco'        => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
@@ -95,6 +100,7 @@ class CadastroController extends Controller
             'cpf_atleta.unique'    => 'Este CPF já está cadastrado.',
             'cpf_atleta.regex'     => 'Informe um CPF válido para o atleta.',
             'cpf_responsavel.regex'=> 'Informe um CPF válido para o responsável.',
+            'email_responsavel.unique' => 'Este e-mail já está cadastrado para outro responsável.',
             'rg_atleta.regex'      => 'Informe um RG válido para o atleta.',
             'rg_responsavel.regex' => 'Informe um RG válido para o responsável.',
             'cep_endereco.regex'      => 'Informe um CEP válido.',
@@ -110,6 +116,13 @@ class CadastroController extends Controller
 
         if (!$this->cpfValido($request->cpf_responsavel)) {
             return back()->withErrors(['cpf_responsavel' => 'Informe um CPF válido para o responsável.'])->withInput();
+        }
+
+        // CPF já cadastrado: só reaproveita se o e-mail informado for o do cadastro (o formulário é público:
+        // quem só sabe o CPF não consegue se pendurar no responsável de outra família)
+        if ($responsavelExistente
+            && $responsavelExistente->email_responsavel !== Responsavel::normalizarEmail($request->email_responsavel)) {
+            return back()->withErrors(['cpf_responsavel' => 'CPF já cadastrado com outro e-mail; procure a secretaria.'])->withInput();
         }
 
         // 1. Salva endereço do atleta
@@ -154,28 +167,9 @@ class CadastroController extends Controller
             'id_endereco'            => $enderecoAtleta->id_endereco,
         ]);
 
-        // 5. Salva endereço do responsável
-        $enderecoResp = Endereco::create([
-            'cep_endereco'         => $request->cep_resp_endereco,
-            'rua_endereco'         => $request->rua_resp_endereco,
-            'numero_endereco'      => $request->numero_resp_endereco,
-            'bairro_endereco'      => $request->bairro_resp_endereco,
-            'cidade_endereco'      => $request->cidade_resp_endereco,
-            'estado_endereco'      => $request->estado_resp_endereco,
-            'complemento_endereco' => null,
-        ]);
-
-        // 6. Salva o responsável
-        $responsavel = Responsavel::create([
-            'nome_responsavel'     => $request->nome_responsavel,
-            'cpf_responsavel'      => $request->cpf_responsavel,
-            'rg_responsavel'       => $request->rg_responsavel,
-            'telefone_responsavel' => $request->telefone_responsavel,
-            'whatsapp_responsavel' => $request->whatsapp_responsavel,
-            'email_responsavel'    => $request->email_responsavel,
-            'aceite_responsavel'   => 'N',
-            'id_endereco'          => $enderecoResp->id_endereco,
-        ]);
+        // 5 e 6. Responsável: o já cadastrado (mesmo CPF e e-mail; os dados dele não mudam por este
+        // formulário público), ou um novo, com o próprio endereço
+        $responsavel = $responsavelExistente ?? $this->novoResponsavel($request);
 
         // 7. Vincula atleta e responsável
         $atleta->responsaveis()->attach($responsavel->id_responsavel, [
@@ -216,5 +210,30 @@ class CadastroController extends Controller
         return redirect()->route('cadastro.index')
             ->with('sucesso', $mensagemSucesso)
             ->with('link_assinatura', $emailEnviado ? null : $linkAssinatura);
+    }
+
+    // Responsável novo, com o endereço informado no formulário
+    private function novoResponsavel(Request $request): Responsavel
+    {
+        $enderecoResp = Endereco::create([
+            'cep_endereco'         => $request->cep_resp_endereco,
+            'rua_endereco'         => $request->rua_resp_endereco,
+            'numero_endereco'      => $request->numero_resp_endereco,
+            'bairro_endereco'      => $request->bairro_resp_endereco,
+            'cidade_endereco'      => $request->cidade_resp_endereco,
+            'estado_endereco'      => $request->estado_resp_endereco,
+            'complemento_endereco' => null,
+        ]);
+
+        return Responsavel::create([
+            'nome_responsavel'     => $request->nome_responsavel,
+            'cpf_responsavel'      => $request->cpf_responsavel,
+            'rg_responsavel'       => $request->rg_responsavel,
+            'telefone_responsavel' => $request->telefone_responsavel,
+            'whatsapp_responsavel' => $request->whatsapp_responsavel,
+            'email_responsavel'    => $request->email_responsavel,
+            'aceite_responsavel'   => 'N',
+            'id_endereco'          => $enderecoResp->id_endereco,
+        ]);
     }
 }
