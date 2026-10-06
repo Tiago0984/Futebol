@@ -16,8 +16,10 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Fotos de atleta em dois lugares:** o cadastro do site grava no disco `public` (`storage/app/public/atletas/...`, servido em `/storage`); o do admin grava em `public/futebol/images/our-teams/` (e `default-player.jpg` quando não há foto). Use `Atleta::urlFoto()` nas telas.
 - **Deploy precisa rodar `php artisan storage:link`** (cria `public/storage`, fora do Git). Sem ele, as fotos enviadas pelo site ficam quebradas. Localmente já foi criado (link absoluto `/var/www/html/...`, válido dentro dos containers).
 - **Fuso horário de Brasília:** app em `America/Sao_Paulo` (`APP_TIMEZONE`, padrão em `config/app.php`) e sessão MySQL em `-03:00` (`DB_TIMEZONE`, em `config/database.php`), para `CURRENT_TIMESTAMP`/`NOW()` do banco baterem com o `now()` do Laravel. Datas no JSON da API em ISO 8601 com o deslocamento e sem milissegundos (`2099-05-01T19:00:00-03:00`), pelo trait `App\Models\Concerns\SerializaDatasComFuso`. Colunas DATETIME gravadas antes da troca estão em UTC (3 horas adiantadas; dados de teste).
-- **App do atleta:** fica em outro repositório (a tela Agenda ainda usa dados fixos).
+- **App do atleta:** fica em outro repositório (a tela Agenda ainda usa dados fixos). Terá **dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha (seção 6, Fase 9).
 - **Branch de trabalho:** `feature/agenda-eventos`. **Nunca fazer push sem autorização.**
+- **Dois computadores (casa e Senac):** o código vai pelo **GitHub** e o banco por **dump** (`backup/db_futebol_para_senac.sql` e similares). Os backups de `backup/` ficam **só no computador onde foram feitos** (a pasta é ignorada pelo Git). Num computador novo: criar o `db_futebol_test` (seção 6, "Testes") e rodar o `storage:link`.
+- **Relógio do WSL2:** pode voltar alguns segundos (correção da hora depois de suspender o Windows). Em 05/10 isso inverteu a ordem entre o id e a hora de algumas notificações. **A ordem real é a do id** (`innodb_autoinc_lock_mode = 2`); por isso as listas ordenam pela data e, no empate, pelo id.
 
 ---
 
@@ -48,7 +50,13 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - `id_evento_calendario`: `INT UNSIGNED`.
   - `tbl_grade_treino.id_grade_treino` e `tbl_evento_calendario.id_grade_treino`: `INT UNSIGNED`.
   - `tbl_usuarios.id_usuario`: `BIGINT UNSIGNED`.
+  - `tbl_notificacao.id_notificacao`: `INT UNSIGNED`; nela, `id_atleta` INT com sinal, `id_evento_calendario` INT UNSIGNED (nullable) e `id_usuario` BIGINT UNSIGNED (nullable).
   - Não usar `foreignId()` sem conferir o tipo da coluna referenciada.
+- **ENUMs da Fase 8:**
+  - `tbl_notificacao.tipo_notificacao`: `INSCRICAO, REMOCAO, ALTERACAO, CANCELAMENTO, REATIVACAO, AGENDA` (rótulos em `Notificacao::TIPOS`).
+  - `tbl_evento_atleta.origem_evento_atleta`: `CATEGORIA, INDIVIDUAL, ELENCO` (rótulos em `EventoAtleta::ORIGENS`; `ELENCO` acrescentado no fim, batch 23).
+- **Coluna JSON:** `tbl_notificacao.dados_notificacao` é a primeira do projeto. JSON não tem collation (o MySQL guarda em binário próprio), então não fura a regra do `general_ci`. Na inserção em massa (`insert`), o JSON vai codificado à mão (`json_encode`), porque o cast do model não atua.
+- **Tabela própria em vez da `notifications` do Laravel** (Fase 8): a padrão é polimórfica (`notifiable_id` BIGINT UNSIGNED, sem FK possível para `id_atleta` INT), grava nome de classe PHP e guarda os dados num JSON opaco.
 - Todas as FKs existentes estão em `NO ACTION`; não usar `ON DELETE CASCADE` sem discutir.
 - O banco nasceu de script SQL; as migrations `create_*` e `add_foreign_keys_*` estão com batch [0] (marcadas, nunca executadas).
 
@@ -77,7 +85,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Lista de eventos do admin por mês** (`?mes=AAAA-MM`, padrão o mês atual; setas e select), com filtro **Origem** (Grade/Manual). Depois de criar, editar, cancelar ou ocultar, a lista abre no mês do evento.
 
 ### Inscrição em eventos (Fase 5)
-- **Sem status:** remover a inscrição apaga a linha. Ficam registrados **origem** (`CATEGORIA` = automática pela categoria do evento; `INDIVIDUAL` = escolha do admin), **quem** inscreveu e **quando**. Único (evento, atleta).
+- **Sem status:** remover a inscrição apaga a linha. Ficam registrados **origem** (`CATEGORIA` = automática pela categoria do evento; `ELENCO` = automática pelo elenco dos times do jogo, Fase 8; `INDIVIDUAL` = escolha do admin, nenhuma sincronização mexe nela), **quem** inscreveu e **quando**. Único (evento, atleta).
+- **Jogo (evento com `tbl_jogos`) não segue as regras da categoria desta seção:** quem joga é o **elenco** (seção "Jogos"). Ficam de fora a inscrição pela categoria na criação, a sincronização por troca de categoria, o "Atualizar inscritos pela categoria" e o "Mover inscrições" do atleta (`EventoCalendario::ehJogo()`).
 - **Evento com categoria:** ao ser criado, já inscreve os atletas **ATIVO** com linha **ATIVO** em `tbl_categoria_atleta` nela (origem `CATEGORIA`).
 - **Inscrição individual:** o admin escolhe atletas ativos um a um; botão **"Adicionar todos de uma categoria"** (pode usar várias vezes, para eventos de várias categorias como a avaliação física; já inscritos são ignorados sem erro; origem `INDIVIDUAL`).
 - **Evento futuro que muda de categoria:** sincroniza as inscrições **automáticas** (sai quem não é da nova, entra quem é) e **mantém as individuais**; ficando **sem categoria**, as automáticas saem; evento **concluído** não muda nada. A tela mostra o resumo.
@@ -95,8 +104,16 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Sem `status_jogo` e sem exclusão de jogo:** cancelar e ocultar são ações do evento (como na Fase 4). `status_jogo` e `data_jogo` saíram de `tbl_jogos` na Etapa 2 (batch 20).
 - **Placar nullable:** NULL = ainda não jogado (os dois ou nenhum). A classificação conta só jogos com placar e evento não cancelado nem oculto.
 - **Título do evento** gerado como "Casa x Visitante", na criação e quando os times mudam.
-- **Categoria do evento:** a do campeonato; no **amistoso** (sem campeonato, opção explícita "Amistoso" no formulário), o admin escolhe (sugestão: categoria do time mandante) ou deixa sem. Com categoria, os atletas ativos dela são inscritos (regra da Fase 5); a escalação marca quem joga em cada time.
-- **Escalação** (Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Escalar quem não está inscrito **inscreve** (INDIVIDUAL, com alerta de conflito). Na tela do evento do jogo: coluna "Time" e **"Preencher pelo elenco"** (`tbl_atleta_time`; quem já tem time não muda; quem está nos dois elencos entra **sem time** para o admin escolher). Trocar os times do jogo tira da escalação quem estava no time que saiu (continua inscrito). Atleta de outra categoria/sexo: **aviso**, sem bloquear (seção 8, pergunta 14).
+- **Categoria do evento:** a do campeonato; no **amistoso** (sem campeonato, opção explícita "Amistoso" no formulário), o admin escolhe (sugestão: categoria do time mandante) ou deixa sem. **Desde a Fase 8, a categoria do jogo é só exibição** (site, lista, aviso de fora da categoria): mudá-la não mexe nas inscrições.
+- **Jogo inscreve o elenco, não a categoria** (Fase 8, `2cd6ee1`). Motivo: a escolinha às vezes forma dois times no mesmo campeonato, e o atleta de um time era inscrito e avisado dos jogos do outro.
+  - **Criar:** inscreve o elenco ativo (`tbl_atleta_time`) dos times **INTERNOS** que jogam, com origem **`ELENCO`** e **já escalado** no time; quem está nos dois elencos entra **sem time** (`Jogo::inscreverElenco()`). Conflito conferido pelo elenco.
+  - **Time interno sem elenco ativo:** o jogo fica sem inscritos daquele lado e a lista de jogos mostra um **aviso amarelo** ("Sem elenco cadastrado: …").
+  - **"Preencher pelo elenco"** (único botão): inscreve quem falta do elenco (origem `ELENCO`) e escala quem está inscrito sem time; ninguém sai. Ao lado, quantos do elenco ainda não estão inscritos. No jogo, o card "Pela categoria" e o "Atualizar inscritos pela categoria" não existem.
+  - **Trocar time** (`Jogo::sincronizarPeloElenco()`): sai quem veio pelo elenco de um time que saiu (a não ser que também seja do elenco de um time que ficou); entra o elenco do time novo; as `INDIVIDUAL` ficam (sem time, se estavam no que saiu). **Inverter o mando não troca ninguém.** Jogo **concluído** não muda as inscrições, só tira da escalação quem estava no time que saiu. Regra de quem sai única (`Jogo::idsQueSaemNaTroca()`), usada também pelo alerta de conflito.
+  - **Atleta que entra no elenco depois:** não é inscrito sozinho (usar "Preencher pelo elenco"). **Atleta que sai do elenco:** a inscrição fica; a tela do jogo marca **"Fora do elenco"** (aviso no cadastro do atleta é débito, seção 7).
+  - **Jogos anteriores à regra:** sem migração de dados (os inscritos pela categoria ficam como estão).
+  - **Provisório** (seção 8, pergunta 17): elenco ativo inteiro (sem convocação por jogo); atleta pode estar em dois times do mesmo campeonato (entra sem time); a notificação do jogo não cita o time.
+- **Escalação** (Fase 6, Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Inscrever pela tela do evento já escalando inscreve como **INDIVIDUAL** (com alerta de conflito). Atleta de outra categoria/sexo: **aviso**, sem bloquear (seção 8, pergunta 14).
 - **API:** continua devolvendo `data_jogo` no JSON (calculado do evento), para não quebrar o app.
 
 ### Status
@@ -114,13 +131,30 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - App mostra os **últimos 3 eventos passados**.
 - Os commits `59c9743` e `86b8e78` (que gravavam `CONFIRMADO/ALTERADO/CANCELADO`) são desfeitos por **migration nova** na Fase 4, sem `git revert` (a branch já está no remoto).
 
-### Site público (provisório até o professor decidir)
-- O calendário do site mostra só os tipos **JOGO, TREINO e CAMPEONATO** (`EventoCalendario::TIPOS_PUBLICOS`), na lista e no próximo evento. EVENTO, REUNIAO, CONFRATERNIZACAO e AVALIACAO ficam só no admin.
-- **Treinos gerados pela grade não aparecem no site** (escopo `foraDaGrade()`, na lista e no Próximo Evento); a grade continua na tabela da página. Treinos criados à mão aparecem.
-- Ligado à pergunta 3 da seção 8.
+### Site público (decisão do dono do projeto, 06/10/2026; seção 8, pergunta 3)
+- **Página Calendário** (lista de eventos e "Próximo Evento") mostra **só eventos do tipo CAMPEONATO e jogos de campeonato** (evento JOGO com `tbl_jogos` e `id_campeonato` preenchido): escopo `EventoCalendario::daAgendaPublica()`.
+- **Ficam de fora:** amistosos, treinos (criados à mão ou gerados pela grade), eventos JOGO antigos sem `tbl_jogos` e todos os outros tipos (EVENTO, REUNIAO, CONFRATERNIZACAO, AVALIACAO).
+- **Continua igual:** cancelado aparece com o selo "Cancelado"; oculto (`INATIVO`) não aparece; o "Próximo Evento" considera só eventos ativos; a **tabela da grade de treinos** continua na página.
+- **Sem nenhum evento público**, a página funciona: sem o bloco "Próximo Evento" e com "Nenhum evento agendado no momento." na lista. O filtro "Treinos Especiais" saiu (ficaram Todos, Jogos e Campeonatos).
+- **Destaque "Próximo jogo" da home segue a mesma regra da agenda:** só jogo de campeonato (amistoso não aparece), ativo, de hoje em diante; sem jogo futuro de campeonato, o último jogo de campeonato visível; sem nenhum, a seção mostra o rótulo padrão "LIGA PREMIERE". A regra fica num lugar só: `Jogo::daAgendaPublica()` delega ao escopo do evento.
+- **O resto da home e a página do campeonato não mudaram:** listam os jogos de cada campeonato (o amistoso não tem campeonato, então já não entrava).
+- Pode mudar se o professor pedir.
 
-### Notificações
-O atleta é notificado em três casos: **inscrição, alteração e cancelamento**.
+### Notificações (Fase 8)
+- **Tabela própria `tbl_notificacao`** (seção 3), gravada **direto, na mesma transação da ação**, sem fila e sem e-mail. Título e mensagem ficam **congelados no envio**; `id_usuario` = admin que fez a ação; lida = `data_leitura_notificacao` preenchida.
+- **Ponto único:** textos e regras ficam no model `Notificacao` (`inscricao`, `remocao`, `alteracao`, `mudancaDeStatus`, `agendaDoMes`, `inscricoesMovidas`); nada de texto nos controllers. Gravação em lote (`gravarParaAtivos`).
+- **Quem recebe:** só atleta **ATIVO**. INSCRICAO, REMOCAO, ALTERACAO, CANCELAMENTO e REATIVACAO exigem evento **ATIVO e não concluído** (`EventoCalendario::avisaAtletas()`; para o status, vale o evento não concluído).
+- **Tipos:**
+  - **INSCRICAO:** dentro do `EventoCalendario::inscrever()`, quando a inscrição é criada (todos os caminhos: evento ou jogo criado, individual, adicionar categoria, atualizar inscritos, preencher pelo elenco, troca de categoria ou de time). Texto: "Nova atividade na sua agenda" / "Treino Sub-15 Masculino · ter, 06/10 · 18:00 às 19:30 · Campo A".
+  - **REMOCAO:** `removerInscricao()` e quem sai na sincronização por categoria ou por elenco.
+  - **ALTERACAO:** a edição mudou **data, horário ou local** (calendário e jogos). Uma por inscrito, listando só os campos alterados ("Mudanças: data 05/05 → 06/05; local Campo A → Campo B"). Título, tipo, descrição, categoria e placar **não avisam**. Uma por edição (não substitui a não lida).
+  - **CANCELAMENTO / REATIVACAO:** no `mudarStatus()`. Sair de ATIVO avisa CANCELAMENTO (cancelar, ou **ocultar** um evento ativo); voltar a ATIVO avisa REATIVACAO (reativar, ou **mostrar** de volta como ativo). Entre cancelado e oculto não avisa.
+  - **AGENDA** (sem evento): **geração do mês** = uma por atleta do lote, com a quantidade de treinos dele, em inserção em massa ("Agenda de dezembro disponível" / "Seus 18 treinos de dezembro de 2026 já estão na agenda."); **"Mover inscrições"** do atleta = um resumo só ("Sua categoria agora é …: você saiu de N atividades da … e entrou em M"), sem INSCRICAO/REMOCAO por evento.
+- **Sem duplicar:** na edição que muda categoria (ou times) e data juntas, quem entra recebe só INSCRICAO (já com os dados novos), quem sai só REMOCAO, quem fica só ALTERACAO (`salvarEdicaoDoEvento` no trait `ConfirmaConflitos`: histórico → jogo/times → categoria → ALTERACAO, numa transação).
+- **Não avisam:** inscrição em evento cancelado, oculto ou concluído; escalação (trocar o time do inscrito); edição sem mudança real.
+- **Mensagens do admin:** toda ação que inscreve, remove ou muda o status informa "N atleta(s) notificado(s)." (inclusive 0, para conferir).
+- **Tela do evento no admin:** seção **"Notificações (N)"** com quando, tipo, atleta, título e mensagem, quem fez a ação e se foi lida, da mais nova para a mais antiga. Só no admin (dados de menores). As AGENDA não têm evento: ficam para a página geral da Fase 10.
+- **Provisórios** (seção 8, pergunta 16): remoção avisa, reativar avisa, ocultar avisa como cancelamento e mostrar como reativação, inscrição em evento cancelado não avisa, escalação não avisa, sem e-mail.
 
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
@@ -142,7 +176,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Conflito real:** alerta amarelo "Conflito de horário" com **"Confirmar mesmo assim"** (nada é salvo sem confirmar).
 - **Só aviso fraco:** **não pede confirmação**; salva direto e mostra um aviso informativo azul "Mesmo dia — confira o horário".
 - **Os dois tipos na mesma ação:** pede confirmação e lista os dois, separados por tipo.
-- **Onde é verificado:** criar evento com categoria, editar data/horário/categoria, inscrição individual, "Adicionar todos de uma categoria", "Atualizar inscritos pela categoria", Reativar/Mostrar (avisa sem bloquear) e "Mover inscrições" do atleta.
+- **Onde é verificado:** criar evento com categoria, editar data/horário/categoria, inscrição individual, "Adicionar todos de uma categoria", "Atualizar inscritos pela categoria", Reativar/Mostrar (avisa sem bloquear) e "Mover inscrições" do atleta. **No jogo** (Fase 8): criar (pelo elenco), trocar time (quem ficará inscrito depois da troca, `Jogo::idsInscritosDepoisDaTroca()`), editar data/horário e "Preencher pelo elenco".
 
 ### Menu do dashboard
 - **Eventos** centraliza tudo: Campeonato → jogos; Amistoso → jogo; Individual → tipo (exame médico, avaliação física).
@@ -161,14 +195,14 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
   - Feriado: gerar normalmente e o admin cancela o evento do dia.
   - Evento gerado e depois cancelado ou oculto **não é recriado** (a chave grade + data continua existindo).
   - Lote **tudo ou nada** (uma transação).
-  - Treinos gerados ficam **fora do site público**, na lista e no Próximo Evento (seção 8, pergunta 3).
+  - Treinos (gerados ou à mão) ficam **fora do site público**, na lista e no Próximo Evento (seção 4, "Site público").
   - Inscrição em massa fora do `inscrever()` só na geração; a Fase 8 manda **uma notificação por atleta**.
   - Conflito verificado também **entre os eventos do próprio lote**.
 - **Conflito:** verificar entre **todos** os eventos (menos cancelados/inativos); usar horário de fim de cada evento (duração padrão por tipo se vazio); sem margem de deslocamento por enquanto; **alerta com confirmação** (não bloqueia); verificar também quando um evento é alterado.
 - **Jogo ↔ evento:** `tbl_jogos.id_evento` (1:1); data, horário e local **só no evento**; `id_campeonato` nullable (amistoso = jogo sem campeonato). ⚠️ `stat-facts.blade.php:8` e a `HomeController` usam `campeonato`/`data_jogo`.
 - **Escalação:** `tbl_evento_atleta.id_time` (nullable) + único (evento, atleta). O atleta não pode estar nos dois times do mesmo jogo.
 - **Menu:** vai até campeonato/jogo; times e escalação ficam **na tela do jogo**. "Em andamento" = status ATIVO **e** hoje dentro do período. Link "Ver todos" para concluídos. Individual → exame por data → jogadores. Ramos extras: Treinos e Outros. Seção **Cadastros** com Categorias, Times e Grade.
-- **Site público:** nunca exibir exames e avaliações (dados de saúde de menores).
+- **Site público:** nunca exibir exames e avaliações (dados de saúde de menores). A agenda do site mostra só campeonatos e jogos de campeonato (seção 4, "Site público").
 
 ---
 
@@ -228,6 +262,14 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `c293a55` feat: gerar agenda do mês pela grade, com prévia (Fase 7, Etapa 2)
 - `c9929c9` feat: alerta de conflito em lote na geração da agenda (Fase 7, Etapa 3)
 - `e0c4c5b` feat: aviso ao mudar ou inativar horário da grade com eventos gerados (Fase 7)
+- `00e211e` docs: Fase 7 concluída
+- `5b373a4` feat: tabela de notificações do atleta (Fase 8, Etapa 1)
+- `8eb7fb1` feat: notificações de inscrição, remoção e agenda (Fase 8, Etapa 2)
+- `fcb73b5` feat: notificações de alteração, cancelamento e reativação (Fase 8, Etapa 3)
+- `2cd6ee1` feat: jogo inscreve o elenco dos times, com origem ELENCO (Fase 8)
+- `bb45924` feat: notificações enviadas na tela do evento (Fase 8)
+- `5a22955` feat: agenda e destaque da home do site só com campeonatos
+- docs: Fase 8 concluída e regra do site público
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -237,7 +279,8 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - Rodam no banco **`db_futebol_test`** (MySQL, `utf8mb4_general_ci`, `GRANT ALL` para o `user` do `.env`), configurado no `phpunit.xml`. Precisam do Docker ligado:
   `docker compose exec php php artisan config:clear && docker compose exec php php artisan test`
 - O `RefreshDatabase` roda `migrate:fresh`. Testes que usam o banco usam o trait **`Tests\RefreshBancoDeTestes`** (no lugar do `RefreshDatabase`), que aborta se a conexão não for `db_futebol_test`.
-- **As migrations montam o banco do zero** (conferido: 42 migrations, 31 tabelas, todas `general_ci`, 21 FKs, igual ao `db_futebol` exceto a tabela `users`). Isso vale para o primeiro deploy.
+- **As migrations montam o banco do zero** (conferido no fim da Fase 8: 58 migrations, 32 tabelas, todas `general_ci`, 33 FKs, o mesmo conjunto de tabelas do `db_futebol`). Isso vale para o primeiro deploy.
+- **Banco de testes num computador novo:** `CREATE DATABASE db_futebol_test CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;` e `GRANT ALL ON db_futebol_test.* TO 'user'@'%';` (pelo `root` do container).
 - `UserFactory` usa as colunas de `tbl_usuarios`, com estados `->admin()`, `->editor()` e `->leitura()` (padrão: `LEITURA`). Testes do admin usam `->admin()`.
 - Trait **`Tests\CriaDadosDeAtleta`**: cria atleta, categoria do atleta e os formulários completos de cadastro/edição do admin.
 - Migrations de dados (limpeza da Sub-12, números de matrícula) são testadas rodando o `up()` sobre dados simulados, porque num banco novo elas não fazem nada.
@@ -305,20 +348,37 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Fuso de Brasília** (`4854967`): seção 1. `FusoHorarioTest` confere o fuso e `now()` = `NOW()` do banco; `ApiDatasTest` confere as datas da API. Datas de verão antigas (antes de 2019) saem com `-02:00`.
 - 279 testes passando; roteiros validados no navegador.
 
-### Próxima: Fase 8 — notificações
-(detalhes no item 8 abaixo; uma notificação por atleta para os treinos gerados, seção 5)
+### Fase 8 concluída — notificações e jogo pelo elenco (regras na seção 4, "Notificações" e "Jogos")
+- **Etapa 1 — tabela** (`5b373a4`): `tbl_notificacao` (seção 3), 3 FKs NO ACTION, índices `(id_atleta, data_notificacao)` para a lista e `(id_atleta, data_leitura_notificacao)` para as não lidas; model `Notificacao` (`TIPOS`, `naoLidas()`, `marcarComoLida()`, `marcarTodasComoLidas()`, `SerializaDatasComFuso`, `data_leitura` fora do `$fillable`); `Atleta::notificacoes()` (nome em português, para não chocar com o `notifications()` do Laravel); `excluirComDependencias()` apaga as notificações. Migration no `db_futebol`: batch 22.
+- **Etapa 2 — inscrição, remoção e agenda** (`8eb7fb1`): disparos no `inscrever()`/`removerInscricao()` (com `$notificar`, falso só no "Mover inscrições"), REMOCAO na sincronização (ids lidos antes do delete em massa), AGENDA na geração do mês e no "Mover inscrições"; contador `EventoCalendario::$atletasNotificados` (só na instância) para as mensagens do admin.
+- **Etapa 3 — alteração, cancelamento e reativação** (`fcb73b5`): `atualizarComHistorico()` devolve o que mudou; `salvarEdicaoDoEvento()` no trait grava edição, sincronização e ALTERACAO numa transação; `mudarStatus()` avisa CANCELAMENTO/REATIVACAO.
+- **Jogo pelo elenco** (`2cd6ee1`): origem `ELENCO` (migration, batch 23); `Jogo::elencoDosTimes()`, `inscreverElenco()`, `sincronizarPeloElenco()`, `idsQueSaemNaTroca()`, `idsInscritosDepoisDaTroca()`, `idsFaltantesDoElenco()`, `timesSemElenco()`; `criarPor(..., inscreverCategoria: false)` nos jogos; jogo fora da sincronização por categoria e do "Mover inscrições" (`futurosAtivosDaCategoria()` sem jogos).
+- **Tela do evento:** seção "Notificações" (`EventoCalendario::notificacoes()`).
+- **Backups** em `backup/` (só no computador do Senac): `db_futebol_antes_fase8_notificacao_20261005_110512.sql`, `..._disparos_20261005_112126.sql`, `..._alteracao_20261005_113657.sql`, `..._elenco_20261006_083114.sql`.
+- **Testes:** `NotificacaoTest` (tabela e model), `NotificacaoDisparoTest` (inscrição, remoção, mover, casos que não avisam, tela do evento), `NotificacaoAlteracaoStatusTest`, `JogoElencoTest`; geração em `GradeGeracaoMesTest`. 357 testes passando no fim da fase.
+- **Depois da fase — agenda do site e destaque da home** (06/10): escopo `EventoCalendario::daAgendaPublica()` no lugar de `TIPOS_PUBLICOS` e `foraDaGrade()` (removidos) e `Jogo::daAgendaPublica()` no "Próximo jogo" da home; testes em `JogoSiteTest` e ajustes em `CalendarioTest`, `EventoStatusTest`, `EventoHistoricoTest` e `GradeGeracaoMesTest`. **360 testes passando.**
+- **Roteiros no navegador validados:** Etapa 1; Etapa 2 (10 passos; dezembro gerado com 8 atletas notificados); Etapa 3 (13 passos); jogo pelo elenco (9 passos).
+- **Dados de teste no `db_futebol`:** outubro a dezembro de 2026 gerados; os jogos dos roteiros (12/12 e 13/12) estão ocultos; o Treino Integrado de 30/10 ficou com a categoria Sub-13 M (teste manual).
 
-### Próximas fases (ordem recomendada)
-8. Notificações: tabela `notifications`, `Notifiable` no Atleta.
-9. API do app: `/v1/agenda`, `/v1/notificacoes`. **Pré-requisito:** acesso do atleta (abaixo).
-10. Menu e telas finais com dados reais.
+### Próxima: Fase 9 — API do app (`/v1/agenda`, `/v1/notificacoes`)
+- **Notificações:** listar pela data e, no empate, pelo id (seção 1, "Relógio do WSL2"); contar as não lidas; marcar uma (conferindo o dono) e todas como lidas. Os índices já existem.
+- **Pré-requisitos (dois perfis de login, seção 8, pergunta 7):**
+  - senha e login do **responsável** (hoje só o atleta tem login, e nenhum consegue entrar: seção 7, "Acesso ao app");
+  - **e-mail do responsável único** (hoje não é);
+  - **escolha do perfil no login** (atleta ou responsável);
+  - **atleta sem e-mail** entra só pelo perfil do responsável;
+  - link "defina sua senha" para o e-mail que cada perfil informou no cadastro.
+- **Provisório, a decidir no levantamento da Fase 9:** o responsável lê as notificações do atleta, com **uma marca de leitura só** (lida por qualquer um dos dois).
+
+### Fases seguintes
+10. Menu e telas finais com dados reais (inclui a página geral de notificações do admin, com as AGENDA).
 
 ---
 
 ## 7. Débitos técnicos conhecidos (planejar, não implementar sem OK)
 
 - **CPF único:** hoje não há índice único em `cpf_atleta`. O índice `cpf_atleta_UNIQUE` **existia** no dump de estrutura gerado pelo dono do projeto por volta de 24/09 (esse dump não ficou salvo em `backup/`); os dumps de `backup/` e a migration de criação não o têm, então ele se perdeu em algum momento. A **edição de atleta no admin** não valida CPF único (`AtletasController.php:149`). Duplicado de teste: atletas 7 e 10 (`000.000.000-00`). Plano: limpar duplicados, normalizar para só dígitos, validar CPF no cadastro (site e admin), recriar o índice.
-- **Acesso do atleta ao app:** o cadastro público grava senha aleatória (`Str::random(20)`), então nenhum atleta consegue logar. `token_cadastro` é gerado e nunca lido. Plano: password broker do Laravel (broker `atletas`, e-mail em `email_atleta`), link "defina sua senha" na aprovação e "esqueci minha senha". Pendente: o link vai para o e-mail do atleta ou do responsável?
+- **Acesso ao app:** o cadastro público grava senha aleatória (`Str::random(20)`), então nenhum atleta consegue logar. `token_cadastro` é gerado e nunca lido. Plano: password broker do Laravel (um para atletas, com `email_atleta`, e um para responsáveis), link "defina sua senha" na aprovação e "esqueci minha senha". O link vai para o e-mail **de cada perfil** (seção 8, pergunta 7). Pré-requisitos na seção 6, Fase 9.
 - **Assinaturas:** gravadas em `public/` (acessíveis por URL), nome previsível, caminho salvo no **responsável** (sobrescreve quando ele tem dois atletas), sem validar se é PNG, e o arquivo não é apagado na exclusão. Plano: coluna `tbl_autorizacoes.arquivo_assinatura`, `Storage::disk('local')` com UUID, rota protegida no admin, comando para migrar os arquivos, apagar após o commit da transação.
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
 - **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
@@ -329,6 +389,13 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
   - (a) Mudança na grade atualizar os eventos futuros gerados (a partir de uma data), **sem sobrescrever o que foi editado à mão**; hoje a tela só avisa.
   - (b) Atleta aprovado no meio do mês **não entra** nos eventos já gerados (hoje: "Atualizar inscritos pela categoria" evento por evento).
   - (c) Quem entra depois nas linhas sem categoria (Integrado, Treino Livre) só é adicionado **categoria por categoria** ("Adicionar todos de uma categoria").
+- **Notificações (Fase 8):**
+  - **Atleta que sai do elenco:** só a marca "Fora do elenco" na tela do jogo. Falta um aviso no cadastro do atleta ("está em N jogos futuros do Time X", com botão, como o "Mover inscrições").
+  - **Aviso de fora da categoria ao criar o jogo:** o elenco pode ser de outra categoria, mas o aviso só aparece na tela do jogo (a lista de jogos não mostra `avisos_categoria`).
+  - **Página geral de notificações no admin** (com as AGENDA, que não têm evento): Fase 10.
+  - **Push e e-mail:** não existem. Quando vierem, precisam de fila e de um worker (`queue:work`) no Plesk; hoje não há worker nem agendador.
+  - **Limpeza das notificações antigas** (comando agendado): definir o prazo.
+  - **Jogos anteriores à regra do elenco** (ex.: jogo de 06/10) ficaram com inscritos pela categoria; o "Mover inscrições" não mexe neles.
 ---
 
 ## 8. Perguntas em aberto para o professor
@@ -339,11 +406,11 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
    - **Idade pelo ANO de nascimento:** idade = ano atual − ano de nascimento (a data exata não importa).
    - **Masculino e feminino com as mesmas 5 faixas:** total de **10 categorias** (cada faixa em `M` e `F`).
    - **Todos os dados do banco local são de teste**; nada precisa ser preservado (inclui a Sub-12, 10–12, e a Sub-15, 13–15, atuais).
-3. Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada? E os **treinos gerados pela grade** (cerca de 50 por mês): aparecem no site? Os cancelados (ex.: feriado) aparecem com o selo? **Provisório:** gerados ficam fora do site (seção 5).
+3. ~~Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada? E os treinos gerados pela grade?~~ ✅ **RESOLVIDA** (dono do projeto, 06/10/2026): a página Calendário mostra **só eventos CAMPEONATO e jogos de campeonato**; amistosos, treinos e os outros tipos ficam de fora; cancelado com o selo, oculto não aparece; a tabela da grade continua (seção 4, "Site público"). **Pode mudar se o professor pedir.**
 4. A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?
 5. Atleta com cartões: pode ser excluído (apagando histórico) ou só inativado?
 6. Responsável e endereço de atleta excluído: apagar quando não houver outro atleta vinculado, ou anonimizar?
-7. Link de definição de senha: e-mail do atleta ou do responsável?
+7. ~~Link de definição de senha: e-mail do atleta ou do responsável?~~ ✅ **RESOLVIDA**: o app tem **dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha; o link vai para o e-mail que **cada um** informou no cadastro. Pré-requisitos na seção 6, Fase 9.
 8. Assinaturas antigas com valor `assinatura.png` (responsáveis 1, 2 e 3): considerar inválidas?
 9. ~~O feminino treina junto com o masculino da mesma faixa?~~ ✅ **RESOLVIDA** (professor): feminino treina **só com feminino**. A grade usa **uma coluna** `id_categoria` (sem tabela de ligação); horários femininos entram como **linhas novas** da grade.
 10. ~~Atleta pode jogar numa categoria acima da idade?~~ ✅ **RESOLVIDA** (professor): **pode, a critério do técnico** (atleta mais robusto). Escolher categoria **acima** da sugerida gera **aviso** (não bloqueia) e exige um **motivo**, gravado em `observacao_categoria_atleta`.
@@ -352,6 +419,17 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 13. **Critério de desempate da classificação** (site: home e página do campeonato), hoje provisório em `Jogo::classificacao()`: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, por fim, nome do time (sem acentos e sem maiúsculas). Confirmar com o professor (confronto direto? cartões?).
 14. **Escalar ou inscrever num jogo atleta de outra categoria ou sexo** (ex.: Sub-15 Feminino num jogo Sub-11 Masculino): hoje só **avisa** (`EventoCalendario::avisosForaDaCategoria`), não bloqueia. Deve ser bloqueado? Há exceção (atleta acima da idade, como na pergunta 10)?
 15. **Quem participa das linhas da grade sem categoria:** o **Integrado** inclui o feminino? O **Treino Livre** vale para todos mesmo em dia de jogo? **Provisório:** todos os atletas ATIVO são inscritos (seção 4, "Grade de treino").
+16. **Notificações** (seção 4, "Notificações"). Hoje, provisório:
+    - **remoção** da inscrição avisa o atleta;
+    - **reativar** um evento cancelado avisa;
+    - **ocultar** um evento ativo e futuro avisa como **cancelamento**, e **mostrar** de volta como ativo avisa como **reativação**;
+    - inscrição em evento **já cancelado** não avisa;
+    - **escalação** (por qual time joga) não avisa;
+    - **sem e-mail**: a notificação fica só no app.
+17. **Jogo pelo elenco** (seção 4, "Jogos"). Hoje, provisório:
+    - o **elenco ativo inteiro** é inscrito (titulares e reservas, sem **convocação** por jogo; `tbl_atleta_time` já tem `status_atleta_time` e `convocacao_atleta_time`);
+    - o atleta pode estar em **dois times da escolinha no mesmo campeonato** (entra sem time e o admin escolhe);
+    - a notificação do jogo **não cita o time** do atleta.
 
 ---
 
