@@ -10,13 +10,18 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Pastas:** repositório em `~/dev/senac/Futebol`; código Laravel em `src/`; `.gitignore` na raiz; backups em `backup/` (ignorado pelo Git).
 - **Serviços Docker:** `php` (futebol_php), `mysql` (futebol_mysql), `nginx` (futebol_nginx).
 - **URLs locais:** site e admin em `http://localhost:8080` (admin em `/admin`); MySQL no host pela porta `3308` (Workbench).
-- **Dois logins:**
+- **Logins:**
   - Admin: guard `admin` (sessão), model `User` → `tbl_usuarios`.
-  - Atleta: Sanctum (token), model `Atleta` → `tbl_atletas`. API em `routes/api.php` (`/api/v1/...`). O login exige `status_atleta = ATIVO`; os campos do login são `email` e `senha`.
+  - App (Fase 9), Sanctum (token de 30 dias), API em `routes/api.php` (`/api/v1/...`), campos `email`, `senha` e `perfil`:
+    - **atleta** (padrão sem `perfil`): model `Atleta` → `tbl_atletas`, senha em `password`; exige `status_atleta = ATIVO`;
+    - **responsavel**: model `Responsavel` → `tbl_responsavel`, senha em `senha_responsavel`; exige algum filho ATIVO.
+  - Documentação da API para o app: página `/api/documentacao` (`resources/views/api/documentacao.blade.php`). **Rota nova da API entra na tabela "Todas as rotas"** (o `DocumentacaoApiTest` falha sem ela).
 - **Fotos de atleta em dois lugares:** o cadastro do site grava no disco `public` (`storage/app/public/atletas/...`, servido em `/storage`); o do admin grava em `public/futebol/images/our-teams/` (e `default-player.jpg` quando não há foto). Use `Atleta::urlFoto()` nas telas.
 - **Deploy precisa rodar `php artisan storage:link`** (cria `public/storage`, fora do Git). Sem ele, as fotos enviadas pelo site ficam quebradas. Localmente já foi criado (link absoluto `/var/www/html/...`, válido dentro dos containers).
 - **Fuso horário de Brasília:** app em `America/Sao_Paulo` (`APP_TIMEZONE`, padrão em `config/app.php`) e sessão MySQL em `-03:00` (`DB_TIMEZONE`, em `config/database.php`), para `CURRENT_TIMESTAMP`/`NOW()` do banco baterem com o `now()` do Laravel. Datas no JSON da API em ISO 8601 com o deslocamento e sem milissegundos (`2099-05-01T19:00:00-03:00`), pelo trait `App\Models\Concerns\SerializaDatasComFuso`. Colunas DATETIME gravadas antes da troca estão em UTC (3 horas adiantadas; dados de teste).
-- **App do atleta:** fica em outro repositório (a tela Agenda ainda usa dados fixos). Terá **dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha (seção 6, Fase 9).
+- **App do atleta:** fica em outro repositório (a tela Agenda ainda usa dados fixos). A API dos **dois perfis de login, atleta e responsável**, está pronta (Fase 9); o app ainda precisa ser adaptado (seção 7).
+- **E-mail:** hoje `MAIL_MAILER=log` (os e-mails vão para `storage/logs/laravel.log`, em quoted-printable). Para tirar o último link de senha do log:
+  `docker compose exec php php -r '$l = quoted_printable_decode(file_get_contents("storage/logs/laravel.log")); preg_match_all("#http://localhost:8080/senha/[^\"<\s]+#", $l, $m); echo end($m[0]), "\n";'`
 - **Branch de trabalho:** `feature/agenda-eventos`. **Nunca fazer push sem autorização.**
 - **Dois computadores (casa e Senac):** o código vai pelo **GitHub** e o banco por **dump** (`backup/db_futebol_para_senac.sql` e similares). Os backups de `backup/` ficam **só no computador onde foram feitos** (a pasta é ignorada pelo Git). Num computador novo: criar o `db_futebol_test` (seção 6, "Testes") e rodar o `storage:link`.
 - **Relógio do WSL2:** pode voltar alguns segundos (correção da hora depois de suspender o Windows). Em 05/10 isso inverteu a ordem entre o id e a hora de algumas notificações. **A ordem real é a do id** (`innodb_autoinc_lock_mode = 2`); por isso as listas ordenam pela data e, no empate, pelo id.
@@ -56,6 +61,12 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - `tbl_notificacao.tipo_notificacao`: `INSCRICAO, REMOCAO, ALTERACAO, CANCELAMENTO, REATIVACAO, AGENDA` (rótulos em `Notificacao::TIPOS`).
   - `tbl_evento_atleta.origem_evento_atleta`: `CATEGORIA, INDIVIDUAL, ELENCO` (rótulos em `EventoAtleta::ORIGENS`; `ELENCO` acrescentado no fim, batch 23).
 - **Coluna JSON:** `tbl_notificacao.dados_notificacao` é a primeira do projeto. JSON não tem collation (o MySQL guarda em binário próprio), então não fura a regra do `general_ci`. Na inserção em massa (`insert`), o JSON vai codificado à mão (`json_encode`), porque o cast do model não atua.
+- **Fase 9 (login do app):**
+  - `tbl_responsavel.senha_responsavel`: VARCHAR(255) nullable (hash; fora do `$fillable` e do JSON). NULL = ainda sem senha.
+  - `tbl_responsavel.email_responsavel`: índice único `email_responsavel_unique`; gravado normalizado (minúsculas, sem espaços; vazio vira NULL, que pode repetir) pelo mutator do model.
+  - `password_reset_tokens_atletas` e `password_reset_tokens_responsaveis` (um broker por perfil, formato do Laravel): `email` VARCHAR(255) PK, `token` VARCHAR(255) (hash), `created_at` TIMESTAMP nullable. Fora do padrão `tbl_*`/`campo_tabela` de propósito (o broker do Laravel lê esses nomes).
+  - `tbl_notificacao_leitura` (leitura dos avisos pelos responsáveis; a do atleta continua em `tbl_notificacao.data_leitura_notificacao`): `id_notificacao_leitura` INT UNSIGNED AI; `id_notificacao` INT UNSIGNED (FK `fk_notificacao_leitura_notificacao`); `id_responsavel` INT com sinal (FK `fk_notificacao_leitura_responsavel`); `data_notificacao_leitura` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; único `notificacao_leitura_unique` (id_notificacao, id_responsavel). FKs NO ACTION.
+  - `personal_access_tokens` (Sanctum) guarda tokens dos dois perfis: `tokenable_type` = `App\Models\Atleta` ou `App\Models\Responsavel`. Não tem FK: quem apaga atleta/responsável apaga os tokens.
 - **Tabela própria em vez da `notifications` do Laravel** (Fase 8): a padrão é polimórfica (`notifiable_id` BIGINT UNSIGNED, sem FK possível para `id_atleta` INT), grava nome de classe PHP e guarda os dados num JSON opaco.
 - Todas as FKs existentes estão em `NO ACTION`; não usar `ON DELETE CASCADE` sem discutir.
 - O banco nasceu de script SQL; as migrations `create_*` e `add_foreign_keys_*` estão com batch [0] (marcadas, nunca executadas).
@@ -155,6 +166,23 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Mensagens do admin:** toda ação que inscreve, remove ou muda o status informa "N atleta(s) notificado(s)." (inclusive 0, para conferir).
 - **Tela do evento no admin:** seção **"Notificações (N)"** com quando, tipo, atleta, título e mensagem, quem fez a ação e se foi lida, da mais nova para a mais antiga. Só no admin (dados de menores). As AGENDA não têm evento: ficam para a página geral da Fase 10.
 - **Provisórios** (seção 8, pergunta 16): remoção avisa, reativar avisa, ocultar avisa como cancelamento e mostrar como reativação, inscrição em evento cancelado não avisa, escalação não avisa, sem e-mail.
+
+### App: perfis, senhas, agenda e avisos (Fase 9)
+- **Dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha. O mesmo e-mail pode ser dos dois (o `perfil` do login escolhe a conta). **Todo atleta de 9 a 17 anos com e-mail pode ter login**; atleta sem e-mail entra só pelo perfil do responsável.
+- **Cada perfil tem a própria área:** o token do atleta só entra nas rotas do atleta e o do responsável só nas `/responsavel...` (middleware `perfil:atleta|responsavel`, 403 no outro).
+- **Atleta:** só ATIVO entra; inativar/rejeitar apaga os tokens (`Atleta::booted`) e a rota confere a cada requisição (`atleta.ativo`).
+- **Responsável vê tudo o que o atleta vê, em modo leitura, e escolhe o filho:** dados, agenda e avisos de cada filho, nas mesmas formas; edita só os próprios e-mail, telefone e WhatsApp (nome, CPF, RG e endereço ficam com a secretaria). **Lista de filhos só ATIVO**; sem nenhum filho ATIVO, não entra (403) e perde os tokens (`responsavel.ativo`). No servidor, sempre: o filho precisa ser dele e estar ATIVO, senão 404 (o mesmo 404 para outra família, inativado ou inexistente); o aviso precisa ser daquele atleta.
+- **Uma classe só para os dois perfis:** `App\Services\AppDoAtleta` (dados, agenda, avisos, leitura) e `Api\V1\AppDoAtletaController`; as rotas de agenda e avisos são declaradas uma vez (`$rotasDaAgendaEDosAvisos` em `routes/api.php`).
+- **Agenda (contrato oficial, `/api/documentacao`):** só eventos com inscrição do atleta, ATIVO ou CANCELADO (oculto fora); `situacao` só `CONFIRMADO`/`CANCELADO` (nunca "Alterado"); `proximos` = não concluídos, 20 por página (`?page=N`, bloco `paginacao`), sem horário no fim do dia; `passados` = os 3 últimos concluídos e não cancelados; no jogo, bloco com campeonato, times, placar e `time_do_atleta` (a escalação). "Concluído" na consulta: `EventoCalendario::concluidos()`/`naoConcluidos()`, a mesma regra de `estaConcluido()`.
+- **Leitura dos avisos por pessoa:** o atleta marca em `tbl_notificacao.data_leitura_notificacao`; cada responsável em `tbl_notificacao_leitura`. Um não mexe na leitura do outro, e a contagem de não lidos é de cada um. A tela do evento no admin mostra "N de M responsáveis leram".
+- **Links de senha de 24 h**, um broker por perfil (`config/auth.php`, `atletas` e `responsaveis`; trait `App\Models\Concerns\AcessaOApp`), página do site `/senha/{perfil}/{token}?email=`:
+  - **convite** "Defina sua senha" na **aprovação da matrícula** (para o atleta, se tiver e-mail, e para o responsável sem senha), pelo **"Reenviar convite"** da tela de Atletas (só atleta ATIVO) e pelo **"Enviar convites pendentes"** (ATIVO e sem senha); falha no envio mostra o link para copiar (só naquele momento: o banco guarda o hash);
+  - **"Esqueci minha senha"** (`POST /v1/auth/esqueci-senha`): resposta sempre igual; envia só para quem pode entrar; no máximo um link por minuto por conta;
+  - definir a senha apaga o token do link e as sessões do app **daquele perfil**; link vencido, já usado ou com e-mail inexistente mostra a mesma página ("use Esqueci minha senha").
+- **Atleta "sem senha"** = `password` NULL (cadastro do admin) **ou** `token_cadastro` preenchido (o site grava senha aleatória e o token); definir a senha pelo link limpa o `token_cadastro` (`Atleta::semSenha()`/`aindaSemSenha()`). Responsável sem senha = `senha_responsavel` NULL.
+- **Token de 30 dias** (`Atleta::VALIDADE_TOKEN_DIAS`, vale para os dois perfis). Limites: login 5/min por IP e 5/min por e-mail **e perfil**; esqueci-senha 5/min por IP e 3 a cada 10 min por e-mail e perfil.
+- **Responsável único pelo CPF e e-mail único:** cadastro do site e do admin reaproveitam o responsável do mesmo CPF (só dígitos, `Responsavel::porCpf`); o site recusa CPF já cadastrado com outro e-mail; e-mail do responsável único entre responsáveis (normalizado). Os repetidos antigos foram fundidos pela migration 000005 (seção 6).
+- **Selo "Sem acesso ao app"** na lista de atletas quando nem o atleta nem algum responsável tem e-mail.
 
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
@@ -269,7 +297,14 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `2cd6ee1` feat: jogo inscreve o elenco dos times, com origem ELENCO (Fase 8)
 - `bb45924` feat: notificações enviadas na tela do evento (Fase 8)
 - `5a22955` feat: agenda e destaque da home do site só com campeonatos
-- docs: Fase 8 concluída e regra do site público
+- `75f8358` docs: Fase 8 concluída e regra do site público
+- `546ac97` feat: segurança do acesso do app (tokens, status e limite de tentativas) (Fase 9, Etapa A)
+- `29052cf` feat: migrations de senha, tokens e leitura, e responsável único (Fase 9)
+- `19c7f1f` feat: limpeza de responsáveis repetidos antes do e-mail único (Fase 9)
+- `fcd8fcf` feat: login do responsável, perfis no app e links de senha (Fase 9)
+- `47939dc` feat: agenda e avisos do app para atleta e responsável (Fase 9)
+- `3645f7a` docs: documentação da API do app (Fase 9)
+- docs: Fase 9 concluída
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -279,7 +314,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - Rodam no banco **`db_futebol_test`** (MySQL, `utf8mb4_general_ci`, `GRANT ALL` para o `user` do `.env`), configurado no `phpunit.xml`. Precisam do Docker ligado:
   `docker compose exec php php artisan config:clear && docker compose exec php php artisan test`
 - O `RefreshDatabase` roda `migrate:fresh`. Testes que usam o banco usam o trait **`Tests\RefreshBancoDeTestes`** (no lugar do `RefreshDatabase`), que aborta se a conexão não for `db_futebol_test`.
-- **As migrations montam o banco do zero** (conferido no fim da Fase 8: 58 migrations, 32 tabelas, todas `general_ci`, 33 FKs, o mesmo conjunto de tabelas do `db_futebol`). Isso vale para o primeiro deploy.
+- **As migrations montam o banco do zero** (conferido no fim da Fase 9: 63 migrations, 35 tabelas, todas `general_ci`, 35 FKs, o mesmo número de tabelas do `db_futebol`). Isso vale para o primeiro deploy.
 - **Banco de testes num computador novo:** `CREATE DATABASE db_futebol_test CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;` e `GRANT ALL ON db_futebol_test.* TO 'user'@'%';` (pelo `root` do container).
 - `UserFactory` usa as colunas de `tbl_usuarios`, com estados `->admin()`, `->editor()` e `->leitura()` (padrão: `LEITURA`). Testes do admin usam `->admin()`.
 - Trait **`Tests\CriaDadosDeAtleta`**: cria atleta, categoria do atleta e os formulários completos de cadastro/edição do admin.
@@ -360,31 +395,40 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Roteiros no navegador validados:** Etapa 1; Etapa 2 (10 passos; dezembro gerado com 8 atletas notificados); Etapa 3 (13 passos); jogo pelo elenco (9 passos).
 - **Dados de teste no `db_futebol`:** outubro a dezembro de 2026 gerados; os jogos dos roteiros (12/12 e 13/12) estão ocultos; o Treino Integrado de 30/10 ficou com a categoria Sub-13 M (teste manual).
 
-### Próxima: Fase 9 — API do app (`/v1/agenda`, `/v1/notificacoes`)
-- **Notificações:** listar pela data e, no empate, pelo id (seção 1, "Relógio do WSL2"); contar as não lidas; marcar uma (conferindo o dono) e todas como lidas. Os índices já existem.
-- **Pré-requisitos (dois perfis de login, seção 8, pergunta 7):**
-  - senha e login do **responsável** (hoje só o atleta tem login, e nenhum consegue entrar: seção 7, "Acesso ao app");
-  - **e-mail do responsável único** (hoje não é);
-  - **escolha do perfil no login** (atleta ou responsável);
-  - **atleta sem e-mail** entra só pelo perfil do responsável;
-  - link "defina sua senha" para o e-mail que cada perfil informou no cadastro.
-- **Provisório, a decidir no levantamento da Fase 9:** o responsável lê as notificações do atleta, com **uma marca de leitura só** (lida por qualquer um dos dois).
+### Fase 9 concluída — API do app com dois perfis (regras na seção 4, "App: perfis, senhas, agenda e avisos"; tabelas na seção 3)
+- **Etapa A — segurança do acesso** (`546ac97`): tokens apagados ao inativar/rejeitar (`Atleta::booted`), middleware `atleta.ativo`, token de 30 dias (`expires_at`), limitador `login-api`. `ApiAcessoTest`.
+- **Migrations e responsável único** (`29052cf`): 000001 `senha_responsavel`, 000002 tabelas de token dos brokers, 000003 `tbl_notificacao_leitura`, 000010 índice único do e-mail (para com a lista se houver repetidos, sem mexer em nada); `Responsavel::porCpf()`, `digitosCpf()`, `normalizarEmail()` e o mutator do e-mail; site e admin reaproveitam o responsável pelo CPF; `NotificacaoLeitura`; `excluirComDependencias()` apaga as leituras. `ResponsavelUnicoTest`.
+- **Limpeza dos repetidos** (`19c7f1f`): migration de dados 000005, aprovada por regra geral (sem ids fixos), na ordem 1 → 3 → 2:
+  1. mesmo CPF (só dígitos): fica o de menor id; vínculos, autorizações e leituras passam para ele sem repetir o par (na autorização, a assinada vale mais); sem e-mail, herda o do outro; o outro é apagado;
+  3. sem atleta e sem autorização: não é apagado, só fica sem e-mail;
+  2. e-mail ainda repetido (normalizado): fica no de menor id.
+  - Resultado no `db_futebol`: 14 → 12 responsáveis (o 6 fundido no 5 e o 13 no 9); o e-mail que estava repetido ficou só no 5; 7, 8, 10, 11 e 12 sem e-mail. Ensaiada no `db_futebol_test` com o backup antes do migrate.
+- **Login, perfis e senhas** (`fcd8fcf`): `Responsavel` autenticável (Sanctum, `senha_responsavel`), trait `AcessaOApp`, `perfil` no login, middlewares `perfil` e `responsavel.ativo`, área `/v1/responsavel`, brokers de 24 h, `DefinirSenhaMail`, página `/senha/...` (`Site\SenhaController`), `POST /v1/auth/esqueci-senha` (limitador `esqueci-senha-api`), convites no admin (`Admin\Concerns\EnviaConvitesDoApp`, partial `admin/atletas/_links_convite`). `AppPerfisTest`, `AppSenhasTest`.
+- **Agenda e avisos** (`47939dc`): `App\Services\AppDoAtleta` e `AppDoAtletaController` para os dois perfis; `/v1/agenda`, `/v1/notificacoes` (+ `nao-lidas`, `{id}/lida`, `lidas`), `/v1/responsavel/atletas` e as mesmas rotas sob `/v1/responsavel/atletas/{idAtleta}`; `EventoCalendario::concluidos()`/`naoConcluidos()`; classe de pivô `CategoriaAtleta` (datas do pivô com fuso em `GET /v1/atleta`); coluna "Responsáveis" (N de M leram) na tela do evento. `AppAgendaEAvisosTest`.
+- **Documentação:** página `/api/documentacao` com todos os endpoints, exemplos, erros, datas, paginação e token. `DocumentacaoApiTest` confere que toda rota de `api/v1` está na tabela.
+- **Migrations no `db_futebol` (computador de casa):** 000001, 000002, 000003, 000005 e 000010 num `migrate` só, **batch 24**. **A limpeza e as migrations do batch 24 rodaram só no computador de casa; o banco do Senac é atualizado restaurando o dump** (não rodar o `migrate` lá sobre o banco antigo).
+- **Backup** em `backup/` (só no computador de casa): `db_futebol_antes_fase9_responsaveis_20261006_170409.sql`.
+- **Testes:** **423 passando** no fim da fase.
+- **Conferências feitas:**
+  - ensaio das 5 migrations no `db_futebol_test` a partir do backup (antes e depois da 000005; a 000010 criou o índice sem parar), `--pretend` e o `migrate` com o resultado igual ao ensaio;
+  - roteiro do responsável único no navegador (6 passos);
+  - login e senhas, no navegador e no terminal: convite, página de senha, login do responsável, separação dos perfis, esqueci-senha e login do atleta sem perfil;
+  - agenda e avisos, no terminal e no admin, com a conta de teste do atleta (id 7) e o responsável de teste (id 5). A senha de teste é definida localmente e não fica registrada no repositório.
 
-### Fases seguintes
-10. Menu e telas finais com dados reais (inclui a página geral de notificações do admin, com as AGENDA).
+### Próxima: Fase 10 — menu e telas finais com dados reais
+- Inclui a **página geral de notificações do admin** (com as AGENDA, que não têm evento).
+- A sidebar de Eventos ainda usa dados fictícios (`eb5e65a`); regras do menu na seção 4, "Menu do dashboard", e na seção 5.
 
 ---
 
 ## 7. Débitos técnicos conhecidos (planejar, não implementar sem OK)
 
 - **CPF único:** hoje não há índice único em `cpf_atleta`. O índice `cpf_atleta_UNIQUE` **existia** no dump de estrutura gerado pelo dono do projeto por volta de 24/09 (esse dump não ficou salvo em `backup/`); os dumps de `backup/` e a migration de criação não o têm, então ele se perdeu em algum momento. A **edição de atleta no admin** não valida CPF único (`AtletasController.php:149`). Duplicado de teste: atletas 7 e 10 (`000.000.000-00`). Plano: limpar duplicados, normalizar para só dígitos, validar CPF no cadastro (site e admin), recriar o índice.
-- **Acesso ao app:** o cadastro público grava senha aleatória (`Str::random(20)`), então nenhum atleta consegue logar. `token_cadastro` é gerado e nunca lido. Plano: password broker do Laravel (um para atletas, com `email_atleta`, e um para responsáveis), link "defina sua senha" na aprovação e "esqueci minha senha". O link vai para o e-mail **de cada perfil** (seção 8, pergunta 7). Pré-requisitos na seção 6, Fase 9.
 - **Assinaturas:** gravadas em `public/` (acessíveis por URL), nome previsível, caminho salvo no **responsável** (sobrescreve quando ele tem dois atletas), sem validar se é PNG, e o arquivo não é apagado na exclusão. Plano: coluna `tbl_autorizacoes.arquivo_assinatura`, `Storage::disk('local')` com UUID, rota protegida no admin, comando para migrar os arquivos, apagar após o commit da transação.
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
 - **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
 - **Camisa repetida na lista de atletas:** um atleta em dois times mostra "Camisa Nº 15" duas vezes, sem dizer de qual time é cada número.
 - **`novalidate` no formulário de cadastro de atleta do admin** (`atletas/modals/create.blade.php`): o `required` do HTML não atua ali; a validação é só do servidor. Os outros formulários do admin não usam `novalidate`.
-- **Datas do pivô `categorias` em `GET /api/v1/atleta`** (`data_inicio/fim/atualizacao_categoria_atleta`) saem como texto `Y-m-d H:i:s`, sem fuso (não têm cast). Ver na Fase 9 (classe de pivô com casts e o trait).
 - **Manutenção da agenda gerada** (tratar depois da Fase 8):
   - (a) Mudança na grade atualizar os eventos futuros gerados (a partir de uma data), **sem sobrescrever o que foi editado à mão**; hoje a tela só avisa.
   - (b) Atleta aprovado no meio do mês **não entra** nos eventos já gerados (hoje: "Atualizar inscritos pela categoria" evento por evento).
@@ -393,9 +437,17 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
   - **Atleta que sai do elenco:** só a marca "Fora do elenco" na tela do jogo. Falta um aviso no cadastro do atleta ("está em N jogos futuros do Time X", com botão, como o "Mover inscrições").
   - **Aviso de fora da categoria ao criar o jogo:** o elenco pode ser de outra categoria, mas o aviso só aparece na tela do jogo (a lista de jogos não mostra `avisos_categoria`).
   - **Página geral de notificações no admin** (com as AGENDA, que não têm evento): Fase 10.
-  - **Push e e-mail:** não existem. Quando vierem, precisam de fila e de um worker (`queue:work`) no Plesk; hoje não há worker nem agendador.
+  - **Push e e-mail das notificações:** não existem (o aviso fica só no app). Quando vierem, precisam de fila e de um worker (`queue:work`) no Plesk; hoje não há worker nem agendador (ver "App e e-mail").
   - **Limpeza das notificações antigas** (comando agendado): definir o prazo.
   - **Jogos anteriores à regra do elenco** (ex.: jogo de 06/10) ficaram com inscritos pela categoria; o "Mover inscrições" não mexe neles.
+- **App e e-mail (Fase 9):**
+  - **SMTP de verdade e worker de fila:** hoje `MAIL_MAILER=log` e o envio é síncrono (convites, links de senha, assinatura). Em produção: configurar o SMTP no Plesk, mandar os e-mails para a fila e manter um worker (`queue:work`) rodando.
+  - **Tempo de resposta do esqueci-senha com e-mail real:** a resposta é sempre igual, mas demora mais quando o e-mail existe (o envio é síncrono), o que deixa adivinhar quem está cadastrado. Resolve junto com a fila (ou com um tempo mínimo de resposta).
+  - **Notificações push:** não existem; o aviso só aparece quando o app consulta `/v1/notificacoes`.
+  - **Limpeza de tokens vencidos (agendador):** tokens do Sanctum vencidos (`sanctum:prune-expired`) e links de senha vencidos (`auth:clear-resets`) ficam no banco; falta o agendador (`schedule:run` no cron do Plesk).
+  - **Endereços que sobraram da fusão de responsáveis:** os endereços dos responsáveis 6 e 13 (ids 7 e 11 em `tbl_endereco`) ficaram sem dono (ligado ao débito "Responsável e endereço").
+  - **App no outro repositório:** adaptar ao contrato de `/api/documentacao`: login com escolha de perfil, escolha do filho (responsável), agenda (hoje com dados fixos) e avisos com a contagem de não lidos, "Esqueci minha senha".
+  - **Mensagens de validação da API em inglês** (422 padrão do Laravel; o app deve mostrar a própria mensagem). Tradução (`lang/pt_BR`) fica para quando o app for usado.
 ---
 
 ## 8. Perguntas em aberto para o professor
@@ -410,7 +462,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 4. A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?
 5. Atleta com cartões: pode ser excluído (apagando histórico) ou só inativado?
 6. Responsável e endereço de atleta excluído: apagar quando não houver outro atleta vinculado, ou anonimizar?
-7. ~~Link de definição de senha: e-mail do atleta ou do responsável?~~ ✅ **RESOLVIDA**: o app tem **dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha; o link vai para o e-mail que **cada um** informou no cadastro. Pré-requisitos na seção 6, Fase 9.
+7. ~~Link de definição de senha: e-mail do atleta ou do responsável?~~ ✅ **RESOLVIDA e implementada na Fase 9**: o app tem **dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha; o link vai para o e-mail que **cada um** informou no cadastro (seção 4, "App: perfis, senhas, agenda e avisos").
 8. Assinaturas antigas com valor `assinatura.png` (responsáveis 1, 2 e 3): considerar inválidas?
 9. ~~O feminino treina junto com o masculino da mesma faixa?~~ ✅ **RESOLVIDA** (professor): feminino treina **só com feminino**. A grade usa **uma coluna** `id_categoria` (sem tabela de ligação); horários femininos entram como **linhas novas** da grade.
 10. ~~Atleta pode jogar numa categoria acima da idade?~~ ✅ **RESOLVIDA** (professor): **pode, a critério do técnico** (atleta mais robusto). Escolher categoria **acima** da sugerida gera **aviso** (não bloqueia) e exige um **motivo**, gravado em `observacao_categoria_atleta`.
@@ -430,6 +482,8 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
     - o **elenco ativo inteiro** é inscrito (titulares e reservas, sem **convocação** por jogo; `tbl_atleta_time` já tem `status_atleta_time` e `convocacao_atleta_time`);
     - o atleta pode estar em **dois times da escolinha no mesmo campeonato** (entra sem time e o admin escolhe);
     - a notificação do jogo **não cita o time** do atleta.
+18. **Consentimento (LGPD) para mostrar ao responsável os dados do menor no app** (dados, agenda, avisos, inclusive exames e avaliações): a autorização assinada na matrícula cobre isso, ou é preciso um termo próprio? E quando o atleta faz 18 anos (ou um responsável deixa de ser responsável), o acesso dele termina? **Hoje:** todo responsável vinculado a um filho ATIVO vê tudo do filho.
+19. **Família sem e-mail** (nem o atleta nem o responsável têm e-mail; selo "Sem acesso ao app"): a secretaria cadastra um e-mail depois, o app fica sem uso para essa família, ou há outro meio (WhatsApp, código impresso)? **Hoje:** fica sem acesso até alguém informar um e-mail no cadastro.
 
 ---
 
@@ -442,9 +496,14 @@ docker compose exec php php artisan migrate --pretend
 docker compose exec php php artisan tinker --execute="echo ...;"
 docker compose exec php php -l app/Models/Atleta.php
 
-# login do atleta pela API (campo da senha é "senha")
+# login pela API (campo da senha é "senha"; sem "perfil", vale atleta)
 curl -X POST http://localhost:8080/api/v1/auth/login -H "Accept: application/json" \
-  -d "email=EMAIL&senha=SENHA"   # ⚠️ troque EMAIL e SENHA
+  -d "email=EMAIL&senha=SENHA&perfil=responsavel"   # ⚠️ troque EMAIL e SENHA; perfil atleta ou responsavel
+
+# agenda com o token devolvido no login
+curl http://localhost:8080/api/v1/agenda -H "Accept: application/json" -H "Authorization: Bearer TOKEN"   # ⚠️ troque TOKEN
 ```
+
+Contrato completo da API: `http://localhost:8080/api/documentacao`.
 
 Testes destrutivos no tinker: envolver em `DB::beginTransaction()` ... `DB::rollBack()`.
