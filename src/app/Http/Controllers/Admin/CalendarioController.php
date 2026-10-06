@@ -155,7 +155,11 @@ class CalendarioController extends Controller
         $faltantesDoElenco = $jogo ? count($jogo->idsFaltantesDoElenco()) : 0;
 
         // Notificações enviadas sobre o evento, da mais nova para a mais antiga (só no admin)
-        $notificacoes = $evento->notificacoes()->with(['atleta', 'usuario'])->get();
+        // Leitura pelos responsáveis (Fase 9): quantos leram, de quantos o atleta tem
+        $notificacoes = $evento->notificacoes()
+            ->with(['atleta' => fn ($q) => $q->withCount('responsaveis'), 'usuario'])
+            ->withCount('leiturasDosResponsaveis')
+            ->get();
 
         return view('admin.calendario.evento', compact(
             'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos',

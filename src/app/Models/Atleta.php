@@ -237,7 +237,9 @@ class Atleta extends Authenticatable
     // Histórico completo de categorias (linhas ativas e encerradas)
     public function categorias()
     {
+        // using(): as datas do pivô com fuso no JSON da API (CategoriaAtleta)
         return $this->belongsToMany(Categoria::class, 'tbl_categoria_atleta', 'id_atleta', 'id_categoria')
+            ->using(CategoriaAtleta::class)
             ->withPivot([
                 'data_inicio_categoria_atleta',
                 'data_fim_categoria_atleta',

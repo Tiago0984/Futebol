@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use App\Models\Atleta;
+use App\Services\AppDoAtleta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
@@ -11,19 +11,12 @@ use Illuminate\Validation\Rule;
 class AtletaController extends Controller
 {
     // GET /api/v1/atleta - dados do atleta autenticado (identificado pelo token)
+    // Os mesmos dados que o responsável vê do filho (App\Services\AppDoAtleta::dados)
     public function show(Request $request)
     {
-        $atleta = $request->user()->load([
-            'endereco',
-            // Só a categoria atual (o histórico tem linhas ENCERRADO); a chave "categorias" do JSON não muda
-            'categorias' => fn ($q) => $q->select('tbl_categoria.id_categoria', 'nome_categoria')
-                ->wherePivot('status_categoria_atleta', Atleta::CATEGORIA_ATIVA),
-            'times:tbl_time.id_time,nome_time,logo_time',
-        ]);
-
         return response()->json([
             'success' => true,
-            'data'    => $atleta,
+            'data'    => (new AppDoAtleta($request->user()))->dados(),
         ]);
     }
 

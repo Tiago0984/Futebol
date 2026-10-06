@@ -729,6 +729,31 @@ class EventoCalendario extends Model
         return $hora !== null && now()->format('H:i:s') >= substr($hora . ':00', 0, 8);
     }
 
+    // A mesma regra de estaConcluido(), na consulta (agenda do app, paginada no banco)
+    public function scopeConcluidos($query)
+    {
+        [$hoje, $agora] = [now()->toDateString(), now()->format('H:i:s')];
+
+        return $query->where(fn ($q) => $q
+            ->whereDate('data_evento_calendario', '<', $hoje)
+            ->orWhere(fn ($dia) => $dia
+                ->whereDate('data_evento_calendario', $hoje)
+                ->whereRaw('COALESCE(horario_fim_evento_calendario, horario_inicio_evento_calendario) <= ?', [$agora])));
+    }
+
+    public function scopeNaoConcluidos($query)
+    {
+        [$hoje, $agora] = [now()->toDateString(), now()->format('H:i:s')];
+
+        return $query->where(fn ($q) => $q
+            ->whereDate('data_evento_calendario', '>', $hoje)
+            ->orWhere(fn ($dia) => $dia
+                ->whereDate('data_evento_calendario', $hoje)
+                ->where(fn ($h) => $h
+                    ->whereRaw('COALESCE(horario_fim_evento_calendario, horario_inicio_evento_calendario) IS NULL')
+                    ->orWhereRaw('COALESCE(horario_fim_evento_calendario, horario_inicio_evento_calendario) > ?', [$agora]))));
+    }
+
     // Teve data, horário ou local alterado (usa o withExists de comAlteracao() quando carregado)
     public function foiAlterado(): bool
     {

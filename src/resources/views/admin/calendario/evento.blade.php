@@ -287,6 +287,7 @@
                                 <th>Mensagem</th>
                                 <th>Por</th>
                                 <th>Lida</th>
+                                <th>Responsáveis</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -303,10 +304,18 @@
                                 <td class="small text-nowrap">
                                     {{ $notificacao->estaLida() ? $notificacao->data_leitura_notificacao->format('d/m/Y H:i') : 'Não lida' }}
                                 </td>
+                                {{-- Cada responsável tem a própria leitura no app (tbl_notificacao_leitura) --}}
+                                <td class="small text-nowrap">
+                                    @if($notificacao->atleta?->responsaveis_count)
+                                        {{ $notificacao->leituras_dos_responsaveis_count }} de {{ $notificacao->atleta->responsaveis_count }} leram
+                                    @else
+                                        <span class="text-muted">—</span>
+                                    @endif
+                                </td>
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-4">Nenhuma notificação enviada sobre este evento.</td>
+                                <td colspan="7" class="text-center text-muted py-4">Nenhuma notificação enviada sobre este evento.</td>
                             </tr>
                             @endforelse
                         </tbody>

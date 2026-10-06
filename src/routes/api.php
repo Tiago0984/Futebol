@@ -10,8 +10,19 @@ use App\Http\Controllers\Api\V1\CampeonatoController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AtletaController;
 use App\Http\Controllers\Api\V1\ResponsavelController;
+use App\Http\Controllers\Api\V1\AppDoAtletaController;
 
-Route::prefix('v1')->group(function () {
+// Agenda e avisos (Fase 9): as mesmas rotas para o atleta ("") e para o responsável ("/{idAtleta}", sob
+// /responsavel/atletas). As regras ficam em App\Services\AppDoAtleta
+$rotasDaAgendaEDosAvisos = function (string $prefixo) {
+    Route::get("{$prefixo}/agenda", [AppDoAtletaController::class, 'agenda']);
+    Route::get("{$prefixo}/notificacoes", [AppDoAtletaController::class, 'notificacoes']);
+    Route::get("{$prefixo}/notificacoes/nao-lidas", [AppDoAtletaController::class, 'naoLidas']);
+    Route::patch("{$prefixo}/notificacoes/lidas", [AppDoAtletaController::class, 'marcarTodasLidas']);
+    Route::patch("{$prefixo}/notificacoes/{idNotificacao}/lida", [AppDoAtletaController::class, 'marcarLida'])->whereNumber('idNotificacao');
+};
+
+Route::prefix('v1')->group(function () use ($rotasDaAgendaEDosAvisos) {
 
     // Status da API
     Route::get('/status', [StatusController::class, 'index']);
@@ -42,15 +53,23 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 
     // ROTAS DO RESPONSÁVEL (token do perfil responsável e algum filho ATIVO)
-    Route::middleware(['auth:sanctum', 'perfil:responsavel', 'responsavel.ativo'])->group(function () {
+    Route::middleware(['auth:sanctum', 'perfil:responsavel', 'responsavel.ativo'])->group(function () use ($rotasDaAgendaEDosAvisos) {
         Route::get('/responsavel', [ResponsavelController::class, 'show']);
         Route::put('/responsavel', [ResponsavelController::class, 'update']);
         Route::patch('/responsavel', [ResponsavelController::class, 'update']);
         Route::put('/responsavel/senha', [ResponsavelController::class, 'updateSenha']);
+
+        // Os filhos, em modo leitura: o mesmo que o atleta vê (AppDoAtletaController confere que o atleta
+        // é filho do responsável e está ATIVO; senão, 404)
+        Route::prefix('/responsavel/atletas')->group(function () use ($rotasDaAgendaEDosAvisos) {
+            Route::get('/', [AppDoAtletaController::class, 'filhos']);
+            Route::get('/{idAtleta}', [AppDoAtletaController::class, 'dados'])->whereNumber('idAtleta');
+            $rotasDaAgendaEDosAvisos('/{idAtleta}');
+        });
     });
 
     // ROTAS DO ATLETA (token do perfil atleta e atleta ATIVO)
-    Route::middleware(['auth:sanctum', 'perfil:atleta', 'atleta.ativo'])->group(function () {
+    Route::middleware(['auth:sanctum', 'perfil:atleta', 'atleta.ativo'])->group(function () use ($rotasDaAgendaEDosAvisos) {
 
         // Atleta logado
         Route::get('/atleta', [AtletaController::class, 'show']);
@@ -63,6 +82,9 @@ Route::prefix('v1')->group(function () {
 
         // Atualizar senha
         Route::put('/atleta/senha', [AtletaController::class, 'updateSenha']);
+
+        // Agenda e avisos do próprio atleta
+        $rotasDaAgendaEDosAvisos('');
     });
 
 });
