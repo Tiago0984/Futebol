@@ -188,7 +188,7 @@ class EventoConflitoTest extends TestCase
 
         $this->comoAdmin()
             ->patch(route('admin.calendario.eventos.cancelar', $cancelado->id_evento_calendario))
-            ->assertSessionHas('sucesso', 'Evento reativado.')
+            ->assertSessionHas('sucesso', 'Evento reativado. 1 atleta(s) notificado(s).')
             ->assertSessionHas('avisos_mesmo_dia');
     }
 
@@ -262,7 +262,7 @@ class EventoConflitoTest extends TestCase
 
         $this->comoAdmin()
             ->patch(route('admin.calendario.eventos.cancelar', $cancelado->id_evento_calendario))
-            ->assertSessionHas('sucesso', fn ($msg) => str_starts_with($msg, 'Evento reativado. Atenção, conflito de horário:')
+            ->assertSessionHas('sucesso', fn ($msg) => str_starts_with($msg, 'Evento reativado. 1 atleta(s) notificado(s). Atenção, conflito de horário:')
                 && str_contains($msg, 'Jogo Ativo'));
 
         $this->assertSame('ATIVO', $cancelado->fresh()->status_evento_calendario);

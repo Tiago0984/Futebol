@@ -85,19 +85,14 @@ class JogosController extends Controller
             return $confirmar;
         }
 
-        $categoriaAntes = $evento->id_categoria;
-
-        DB::transaction(function () use ($jogo, $evento, $dadosJogo, $dadosEvento) {
-            // O que mudar em título, categoria, data, horário ou local vai para o histórico do evento
-            $evento->atualizarComHistorico($dadosEvento, auth('admin')->id());
-            $jogo->update($dadosJogo);
-        });
+        // Evento e jogo juntos: o que mudar em título, categoria, data, horário ou local vai para o histórico
+        // do evento; mudou de categoria, as inscrições acompanham; os atletas são avisados
+        $mensagem = 'Jogo atualizado.' . $this->salvarEdicaoDoEvento($evento, $dadosEvento, fn () => $jogo->update($dadosJogo));
 
         // Times trocados: quem estava escalado num time que saiu do jogo fica sem time (continua inscrito)
         $foraDaEscalacao = $jogo->fresh(['timeCasa', 'timeVisitante'])->limparEscalacaoForaDosTimes();
 
-        $mensagem = 'Jogo atualizado.' . $this->sincronizarSeMudouCategoria($evento, $categoriaAntes)
-            . ($foraDaEscalacao ? " {$foraDaEscalacao} atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos." : '');
+        $mensagem .= $foraDaEscalacao ? " {$foraDaEscalacao} atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos." : '';
 
         return redirect()->route('admin.jogos.index')->with('sucesso', $mensagem);
     }

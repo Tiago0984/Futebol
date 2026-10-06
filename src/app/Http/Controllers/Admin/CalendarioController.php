@@ -362,9 +362,7 @@ class CalendarioController extends Controller
     public function updateEvento(Request $request, $id)
     {
         $evento = EventoCalendario::findOrFail($id);
-
-        $categoriaAntes = $evento->id_categoria;
-        $dados          = $this->dadosEvento($request, $evento);
+        $dados  = $this->dadosEvento($request, $evento);
 
         // Mudou data, horário ou categoria: confere conflito dos atletas que ficarão inscritos
         if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaEdicao($evento, $dados))) {
@@ -372,12 +370,9 @@ class CalendarioController extends Controller
         }
 
         // Nem o status (só pelas ações de cancelar e ocultar) nem o responsável mudam pela edição.
-        // O que mudar em data, horário, local, título, tipo ou categoria vai para o histórico.
-        $evento->atualizarComHistorico($dados, auth('admin')->id());
-
-        // Mudou de categoria (ou ficou sem): as inscrições automáticas acompanham; as individuais ficam.
-        // Evento concluído não muda nada.
-        $mensagem = 'Evento atualizado.' . $this->sincronizarSeMudouCategoria($evento, $categoriaAntes);
+        // O que mudar em data, horário, local, título, tipo ou categoria vai para o histórico; mudou de
+        // categoria, as inscrições automáticas acompanham (concluído não muda); os atletas são avisados.
+        $mensagem = 'Evento atualizado.' . $this->salvarEdicaoDoEvento($evento, $dados);
 
         // No mês da data nova (se a data mudou, o evento saiu do mês que estava aberto)
         return $this->listaNoMesDo($evento)->with('sucesso', $mensagem);
@@ -423,10 +418,12 @@ class CalendarioController extends Controller
             return back()->with('erro', 'Este evento está oculto. Mostre o evento antes de cancelar ou reativar.');
         }
 
+        // Avisa os inscritos: CANCELAMENTO ou REATIVACAO (concluído não avisa)
         $novo = $evento->estaCancelado() ? 'ATIVO' : 'CANCELADO';
         $evento->mudarStatus($novo, auth('admin')->id());
 
         return $this->voltarDoEvento($evento)->with('sucesso', ($novo === 'CANCELADO' ? 'Evento cancelado.' : 'Evento reativado.')
+            . Notificacao::textoNotificados($evento->atletasNotificados)
             . $this->avisoDeConflitoAoReativar($evento));
     }
 
@@ -455,6 +452,8 @@ class CalendarioController extends Controller
     {
         $evento = EventoCalendario::findOrFail($id);
 
+        // Ocultar evento ativo avisa como CANCELAMENTO; mostrar de volta como ativo, como REATIVACAO.
+        // Entre cancelado e oculto não avisa.
         $novo = $evento->estaOculto() ? $evento->statusAntesDeOcultar() : 'INATIVO';
         $evento->mudarStatus($novo, auth('admin')->id());
 
@@ -464,7 +463,9 @@ class CalendarioController extends Controller
             default     => 'Evento visível de novo.',
         };
 
-        return $this->voltarDoEvento($evento)->with('sucesso', $mensagem . $this->avisoDeConflitoAoReativar($evento));
+        return $this->voltarDoEvento($evento)->with('sucesso', $mensagem
+            . Notificacao::textoNotificados($evento->atletasNotificados)
+            . $this->avisoDeConflitoAoReativar($evento));
     }
 
     // ── Geração da agenda pela grade (Fase 7) ───────────────────────────────

@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Alerta de conflito de horário, usado pelo Calendário e pela tela de Jogos.
@@ -86,19 +87,40 @@ trait ConfirmaConflitos
     }
 
     /**
-     * Depois de editar: se a categoria mudou (e o evento não está concluído), as inscrições automáticas
-     * acompanham e as individuais ficam. Devolve o trecho da mensagem, ou '' se nada mudou.
+     * Grava a edição do evento (com histórico) e o que vem junto ($tambem: os dados do jogo), numa transação:
+     *  - categoria mudou (e o evento não está concluído): as inscrições automáticas acompanham e as
+     *    individuais ficam; quem entra recebe só a INSCRICAO (já com os dados novos), quem sai só a REMOCAO;
+     *  - data, horário ou local mudaram: quem ficou inscrito recebe a ALTERACAO (depois da sincronização,
+     *    para ninguém receber duas).
+     * Devolve o trecho da mensagem de sucesso ('' se nada disso mudou).
      */
-    private function sincronizarSeMudouCategoria(EventoCalendario $evento, $categoriaAntes): string
+    private function salvarEdicaoDoEvento(EventoCalendario $evento, array $dados, ?callable $tambem = null): string
     {
-        if ((int) $categoriaAntes === (int) $evento->id_categoria || $evento->estaConcluido()) {
-            return '';
-        }
+        $idUsuario = auth('admin')->id();
 
-        ['entraram' => $entraram, 'sairam' => $sairam] = $evento->sincronizarInscricoesPelaCategoria(auth('admin')->id());
+        return DB::transaction(function () use ($evento, $dados, $tambem, $idUsuario) {
+            $categoriaAntes = $evento->id_categoria;
+            $mudancas = $evento->atualizarComHistorico($dados, $idUsuario);
 
-        return " Inscrições pela categoria: {$entraram} atleta(s) inscrito(s), {$sairam} removido(s)."
-            . ' As inscrições individuais foram mantidas.'
-            . ($entraram + $sairam > 0 ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
+            if ($tambem) {
+                $tambem();
+            }
+
+            $mensagem = '';
+            $mexeuNasInscricoes = false;
+            $entraram = [];
+            if ((int) $categoriaAntes !== (int) $evento->id_categoria && ! $evento->estaConcluido()) {
+                $sincronizacao = $evento->sincronizarInscricoesPelaCategoria($idUsuario);
+                $entraram = $sincronizacao['ids_entraram'];
+                $mexeuNasInscricoes = $sincronizacao['entraram'] + $sincronizacao['sairam'] > 0;
+                $mensagem = " Inscrições pela categoria: {$sincronizacao['entraram']} atleta(s) inscrito(s), {$sincronizacao['sairam']} removido(s)."
+                    . ' As inscrições individuais foram mantidas.';
+            }
+
+            $evento->atletasNotificados += Notificacao::alteracao($evento, $mudancas, $idUsuario, $entraram);
+            $mudouDataHorarioOuLocal = array_intersect_key($mudancas, array_flip(EventoCalendario::CAMPOS_ALTERADO)) !== [];
+
+            return $mensagem . ($mexeuNasInscricoes || $mudouDataHorarioOuLocal ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
+        });
     }
 }

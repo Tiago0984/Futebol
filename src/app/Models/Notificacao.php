@@ -129,6 +129,60 @@ class Notificacao extends Model
     }
 
     /**
+     * Edição que mudou data, horário ou local (EventoCalendario::CAMPOS_ALTERADO): uma ALTERACAO por inscrito,
+     * listando só os campos que mudaram. $mudancas: o que atualizarComHistorico() devolve. $exceto: quem
+     * acabou de entrar pela categoria nova (já recebeu a INSCRICAO com os dados novos). Mudar só título, tipo
+     * ou descrição não avisa; o evento, depois da edição, precisa estar ATIVO e não concluído.
+     */
+    public static function alteracao(EventoCalendario $evento, array $mudancas, ?int $idUsuario, array $exceto = []): int
+    {
+        $mudancas = array_intersect_key($mudancas, array_flip(EventoCalendario::CAMPOS_ALTERADO));
+
+        if (! $mudancas || ! $evento->avisaAtletas()) {
+            return 0;
+        }
+
+        // "data 06/10 → 07/10; local Campo 1 → Campo 2"
+        $oQueMudou = collect($mudancas)
+            ->map(fn (array $valores, string $campo) => mb_strtolower(EventoCalendario::CAMPOS_HISTORICO[$campo]) . ' '
+                . self::valorAlterado($campo, $valores[0]) . ' → ' . self::valorAlterado($campo, $valores[1]))
+            ->implode('; ');
+
+        return self::gravarParaAtivos(array_diff(self::idsInscritos($evento), $exceto), $idUsuario, fn () => self::linha(
+            'ALTERACAO', $evento, 'Atividade alterada',
+            self::descreverEvento($evento) . ". Mudanças: {$oQueMudou}.",
+            ['campos' => $mudancas],
+        ));
+    }
+
+    /**
+     * Mudança de status (EventoCalendario::mudarStatus): sair de ATIVO avisa CANCELAMENTO (cancelar, ou ocultar
+     * um evento ativo); voltar a ATIVO avisa REATIVACAO (reativar, ou mostrar de volta como ativo). Entre
+     * cancelado e oculto não avisa. Evento concluído não avisa.
+     */
+    public static function mudancaDeStatus(EventoCalendario $evento, string $statusAntes, ?int $idUsuario): int
+    {
+        $statusAgora = $evento->status_evento_calendario;
+        $tipo = match (true) {
+            $statusAntes === 'ATIVO' && $statusAgora !== 'ATIVO' => 'CANCELAMENTO',
+            $statusAntes !== 'ATIVO' && $statusAgora === 'ATIVO' => 'REATIVACAO',
+            default                                              => null,
+        };
+
+        if ($tipo === null || $evento->estaConcluido()) {
+            return 0;
+        }
+
+        [$titulo, $mensagem] = $tipo === 'CANCELAMENTO'
+            ? ['Atividade cancelada', 'Esta atividade foi cancelada: ']
+            : ['Atividade confirmada de novo', 'Esta atividade voltou para a sua agenda: '];
+
+        return self::gravarParaAtivos(self::idsInscritos($evento), $idUsuario, fn () => self::linha(
+            $tipo, $evento, $titulo, $mensagem . self::descreverEvento($evento),
+        ));
+    }
+
+    /**
      * Geração do mês pela grade: uma AGENDA por atleta, com quantos treinos ele ganhou, no lugar de uma
      * INSCRICAO por evento. $treinosPorAtleta: [id_atleta => quantidade].
      */
@@ -185,6 +239,22 @@ class Notificacao extends Model
     public static function textoNotificados(int $quantos): string
     {
         return " {$quantos} atleta(s) notificado(s).";
+    }
+
+    // Valor do histórico como o atleta lê: data "07/10", horário "18:00", vazio "a definir"
+    private static function valorAlterado(string $campo, ?string $valor): string
+    {
+        return match (true) {
+            $valor === null                     => 'a definir',
+            $campo === 'data_evento_calendario' => Carbon::parse($valor)->format('d/m'),
+            default                             => $valor,
+        };
+    }
+
+    // Todos os inscritos do evento (gravarParaAtivos deixa só os ATIVO)
+    private static function idsInscritos(EventoCalendario $evento): array
+    {
+        return $evento->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
     }
 
     // Colunas de uma notificação (as mesmas em todas as linhas, para a inserção em massa)

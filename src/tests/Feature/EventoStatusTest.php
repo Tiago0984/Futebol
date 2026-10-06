@@ -34,10 +34,10 @@ class EventoStatusTest extends TestCase
     {
         $id = $this->criarEvento('ATIVO');
 
-        $this->comoAdmin()->patch(route('admin.calendario.eventos.cancelar', $id))->assertSessionHas('sucesso', 'Evento cancelado.');
+        $this->comoAdmin()->patch(route('admin.calendario.eventos.cancelar', $id))->assertSessionHas('sucesso', 'Evento cancelado. 0 atleta(s) notificado(s).');
         $this->assertSame('CANCELADO', $this->statusDe($id));
 
-        $this->comoAdmin()->patch(route('admin.calendario.eventos.cancelar', $id))->assertSessionHas('sucesso', 'Evento reativado.');
+        $this->comoAdmin()->patch(route('admin.calendario.eventos.cancelar', $id))->assertSessionHas('sucesso', 'Evento reativado. 0 atleta(s) notificado(s).');
         $this->assertSame('ATIVO', $this->statusDe($id));
     }
 
@@ -53,12 +53,12 @@ class EventoStatusTest extends TestCase
     {
         $id = $this->criarEvento('CANCELADO');
 
-        $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))->assertSessionHas('sucesso', 'Evento ocultado.');
+        $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))->assertSessionHas('sucesso', 'Evento ocultado. 0 atleta(s) notificado(s).');
         $this->assertSame('INATIVO', $this->statusDe($id));
 
         // Mostrar devolve o status de antes de ocultar (pelo histórico): cancelado volta cancelado
         $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))
-            ->assertSessionHas('sucesso', 'Evento visível de novo (continua cancelado).');
+            ->assertSessionHas('sucesso', 'Evento visível de novo (continua cancelado). 0 atleta(s) notificado(s).');
         $this->assertSame('CANCELADO', $this->statusDe($id));
     }
 
@@ -67,7 +67,7 @@ class EventoStatusTest extends TestCase
         $id = $this->criarEvento('ATIVO');
 
         $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id));
-        $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))->assertSessionHas('sucesso', 'Evento visível de novo.');
+        $this->comoAdmin()->patch(route('admin.calendario.eventos.ocultar', $id))->assertSessionHas('sucesso', 'Evento visível de novo. 0 atleta(s) notificado(s).');
 
         $this->assertSame('ATIVO', $this->statusDe($id));
     }

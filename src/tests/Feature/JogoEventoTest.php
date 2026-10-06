@@ -146,7 +146,7 @@ class JogoEventoTest extends TestCase
             'local_evento_calendario'          => 'Campo C',
             'placar_time_casa_jogos'           => 3,
             'placar_time_visitante_jogos'      => 1,
-        ]))->assertSessionHas('sucesso', 'Jogo atualizado.');
+        ]))->assertSessionHas('sucesso', 'Jogo atualizado. 0 atleta(s) notificado(s).');
 
         $jogo->refresh();
         $evento = $jogo->evento;
@@ -158,6 +158,30 @@ class JogoEventoTest extends TestCase
         $campos = $evento->historico()->pluck('campo_evento_historico')->all();
         $this->assertEqualsCanonicalizing(['titulo_evento_calendario', 'horario_inicio_evento_calendario', 'local_evento_calendario'], $campos);
         $this->assertSame('ALTERADO', $evento->situacao);
+    }
+
+    public function test_editar_horario_e_local_do_jogo_avisa_os_inscritos(): void
+    {
+        $idAtleta = $this->atletaSub11();
+        $jogo = $this->criarJogo();
+        \App\Models\Notificacao::query()->delete(); // só interessa o que a edição gera
+
+        $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([
+            'horario_inicio_evento_calendario' => '20:00', 'local_evento_calendario' => 'Campo C',
+            'placar_time_casa_jogos' => 3, 'placar_time_visitante_jogos' => 1, // placar não é data, horário nem local
+        ]))->assertSessionHas('sucesso', 'Jogo atualizado. 1 atleta(s) notificado(s).');
+
+        $alteracao = \App\Models\Notificacao::sole();
+        $this->assertSame($idAtleta, $alteracao->id_atleta);
+        $this->assertSame('ALTERACAO', $alteracao->tipo_notificacao);
+        $this->assertStringEndsWith('· 20:00 · Campo C. Mudanças: horário de início 19:00 → 20:00; local Quadra A → Campo C.', $alteracao->mensagem_notificacao);
+
+        // Só o placar: não avisa
+        $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([
+            'horario_inicio_evento_calendario' => '20:00', 'local_evento_calendario' => 'Campo C',
+            'placar_time_casa_jogos' => 4, 'placar_time_visitante_jogos' => 1,
+        ]))->assertSessionHas('sucesso', 'Jogo atualizado.');
+        $this->assertSame(1, \App\Models\Notificacao::count());
     }
 
     public function test_virar_amistoso_sem_categoria_tira_as_inscricoes_automaticas(): void
@@ -191,7 +215,7 @@ class JogoEventoTest extends TestCase
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_campeonato' => 'AMISTOSO', 'id_time_casa' => $this->verde]));
 
         $this->comoAdmin()->patch(route('admin.calendario.eventos.cancelar', $jogo->id_evento))
-            ->assertSessionHas('sucesso', 'Evento cancelado.');
+            ->assertSessionHas('sucesso', 'Evento cancelado. 0 atleta(s) notificado(s).');
 
         $this->comoAdmin()->get(route('admin.jogos.index'))
             ->assertOk()

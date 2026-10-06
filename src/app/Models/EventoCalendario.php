@@ -228,7 +228,8 @@ class EventoCalendario extends Model
      * Evento que mudou de categoria (ou ficou sem): as inscrições AUTOMÁTICAS acompanham a categoria
      * nova (sai quem não é dela, entra quem é); as individuais ficam. Quem chama decide se o evento
      * ainda pode mudar (concluído não muda). Quem entra recebe INSCRICAO (pelo inscrever()) e quem sai,
-     * REMOCAO. Devolve ['entraram' => n, 'sairam' => n].
+     * REMOCAO. Devolve ['entraram' => n, 'sairam' => n, 'ids_entraram' => [...]] (quem entrou não recebe
+     * também a ALTERACAO da mesma edição).
      */
     public function sincronizarInscricoesPelaCategoria(?int $idUsuario): array
     {
@@ -246,11 +247,17 @@ class EventoCalendario extends Model
             $sairam = $saindo ? $this->inscricoes()->whereIn('id_atleta', $saindo)->delete() : 0;
             $this->atletasNotificados += Notificacao::remocao($this, $saindo, $idUsuario);
 
-            $entraram = $this->id_categoria
+            $inscritos = fn () => $this->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+            $antes     = $inscritos();
+            $entraram  = $this->id_categoria
                 ? $this->inscreverCategoria($this->id_categoria, 'CATEGORIA', $idUsuario)
                 : 0;
 
-            return ['entraram' => $entraram, 'sairam' => $sairam];
+            return [
+                'entraram'     => $entraram,
+                'sairam'       => $sairam,
+                'ids_entraram' => $entraram ? array_values(array_diff($inscritos(), $antes)) : [],
+            ];
         });
     }
 
@@ -581,11 +588,13 @@ class EventoCalendario extends Model
 
     /**
      * Atualiza o evento e grava no histórico uma linha por campo de CAMPOS_HISTORICO que mudou
-     * (valor antigo, valor novo, quem e quando), tudo na mesma transação.
+     * (valor antigo, valor novo, quem e quando), tudo na mesma transação. Devolve o que mudou,
+     * [campo => [antigo, novo]], para a notificação ALTERACAO (Notificacao::alteracao), que quem
+     * chama grava depois de sincronizar as inscrições (ver Admin\Concerns\ConfirmaConflitos).
      */
-    public function atualizarComHistorico(array $dados, ?int $idUsuario): void
+    public function atualizarComHistorico(array $dados, ?int $idUsuario): array
     {
-        DB::transaction(function () use ($dados, $idUsuario) {
+        return DB::transaction(function () use ($dados, $idUsuario) {
             $antes = [];
             foreach (array_keys(self::CAMPOS_HISTORICO) as $campo) {
                 $antes[$campo] = $this->valorParaHistorico($campo, $this->getRawOriginal($campo));
@@ -594,6 +603,7 @@ class EventoCalendario extends Model
             $this->fill(self::normalizarHorarios($dados));
             $this->save();
 
+            $mudancas = [];
             foreach ($antes as $campo => $valorAntigo) {
                 $valorNovo = $this->valorParaHistorico($campo, $this->getRawOriginal($campo));
 
@@ -605,14 +615,25 @@ class EventoCalendario extends Model
                         'id_usuario'                    => $idUsuario,
                         'data_evento_historico'         => now(),
                     ]);
+                    $mudancas[$campo] = [$valorAntigo, $valorNovo];
                 }
             }
+
+            return $mudancas;
         });
     }
 
+    /**
+     * Cancelar/reativar e ocultar/mostrar. Na mesma transação, avisa os inscritos quando o evento sai
+     * de ATIVO (CANCELAMENTO) ou volta a ATIVO (REATIVACAO); Notificacao::mudancaDeStatus decide.
+     */
     public function mudarStatus(string $novo, ?int $idUsuario): void
     {
-        $this->atualizarComHistorico(['status_evento_calendario' => $novo], $idUsuario);
+        DB::transaction(function () use ($novo, $idUsuario) {
+            $antes = $this->status_evento_calendario;
+            $this->atualizarComHistorico(['status_evento_calendario' => $novo], $idUsuario);
+            $this->atletasNotificados += Notificacao::mudancaDeStatus($this, $antes, $idUsuario);
+        });
     }
 
     /**
