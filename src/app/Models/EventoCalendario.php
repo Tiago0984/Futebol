@@ -574,6 +574,14 @@ class EventoCalendario extends Model
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
     }
 
+    // Notificações enviadas aos atletas sobre o evento, da mais nova para a mais antiga (tela do evento)
+    public function notificacoes()
+    {
+        return $this->hasMany(Notificacao::class, 'id_evento_calendario', 'id_evento_calendario')
+            ->orderByDesc('data_notificacao')
+            ->orderByDesc('id_notificacao');
+    }
+
     public function historico()
     {
         return $this->hasMany(EventoHistorico::class, 'id_evento_calendario', 'id_evento_calendario')

@@ -137,6 +137,9 @@ class EventoInscricaoTest extends TestCase
         $evento->inscrever($ativo, 'INDIVIDUAL', null);
         $evento->inscrever($inativo, 'INDIVIDUAL', null);
         DB::table('tbl_atletas')->where('id_atleta', $inativo)->update(['status_atleta' => 'INATIVO']);
+        // A seção Notificações é histórico: mostra quem recebeu, mesmo inativado depois. Aqui interessa
+        // só a lista de inscritos
+        DB::table('tbl_notificacao')->delete();
 
         $resposta = $this->comoAdmin()
             ->get(route('admin.calendario.eventos.show', $evento->id_evento_calendario))

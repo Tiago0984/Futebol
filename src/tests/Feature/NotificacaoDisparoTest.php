@@ -260,6 +260,38 @@ class NotificacaoDisparoTest extends TestCase
         $this->assertSame(0, Notificacao::count());
     }
 
+    // ---------- tela do evento ----------
+
+    public function test_tela_do_evento_lista_as_notificacoes_dele_da_mais_nova_para_a_mais_antiga(): void
+    {
+        $evento = $this->criarEvento(['titulo_evento_calendario' => 'Treino Tela']);
+        $outro  = $this->criarEvento(['titulo_evento_calendario' => 'Outro Evento']);
+        $ana    = $this->atletaNaCategoria('Ana Tela', 'Sub-13', 'M');
+        $bia    = $this->atletaNaCategoria('Bia Outro', 'Sub-13', 'M');
+
+        $this->travelTo(now()->setTime(10, 0));
+        $this->comoAdminFixo()->post(route('admin.calendario.eventos.inscricoes.store', $evento->id_evento_calendario), ['id_atleta' => $ana]);
+        $this->travelTo(now()->setTime(11, 0));
+        $this->comoAdminFixo()->patch(route('admin.calendario.eventos.cancelar', $evento->id_evento_calendario));
+        $outro->inscrever($bia, 'INDIVIDUAL', null);                                  // de outro evento: não aparece
+        Notificacao::agendaDoMes(now()->startOfMonth(), [$ana => 3], null);           // AGENDA, sem evento: não aparece
+        Notificacao::where('tipo_notificacao', 'INSCRICAO')->where('id_atleta', $ana)->sole()->marcarComoLida();
+
+        $this->comoAdminFixo()->get(route('admin.calendario.eventos.show', $evento->id_evento_calendario))->assertOk()
+            ->assertSee('Notificações (2)')
+            ->assertSeeInOrder([
+                'Cancelamento', 'Ana Tela', 'Atividade cancelada', $this->admin->nome_usuario, 'Não lida',
+                'Inscrição', 'Ana Tela', 'Nova atividade na sua agenda', $this->admin->nome_usuario, now()->format('d/m/Y H:i'),
+            ])
+            ->assertDontSee('Outro Evento') // a mensagem da notificação do outro evento traz o título dele
+            ->assertDontSee('Agenda de');
+
+        // Evento sem notificação: a seção aparece vazia
+        $this->comoAdminFixo()->get(route('admin.calendario.eventos.show', $this->criarEvento()->id_evento_calendario))
+            ->assertSee('Notificações (0)')
+            ->assertSee('Nenhuma notificação enviada sobre este evento.');
+    }
+
     // ---------- helpers ----------
 
     private function comoAdminFixo(): static

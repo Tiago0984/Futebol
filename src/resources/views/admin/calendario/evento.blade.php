@@ -270,6 +270,49 @@
                 </div>
 
             </div>
+
+            {{-- Notificações enviadas aos atletas sobre este evento (só no admin: dados de menores).
+                 As de AGENDA (resumo do mês, mover inscrições) não têm evento e não aparecem aqui. --}}
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-dark text-white fw-semibold">
+                    <i class="bi bi-bell me-2"></i> Notificações ({{ $notificacoes->count() }})
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-3">Quando</th>
+                                <th>Tipo</th>
+                                <th>Atleta</th>
+                                <th>Mensagem</th>
+                                <th>Por</th>
+                                <th>Lida</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($notificacoes as $notificacao)
+                            <tr>
+                                <td class="ps-3 text-nowrap">{{ $notificacao->data_notificacao->format('d/m/Y H:i') }}</td>
+                                <td><span class="badge-cat">{{ $notificacao->tipo_label }}</span></td>
+                                <td>{{ $notificacao->atleta?->nome_atleta ?? '—' }}</td>
+                                <td class="small">
+                                    <strong>{{ $notificacao->titulo_notificacao }}</strong><br>
+                                    {{ $notificacao->mensagem_notificacao }}
+                                </td>
+                                <td class="text-muted small">{{ $notificacao->usuario?->nome_usuario ?? '—' }}</td>
+                                <td class="small text-nowrap">
+                                    {{ $notificacao->estaLida() ? $notificacao->data_leitura_notificacao->format('d/m/Y H:i') : 'Não lida' }}
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-4">Nenhuma notificação enviada sobre este evento.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </main>
 @endsection
