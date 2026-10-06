@@ -29,13 +29,14 @@ class ApiAcessoTest extends TestCase
 
         $resposta = $this->postJson('/api/v1/auth/login', ['email' => 'ana@exemplo.com', 'senha' => self::SENHA])->assertOk();
 
-        // Exatamente as mesmas chaves de antes (o token só se conhece pela resposta)
+        // As mesmas chaves de antes, mais o "perfil" (Fase 9) (o token só se conhece pela resposta)
         $this->assertNotEmpty($resposta->json('data.token'));
         $resposta->assertExactJson([
             'success' => true,
             'message' => 'Login realizado com sucesso.',
             'data'    => [
                 'token'  => $resposta->json('data.token'),
+                'perfil' => 'atleta',
                 'atleta' => [
                     'id_atleta' => $id, 'nome_atleta' => 'Atleta de Teste', 'email_atleta' => 'ana@exemplo.com',
                     'numero_matricula_atleta' => null, 'foto_atleta' => null,

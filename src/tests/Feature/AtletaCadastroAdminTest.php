@@ -239,7 +239,7 @@ class AtletaCadastroAdminTest extends TestCase
 
         $this->comoAdmin()
             ->patch(route('admin.matriculas.aprovar', $idPendente), ['id_categoria' => $this->idCategoria('Sub-13', 'M')])
-            ->assertSessionHas('sucesso', 'Matrícula de Atleta de Teste aprovada. Número: A005');
+            ->assertSessionHas('sucesso', "Matrícula de Atleta de Teste aprovada. Número: A005 Convite do app enviado para: o responsável Responsável de Teste (responsavel{$idPendente}@teste.com).");
 
         $this->assertDatabaseHas('tbl_atletas', [
             'id_atleta' => $idPendente, 'status_atleta' => 'ATIVO', 'numero_matricula_atleta' => 'A005',

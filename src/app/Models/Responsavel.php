@@ -2,15 +2,27 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AcessaOApp;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
+use Laravel\Sanctum\HasApiTokens;
 
-class Responsavel extends Model
+// Authenticatable e HasApiTokens: o responsável é o segundo perfil de login do app (Fase 9)
+class Responsavel extends Authenticatable
 {
+    use HasApiTokens, AcessaOApp;
+
+    public const PERFIL       = 'responsavel';
+    public const BROKER       = 'responsaveis';
+    public const COLUNA_EMAIL = 'email_responsavel';
+
     protected $table = 'tbl_responsavel';
     protected $primaryKey = 'id_responsavel';
     public $timestamps = false;
+
+    // Senha do login (o padrão do Laravel é a coluna "password")
+    protected $authPasswordName = 'senha_responsavel';
 
     // Opções de tbl_atleta_responsavel.grau_parentesco_responsavel (varchar(20)), iguais no site e no admin.
     // O valor gravado é o próprio texto exibido.
@@ -84,6 +96,35 @@ class Responsavel extends Model
     public function autorizacoes()
     {
         return $this->hasMany(Autorizacao::class, 'id_responsavel', 'id_responsavel');
+    }
+
+    // Os filhos que contam no app: só atleta ATIVO (como nas listas e nas notificações)
+    public function atletasAtivos()
+    {
+        return $this->atletas()->where('tbl_atletas.status_atleta', 'ATIVO');
+    }
+
+    // ---------- acesso ao app (trait AcessaOApp) ----------
+
+    // Responsável entra no app enquanto tiver algum filho ATIVO
+    public function podeEntrarNoApp(): bool
+    {
+        return $this->atletasAtivos()->exists();
+    }
+
+    public function nomeNoApp(): string
+    {
+        return (string) $this->nome_responsavel;
+    }
+
+    public function semSenha(): bool
+    {
+        return blank($this->senha_responsavel);
+    }
+
+    protected function gravarSenha(string $hash): void
+    {
+        $this->forceFill(['senha_responsavel' => $hash])->save();
     }
 
     /**

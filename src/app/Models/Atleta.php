@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\AcessaOApp;
 use App\Models\Concerns\SerializaDatasComFuso;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,7 +14,12 @@ class Atleta extends Authenticatable
 {
     // HasApiTokens: permite gerar e gerenciar tokens do Sanctum (login pela API)
     // SerializaDatasComFuso: data_nasc_atleta no JSON da API como 2014-01-01T00:00:00-02:00
-    use HasApiTokens, SerializaDatasComFuso;
+    // AcessaOApp: login, "Defina sua senha" e "Esqueci minha senha" do perfil atleta (Fase 9)
+    use HasApiTokens, SerializaDatasComFuso, AcessaOApp;
+
+    public const PERFIL       = 'atleta';
+    public const BROKER       = 'atletas';
+    public const COLUNA_EMAIL = 'email_atleta';
 
     protected $table = 'tbl_atletas';
     protected $primaryKey = 'id_atleta';
@@ -156,6 +162,44 @@ class Atleta extends Authenticatable
     public function foiAprovado(): bool
     {
         return in_array(strtoupper((string) $this->status_atleta), self::STATUS_APROVADOS, true);
+    }
+
+    // ---------- acesso ao app (trait AcessaOApp) ----------
+
+    public function podeEntrarNoApp(): bool
+    {
+        return strtoupper((string) $this->status_atleta) === 'ATIVO';
+    }
+
+    public function nomeNoApp(): string
+    {
+        return (string) $this->nome_atleta;
+    }
+
+    /**
+     * Ainda não definiu a senha pelo link. O cadastro do site grava uma senha aleatória (que ninguém sabe) e
+     * o token_cadastro; o do admin não grava senha. Definir a senha pelo link limpa o token_cadastro.
+     */
+    public function semSenha(): bool
+    {
+        return blank($this->password) || filled($this->token_cadastro);
+    }
+
+    // A mesma regra de semSenha(), na consulta
+    public function scopeAindaSemSenha($query)
+    {
+        return $query->where(fn ($q) => $q->whereNull('password')->orWhereNotNull('token_cadastro'));
+    }
+
+    protected function gravarSenha(string $hash): void
+    {
+        $this->forceFill(['password' => $hash, 'token_cadastro' => null])->save();
+    }
+
+    // Sem nenhum login possível: nem o atleta nem algum responsável têm e-mail (selo no admin)
+    public function semAcessoAoApp(): bool
+    {
+        return blank($this->email_atleta) && $this->responsaveis->every(fn ($r) => blank($r->email_responsavel));
     }
 
     /**

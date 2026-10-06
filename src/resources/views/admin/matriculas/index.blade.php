@@ -28,6 +28,8 @@
         </div>
         @endif
 
+        @include('admin.atletas._links_convite')
+
         @if(session('erro') || $errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             @if(session('erro'))<div>{{ session('erro') }}</div>@endif

@@ -14,8 +14,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectGuestsTo(fn () => route('admin.login'));
 
-        // API do app: recusa atleta que não está ATIVO, mesmo com token válido
-        $middleware->alias(['atleta.ativo' => \App\Http\Middleware\AtletaAtivo::class]);
+        // API do app: recusa atleta que não está ATIVO, mesmo com token válido. Dois perfis (Fase 9): cada
+        // token só nas rotas do seu perfil; responsável só com filho ATIVO. Um alias() só: cada chamada
+        // substitui a lista anterior
+        $middleware->alias([
+            'atleta.ativo'      => \App\Http\Middleware\AtletaAtivo::class,
+            'perfil'            => \App\Http\Middleware\PerfilDoApp::class,
+            'responsavel.ativo' => \App\Http\Middleware\ResponsavelComAtletaAtivo::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Na API, erros (401, 404, 422...) sempre voltam em JSON, mesmo sem o header Accept

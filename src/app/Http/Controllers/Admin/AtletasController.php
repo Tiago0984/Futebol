@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\EnviaConvitesDoApp;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
 use App\Models\Responsavel;
@@ -18,6 +19,8 @@ use Illuminate\Validation\ValidationException;
 
 class AtletasController extends Controller
 {
+    use EnviaConvitesDoApp;
+
     // E-mails opcionais no admin. Os dois são login do app (Fase 9), por isso únicos: o do atleta entre
     // atletas e o do responsável entre responsáveis (um responsável com dois filhos é um cadastro só)
     private const MENSAGENS_EMAIL = [
@@ -49,7 +52,10 @@ class AtletasController extends Controller
                 ->where('status_categoria_atleta', Atleta::CATEGORIA_ATIVA)->select('id_categoria'))
             ->get();
 
-        return view('admin.atletas.index', compact('atletas', 'categorias', 'times', 'categoriasInativasEmUso'));
+        // Botão "Enviar convites pendentes" (Fase 9)
+        $convitesPendentes = $this->pendentesDeConvite()->count();
+
+        return view('admin.atletas.index', compact('atletas', 'categorias', 'times', 'categoriasInativasEmUso', 'convitesPendentes'));
     }
 
     public function create()
@@ -485,6 +491,50 @@ class AtletasController extends Controller
         $atleta->update(['status_atleta' => $novoStatus]);
 
         return back()->with('sucesso', "Atleta {$novoStatus} com sucesso.");
+    }
+
+    /**
+     * "Reenviar convite" do app (Fase 9): link "Defina sua senha" para o atleta ou para um responsável dele.
+     * Só com o atleta ATIVO (é quando os dois perfis podem entrar). Vale também para quem já tem senha
+     * (ajuda quem esqueceu): a senha atual só muda se o link for usado.
+     */
+    public function convite(Request $request, $id)
+    {
+        $atleta = Atleta::findOrFail($id);
+
+        $request->validate([
+            'perfil'         => 'required|in:atleta,responsavel',
+            'id_responsavel' => 'required_if:perfil,responsavel|nullable|integer',
+        ]);
+
+        if (! $atleta->podeEntrarNoApp()) {
+            return back()->with('erro', 'O convite do app é só para atleta ativo.');
+        }
+
+        $usuario = $request->perfil === 'atleta'
+            ? $atleta
+            : $atleta->responsaveis()->where('tbl_responsavel.id_responsavel', $request->id_responsavel)->first();
+
+        if (! $usuario) {
+            return back()->with('erro', 'Este responsável não é do atleta.');
+        }
+        if (blank($usuario->emailDoApp())) {
+            return back()->with('erro', 'Sem e-mail cadastrado: edite o atleta e informe o e-mail antes de enviar o convite.');
+        }
+
+        return back()->with('sucesso', ltrim($this->enviarConvites(collect([$usuario]))));
+    }
+
+    // "Enviar convites pendentes": todos os atletas ATIVO e responsáveis que ainda não definiram a senha
+    public function convitesPendentes()
+    {
+        $pendentes = $this->pendentesDeConvite();
+
+        if ($pendentes->isEmpty()) {
+            return back()->with('sucesso', 'Nenhum convite pendente: todos os atletas ativos e responsáveis com e-mail já definiram a senha.');
+        }
+
+        return back()->with('sucesso', "{$pendentes->count()} convite(s) do app processado(s)." . $this->enviarConvites($pendentes));
     }
 
     // Status que a edição grava. PENDENTE e REJEITADO só mudam pela tela de Matrículas: a edição mantém o atual

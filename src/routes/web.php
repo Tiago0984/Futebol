@@ -13,6 +13,7 @@ use App\Http\Controllers\Site\ParceriasController;
 use App\Http\Controllers\Site\ContatoController;
 use App\Http\Controllers\Site\CadastroController;
 use App\Http\Controllers\Site\AssinaturaController;
+use App\Http\Controllers\Site\SenhaController;
 use App\Http\Controllers\Site\GaleriaController as SiteGaleriaController;
 
 //Dashboard
@@ -64,6 +65,12 @@ Route::post('/cadastro', [CadastroController::class, 'store'])->middleware('thro
 // Assinatura do responsável (link enviado por WhatsApp)
 Route::get('/assinar/{token}',  [AssinaturaController::class, 'show'])->name('assinar.show');
 Route::post('/assinar/{token}', [AssinaturaController::class, 'store'])->name('assinar.store');
+
+// Senha do app (Fase 9): link "Defina sua senha" / "Esqueci minha senha", um por perfil
+Route::get('/senha/definida', [SenhaController::class, 'definida'])->name('senha.definida');
+Route::get('/senha/{perfil}/{token}', [SenhaController::class, 'show'])->whereIn('perfil', ['atleta', 'responsavel'])->name('senha.definir');
+Route::post('/senha/{perfil}', [SenhaController::class, 'store'])->whereIn('perfil', ['atleta', 'responsavel'])
+    ->middleware('throttle:5,1')->name('senha.salvar');
 
 // Documentação da API (página HTML para leitura humana)
 Route::view('/api/documentacao', 'api.documentacao')->name('api.documentacao');
@@ -131,6 +138,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::resource('atletas', AdminAtletasController::class)->except(['destroy']);
     Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
     Route::post('atletas/{id}/mover-inscricoes', [AdminAtletasController::class, 'moverInscricoes'])->name('atletas.moverInscricoes');
+    // Convite do app, "Defina sua senha" (Fase 9): um atleta/responsável, ou todos os que ainda não têm senha
+    Route::post('atletas/convites-pendentes', [AdminAtletasController::class, 'convitesPendentes'])->name('atletas.convitesPendentes');
+    Route::post('atletas/{id}/convite', [AdminAtletasController::class, 'convite'])->name('atletas.convite');
 
     // Escalação
     Route::get('escalacao',                                  [EscalacaoController::class, 'index'])->name('escalacao.index');

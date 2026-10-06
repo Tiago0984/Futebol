@@ -16,6 +16,16 @@
                         data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false">
                     <i class="bi bi-funnel"></i> Filtrar
                 </button>
+                {{-- Convite do app para quem já está ativo e ainda não definiu a senha (Fase 9) --}}
+                @if($convitesPendentes > 0)
+                <form action="{{ route('admin.atletas.convitesPendentes') }}" method="POST"
+                      onsubmit="return confirm('Enviar o convite do app (link para definir a senha, válido por 24 horas) para {{ $convitesPendentes }} atleta(s) ativo(s) e responsável(is) que ainda não têm senha?')">
+                    @csrf
+                    <button type="submit" class="btn-filter-toggle" title="Atletas ativos e responsáveis com e-mail que ainda não definiram a senha do app">
+                        <i class="bi bi-envelope"></i> Enviar convites pendentes ({{ $convitesPendentes }})
+                    </button>
+                </form>
+                @endif
                 <button type="button" class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalNovoAtleta">
                     <i class="bi bi-person-plus"></i> Novo Atleta
                 </button>
@@ -35,6 +45,8 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
         </div>
         @endif
+
+        @include('admin.atletas._links_convite')
 
         {{-- Troca de categoria: eventos futuros a mover (só com a confirmação do admin) --}}
         @if($mover = session('mover_inscricoes'))
@@ -153,7 +165,7 @@
                             <th>Categoria</th>
                             <th>Posição</th>
                             <th>Status</th>
-                            <th class="text-center" style="width:90px">Ações</th>
+                            <th class="text-center" style="width:120px">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -211,6 +223,11 @@
                                         <div class="text-muted" style="font-size:0.78rem;">Camisa Nº {{ $t->pivot->camisa_atleta_time }}</div>
                                     @endif
                                 @endforeach
+                                @if($atleta->semAcessoAoApp())
+                                    <div><span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size:0.7rem;"
+                                               title="Nem o atleta nem o responsável têm e-mail: ninguém consegue entrar no app">
+                                        <i class="bi bi-phone"></i> Sem acesso ao app</span></div>
+                                @endif
                             </td>
                             <td>
                                 @if($nomeResponsavel)
@@ -302,6 +319,35 @@
                                             </button>
                                         @endif
                                     </form>
+                                    @endif
+
+                                    {{-- "Reenviar convite" do app (Fase 9): só para atleta ativo e quem tem e-mail --}}
+                                    @if($ativo && ! $atleta->semAcessoAoApp())
+                                    <div class="dropdown" style="display:inline">
+                                        <button type="button" class="btn-tbl edit" title="Convite do app" data-bs-toggle="dropdown" aria-expanded="false"
+                                                data-bs-popper-config='{"strategy":"fixed"}'>
+                                            <i class="bi bi-envelope"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li><h6 class="dropdown-header">Reenviar convite do app (link de 24 h)</h6></li>
+                                            @php
+                                                $convidaveis = collect(filled($atleta->email_atleta) ? [['atleta', null, 'Atleta: ' . $atleta->email_atleta]] : [])
+                                                    ->concat($atleta->responsaveis->filter(fn ($r) => filled($r->email_responsavel))
+                                                        ->map(fn ($r) => ['responsavel', $r->id_responsavel, "Responsável {$r->nome_responsavel}: {$r->email_responsavel}"]));
+                                            @endphp
+                                            @foreach($convidaveis as [$perfilConvite, $idResponsavel, $rotuloConvite])
+                                            <li>
+                                                <form action="{{ route('admin.atletas.convite', $atleta->id_atleta) }}" method="POST"
+                                                      onsubmit="return confirm('Enviar o link para definir a senha do app? Se a pessoa já tem senha, ela só muda se o link for usado.')">
+                                                    @csrf
+                                                    <input type="hidden" name="perfil" value="{{ $perfilConvite }}">
+                                                    @if($idResponsavel)<input type="hidden" name="id_responsavel" value="{{ $idResponsavel }}">@endif
+                                                    <button type="submit" class="dropdown-item small">{{ $rotuloConvite }}</button>
+                                                </form>
+                                            </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
                                     @endif
                                 </div>
                             </td>

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\EnviaConvitesDoApp;
 use App\Http\Controllers\Controller;
 use App\Mail\AutorizacaoAssinaturaMail;
 use App\Models\Atleta;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\Mail;
 
 class MatriculasController extends Controller
 {
+    use EnviaConvitesDoApp;
+
     public function index()
     {
         $matriculas = Atleta::with(['responsaveis', 'endereco', 'autorizacoes'])
@@ -78,7 +81,25 @@ class MatriculasController extends Controller
         }
 
         return redirect()->route('admin.matriculas.index')
-            ->with('sucesso', "Matrícula de {$atleta->nome_atleta} aprovada. Número: {$matricula}");
+            ->with('sucesso', "Matrícula de {$atleta->nome_atleta} aprovada. Número: {$matricula}" . $this->convidarParaOApp($atleta));
+    }
+
+    /**
+     * Depois da aprovação (fora da transação: o e-mail só sai com a matrícula gravada), o convite "Defina
+     * sua senha" vai para o e-mail do atleta, se tiver, e para o do responsável que ainda não tem senha.
+     */
+    private function convidarParaOApp(Atleta $atleta): string
+    {
+        $atleta->load('responsaveis');
+
+        if ($atleta->semAcessoAoApp()) {
+            return ' Sem acesso ao app: nem o atleta nem o responsável têm e-mail cadastrado.';
+        }
+
+        $convidados = collect(filled($atleta->email_atleta) ? [$atleta] : [])
+            ->concat($atleta->responsaveis->filter(fn ($r) => filled($r->email_responsavel) && $r->semSenha()));
+
+        return $this->enviarConvites($convidados);
     }
 
     public function rejeitar($id)

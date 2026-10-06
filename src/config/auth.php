@@ -78,6 +78,11 @@ return [
             'driver' => 'eloquent',
             'model' => App\Models\Atleta::class,
         ],
+        // Perfil responsável do app (Fase 9): login pela API com senha_responsavel
+        'responsaveis' => [
+            'driver' => 'eloquent',
+            'model' => App\Models\Responsavel::class,
+        ],
 
         // 'users' => [
         //     'driver' => 'database',
@@ -109,6 +114,20 @@ return [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
             'expire' => 60,
+            'throttle' => 60,
+        ],
+        // Links "Defina sua senha" e "Esqueci minha senha" do app (Fase 9): um broker por perfil, cada um com a
+        // própria tabela (o mesmo e-mail pode ser do atleta e do responsável). Valem 24 horas.
+        'atletas' => [
+            'provider' => 'atletas',
+            'table' => 'password_reset_tokens_atletas',
+            'expire' => 1440,
+            'throttle' => 60,
+        ],
+        'responsaveis' => [
+            'provider' => 'responsaveis',
+            'table' => 'password_reset_tokens_responsaveis',
+            'expire' => 1440,
             'throttle' => 60,
         ],
     ],

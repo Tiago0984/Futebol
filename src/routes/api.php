@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\V1\NoticiaController;
 use App\Http\Controllers\Api\V1\CampeonatoController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AtletaController;
+use App\Http\Controllers\Api\V1\ResponsavelController;
 
 Route::prefix('v1')->group(function () {
 
@@ -30,12 +31,26 @@ Route::prefix('v1')->group(function () {
     Route::get('/campeonatos', [CampeonatoController::class, 'index']);
     Route::get('/campeonatos/{id}', [CampeonatoController::class, 'show']);
 
-    // LOGIN - rota pública (limite de 5 tentativas por minuto por IP e 5 por e-mail: limitador
-    // "login-api", no AppServiceProvider)
+    // LOGIN - rota pública, perfil "atleta" (padrão) ou "responsavel" (limite de 5 tentativas por minuto
+    // por IP e 5 por e-mail e perfil: limitador "login-api", no AppServiceProvider)
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login-api');
 
-    // ROTAS COM CREDENCIAL (token válido e atleta ATIVO)
-    Route::middleware(['auth:sanctum', 'atleta.ativo'])->group(function () {
+    // ESQUECI MINHA SENHA - rota pública, resposta sempre igual (limitador "esqueci-senha-api")
+    Route::post('/auth/esqueci-senha', [AuthController::class, 'esqueciSenha'])->middleware('throttle:esqueci-senha-api');
+
+    // Logout: qualquer perfil
+    Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+    // ROTAS DO RESPONSÁVEL (token do perfil responsável e algum filho ATIVO)
+    Route::middleware(['auth:sanctum', 'perfil:responsavel', 'responsavel.ativo'])->group(function () {
+        Route::get('/responsavel', [ResponsavelController::class, 'show']);
+        Route::put('/responsavel', [ResponsavelController::class, 'update']);
+        Route::patch('/responsavel', [ResponsavelController::class, 'update']);
+        Route::put('/responsavel/senha', [ResponsavelController::class, 'updateSenha']);
+    });
+
+    // ROTAS DO ATLETA (token do perfil atleta e atleta ATIVO)
+    Route::middleware(['auth:sanctum', 'perfil:atleta', 'atleta.ativo'])->group(function () {
 
         // Atleta logado
         Route::get('/atleta', [AtletaController::class, 'show']);
@@ -48,9 +63,6 @@ Route::prefix('v1')->group(function () {
 
         // Atualizar senha
         Route::put('/atleta/senha', [AtletaController::class, 'updateSenha']);
-
-        // Logout
-        Route::post('/auth/logout', [AuthController::class, 'logout']);
     });
 
 });
