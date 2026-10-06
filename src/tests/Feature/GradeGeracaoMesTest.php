@@ -228,18 +228,22 @@ class GradeGeracaoMesTest extends TestCase
 
     // ---------- site público ----------
 
-    public function test_site_nao_mostra_os_treinos_gerados(): void
+    public function test_site_nao_mostra_treinos_gerados_nem_criados_a_mao(): void
     {
         $this->cenario();
         $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-11']);
-        $manual = EventoCalendario::criarPor(null, [
+        EventoCalendario::criarPor(null, [
             'titulo_evento_calendario' => 'Treino extra', 'tipo_evento_calendario' => 'TREINO',
             'data_evento_calendario' => '2026-11-21', 'horario_inicio_evento_calendario' => '15:00', 'status_evento_calendario' => 'ATIVO',
         ]);
 
+        // Nenhum evento público: a página funciona sem lista e sem "Próximo Evento", e a grade continua
         $this->get('/calendario')->assertOk()
-            ->assertViewHas('eventos', fn ($eventos) => $eventos->pluck('id_evento_calendario')->all() === [$manual->id_evento_calendario])
-            ->assertViewHas('proximoEvento', fn ($proximo) => $proximo->id_evento_calendario === $manual->id_evento_calendario);
+            ->assertViewHas('eventos', fn ($eventos) => $eventos->isEmpty())
+            ->assertViewHas('proximoEvento', null)
+            ->assertSee('Nenhum evento agendado no momento.')
+            ->assertDontSee('cal-next-title')
+            ->assertSee('Sub-13 Masculino'); // tabela da grade
     }
 
     // ---------- lista de eventos do admin por mês ----------

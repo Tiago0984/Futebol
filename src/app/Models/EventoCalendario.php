@@ -65,9 +65,6 @@ class EventoCalendario extends Model
     // Status que aparecem no site público: cancelado continua visível, com o selo
     public const STATUS_VISIVEIS = ['ATIVO', 'CANCELADO'];
 
-    // Tipos que aparecem no site público (provisório até o professor decidir)
-    public const TIPOS_PUBLICOS = ['JOGO', 'TREINO', 'CAMPEONATO'];
-
     // Valores do ENUM tipo_evento_calendario (sem acento) => texto exibido na tela
     public const TIPOS = [
         'JOGO'             => 'JOGO',
@@ -497,10 +494,19 @@ class EventoCalendario extends Model
             : "{$conflito['atleta']->nome_atleta}: horário sobrepõe \"{$outro->titulo_evento_calendario}\" ({$quando}).";
     }
 
-    // Eventos criados à mão (ou pela tela de Jogos): o site público não mostra os treinos gerados pela grade
-    public function scopeForaDaGrade($query)
+    /**
+     * Agenda do site público (decisão de 06/10/2026, CLAUDE.md seção 4, "Site público"): só eventos do tipo
+     * CAMPEONATO e jogos de campeonato (evento com tbl_jogos e campeonato preenchido). Ficam de fora
+     * amistosos, treinos (à mão ou da grade), eventos JOGO sem tbl_jogos e os outros tipos. O status
+     * (cancelado com o selo, oculto fora) é filtrado à parte.
+     */
+    public function scopeDaAgendaPublica($query)
     {
-        return $query->whereNull('id_grade_treino');
+        return $query->where(fn ($q) => $q
+            ->where('tipo_evento_calendario', 'CAMPEONATO')
+            ->orWhere(fn ($jogo) => $jogo
+                ->where('tipo_evento_calendario', 'JOGO')
+                ->whereHas('jogo', fn ($j) => $j->whereNotNull('id_campeonato'))));
     }
 
     // Eventos de um mês (lista do admin, por mês)

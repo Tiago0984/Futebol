@@ -68,6 +68,13 @@ class Jogo extends Model
         return $query->whereHas('evento', fn ($q) => $q->whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS));
     }
 
+    // Jogos que a agenda do site mostra (hoje, só os de campeonato): a regra é a do evento,
+    // EventoCalendario::daAgendaPublica(), para não ficar em dois lugares. Usado no destaque da home
+    public function scopeDaAgendaPublica($query)
+    {
+        return $query->whereHas('evento', fn ($q) => $q->daAgendaPublica());
+    }
+
     // Ordena pela data e horário do evento (join; as colunas do jogo continuam sendo as do resultado)
     public function scopeOrdenadosPelaData($query, string $direcao = 'asc')
     {

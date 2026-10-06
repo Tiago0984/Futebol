@@ -143,7 +143,8 @@ class EventoHistoricoTest extends TestCase
 
     public function test_alterado_aparece_no_admin_e_nunca_no_site(): void
     {
-        $id = $this->criarEvento(['titulo_evento_calendario' => 'Jogo Remarcado XYZ']);
+        // CAMPEONATO: o site só mostra campeonatos e jogos de campeonato
+        $id = $this->criarEvento(['titulo_evento_calendario' => 'Jogo Remarcado XYZ', 'tipo_evento_calendario' => 'CAMPEONATO']);
         $this->comoAdmin()->put(route('admin.calendario.eventos.update', $id), $this->dadosEdicao($id, [
             'data_evento_calendario' => now()->addDays(12)->toDateString(),
         ]));

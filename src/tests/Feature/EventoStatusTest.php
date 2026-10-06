@@ -130,9 +130,11 @@ class EventoStatusTest extends TestCase
 
     public function test_proximo_evento_do_site_ignora_cancelado_e_oculto(): void
     {
-        $this->criarEvento('CANCELADO', ['titulo_evento_calendario' => 'Cancelado Amanha', 'data_evento_calendario' => now()->addDay()->toDateString()]);
-        $this->criarEvento('INATIVO',   ['titulo_evento_calendario' => 'Oculto Depois',    'data_evento_calendario' => now()->addDays(2)->toDateString()]);
-        $this->criarEvento('ATIVO',     ['titulo_evento_calendario' => 'Ativo Semana Que Vem', 'data_evento_calendario' => now()->addWeek()->toDateString()]);
+        // CAMPEONATO: o site só mostra campeonatos e jogos de campeonato
+        $campeonato = ['tipo_evento_calendario' => 'CAMPEONATO'];
+        $this->criarEvento('CANCELADO', ['titulo_evento_calendario' => 'Cancelado Amanha', 'data_evento_calendario' => now()->addDay()->toDateString(), ...$campeonato]);
+        $this->criarEvento('INATIVO',   ['titulo_evento_calendario' => 'Oculto Depois',    'data_evento_calendario' => now()->addDays(2)->toDateString(), ...$campeonato]);
+        $this->criarEvento('ATIVO',     ['titulo_evento_calendario' => 'Ativo Semana Que Vem', 'data_evento_calendario' => now()->addWeek()->toDateString(), ...$campeonato]);
 
         $resposta = $this->get('/calendario')->assertOk();
 
@@ -144,6 +146,7 @@ class EventoStatusTest extends TestCase
     public function test_site_mostra_a_definir_quando_o_evento_nao_tem_horario(): void
     {
         $this->criarEvento('ATIVO', [
+            'tipo_evento_calendario'           => 'CAMPEONATO',
             'titulo_evento_calendario'         => 'Sem Horario XYZ',
             'horario_inicio_evento_calendario' => null,
             'horario_fim_evento_calendario'    => null,

@@ -94,34 +94,37 @@ class CalendarioTest extends TestCase
 
     public function test_site_lista_cancelados_com_o_selo_e_esconde_os_ocultos(): void
     {
-        $this->criarEvento(['titulo_evento_calendario' => 'Amistoso Ativo XYZ']);
-        $cancelado = $this->criarEvento(['titulo_evento_calendario' => 'Amistoso Cancelado XYZ']);
-        $oculto    = $this->criarEvento(['titulo_evento_calendario' => 'Amistoso Oculto XYZ']);
+        $campeonato = ['tipo_evento_calendario' => 'CAMPEONATO'];
+        $this->criarEvento(['titulo_evento_calendario' => 'Copa Ativa XYZ', ...$campeonato]);
+        $cancelado = $this->criarEvento(['titulo_evento_calendario' => 'Copa Cancelada XYZ', ...$campeonato]);
+        $oculto    = $this->criarEvento(['titulo_evento_calendario' => 'Copa Oculta XYZ', ...$campeonato]);
 
         DB::table(self::TABELA)->where(self::PK, $cancelado)->update(['status_evento_calendario' => 'CANCELADO']);
         DB::table(self::TABELA)->where(self::PK, $oculto)->update(['status_evento_calendario' => 'INATIVO']);
 
         $this->get(self::URL_SITE)
             ->assertOk()
-            ->assertSee('Amistoso Ativo XYZ')
-            ->assertSee('Amistoso Cancelado XYZ')
+            ->assertSee('Copa Ativa XYZ')
+            ->assertSee('Copa Cancelada XYZ')
             ->assertSee('event-selo-cancelado', false)
-            ->assertDontSee('Amistoso Oculto XYZ');
+            ->assertDontSee('Copa Oculta XYZ');
     }
 
-    // Regra provisória de tipos públicos (EventoCalendario::TIPOS_PUBLICOS)
+    // Agenda do site (escopo EventoCalendario::daAgendaPublica): do formulário de eventos, só o tipo
+    // CAMPEONATO. Jogo de campeonato (com tbl_jogos) está em JogoSiteTest
     public static function tiposPublicos(): array
     {
         return [
-            'JOGO'       => ['JOGO'],
-            'TREINO'     => ['TREINO'],
             'CAMPEONATO' => ['CAMPEONATO'],
         ];
     }
 
+    // JOGO criado pelo formulário de eventos não tem tbl_jogos (nem campeonato): fica fora, como o TREINO
     public static function tiposInternos(): array
     {
         return [
+            'JOGO'             => ['JOGO'],
+            'TREINO'           => ['TREINO'],
             'EVENTO'           => ['EVENTO'],
             'REUNIAO'          => ['REUNIAO'],
             'CONFRATERNIZACAO' => ['CONFRATERNIZACAO'],
