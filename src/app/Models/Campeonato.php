@@ -15,6 +15,16 @@ class Campeonato extends Model
     protected $primaryKey = 'id_campeonato';
     public $timestamps = false;
 
+    // Valores de tipo_campeonato (gravados em maiúsculas, como os que já estão no banco) => rótulo
+    public const TIPOS = [
+        'LIGA'            => 'Liga',
+        'COPA'            => 'Copa',
+        'TORNEIO'         => 'Torneio',
+        'MATA-MATA'       => 'Mata-mata',
+        'PONTOS CORRIDOS' => 'Pontos Corridos',
+        'AMISTOSO'        => 'Amistoso',
+    ];
+
     protected $fillable = [
         'logo_evento',
         'banner_evento',
@@ -33,6 +43,18 @@ class Campeonato extends Model
         'data_inicio_campeonato' => 'datetime',
         'data_fim_campeonato'    => 'datetime',
     ];
+
+    // Tipo sempre em maiúsculas (o select do formulário usa as chaves de TIPOS)
+    public function setTipoCampeonatoAttribute($valor): void
+    {
+        $this->attributes['tipo_campeonato'] = $valor === null ? null : mb_strtoupper(trim($valor));
+    }
+
+    // Rótulo do tipo; valor antigo fora da lista aparece como está
+    public function getTipoLabelAttribute(): string
+    {
+        return self::TIPOS[$this->tipo_campeonato] ?? (string) $this->tipo_campeonato;
+    }
 
     public function categoria()
     {

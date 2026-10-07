@@ -13,6 +13,7 @@ use App\Models\Time;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Jogo = evento JOGO + times, campeonato e placar (CLAUDE.md, seção 4, "Jogos").
@@ -32,7 +33,7 @@ class JogosController extends Controller
      */
     public function index(Request $request)
     {
-        $campeonatos = Campeonato::with('categoria')->orderBy('nome_campeonato')->get();
+        $campeonatos = self::campeonatosDoFormulario();
         $filtros     = $this->filtrosDaLista($request, $campeonatos);
 
         $doCampeonato = fn () => Jogo::query()
@@ -54,6 +55,15 @@ class JogosController extends Controller
         $categorias  = Categoria::ativas()->get();
 
         return view('admin.jogos.index', compact('jogos', 'campeonatos', 'times', 'categorias', 'filtros', 'ocultosForaDaLista'));
+    }
+
+    // Campeonatos do select do formulário do jogo, com a categoria e os times participantes (o select de
+    // times mostra só eles). Usado aqui e na tela do jogo (CalendarioController::showEvento)
+    public static function campeonatosDoFormulario()
+    {
+        return Campeonato::with(['categoria', 'times' => fn ($q) => $q->select('tbl_time.id_time')])
+            ->orderBy('nome_campeonato')
+            ->get();
     }
 
     // Filtros da lista lidos da URL; valor fora da lista vira vazio (sem filtro)
@@ -101,7 +111,42 @@ class JogosController extends Controller
             . ($elenco['nos_dois'] ? " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times: escolha o time de cada um na tela do jogo." : '')
             . ($inscritos ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
 
-        return $this->comAvisoSemElenco(redirect()->route('admin.jogos.index')->with('sucesso', $mensagem), $jogo);
+        // Elenco de outra categoria/sexo: só avisa, como na tela do jogo (CLAUDE.md, seção 8, pergunta 14)
+        if ($avisos = $evento->avisosForaDaCategoria($elenco['ids_mexidos'])) {
+            session()->flash('avisos_categoria', $avisos);
+        }
+
+        // Abre a tela do jogo (inscritos, escalação e ações), sem voltar à lista
+        return $this->comAvisoSemElenco(
+            redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)->with('sucesso', $mensagem), $jogo,
+        );
+    }
+
+    /**
+     * Placar rápido, pela tela do jogo (sem o formulário inteiro): os dois ou nenhum (vazio = ainda não
+     * jogado). Placar não entra no histórico do evento nem avisa os atletas.
+     */
+    public function placar(Request $request, $id)
+    {
+        $jogo = Jogo::findOrFail($id);
+
+        $request->validate([
+            'placar_time_casa_jogos'      => 'nullable|integer|min:0|max:99|required_with:placar_time_visitante_jogos',
+            'placar_time_visitante_jogos' => 'nullable|integer|min:0|max:99|required_with:placar_time_casa_jogos',
+        ], [
+            'placar_time_casa_jogos.required_with'      => 'Preencha os dois placares, ou deixe os dois vazios (jogo ainda não jogado).',
+            'placar_time_visitante_jogos.required_with' => 'Preencha os dois placares, ou deixe os dois vazios (jogo ainda não jogado).',
+        ]);
+
+        $jogo->update([
+            'placar_time_casa_jogos'      => $request->filled('placar_time_casa_jogos') ? (int) $request->placar_time_casa_jogos : null,
+            'placar_time_visitante_jogos' => $request->filled('placar_time_visitante_jogos') ? (int) $request->placar_time_visitante_jogos : null,
+        ]);
+
+        return redirect()->route('admin.calendario.eventos.show', $jogo->id_evento)
+            ->with('sucesso', $jogo->temPlacar()
+                ? "Placar salvo: {$jogo->placar_time_casa_jogos} × {$jogo->placar_time_visitante_jogos}."
+                : 'Placar apagado (jogo ainda não jogado).');
     }
 
     public function update(Request $request, $id)
@@ -124,7 +169,10 @@ class JogosController extends Controller
         $mensagem = 'Jogo atualizado.' . $this->salvarEdicaoDoEvento($evento, $dadosEvento,
             fn () => $this->gravarJogoETrocarTimes($jogo, $dadosJogo, $timesAntes));
 
-        $resposta = redirect()->route('admin.jogos.index')->with('sucesso', $mensagem);
+        // Editado pela tela do jogo (voltar=evento): volta para ela; pela lista, volta à lista
+        $resposta = ($request->input('voltar') === 'evento'
+            ? redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)
+            : redirect()->route('admin.jogos.index'))->with('sucesso', $mensagem);
 
         return $this->timesMudaram($timesAntes, $timesNovos) ? $this->comAvisoSemElenco($resposta, $jogo) : $resposta;
     }
@@ -201,6 +249,8 @@ class JogosController extends Controller
             'id_categoria.exists'                  => 'Escolha uma categoria ativa para o amistoso, ou deixe sem categoria.',
         ]);
 
+        $this->conferirParticipantes($request, $evento?->jogo);
+
         return [
             'id_campeonato'               => $request->id_campeonato === self::AMISTOSO ? null : (int) $request->id_campeonato,
             'id_time_casa'                => (int) $request->id_time_casa,
@@ -208,6 +258,37 @@ class JogosController extends Controller
             'placar_time_casa_jogos'      => $request->filled('placar_time_casa_jogos') ? (int) $request->placar_time_casa_jogos : null,
             'placar_time_visitante_jogos' => $request->filled('placar_time_visitante_jogos') ? (int) $request->placar_time_visitante_jogos : null,
         ];
+    }
+
+    /**
+     * Jogo de campeonato: mandante e visitante precisam estar entre os times participantes do campeonato
+     * (o select já mostra só eles). Campeonato sem participantes cadastrados aceita qualquer time; na
+     * edição, os times que o jogo já tem continuam aceitos (jogos antigos). Amistoso: qualquer time.
+     */
+    private function conferirParticipantes(Request $request, ?Jogo $jogoAtual): void
+    {
+        if ($request->id_campeonato === self::AMISTOSO) {
+            return;
+        }
+
+        $campeonato    = Campeonato::with('times')->find((int) $request->id_campeonato);
+        $participantes = $campeonato->times->pluck('id_time')->map(fn ($id) => (int) $id)->all();
+        if (! $participantes) {
+            return;
+        }
+
+        $aceitos = [...$participantes, (int) $jogoAtual?->id_time_casa, (int) $jogoAtual?->id_time_visitante];
+        $erros   = [];
+        foreach (['id_time_casa' => 'O mandante', 'id_time_visitante' => 'O visitante'] as $campo => $quem) {
+            if (! in_array((int) $request->input($campo), $aceitos, true)) {
+                $erros[$campo] = "{$quem} não participa do campeonato {$campeonato->nome_campeonato}. "
+                    . 'Inclua o time nos participantes do campeonato, ou escolha outro.';
+            }
+        }
+
+        if ($erros) {
+            throw ValidationException::withMessages($erros);
+        }
     }
 
     // Campos do evento do jogo. Título gerado pelos times; categoria do campeonato, ou a escolhida no amistoso

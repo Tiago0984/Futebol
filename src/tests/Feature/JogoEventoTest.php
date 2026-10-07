@@ -45,7 +45,7 @@ class JogoEventoTest extends TestCase
         $this->atletaSub11([]); // da categoria do campeonato, mas fora do elenco: não entra
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
-            ->assertRedirect(route('admin.jogos.index'))
+            ->assertRedirect(route('admin.calendario.eventos.show', Jogo::sole()->id_evento)) // abre a tela do jogo (Fase 10)
             ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) do elenco inscrito(s). 1 atleta(s) notificado(s).')
             ->assertSessionMissing('aviso');
 
@@ -205,12 +205,12 @@ class JogoEventoTest extends TestCase
         $this->assertNull($jogo->evento->id_categoria);
         $this->assertSame(1, $jogo->evento->inscricoes()->count());
 
-        // Pela tela do calendário também não (e o "Atualizar inscritos pela categoria" é recusado no jogo)
-        $this->comoAdmin()->put(route('admin.calendario.eventos.update', $jogo->id_evento), [
-            'titulo_evento_calendario' => $jogo->evento->titulo_evento_calendario, 'tipo_evento_calendario' => 'JOGO',
-            'id_categoria' => $this->idCategoria('Sub-13', 'M'), 'data_evento_calendario' => $this->dia,
-            'horario_inicio_evento_calendario' => '19:00', 'local_evento_calendario' => 'Quadra A',
-        ])->assertSessionHas('sucesso', 'Evento atualizado.');
+        // Amistoso com categoria também não mexe. O modal do Calendário recusa editar o jogo (Fase 10); e o
+        // "Atualizar inscritos pela categoria" é recusado no jogo
+        $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([
+            'id_campeonato' => 'AMISTOSO', 'id_categoria' => $this->idCategoria('Sub-13', 'M'), 'local_evento_calendario' => 'Quadra A',
+        ]))->assertSessionHas('sucesso', 'Jogo atualizado.');
+        $this->assertSame($this->idCategoria('Sub-13', 'M'), (int) $jogo->evento->refresh()->id_categoria);
         $this->assertSame(1, $jogo->evento->inscricoes()->count());
 
         $this->comoAdmin()->post(route('admin.calendario.eventos.inscricoes.atualizar', $jogo->id_evento))

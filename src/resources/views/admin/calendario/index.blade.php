@@ -262,6 +262,11 @@
                                        class="btn-tbl view" title="Inscritos ({{ $ev->inscritos_ativos }})">
                                         <i class="bi bi-people"></i><small class="ms-1">{{ $ev->inscritos_ativos }}</small>
                                     </a>
+                                    @if($ev->jogo)
+                                    {{-- Jogo: edita pelo formulário do jogo, na tela dele (o modal do Calendário recusa) --}}
+                                    <a href="{{ route('admin.calendario.eventos.show', $ev->id_evento_calendario) }}#editar"
+                                       class="btn-tbl edit" title="Editar jogo"><i class="bi bi-pencil"></i></a>
+                                    @else
                                     <button class="btn-tbl edit" title="Editar"
                                         data-bs-toggle="modal" data-bs-target="#modalEditarEvento"
                                         data-id="{{ $ev->id_evento_calendario }}"
@@ -282,6 +287,7 @@
                                         ])->values()->toJson(JSON_UNESCAPED_UNICODE) }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
+                                    @endif
                                     {{-- Cancelar <-> reativar (oculto precisa ser mostrado antes) --}}
                                     @unless($ev->estaOculto())
                                     <form action="{{ route('admin.calendario.eventos.cancelar', $ev->id_evento_calendario) }}" method="POST" style="display:inline"
@@ -438,7 +444,7 @@
                         <div class="col-md-8">
                             <label class="form-label">Título <span class="text-danger">*</span></label>
                             <input type="text" name="titulo_evento_calendario" class="form-control"
-                                placeholder="Ex: Jogo Sub-13 vs Rival FC" required>
+                                placeholder="Ex: Avaliação física Sub-13" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Data <span class="text-danger">*</span></label>
@@ -446,17 +452,20 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
-                            <select name="tipo_evento_calendario" class="form-select" required>
+                            <select name="tipo_evento_calendario" class="form-select js-tipo-evento" required>
                                 <option value="">— Selecionar —</option>
+                                {{-- Sem JOGO: jogos nascem pela tela de Jogos (com times, campeonato e elenco) --}}
                                 @foreach(\App\Models\EventoCalendario::TIPOS as $tipo => $rotulo)
+                                @continue($tipo === 'JOGO')
                                 <option value="{{ $tipo }}">{{ $rotulo }}</option>
                                 @endforeach
                             </select>
+                            <small class="text-muted">Jogo? Use <a href="{{ route('admin.jogos.index') }}">Jogos</a>.</small>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Subtipo</label>
-                            <input type="text" name="subtipo_evento_calendario" class="form-control"
-                                placeholder="Ex: Sub-13, Feminino...">
+                            <input type="text" name="subtipo_evento_calendario" class="form-control js-subtipo"
+                                placeholder="Ex: Sub-13, Feminino..." autocomplete="off">
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Início</label>
@@ -469,7 +478,7 @@
                         <div class="col-md-8">
                             <label class="form-label">Local</label>
                             <input type="text" name="local_evento_calendario" class="form-control"
-                                placeholder="Ex: Campo AACJ">
+                                placeholder="Ex: Campo AACJ" list="locaisUsados" autocomplete="off">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Categoria</label>
@@ -496,92 +505,8 @@
     </div>
 </div>
 
-{{-- ── Modal Editar Evento ────────────────────────────────────────────────── --}}
-<div class="modal fade" id="modalEditarEvento" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content text-start modal-admin">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-pencil-square"></i> Editar Evento</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formEditarEvento" method="POST">
-                @csrf @method('PUT')
-                <div class="modal-body">
-                    <div class="row g-3">
-                        <div class="col-md-8">
-                            <label class="form-label">Título <span class="text-danger">*</span></label>
-                            <input type="text" id="edit_ev_titulo" name="titulo_evento_calendario"
-                                class="form-control" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Data <span class="text-danger">*</span></label>
-                            <input type="date" id="edit_ev_data" name="data_evento_calendario"
-                                class="form-control" required>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Tipo <span class="text-danger">*</span></label>
-                            <select id="edit_ev_tipo" name="tipo_evento_calendario" class="form-select" required>
-                                <option value="">— Selecionar —</option>
-                                @foreach(\App\Models\EventoCalendario::TIPOS as $tipo => $rotulo)
-                                <option value="{{ $tipo }}">{{ $rotulo }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Subtipo</label>
-                            <input type="text" id="edit_ev_subtipo" name="subtipo_evento_calendario"
-                                class="form-control">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Início</label>
-                            <input type="time" id="edit_ev_inicio" name="horario_inicio_evento_calendario"
-                                class="form-control">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Fim</label>
-                            <input type="time" id="edit_ev_fim" name="horario_fim_evento_calendario"
-                                class="form-control">
-                        </div>
-                        <div class="col-md-8">
-                            <label class="form-label">Local</label>
-                            <input type="text" id="edit_ev_local" name="local_evento_calendario"
-                                class="form-control">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Categoria</label>
-                            <select id="edit_ev_categoria" name="id_categoria" class="form-select">
-                                <option value="">Sem categoria (evento individual)</option>
-                                @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
-                                @endforeach
-                                {{-- Inativas em uso: escondidas; o JS mostra só a do evento aberto, já selecionada --}}
-                                @foreach($categoriasInativasEmUso as $cat)
-                                <option value="{{ $cat->id_categoria }}" class="js-categoria-inativa" hidden disabled>{{ $cat->rotulo }} (inativa)</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-12">
-                            <div class="form-text"><i class="bi bi-person"></i> Responsável (quem criou): <strong id="edit_ev_responsavel">—</strong></div>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label mb-1"><i class="bi bi-clock-history"></i> Histórico de alterações</label>
-                            <ul id="edit_ev_historico" class="list-unstyled small text-muted mb-0" style="max-height:140px;overflow-y:auto;"></ul>
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Descrição</label>
-                            <textarea id="edit_ev_descricao" name="descricao_evento_calendario"
-                                class="form-control" rows="2"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn-modal-submit"><i class="bi bi-check-lg"></i> Atualizar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+{{-- ── Modal Editar Evento (partial; também usado na tela do evento) ───────── --}}
+@include('admin.calendario.modals.editar-evento')
 
 {{-- ── Modal Criar Grade ──────────────────────────────────────────────────── --}}
 <div class="modal fade" id="modalCriarGrade" tabindex="-1" aria-hidden="true">
@@ -641,7 +566,7 @@
                         </div>
                         <div class="col-md-8">
                             <label class="form-label">Local <span class="text-danger">*</span></label>
-                            <input type="text" name="local_grade_treino" class="form-control" required
+                            <input type="text" name="local_grade_treino" class="form-control" required list="locaisUsados" autocomplete="off"
                                 placeholder="Ex: Campo A" value="{{ old('local_grade_treino') }}">
                         </div>
                         <div class="col-12">
@@ -721,7 +646,7 @@
                         </div>
                         <div class="col-md-8">
                             <label class="form-label">Local <span class="text-danger">*</span></label>
-                            <input type="text" id="edit_g_local" name="local_grade_treino" class="form-control" required>
+                            <input type="text" id="edit_g_local" name="local_grade_treino" class="form-control" required list="locaisUsados" autocomplete="off">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Observação do horário</label>
@@ -767,6 +692,8 @@
         </div>
     </div>
 </div>
+
+@include('admin.partials.sugestoes')
 
 @push('scripts')
 <script>
@@ -841,6 +768,12 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_ev_local').value    = this.dataset.local   || '';
             document.getElementById('edit_ev_descricao').value = this.dataset.descricao || '';
             const sel = document.getElementById('edit_ev_tipo');
+            // JOGO só aparece para o evento JOGO antigo (sem tbl_jogos); o servidor confere de novo
+            sel.querySelectorAll('.js-tipo-jogo').forEach(opt => {
+                const antigo = this.dataset.tipo === 'JOGO';
+                opt.hidden = !antigo;
+                opt.disabled = !antigo;
+            });
             for (let opt of sel.options) opt.selected = opt.value === this.dataset.tipo;
             // Categoria inativa só aparece (e só pode ser enviada) se for a atual deste evento
             const selCategoria = document.getElementById('edit_ev_categoria');

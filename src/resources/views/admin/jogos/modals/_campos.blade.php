@@ -1,9 +1,11 @@
 {{--
     Campos do jogo, usados nos modais de criar e editar.
-    $p = prefixo dos ids ('criar_' ou 'edit_'); $comOld = preenche com old() (só no criar; o editar é preenchido pelo JS).
+    $p = prefixo dos ids ('criar_' ou 'edit_'); $comOld = preenche com old() (no criar e na tela do jogo; o editar
+    da lista é preenchido pelo JS); $valores (opcional) = valores atuais do jogo, quando old() está vazio.
     Os nomes dos campos do evento são os mesmos do Calendário, para o alerta de conflito reenviar o formulário.
+    Campeonato: data-times = participantes (o JS de admin.jogos._script_form mostra só eles nos times).
 --}}
-@php $valor = fn ($campo) => $comOld ? old($campo) : null; @endphp
+@php $valor = fn ($campo) => $comOld ? old($campo, $valores[$campo] ?? null) : null; @endphp
 <div class="row g-3 form-jogo" data-prefixo="{{ $p }}">
     <div class="col-md-7">
         <label class="form-label">Campeonato <span class="text-danger">*</span></label>
@@ -14,6 +16,7 @@
             </option>
             @foreach($campeonatos as $camp)
             <option value="{{ $camp->id_campeonato }}" data-categoria="{{ $camp->categoria?->rotulo }}"
+                data-times="{{ $camp->times->pluck('id_time')->toJson() }}"
                 @selected((string) $valor('id_campeonato') === (string) $camp->id_campeonato)>
                 {{ $camp->nome_campeonato }}
             </option>
@@ -29,9 +32,12 @@
             <option value="{{ $cat->id_categoria }}" @selected((string) $valor('id_categoria') === (string) $cat->id_categoria)>{{ $cat->rotulo }}</option>
             @endforeach
         </select>
-        <small class="text-muted">Os atletas ativos da categoria são inscritos no jogo.</small>
+        <small class="text-muted">Só exibição: quem joga é o elenco ativo dos times internos.</small>
     </div>
 
+    <div class="col-12 js-aviso-participantes d-none">
+        <small class="text-muted"><i class="bi bi-info-circle"></i> Os times mostram só os participantes do campeonato.</small>
+    </div>
     <div class="col-md-5">
         <label class="form-label">Time Mandante <span class="text-danger">*</span></label>
         <select name="id_time_casa" id="{{ $p }}id_time_casa" class="form-select js-time-casa" required>
@@ -47,7 +53,7 @@
     </div>
     <div class="col-md-5">
         <label class="form-label">Time Visitante <span class="text-danger">*</span></label>
-        <select name="id_time_visitante" id="{{ $p }}id_time_visitante" class="form-select" required>
+        <select name="id_time_visitante" id="{{ $p }}id_time_visitante" class="form-select js-time-visitante" required>
             <option value="">— Selecionar —</option>
             @foreach($times as $time)
             <option value="{{ $time->id_time }}" @selected((string) $valor('id_time_visitante') === (string) $time->id_time)>{{ $time->nome_time }}</option>
@@ -72,7 +78,7 @@
     <div class="col-12">
         <label class="form-label">Local</label>
         <input type="text" name="local_evento_calendario" id="{{ $p }}local" class="form-control" maxlength="255"
-            placeholder="Vazio = local do campeonato" value="{{ $valor('local_evento_calendario') }}">
+            placeholder="Vazio = local do campeonato" list="locaisUsados" autocomplete="off" value="{{ $valor('local_evento_calendario') }}">
     </div>
 
     <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-123"></i> Placar (vazio = jogo ainda não jogado)</p></div>

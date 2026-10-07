@@ -44,8 +44,14 @@
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_campeonato" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Liga', 'Copa', 'Torneio', 'Mata-mata', 'Pontos Corridos', 'Amistoso'] as $tipo)
-                                <option value="{{ $tipo }}" {{ old('tipo_campeonato', $campeonato->tipo_campeonato) == $tipo ? 'selected' : '' }}>{{ $tipo }}</option>
+                                {{-- Gravado em maiúsculas (Campeonato::TIPOS); tipo antigo fora da lista continua como opção --}}
+                                @php
+                                    $tipoAtual = mb_strtoupper((string) old('tipo_campeonato', $campeonato->tipo_campeonato));
+                                    $tiposCampeonato = \App\Models\Campeonato::TIPOS
+                                        + ($tipoAtual !== '' ? [$tipoAtual => $campeonato->tipo_label] : []);
+                                @endphp
+                                @foreach($tiposCampeonato as $tipo => $rotuloTipo)
+                                <option value="{{ $tipo }}" @selected($tipoAtual === $tipo)>{{ $rotuloTipo }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -56,7 +62,7 @@
                                 @foreach($categorias as $cat)
                                 <option value="{{ $cat->id_categoria }}"
                                     {{ old('id_categoria', $campeonato->id_categoria) == $cat->id_categoria ? 'selected' : '' }}>
-                                    {{ $cat->nome_categoria }}
+                                    {{ $cat->rotulo }}
                                 </option>
                                 @endforeach
                             </select>
@@ -73,7 +79,7 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Local</label>
-                            <input type="text" name="local_evento" class="form-control"
+                            <input type="text" name="local_evento" class="form-control" list="locaisUsados" autocomplete="off"
                                 value="{{ old('local_evento', $campeonato->local_evento) }}">
                         </div>
                         <div class="col-md-6">
@@ -157,4 +163,5 @@
 
     </div>
 </main>
+@include('admin.partials.sugestoes')
 @endsection

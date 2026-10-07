@@ -9,6 +9,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use App\Models\Campeonato;
+use App\Models\EventoCalendario;
 use App\Models\Noticia;
 use App\View\Composers\MenuAdminComposer;
 
@@ -21,14 +22,17 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        View::composer('*', function ($view) { // Compartilha os campeonatos ordenados por nome em todas as views do site
+        // Dados do site só nas views que os usam (com '*', as consultas rodavam em toda view renderizada,
+        // inclusive em cada partial do admin). Campeonatos do menu: só o header do site
+        View::composer('partials.header', function ($view) {
             $view->with('campeonatosMenu', Campeonato::orderBy('nome_campeonato')->get());
         });
 
-        // Compartilha APENAS as notícias ativas com as views do site
-        View::composer('*', function ($view) { // Compartilha as notícias ativas em todas as views do site
-            // Adicionado o where para blindar o status ATIVO globalmente
-            $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO') // Me dê as 3 notícias mais recentes, mas apenas se a coluna status_noticia for exatamente igual a 'ATIVO'
+        // As 3 notícias ATIVAS mais recentes: header e footer do site e as páginas de notícias
+        View::composer([
+            'partials.header', 'partials.footer', 'site.noticias.news-feed', 'site.noticias.show-noticia-content',
+        ], function ($view) {
+            $noticiasRecentes = Noticia::where('status_noticia', 'ATIVO')
                 ->orderBy('data_publicacao_noticia', 'desc')
                 ->take(3)
                 ->get();
@@ -36,8 +40,12 @@ class AppServiceProvider extends ServiceProvider
             $view->with('noticiasRecentes', $noticiasRecentes);
         });
 
-        // Barra lateral do admin: campeonatos em andamento, matrículas pendentes e item ativo
-        View::composer('admin.partials.app-sidebar', MenuAdminComposer::class);
+        // Layout do admin: campeonatos em andamento, matrículas pendentes e item ativo (os partials da barra
+        // e do header herdam do layout; uma vez por página)
+        View::composer('layout.admin', MenuAdminComposer::class);
+
+        // Sugestões dos formulários do admin (campo Local)
+        View::composer('admin.partials.sugestoes', fn ($view) => $view->with('locaisUsados', EventoCalendario::locaisUsados()));
 
         URL::forceRootUrl(config('app.url'));
 

@@ -6,20 +6,76 @@
     <main class="app-main pt-3">
         <div class="container-fluid">
 
-            <div class="row mb-3 align-items-center">
-                <div class="col-sm-8">
-                    <h1 class="m-0 text-dark" style="font-size: 24px; font-weight: 700;">{{ $evento->titulo_evento_calendario }}</h1>
-                </div>
-                <div class="col-sm-4 text-end">
-                    <a href="{{ route('admin.calendario.index') }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Voltar ao calendário
-                    </a>
-                </div>
+            {{-- Linha de caminho: cada parte leva à lista dela; a última é o próprio evento --}}
+            <nav aria-label="Caminho" class="mb-2">
+                <ol class="breadcrumb mb-0 small" id="caminhoEvento">
+                    @foreach ($caminho as [$rotulo, $url])
+                        @if ($url)
+                        <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
+                        @else
+                        <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
+                        @endif
+                    @endforeach
+                </ol>
+            </nav>
+
+            {{-- Cabeçalho: título e ações (editar, placar do jogo, cancelar/reativar, ocultar/mostrar, voltar) --}}
+            @php $rotuloEvento = $jogo ? 'jogo' : 'evento'; @endphp
+            <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                <h1 class="m-0 text-dark me-auto" style="font-size: 24px; font-weight: 700;">{{ $evento->titulo_evento_calendario }}</h1>
+
+                <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="{{ $jogo ? '#modalEditarJogo' : '#modalEditarEvento' }}" id="btnEditarEvento">
+                    <i class="bi bi-pencil"></i> Editar
+                </button>
+
+                @if ($jogo)
+                <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modalPlacar">
+                    <i class="bi bi-123"></i> Placar
+                    @if ($jogo->temPlacar())<span class="badge bg-dark ms-1">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>@endif
+                </button>
+                @endif
+
+                {{-- Cancelar <-> reativar (oculto precisa ser mostrado antes) --}}
+                @unless ($evento->estaOculto())
+                <form action="{{ route('admin.calendario.eventos.cancelar', $evento->id_evento_calendario) }}" method="POST" class="d-inline"
+                      onsubmit="return confirm(@js($evento->estaCancelado() ? "Reativar este {$rotuloEvento}?" : "Cancelar este {$rotuloEvento}? Ele continua visível, com o selo \"Cancelado\"."))">
+                    @csrf @method('PATCH')
+                    @if ($evento->estaCancelado())
+                        <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-check-circle"></i> Reativar</button>
+                    @else
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-circle"></i> Cancelar</button>
+                    @endif
+                </form>
+                @endunless
+
+                {{-- Ocultar <-> mostrar: substitui a exclusão (o registro fica) --}}
+                <form action="{{ route('admin.calendario.eventos.ocultar', $evento->id_evento_calendario) }}" method="POST" class="d-inline"
+                      onsubmit="return confirm(@js($evento->estaOculto() ? "Mostrar este {$rotuloEvento} de novo?" : "Ocultar este {$rotuloEvento}? Ele some das listas e do site, mas o registro fica."))">
+                    @csrf @method('PATCH')
+                    @if ($evento->estaOculto())
+                        <button type="submit" class="btn btn-outline-success btn-sm"><i class="bi bi-eye"></i> Mostrar</button>
+                    @else
+                        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-eye-slash"></i> Ocultar</button>
+                    @endif
+                </form>
+
+                <a href="{{ $voltar }}" class="btn btn-secondary btn-sm" id="btnVoltar">
+                    <i class="bi bi-arrow-left"></i> {{ $jogo ? 'Voltar aos jogos' : 'Voltar ao calendário' }}
+                </a>
             </div>
 
             @if (session('sucesso'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
                     {{ session('sucesso') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            {{-- Time interno sem elenco ao criar ou trocar times (vem da tela de Jogos) --}}
+            @if (session('aviso'))
+                <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                    <strong>Atenção!</strong> {{ session('aviso') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
@@ -324,4 +380,66 @@
             </div>
         </div>
     </main>
+
+    {{-- Edição sem sair da tela: o jogo pelo formulário do jogo; os outros pelo formulário do Calendário --}}
+    @if ($jogo)
+        @include('admin.jogos.modals.edit', ['jogoEmEdicao' => $jogo, 'campeonatos' => $campeonatosDoJogo, 'times' => $timesDoJogo])
+
+        {{-- Placar rápido: só os dois números (os dois ou nenhum) --}}
+        <div class="modal fade" id="modalPlacar" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-sm">
+                <div class="modal-content text-start modal-admin">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-123"></i> Placar</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="{{ route('admin.jogos.placar', $jogo->id_jogo) }}" method="POST">
+                        @csrf @method('PATCH')
+                        <div class="modal-body">
+                            <div class="row g-2 align-items-end">
+                                <div class="col-5">
+                                    <label class="form-label small" for="placar_casa">{{ $jogo->timeCasa->nome_time }}</label>
+                                    <input type="number" min="0" max="99" name="placar_time_casa_jogos" id="placar_casa" class="form-control text-center"
+                                           placeholder="—" value="{{ old('placar_time_casa_jogos', $jogo->placar_time_casa_jogos) }}">
+                                </div>
+                                <div class="col-2 text-center fw-bold pb-2">×</div>
+                                <div class="col-5">
+                                    <label class="form-label small" for="placar_visitante">{{ $jogo->timeVisitante->nome_time }}</label>
+                                    <input type="number" min="0" max="99" name="placar_time_visitante_jogos" id="placar_visitante" class="form-control text-center"
+                                           placeholder="—" value="{{ old('placar_time_visitante_jogos', $jogo->placar_time_visitante_jogos) }}">
+                                </div>
+                            </div>
+                            <p class="text-muted small mt-2 mb-0">Vazios = jogo ainda não jogado.</p>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn-modal-submit"><i class="bi bi-check-lg"></i> Salvar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @include('admin.jogos._script_form')
+    @else
+        @include('admin.calendario.modals.editar-evento', ['eventoEmEdicao' => $evento])
+    @endif
+
+    @include('admin.partials.sugestoes')
+
+    @php
+        // Reabre o formulário que voltou com erro de validação (edição: voltar=evento; placar: só os placares)
+        $reabrir = $errors->any()
+            ? (old('voltar') === 'evento' ? ($jogo ? 'modalEditarJogo' : 'modalEditarEvento')
+                : ($jogo && $errors->hasAny(['placar_time_casa_jogos', 'placar_time_visitante_jogos']) ? 'modalPlacar' : null))
+            : null;
+    @endphp
+    <script>
+    // "#editar" (botão Editar da lista do Calendário, no jogo) ou erro de validação: abre o formulário
+    document.addEventListener('DOMContentLoaded', function () {
+        const id = location.hash === '#editar' ? @js($jogo ? 'modalEditarJogo' : 'modalEditarEvento') : @js($reabrir);
+        const modal = id && document.getElementById(id);
+        if (modal) bootstrap.Modal.getOrCreateInstance(modal).show();
+    });
+    </script>
 @endsection

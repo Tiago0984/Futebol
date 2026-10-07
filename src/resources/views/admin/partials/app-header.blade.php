@@ -1,5 +1,6 @@
 @php
-  $notifMatriculas = \App\Models\Atleta::whereIn('status_atleta', ['PENDENTE', 'pendente'])->count();
+  // Contador do MenuAdminComposer (registrado no layout.admin; o mesmo da barra lateral)
+  $notifMatriculas = $matriculasPendentes ?? 0;
   $notifTotal      = $notifMatriculas;
 @endphp
 <!--begin::Header-->

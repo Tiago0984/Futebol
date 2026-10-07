@@ -54,7 +54,7 @@ class EventoInscricaoTest extends TestCase
 
         $this->comoAdmin()
             ->post(route('admin.calendario.eventos.store'), $this->dadosEvento())
-            ->assertSessionHas('sucesso', 'Evento adicionado ao calendário.');
+            ->assertSessionHas('sucesso', 'Evento adicionado ao calendário. Inscreva os atletas abaixo.');
 
         $this->assertSame(0, DB::table('tbl_evento_atleta')->count());
     }

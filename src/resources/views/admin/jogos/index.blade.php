@@ -233,6 +233,8 @@
 
 @include('admin.jogos.modals.create')
 @include('admin.jogos.modals.edit')
+@include('admin.partials.sugestoes')
+@include('admin.jogos._script_form')
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -258,30 +260,6 @@ document.addEventListener('DOMContentLoaded', function () {
         if (document.activeElement?.id === 'filtroTime') e.preventDefault();
     });
 
-    // Campeonato: mostra a categoria dele; Amistoso: mostra o select de categoria,
-    // sugerindo a categoria do time mandante quando ainda está vazio
-    function atualizarCategoria(form) {
-        const campeonato = form.querySelector('.js-campeonato');
-        const amistoso   = campeonato.value === @js(\App\Http\Controllers\Admin\JogosController::AMISTOSO);
-        const bloco      = form.querySelector('.js-bloco-categoria');
-        const categoria  = form.querySelector('.js-categoria');
-        const dica       = form.querySelector('.js-categoria-campeonato');
-
-        bloco.classList.toggle('d-none', !amistoso);
-        const rotulo = campeonato.selectedOptions[0]?.dataset.categoria;
-        dica.textContent = !amistoso && rotulo ? `Categoria do campeonato: ${rotulo} (atletas inscritos no jogo).` : '';
-
-        const casa = form.querySelector('.js-time-casa').selectedOptions[0];
-        if (amistoso && !categoria.value && casa?.dataset.categoria) {
-            categoria.value = casa.dataset.categoria;
-        }
-    }
-    document.querySelectorAll('.form-jogo').forEach(form => {
-        form.querySelector('.js-campeonato').addEventListener('change', () => atualizarCategoria(form));
-        form.querySelector('.js-time-casa').addEventListener('change', () => atualizarCategoria(form));
-        atualizarCategoria(form);
-    });
-
     document.querySelectorAll('.btn-editar-jogo').forEach(btn => {
         btn.addEventListener('click', function () {
             const f = document.getElementById('formEditarJogo');
@@ -296,7 +274,9 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_local').value            = this.dataset.local;
             document.getElementById('edit_placar_casa').value      = this.dataset.placarCasa;
             document.getElementById('edit_placar_visitante').value = this.dataset.placarVisitante;
-            atualizarCategoria(f.querySelector('.form-jogo'));
+            // Times com que o modal abriu ficam na lista mesmo fora dos participantes (jogo antigo)
+            window.guardarTimesIniciais(f.querySelector('.form-jogo'));
+            window.atualizarFormJogo(f.querySelector('.form-jogo'));
         });
     });
 

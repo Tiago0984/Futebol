@@ -39,12 +39,53 @@
       </div>
     @endif
 
+    @if(session('aviso'))
+      <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
+        <strong>Atenção!</strong> {{ session('aviso') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    @endif
+
+    @if(session('erro') || $errors->any())
+      <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+        <strong>Erro!</strong> {{ session('erro') }}
+        @foreach($errors->all() as $error)<div>{{ $error }}</div>@endforeach
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    @endif
+
+    {{-- Adicionar ao elenco: atletas ativos que ainda não estão no time (Fase 10) --}}
+    <form action="{{ route('admin.times.elenco.adicionar', $time->id_time) }}" method="POST"
+          class="card card-body shadow-sm mb-3 d-flex flex-row flex-wrap align-items-end gap-2" id="formAdicionarElenco">
+      @csrf
+      <div class="flex-grow-1" style="min-width:240px;">
+        <label class="form-label small mb-1" for="elenco_atleta">Adicionar ao elenco</label>
+        <select name="id_atleta" id="elenco_atleta" class="form-select form-select-sm" required>
+          <option value="">— Escolha um atleta ativo —</option>
+          @foreach($disponiveis as $rotuloCategoria => $grupo)
+          <optgroup label="{{ $rotuloCategoria }}">
+            @foreach($grupo as $disponivel)
+            <option value="{{ $disponivel->id_atleta }}" @selected((string) old('id_atleta') === (string) $disponivel->id_atleta)>{{ $disponivel->nome_atleta }}</option>
+            @endforeach
+          </optgroup>
+          @endforeach
+        </select>
+      </div>
+      <div style="width:110px;">
+        <label class="form-label small mb-1" for="elenco_camisa">Camisa</label>
+        <input type="number" min="0" max="99" name="camisa_atleta_time" id="elenco_camisa" class="form-control form-control-sm"
+               placeholder="—" value="{{ old('camisa_atleta_time') }}">
+      </div>
+      <button type="submit" class="btn btn-success btn-sm" @disabled($disponiveis->isEmpty())>
+        <i class="bi bi-person-plus"></i> Adicionar
+      </button>
+      <small class="text-muted w-100">Quem entra não é inscrito sozinho nos jogos já criados: use "Preencher pelo elenco" na tela de cada jogo.</small>
+    </form>
+
     @if($atletas->isEmpty())
       <div class="text-center py-5 text-muted">
         <i class="bi bi-people" style="font-size:3rem; opacity:.3;"></i>
-        <p class="mt-3">Nenhum atleta vinculado a este time.<br>
-          <a href="{{ route('admin.atletas.index') }}">Vincule atletas na gestão de atletas.</a>
-        </p>
+        <p class="mt-3">Nenhum atleta no elenco deste time. Adicione pelo campo acima.</p>
       </div>
     @else
 
@@ -173,12 +214,20 @@
                   <span class="text-muted" style="font-size:.75rem;">—</span>
                 @endif
               </td>
-              <td class="text-center">
+              <td class="text-center text-nowrap">
                 <button class="btn btn-sm btn-outline-secondary"
                         data-bs-toggle="modal"
-                        data-bs-target="#modalEdit{{ $atleta->id_atleta }}">
+                        data-bs-target="#modalEdit{{ $atleta->id_atleta }}" title="Editar">
                   <i class="bi bi-pencil"></i>
                 </button>
+                {{-- Sair do elenco: as inscrições em jogos ficam (a tela avisa em quantos jogos futuros) --}}
+                <form action="{{ route('admin.times.elenco.remover', [$time->id_time, $atleta->id_atleta]) }}" method="POST" class="d-inline"
+                      onsubmit="return confirm(@js("Tirar {$atleta->nome_atleta} do elenco? Camisa e contadores deste time saem junto; as inscrições em jogos ficam."))">
+                  @csrf @method('DELETE')
+                  <button type="submit" class="btn btn-sm btn-outline-danger" title="Tirar do elenco">
+                    <i class="bi bi-person-dash"></i>
+                  </button>
+                </form>
               </td>
             </tr>
 

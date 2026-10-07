@@ -107,8 +107,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Elenco do time interno (antiga Escalação), aberto pela linha do time em Times
     Route::get('times/{timeId}/elenco',              [ElencoController::class, 'show'])->name('times.elenco');
     Route::patch('times/{timeId}/elenco/{atletaId}', [ElencoController::class, 'update'])->name('times.elenco.update');
+    Route::post('times/{timeId}/elenco',             [ElencoController::class, 'adicionar'])->name('times.elenco.adicionar');
+    Route::delete('times/{timeId}/elenco/{atletaId}', [ElencoController::class, 'remover'])->name('times.elenco.remover');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
+    Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo
     Route::resource('categorias',  CategoriasController::class)->only($acoesDaLista);
     Route::patch('categorias/{id}/toggle-status', [CategoriasController::class, 'toggleStatus'])->name('categorias.toggleStatus');
 

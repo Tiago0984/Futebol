@@ -299,14 +299,21 @@ class JogoEscalacaoTest extends TestCase
         $jogo->evento->inscrever($idAtleta, 'INDIVIDUAL', null, $this->azul);
         $jogo->evento->inscrever($this->atleta('Sol'), 'INDIVIDUAL', null);
 
-        $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
+        $resposta = $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
             ->assertOk()
             ->assertSee('Escalação:')
             ->assertSee('Preencher pelo elenco')
             ->assertSeeInOrder(['Time Azul', '<strong>1</strong> atleta(s)', 'Sem time', '<strong>1</strong> inscrito(s)'], false)
             ->assertSee('<option value="' . $this->azul . '" selected>Time Azul</option>', false)
-            ->assertDontSee('<option value="' . $this->visitante . '"', false) // externo não aparece
             ->assertSee('Elenco: Time Azul');
+
+        // Selects de escalação (name="id_time"): o externo não aparece. O formulário de edição do jogo, na
+        // mesma tela, lista todos os times (mandante/visitante), por isso a conferência é só nesses selects
+        preg_match_all('#<select name="id_time".*?</select>#s', $resposta->getContent(), $selects);
+        $this->assertNotEmpty($selects[0]);
+        foreach ($selects[0] as $select) {
+            $this->assertStringNotContainsString('<option value="' . $this->visitante . '"', $select);
+        }
     }
 
     // ---------- ajudantes ----------

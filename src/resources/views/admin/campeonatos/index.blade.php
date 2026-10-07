@@ -32,8 +32,8 @@
                         <label class="filter-label">Tipo</label>
                         <select id="filtroTipo" class="form-select form-select-sm">
                             <option value="">Todos</option>
-                            @foreach(['Liga','Copa','Torneio','Mata-mata','Pontos Corridos','Amistoso'] as $t)
-                            <option value="{{ strtolower($t) }}">{{ $t }}</option>
+                            @foreach(\App\Models\Campeonato::TIPOS as $t => $rotuloTipo)
+                            <option value="{{ $t }}">{{ $rotuloTipo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -42,7 +42,7 @@
                         <select id="filtroCategoria" class="form-select form-select-sm">
                             <option value="">Todas</option>
                             @foreach($categorias as $cat)
-                            <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
+                            <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -101,7 +101,7 @@
                         @forelse($campeonatos as $camp)
                         <tr class="linha-camp"
                             data-nome="{{ strtolower($camp->nome_campeonato) }}"
-                            data-tipo="{{ strtolower($camp->tipo_campeonato ?? '') }}"
+                            data-tipo="{{ $camp->tipo_campeonato }}"
                             data-categoria="{{ $camp->id_categoria }}"
                             data-status="{{ strtoupper($camp->status_campeonato) }}">
                             <td>
@@ -116,7 +116,7 @@
                                 @endif
                             </td>
                             <td><span class="fw-semibold">{{ $camp->nome_campeonato }}</span></td>
-                            <td><span class="badge-cat">{{ $camp->tipo_campeonato ?? '—' }}</span></td>
+                            <td><span class="badge-cat">{{ $camp->tipo_label ?: '—' }}</span></td>
                             <td class="text-muted" style="font-size:0.82rem;">
                                 {{ $camp->data_inicio_campeonato ? \Carbon\Carbon::parse($camp->data_inicio_campeonato)->format('d/m/Y') : '—' }}
                                 @if($camp->data_fim_campeonato)
@@ -124,7 +124,7 @@
                                 @endif
                             </td>
                             <td class="text-muted">{{ $camp->local_evento ?? '—' }}</td>
-                            <td class="text-muted">{{ $camp->categoria->nome_categoria ?? '—' }}</td>
+                            <td class="text-muted">{{ $camp->categoria?->rotulo ?? '—' }}</td>
                             <td class="text-center">
                                 <span class="badge bg-secondary">{{ $camp->times->count() }}</span>
                             </td>
@@ -137,6 +137,10 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
+                                    <a href="{{ route('admin.jogos.index', ['campeonato' => $camp->id_campeonato]) }}"
+                                       class="btn-tbl view" title="Jogos do campeonato">
+                                        <i class="bi bi-calendar2-week"></i><small class="ms-1">Jogos</small>
+                                    </a>
                                     <button class="btn-tbl edit" title="Editar"
                                         data-bs-toggle="modal" data-bs-target="#modalEditarCampeonato"
                                         data-id="{{ $camp->id_campeonato }}"
@@ -214,8 +218,8 @@
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_campeonato" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Liga','Copa','Torneio','Mata-mata','Pontos Corridos','Amistoso'] as $tipo)
-                                <option value="{{ $tipo }}">{{ $tipo }}</option>
+                                @foreach(\App\Models\Campeonato::TIPOS as $tipo => $rotuloTipo)
+                                <option value="{{ $tipo }}">{{ $rotuloTipo }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -224,7 +228,7 @@
                             <select name="id_categoria" class="form-select">
                                 <option value="">— Nenhuma —</option>
                                 @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
+                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -238,7 +242,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Local</label>
-                            <input type="text" name="local_evento" class="form-control" placeholder="Ex: Campo AACJ">
+                            <input type="text" name="local_evento" class="form-control" placeholder="Ex: Campo AACJ" list="locaisUsados" autocomplete="off">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Organizador</label>
@@ -305,6 +309,8 @@
     </div>
 </div>
 
+@include('admin.partials.sugestoes')
+
 {{-- ── Modal Editar Campeonato ────────────────────────────────────────────── --}}
 <div class="modal fade" id="modalEditarCampeonato" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl">
@@ -329,8 +335,8 @@
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select id="edit_tipo_campeonato" name="tipo_campeonato" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                @foreach(['Liga','Copa','Torneio','Mata-mata','Pontos Corridos','Amistoso'] as $tipo)
-                                <option value="{{ $tipo }}">{{ $tipo }}</option>
+                                @foreach(\App\Models\Campeonato::TIPOS as $tipo => $rotuloTipo)
+                                <option value="{{ $tipo }}">{{ $rotuloTipo }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -339,7 +345,7 @@
                             <select id="edit_id_categoria" name="id_categoria" class="form-select">
                                 <option value="">— Nenhuma —</option>
                                 @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
+                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -355,7 +361,7 @@
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Local</label>
-                            <input type="text" id="edit_local_evento" name="local_evento" class="form-control">
+                            <input type="text" id="edit_local_evento" name="local_evento" class="form-control" list="locaisUsados" autocomplete="off">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Organizador</label>
@@ -433,7 +439,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // --- Filtros ---
     function aplicarFiltros() {
         const nome      = document.getElementById('filtroNome')?.value.toLowerCase().trim() ?? '';
-        const tipo      = document.getElementById('filtroTipo')?.value.toLowerCase() ?? '';
+        const tipo      = document.getElementById('filtroTipo')?.value ?? '';
         const categoria = document.getElementById('filtroCategoria')?.value ?? '';
         const status    = document.getElementById('filtroStatus')?.value ?? '';
         let visiveis = 0;
@@ -482,8 +488,15 @@ document.addEventListener('DOMContentLoaded', function () {
             const bannerEl = document.getElementById('edit_banner_atual');
             bannerEl.textContent = this.dataset.banner ? 'Atual: ' + this.dataset.banner : '';
 
+            // Tipo gravado em maiúsculas (Campeonato::TIPOS); valor antigo fora da lista entra como opção
             const selTipo = document.getElementById('edit_tipo_campeonato');
-            for (let opt of selTipo.options) opt.selected = opt.value === this.dataset.tipo;
+            const tipo = (this.dataset.tipo || '').toUpperCase();
+            selTipo.querySelectorAll('.js-tipo-antigo').forEach(opt => opt.remove());
+            if (tipo && ![...selTipo.options].some(opt => opt.value === tipo)) {
+                selTipo.add(new Option(tipo, tipo, false, false));
+                selTipo.lastElementChild.classList.add('js-tipo-antigo');
+            }
+            selTipo.value = tipo;
 
             const selCat = document.getElementById('edit_id_categoria');
             for (let opt of selCat.options) opt.selected = opt.value === this.dataset.categoria;

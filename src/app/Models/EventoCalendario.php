@@ -89,6 +89,9 @@ class EventoCalendario extends Model
     // Tipos do ramo "Outros"
     public const TIPOS_OUTROS = ['REUNIAO', 'CONFRATERNIZACAO', 'EVENTO'];
 
+    // Sugestões do campo Subtipo quando o tipo é AVALIACAO (o campo continua livre)
+    public const SUBTIPOS_AVALIACAO = ['Exame médico', 'Avaliação física'];
+
     // id_usuario fica fora de propósito: o responsável é gravado só na criação (criarPor) e nenhum
     // update() com os dados do formulário pode trocá-lo. O mesmo vale para id_grade_treino e
     // data_grade_evento_calendario: só a geração pela grade grava a origem, e o formulário nunca a muda.
@@ -555,6 +558,28 @@ class EventoCalendario extends Model
             'INATIVO', 'CANCELADO' => $query->where('status_evento_calendario', $situacao),
             default                => $query->where('status_evento_calendario', 'ATIVO'),
         };
+    }
+
+    // Página de um ramo (menu e linha de caminho): Amistosos abre a lista de Jogos; os outros, o Calendário filtrado
+    public static function urlDoRamo(string $ramo): string
+    {
+        return $ramo === 'amistosos'
+            ? route('admin.jogos.index', ['campeonato' => 'amistoso'])
+            : route('admin.calendario.index', ['ramo' => $ramo]);
+    }
+
+    // Locais já usados em eventos, grade e campeonatos (sugestões do campo Local), sem repetir, em ordem
+    public static function locaisUsados(): array
+    {
+        $locais = DB::table('tbl_evento_calendario')->select('local_evento_calendario as local')
+            ->union(DB::table('tbl_grade_treino')->select('local_grade_treino'))
+            ->union(DB::table('tbl_campeonato')->select('local_evento'));
+
+        return DB::query()->fromSub($locais, 'l')
+            ->whereNotNull('local')->where('local', '<>', '')
+            ->orderBy('local')
+            ->pluck('local')
+            ->all();
     }
 
     // Ramo do menu deste evento (a mesma regra de scopeDoRamo), para marcar o item ativo na tela do evento

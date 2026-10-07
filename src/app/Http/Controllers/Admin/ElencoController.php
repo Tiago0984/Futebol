@@ -7,6 +7,7 @@ use App\Models\Time;
 use App\Models\Atleta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 /**
  * Elenco de um time interno (antiga tela "Escalação", Fase 10): camisa, posição, titular/reserva e
@@ -53,7 +54,84 @@ class ElencoController extends Controller
             ->get()
             ->groupBy('id_atleta');
 
-        return view('admin.times.elenco', compact('time', 'atletas', 'cartoes'));
+        // Atletas ativos que ainda não estão no elenco, pela categoria atual (select "Adicionar ao elenco")
+        $disponiveis = Atleta::with('categoriasAtivas')
+            ->where('status_atleta', 'ATIVO')
+            ->whereNotIn('id_atleta', DB::table('tbl_atleta_time')->where('id_time', $timeId)->select('id_atleta'))
+            ->orderBy('nome_atleta')
+            ->get()
+            ->groupBy(fn ($atleta) => $atleta->categoriasAtivas->first()?->rotulo ?? 'Sem categoria')
+            ->sortKeys();
+
+        return view('admin.times.elenco', compact('time', 'atletas', 'cartoes', 'disponiveis'));
+    }
+
+    /**
+     * Adiciona um atleta ativo ao elenco (como o modal do atleta faz: titular, camisa opcional). Não inscreve
+     * em jogos já criados: use "Preencher pelo elenco" na tela de cada jogo (CLAUDE.md, seção 4, "Jogos").
+     */
+    public function adicionar(Request $request, $timeId)
+    {
+        $time = $this->timeInterno($timeId);
+        if (! $time) {
+            return redirect()->route('admin.times.index')->with('erro', 'Times externos não possuem elenco cadastrado na associação.');
+        }
+
+        $request->validate([
+            'id_atleta'          => ['required', 'integer', Rule::exists('tbl_atletas', 'id_atleta')->where('status_atleta', 'ATIVO')],
+            'camisa_atleta_time' => 'nullable|integer|min:0|max:99',
+        ], [
+            'id_atleta.required' => 'Escolha o atleta.',
+            'id_atleta.exists'   => 'Escolha um atleta ativo.',
+        ]);
+
+        $atleta = Atleta::findOrFail($request->id_atleta);
+        if ($time->atletas()->where('tbl_atleta_time.id_atleta', $atleta->id_atleta)->exists()) {
+            return back()->with('erro', "{$atleta->nome_atleta} já está no elenco.");
+        }
+
+        $time->atletas()->attach($atleta->id_atleta, [
+            'status_atleta_time'  => 'TITULAR',
+            'camisa_atleta_time'  => (int) $request->input('camisa_atleta_time', 0),
+            'posicao_atleta_time' => '',
+        ]);
+
+        return redirect()->route('admin.times.elenco', $time->id_time)
+            ->with('sucesso', "{$atleta->nome_atleta} entrou no elenco. Para os jogos já criados, use \"Preencher pelo elenco\" na tela de cada jogo.");
+    }
+
+    /**
+     * Tira o atleta do elenco. As inscrições em jogos ficam (a tela do jogo marca "Fora do elenco"); a
+     * mensagem diz em quantos jogos futuros do time ele continua inscrito. Contadores do elenco saem juntos.
+     */
+    public function remover($timeId, $atletaId)
+    {
+        $time = $this->timeInterno($timeId);
+        if (! $time) {
+            return redirect()->route('admin.times.index')->with('erro', 'Times externos não possuem elenco cadastrado na associação.');
+        }
+
+        $atleta = Atleta::findOrFail($atletaId);
+        if (! $time->atletas()->detach($atleta->id_atleta)) {
+            return back()->with('erro', "{$atleta->nome_atleta} não está no elenco.");
+        }
+
+        $jogos    = $time->jogosFuturosComAtleta($atleta->id_atleta);
+        $mensagem = "{$atleta->nome_atleta} saiu do elenco do {$time->nome_time}.";
+        if ($jogos) {
+            $mensagem .= " Continua inscrito em {$jogos} jogo(s) futuro(s) do time (marcado como \"Fora do elenco\" na tela do jogo); "
+                . 'remova a inscrição na tela de cada jogo, se for o caso.';
+        }
+
+        return redirect()->route('admin.times.elenco', $time->id_time)->with($jogos ? 'aviso' : 'sucesso', $mensagem);
+    }
+
+    // Time interno (externo não tem elenco na associação); null se for externo
+    private function timeInterno($timeId): ?Time
+    {
+        $time = Time::findOrFail($timeId);
+
+        return $time->tipo_time === 'EXTERNO' ? null : $time;
     }
 
     public function update(Request $request, $timeId, $atletaId)

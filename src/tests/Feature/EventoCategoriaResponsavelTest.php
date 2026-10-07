@@ -166,7 +166,7 @@ class EventoCategoriaResponsavelTest extends TestCase
     {
         return array_merge([
             'titulo_evento_calendario'         => 'Evento de Teste',
-            'tipo_evento_calendario'           => 'JOGO',
+            'tipo_evento_calendario'           => 'TREINO', // JOGO nasce pela tela de Jogos (Fase 10)
             'data_evento_calendario'           => now()->addWeek()->toDateString(),
             'horario_inicio_evento_calendario' => '09:00',
             'local_evento_calendario'          => 'Campo A',

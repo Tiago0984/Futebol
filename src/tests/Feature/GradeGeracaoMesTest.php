@@ -285,6 +285,8 @@ class GradeGeracaoMesTest extends TestCase
         $dados = [
             'titulo_evento_calendario' => 'Reunião', 'tipo_evento_calendario' => 'REUNIAO',
             'data_evento_calendario' => '2027-01-10', 'horario_inicio_evento_calendario' => '10:00',
+            // Com categoria (sem categoria, a criação abre a tela do evento, para inscrever: Fase 10)
+            'id_categoria' => \App\Models\Categoria::ativas()->value('id_categoria'),
         ];
 
         $this->comoAdminFixo()->post(route('admin.calendario.eventos.store'), $dados)

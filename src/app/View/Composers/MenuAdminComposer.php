@@ -10,8 +10,9 @@ use Illuminate\Support\Collection;
 use Illuminate\View\View;
 
 /**
- * Dados da barra lateral do admin (Fase 10), montados num lugar só: campeonatos em andamento, matrículas
- * pendentes e o item ativo. Duas consultas por página (mais uma na tela do evento, para achar o ramo dele).
+ * Dados da barra lateral e do header do admin (Fase 10), montados num lugar só: campeonatos em andamento,
+ * matrículas pendentes e o item ativo. Registrado no layout.admin (os partials herdam), então roda uma vez
+ * por página: duas consultas (mais uma na tela do evento, para achar o ramo dele).
  */
 class MenuAdminComposer
 {
@@ -55,9 +56,14 @@ class MenuAdminComposer
             return $ramo ? "ramo:{$ramo}" : 'calendario';
         }
 
-        // Jogos de um campeonato em andamento: o campeonato no ramo Campeonatos; o resto, Jogos
+        // Jogos de um campeonato em andamento: o campeonato no ramo Campeonatos; amistosos: o ramo Amistosos
+        // (que abre esta lista); o resto, Jogos
         if ($r->routeIs('admin.jogos.*')) {
             $campeonato = (string) $r->query('campeonato');
+
+            if ($campeonato === 'amistoso') {
+                return 'ramo:amistosos';
+            }
 
             return $emAndamento->contains(fn ($c) => (string) $c->id_campeonato === $campeonato)
                 ? "campeonato:{$campeonato}"

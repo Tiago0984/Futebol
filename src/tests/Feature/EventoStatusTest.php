@@ -22,7 +22,7 @@ class EventoStatusTest extends TestCase
         $this->comoAdmin()
             ->post(route('admin.calendario.eventos.store'), [
                 'titulo_evento_calendario' => 'Evento Novo',
-                'tipo_evento_calendario'   => 'JOGO',
+                'tipo_evento_calendario'   => 'REUNIAO', // JOGO nasce pela tela de Jogos (Fase 10)
                 'data_evento_calendario'   => now()->addWeek()->toDateString(),
             ])
             ->assertSessionHasNoErrors();

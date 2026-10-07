@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\EventoCalendario;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -20,10 +21,10 @@ class CalendarioTest extends TestCase
     private const URL_ADMIN = '/admin/calendario/eventos';
     private const URL_SITE  = '/calendario';
 
+    // Sem JOGO: jogo nasce pela tela de Jogos (Fase 10); o Calendário recusa (teste abaixo)
     public static function tipos(): array
     {
         return [
-            'JOGO'             => ['JOGO'],
             'TREINO'           => ['TREINO'],
             'CAMPEONATO'       => ['CAMPEONATO'],
             'EVENTO'           => ['EVENTO'],
@@ -44,6 +45,15 @@ class CalendarioTest extends TestCase
             'titulo_evento_calendario' => 'Evento de Teste',
             'tipo_evento_calendario'   => $tipo,
         ]);
+    }
+
+    public function test_calendario_nao_cria_evento_jogo(): void
+    {
+        $this->comoAdmin()
+            ->post(self::URL_ADMIN, $this->dados(['tipo_evento_calendario' => 'JOGO']))
+            ->assertSessionHasErrors(['tipo_evento_calendario' => 'Jogos são criados pela tela de Jogos, com os times e o campeonato.']);
+
+        $this->assertDatabaseMissing(self::TABELA, ['titulo_evento_calendario' => 'Evento de Teste']);
     }
 
     public function test_admin_edita_campeonato_e_o_tipo_permanece(): void
@@ -171,7 +181,7 @@ class CalendarioTest extends TestCase
         return array_merge([
             'titulo_evento_calendario'         => 'Evento de Teste',
             'data_evento_calendario'           => '2026-11-15',
-            'tipo_evento_calendario'           => 'JOGO',
+            'tipo_evento_calendario'           => 'TREINO',
             'subtipo_evento_calendario'        => 'Jogo Oficial',
             'horario_inicio_evento_calendario' => '09:00',
             'horario_fim_evento_calendario'    => '11:00',
@@ -184,6 +194,11 @@ class CalendarioTest extends TestCase
     private function criarEvento(array $extra = []): int
     {
         $dados = $this->dados($extra);
+
+        // Evento JOGO antigo (sem tbl_jogos): o Calendário não cria mais, então vai direto para o banco
+        if ($dados['tipo_evento_calendario'] === 'JOGO') {
+            return EventoCalendario::criarPor(null, [...$dados, 'status_evento_calendario' => 'ATIVO'])->id_evento_calendario;
+        }
 
         $this->comoAdmin()->post(self::URL_ADMIN, $dados)->assertSessionHasNoErrors();
 

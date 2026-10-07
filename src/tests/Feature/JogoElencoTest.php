@@ -213,10 +213,11 @@ class JogoElencoTest extends TestCase
         $ana = $this->atleta('Ana', [$this->azul]);
         $eva = $this->atleta('Eva');
 
-        $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.store'), [
+        // Evento JOGO antigo: o Calendário não cria mais (Fase 10), então nasce direto pelo model
+        EventoCalendario::criarPor($this->admin->id_usuario, [
             'titulo_evento_calendario' => 'Jogo combinado', 'tipo_evento_calendario' => 'JOGO', 'id_categoria' => $this->idSub11M,
-            'data_evento_calendario' => $this->dia, 'horario_inicio_evento_calendario' => '10:00',
-        ])->assertSessionHas('sucesso', 'Evento adicionado ao calendário. 2 atleta(s) da categoria inscrito(s). 2 atleta(s) notificado(s).');
+            'data_evento_calendario' => $this->dia, 'horario_inicio_evento_calendario' => '10:00', 'status_evento_calendario' => 'ATIVO',
+        ]);
 
         $evento = EventoCalendario::sole();
         $this->assertFalse($evento->ehJogo());

@@ -9,6 +9,7 @@ use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
 use App\Models\Notificacao;
+use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -34,7 +35,7 @@ class CalendarioController extends Controller
             ->when($filtros['origem'] === 'manual', fn ($q) => $q->whereNull('id_grade_treino'));
 
         $eventos = $doMesFiltrado()
-            ->with(['categoria', 'responsavel', 'historico.usuario'])
+            ->with(['categoria', 'responsavel', 'historico.usuario', 'jogo'])
             ->comAlteracao()
             ->comInscritosAtivos()
             ->daSituacao($filtros['situacao'])
@@ -137,6 +138,12 @@ class CalendarioController extends Controller
 
     public function storeEvento(Request $request)
     {
+        // Jogo nasce pela tela de Jogos (times, campeonato, elenco); o Calendário não cria evento JOGO
+        $request->validate(
+            ['tipo_evento_calendario' => Rule::notIn(['JOGO'])],
+            ['tipo_evento_calendario.not_in' => 'Jogos são criados pela tela de Jogos, com os times e o campeonato.'],
+        );
+
         $dados = [...$this->dadosEvento($request), 'status_evento_calendario' => 'ATIVO'];
 
         // Com categoria, os atletas dela serão inscritos: confere conflito antes de criar
@@ -152,6 +159,12 @@ class CalendarioController extends Controller
         $mensagem  = 'Evento adicionado ao calendário.'
             . ($evento->id_categoria ? " {$inscritos} atleta(s) da categoria inscrito(s)." : '')
             . ($inscritos ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
+
+        // Sem categoria ninguém foi inscrito: abre a tela do evento, para inscrever; com categoria, a lista
+        if (! $evento->id_categoria) {
+            return redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)
+                ->with('sucesso', $mensagem . ' Inscreva os atletas abaixo.');
+        }
 
         return $this->listaNoMesDo($evento)->with('sucesso', $mensagem);
     }
@@ -188,7 +201,7 @@ class CalendarioController extends Controller
 
         // Evento de jogo: escalação por time (mandante/visitante internos), elenco de cada atleta e quantos
         // do elenco ainda não estão inscritos (ao lado do "Preencher pelo elenco")
-        $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
+        $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato'])->first();
         $elencos = $jogo?->elencosDoJogo() ?? [];
         $faltantesDoElenco = $jogo ? count($jogo->idsFaltantesDoElenco()) : 0;
 
@@ -199,10 +212,55 @@ class CalendarioController extends Controller
             ->withCount('leiturasDosResponsaveis')
             ->get();
 
+        // Cabeçalho: linha de caminho, "Voltar" pela origem (jogo: lista de Jogos; outros: Calendário no mês
+        // do evento) e os formulários de edição (do jogo ou do evento) já preenchidos
+        $evento->setRelation('jogo', $jogo);
+        $caminho = $this->caminhoDoEvento($evento);
+        $voltar  = $jogo
+            ? route('admin.jogos.index')
+            : route('admin.calendario.index', ['mes' => $evento->data_evento_calendario->format('Y-m')]);
+
+        if ($jogo) {
+            $jogo->setRelation('evento', $evento);
+            $campeonatosDoJogo = JogosController::campeonatosDoFormulario();
+            $timesDoJogo       = Time::orderBy('nome_time')->get();
+        } else {
+            $evento->load('historico.usuario');
+            $categoriasInativasEmUso = $evento->categoria && $evento->categoria->status_categoria !== 'ATIVO'
+                ? collect([$evento->categoria])
+                : collect();
+        }
+
         return view('admin.calendario.evento', compact(
             'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos',
-            'faltantesDoElenco', 'notificacoes'
-        ));
+            'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar',
+        ) + [
+            'campeonatosDoJogo'       => $campeonatosDoJogo ?? collect(),
+            'timesDoJogo'             => $timesDoJogo ?? collect(),
+            'categoriasInativasEmUso' => $categoriasInativasEmUso ?? collect(),
+        ]);
+    }
+
+    /**
+     * Linha de caminho da tela do evento: [rótulo, url] por parte; a última (o evento) sem link.
+     * Eventos › ramo (EventoCalendario::urlDoRamo) › campeonato do jogo (lista de Jogos filtrada) › título.
+     * Evento sem ramo (JOGO antigo sem tbl_jogos): Eventos › título.
+     */
+    private function caminhoDoEvento(EventoCalendario $evento): array
+    {
+        $caminho = [['Eventos', route('admin.calendario.index')]];
+
+        if ($ramo = $evento->ramo()) {
+            $caminho[] = [EventoCalendario::RAMOS[$ramo], EventoCalendario::urlDoRamo($ramo)];
+        }
+
+        if ($campeonato = $evento->jogo?->campeonato) {
+            $caminho[] = [$campeonato->nome_campeonato, route('admin.jogos.index', ['campeonato' => $campeonato->id_campeonato])];
+        }
+
+        $caminho[] = [$evento->titulo_evento_calendario, null];
+
+        return $caminho;
     }
 
     // Escala (ou tira da escalação) um inscrito num dos times do jogo
@@ -391,6 +449,21 @@ class CalendarioController extends Controller
     public function updateEvento(Request $request, $id)
     {
         $evento = EventoCalendario::findOrFail($id);
+
+        // Jogo (com tbl_jogos) é editado pelo formulário do jogo: times, campeonato e elenco andam juntos
+        if ($evento->ehJogo()) {
+            return redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)
+                ->with('erro', 'Este evento é um jogo: edite pelo botão "Editar" da tela do jogo.');
+        }
+
+        // Só o evento JOGO antigo (sem tbl_jogos) continua JOGO; nenhum outro vira JOGO por aqui
+        if ($evento->tipo_evento_calendario !== 'JOGO') {
+            $request->validate(
+                ['tipo_evento_calendario' => Rule::notIn(['JOGO'])],
+                ['tipo_evento_calendario.not_in' => 'Jogos são criados pela tela de Jogos, com os times e o campeonato.'],
+            );
+        }
+
         $dados  = $this->dadosEvento($request, $evento);
 
         // Mudou data, horário ou categoria: confere conflito dos atletas que ficarão inscritos
@@ -403,7 +476,12 @@ class CalendarioController extends Controller
         // categoria, as inscrições automáticas acompanham (concluído não muda); os atletas são avisados.
         $mensagem = 'Evento atualizado.' . $this->salvarEdicaoDoEvento($evento, $dados);
 
-        // No mês da data nova (se a data mudou, o evento saiu do mês que estava aberto)
+        // Editado pela tela do evento (voltar=evento): volta para ela. Pela lista: no mês da data nova (se a
+        // data mudou, o evento saiu do mês que estava aberto)
+        if ($request->input('voltar') === 'evento') {
+            return redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)->with('sucesso', $mensagem);
+        }
+
         return $this->listaNoMesDo($evento)->with('sucesso', $mensagem);
     }
 

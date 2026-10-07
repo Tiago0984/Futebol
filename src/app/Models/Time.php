@@ -44,6 +44,22 @@ class Time extends Model
     }
 
     /**
+     * Jogos futuros (evento ativo e não concluído) deste time em que o atleta está inscrito. Quem sai do
+     * elenco continua inscrito neles (a tela do jogo marca "Fora do elenco"); a tela do Elenco avisa quantos.
+     */
+    public function jogosFuturosComAtleta(int $idAtleta): int
+    {
+        return EventoAtleta::where('id_atleta', $idAtleta)
+            ->whereHas('evento', fn ($ev) => $ev
+                ->where('status_evento_calendario', 'ATIVO')
+                ->naoConcluidos()
+                ->whereHas('jogo', fn ($j) => $j->where(fn ($t) => $t
+                    ->where('id_time_casa', $this->id_time)
+                    ->orWhere('id_time_visitante', $this->id_time))))
+            ->count();
+    }
+
+    /**
      * Por que não pode ser excluído (ou null). Jogo preserva o histórico (e a escalação dele aponta para o
      * time); o elenco guarda camisa e contadores, e sai pela edição de cada atleta. FKs em NO ACTION.
      */

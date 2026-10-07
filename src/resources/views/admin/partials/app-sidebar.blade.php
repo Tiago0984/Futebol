@@ -125,7 +125,7 @@
 
             {{-- Campeonatos: o texto abre os eventos do ramo; a seta mostra os em andamento e "Ver todos" --}}
             <li class="nav-item {{ $emCampeonatos ? 'menu-open' : '' }}">
-              <a href="{{ route('admin.calendario.index', ['ramo' => 'campeonatos']) }}"
+              <a href="{{ \App\Models\EventoCalendario::urlDoRamo('campeonatos') }}"
                 class="nav-link {{ $ativo('ramo:campeonatos') ? 'active' : '' }}">
                 <i class="nav-icon bi bi-trophy"></i>
                 <p>Campeonatos <i class="nav-arrow bi bi-chevron-right"></i></p>
@@ -152,7 +152,7 @@
 
             @foreach ($ramosSimples as $ramo => $icone)
             <li class="nav-item">
-              <a href="{{ route('admin.calendario.index', ['ramo' => $ramo]) }}"
+              <a href="{{ \App\Models\EventoCalendario::urlDoRamo($ramo) }}"
                 class="nav-link {{ $ativo('ramo:' . $ramo) ? 'active' : '' }}">
                 <i class="nav-icon bi {{ $icone }}"></i>
                 <p>{{ \App\Models\EventoCalendario::RAMOS[$ramo] }}</p>

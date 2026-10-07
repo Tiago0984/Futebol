@@ -115,7 +115,7 @@ class MenuAdminTest extends TestCase
             route('admin.categorias.index')                                   => route('admin.categorias.index'),
             // Tela do evento: o ramo dele
             route('admin.calendario.eventos.show', $treino->id_evento_calendario) => route('admin.calendario.index', ['ramo' => 'treinos']),
-            route('admin.calendario.eventos.show', $amistoso->id_evento)      => route('admin.calendario.index', ['ramo' => 'amistosos']),
+            route('admin.calendario.eventos.show', $amistoso->id_evento)      => route('admin.jogos.index', ['campeonato' => 'amistoso']),
             route('admin.calendario.eventos.show', $daCopa->id_evento)        => route('admin.calendario.index', ['ramo' => 'campeonatos']),
         ];
 
