@@ -33,7 +33,7 @@ class MenuAdminComposer
 
     /**
      * Chave do item ativo: calendario, ramo:{ramo}, campeonato:{id}, campeonatos ("Ver todos"), jogos,
-     * grade, categorias ou times; null fora deles (os outros itens usam routeIs() na própria view).
+     * grade, categorias, times ou notificacoes; null fora deles (os outros itens usam routeIs() na própria view).
      */
     private function itemAtivo(Collection $emAndamento): ?string
     {
@@ -71,10 +71,11 @@ class MenuAdminComposer
         }
 
         return match (true) {
-            $r->routeIs('admin.campeonatos.*') => 'campeonatos',
-            $r->routeIs('admin.times.*')       => 'times',
-            $r->routeIs('admin.categorias.*')  => 'categorias',
-            default                            => null,
+            $r->routeIs('admin.campeonatos.*')  => 'campeonatos',
+            $r->routeIs('admin.times.*')        => 'times',
+            $r->routeIs('admin.categorias.*')   => 'categorias',
+            $r->routeIs('admin.notificacoes.*') => 'notificacoes',
+            default                             => null,
         };
     }
 }

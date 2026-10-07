@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\ConfirmaConflitos;
+use App\Http\Controllers\Admin\Concerns\ListaPorMes;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
 use App\Models\Categoria;
@@ -17,7 +18,7 @@ use Illuminate\Validation\Rule;
 
 class CalendarioController extends Controller
 {
-    use ConfirmaConflitos;
+    use ConfirmaConflitos, ListaPorMes;
 
     public function index(Request $request)
     {
@@ -79,33 +80,16 @@ class CalendarioController extends Controller
         ];
     }
 
-    // Mês pedido na lista (AAAA-MM); vazio ou inválido = mês atual
-    private function mesDaLista(?string $valor): Carbon
-    {
-        if ($valor && preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $valor)) {
-            return Carbon::createFromFormat('!Y-m', $valor);
-        }
-
-        return now()->startOfMonth();
-    }
-
     /**
      * Meses do select da lista: do primeiro ao último mês com evento, sempre incluindo o mês atual, os
      * meses que podem ser gerados e o mês aberto. Do mais novo para o mais antigo (como a lista).
      */
     private function mesesDaLista(Carbon $aberto): array
     {
-        $datas = collect([
+        return $this->mesesEntre([
             EventoCalendario::min('data_evento_calendario'), EventoCalendario::max('data_evento_calendario'),
             now(), now()->addMonthsNoOverflow(GradeTreino::MESES_A_FRENTE), $aberto,
-        ])->filter()->map(fn ($d) => Carbon::parse($d)->startOfMonth());
-
-        $meses = [];
-        for ($m = $datas->max()->copy(); $m->gte($datas->min()); $m->subMonthNoOverflow()) {
-            $meses[$m->format('Y-m')] = EventoCalendario::rotuloDoMes($m);
-        }
-
-        return $meses;
+        ]);
     }
 
     // Lista de eventos aberta no mês do evento (depois de criar ou editar)

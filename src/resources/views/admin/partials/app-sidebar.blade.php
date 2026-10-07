@@ -188,6 +188,14 @@
           </ul>
         </li>
 
+        {{-- Notificações enviadas aos atletas (todas, inclusive as de agenda do mês) --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.notificacoes.index') }}" class="nav-link {{ $ativo('notificacoes') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-bell"></i>
+            <p>Notificações</p>
+          </a>
+        </li>
+
         <li class="nav-header">CADASTROS</li>
 
         <li class="nav-item">

@@ -32,6 +32,7 @@ use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController
 use App\Http\Controllers\Admin\VideosController;
 use App\Http\Controllers\Admin\ElencoController;
 use App\Http\Controllers\Admin\ConfiguracoesController;
+use App\Http\Controllers\Admin\NotificacoesController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -114,6 +115,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo
     Route::resource('categorias',  CategoriasController::class)->only($acoesDaLista);
     Route::patch('categorias/{id}/toggle-status', [CategoriasController::class, 'toggleStatus'])->name('categorias.toggleStatus');
+
+    // Notificações enviadas aos atletas, todas (inclusive AGENDA, sem evento): só leitura
+    Route::get('notificacoes', [NotificacoesController::class, 'index'])->name('notificacoes.index');
 
     // Calendário (Eventos + Grade de Treinos)
     Route::prefix('calendario')->name('calendario.')->group(function () {

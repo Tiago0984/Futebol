@@ -328,10 +328,12 @@
             </div>
 
             {{-- Notificações enviadas aos atletas sobre este evento (só no admin: dados de menores).
-                 As de AGENDA (resumo do mês, mover inscrições) não têm evento e não aparecem aqui. --}}
+                 As de AGENDA (resumo do mês, mover inscrições) não têm evento: ficam na página geral. --}}
             <div class="card shadow-sm mt-4">
-                <div class="card-header bg-dark text-white fw-semibold">
-                    <i class="bi bi-bell me-2"></i> Notificações ({{ $notificacoes->count() }})
+                <div class="card-header bg-dark text-white fw-semibold d-flex align-items-center">
+                    <span><i class="bi bi-bell me-2"></i> Notificações ({{ $notificacoes->count() }})</span>
+                    <a href="{{ route('admin.notificacoes.index', ['mes' => $evento->data_evento_calendario->format('Y-m')]) }}"
+                       class="ms-auto small text-white" id="verTodasNotificacoes">ver todas</a>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-sm table-hover align-middle mb-0">
