@@ -48,4 +48,24 @@ class Campeonato extends Model
     {
         return $this->hasMany(Jogo::class, 'id_campeonato', 'id_campeonato');
     }
+
+    // "Em andamento" (menu do admin): status ATIVO e hoje dentro do período (CLAUDE.md, seção 5)
+    public function scopeEmAndamento($query)
+    {
+        $hoje = now()->toDateString();
+
+        return $query->where('status_campeonato', 'ATIVO')
+            ->whereDate('data_inicio_campeonato', '<=', $hoje)
+            ->whereDate('data_fim_campeonato', '>=', $hoje);
+    }
+
+    // Por que não pode ser excluído (ou null): jogo preserva o histórico e a FK de tbl_jogos é NO ACTION
+    public function motivoParaNaoExcluir(): ?string
+    {
+        $jogos = $this->jogos()->count();
+
+        return $jogos
+            ? "O campeonato {$this->nome_campeonato} tem {$jogos} jogo(s) e não pode ser excluído. Inative-o para tirá-lo do site."
+            : null;
+    }
 }

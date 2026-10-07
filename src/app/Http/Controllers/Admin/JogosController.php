@@ -26,18 +26,47 @@ class JogosController extends Controller
     // Valor do select de campeonato para jogo sem campeonato
     public const AMISTOSO = 'AMISTOSO';
 
-    public function index()
+    /**
+     * Lista de jogos com os filtros da URL: campeonato (id ou "amistoso") e situação. Sem situação, abre
+     * sem os ocultos (o filtro "Oculto" mostra só eles); o aviso mostra quantos ficaram de fora.
+     */
+    public function index(Request $request)
     {
-        $jogos = Jogo::with(['evento' => fn ($q) => $q->comAlteracao()->comInscritosAtivos(), 'evento.categoria', 'timeCasa', 'timeVisitante', 'campeonato'])
+        $campeonatos = Campeonato::with('categoria')->orderBy('nome_campeonato')->get();
+        $filtros     = $this->filtrosDaLista($request, $campeonatos);
+
+        $doCampeonato = fn () => Jogo::query()
+            ->when($filtros['campeonato'] === 'amistoso', fn ($q) => $q->whereNull('id_campeonato'))
+            ->when(ctype_digit($filtros['campeonato']), fn ($q) => $q->where('id_campeonato', (int) $filtros['campeonato']));
+
+        $jogos = $doCampeonato()
+            ->with(['evento' => fn ($q) => $q->comAlteracao()->comInscritosAtivos(), 'evento.categoria', 'timeCasa', 'timeVisitante', 'campeonato'])
+            ->whereHas('evento', fn ($q) => $q->daSituacao($filtros['situacao']))
             ->get()
+            ->filter(fn ($jogo) => $filtros['situacao'] === '' || $jogo->evento->situacao === $filtros['situacao'])
             ->sortByDesc(fn ($jogo) => $jogo->evento?->dataHoraDoJogo())
             ->values();
+        $ocultosForaDaLista = $filtros['situacao'] === ''
+            ? $doCampeonato()->whereHas('evento', fn ($q) => $q->where('status_evento_calendario', 'INATIVO'))->count()
+            : 0;
 
-        $campeonatos = Campeonato::with('categoria')->orderBy('nome_campeonato')->get();
         $times       = Time::orderBy('nome_time')->get();
         $categorias  = Categoria::ativas()->get();
 
-        return view('admin.jogos.index', compact('jogos', 'campeonatos', 'times', 'categorias'));
+        return view('admin.jogos.index', compact('jogos', 'campeonatos', 'times', 'categorias', 'filtros', 'ocultosForaDaLista'));
+    }
+
+    // Filtros da lista lidos da URL; valor fora da lista vira vazio (sem filtro)
+    private function filtrosDaLista(Request $request, $campeonatos): array
+    {
+        $campeonato = (string) $request->query('campeonato', '');
+        $situacao   = (string) $request->query('situacao', '');
+        $idsValidos = $campeonatos->pluck('id_campeonato')->map(fn ($id) => (string) $id)->all();
+
+        return [
+            'campeonato' => in_array($campeonato, ['amistoso', ...$idsValidos], true) ? $campeonato : '',
+            'situacao'   => array_key_exists($situacao, EventoCalendario::SITUACOES) ? $situacao : '',
+        ];
     }
 
     public function store(Request $request)

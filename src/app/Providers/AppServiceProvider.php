@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use App\Models\Campeonato;
 use App\Models\Noticia;
+use App\View\Composers\MenuAdminComposer;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +35,9 @@ class AppServiceProvider extends ServiceProvider
 
             $view->with('noticiasRecentes', $noticiasRecentes);
         });
+
+        // Barra lateral do admin: campeonatos em andamento, matrículas pendentes e item ativo
+        View::composer('admin.partials.app-sidebar', MenuAdminComposer::class);
 
         URL::forceRootUrl(config('app.url'));
 

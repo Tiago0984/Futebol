@@ -28,49 +28,61 @@
             </div>
         </div>
 
-        {{-- Painel de filtros: Eventos --}}
+        {{-- Painel de filtros: Eventos. Ramo, tipo, situação e origem vão na URL (o menu abre a lista já
+             filtrada) e convivem com o mês; o título filtra só na tela. Com filtro na URL, o painel abre --}}
         @if(request('tab') !== 'grade')
-        <div class="collapse" id="filterPanel">
-            <div class="filter-panel">
+        @php $comFiltro = array_filter($filtros) !== []; @endphp
+        <div class="collapse {{ $comFiltro ? 'show' : '' }}" id="filterPanel">
+            <form method="GET" action="{{ route('admin.calendario.index') }}" class="filter-panel" id="formFiltros">
+                <input type="hidden" name="mes" value="{{ $mes->format('Y-m') }}">
                 <div class="row g-3 align-items-end">
-                    <div class="col-md-4">
-                        <label class="filter-label">Título</label>
+                    <div class="col-md-3">
+                        <label class="filter-label" for="filtroTitulo">Título</label>
                         <input type="text" id="filtroTitulo" class="form-control form-control-sm" placeholder="Buscar por título...">
                     </div>
                     <div class="col-md-2">
-                        <label class="filter-label">Tipo</label>
-                        <select id="filtroTipo" class="form-select form-select-sm">
+                        <label class="filter-label" for="filtroRamo">Ramo</label>
+                        <select id="filtroRamo" name="ramo" class="form-select form-select-sm js-filtro-url">
+                            <option value="">Todos</option>
+                            @foreach(\App\Models\EventoCalendario::RAMOS as $valor => $rotulo)
+                            <option value="{{ $valor }}" @selected($filtros['ramo'] === $valor)>{{ $rotulo }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="filter-label" for="filtroTipo">Tipo</label>
+                        <select id="filtroTipo" name="tipo" class="form-select form-select-sm js-filtro-url">
                             <option value="">Todos</option>
                             @foreach(\App\Models\EventoCalendario::TIPOS as $t => $rotulo)
-                            <option value="{{ $t }}">{{ $rotulo }}</option>
+                            <option value="{{ $t }}" @selected($filtros['tipo'] === $t)>{{ $rotulo }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="filter-label">Status</label>
-                        <select id="filtroStatus" class="form-select form-select-sm">
-                            <option value="">Todos</option>
+                        <label class="filter-label" for="filtroStatus">Situação</label>
+                        <select id="filtroStatus" name="situacao" class="form-select form-select-sm js-filtro-url">
+                            <option value="">Todas, menos ocultos</option>
                             @foreach(\App\Models\EventoCalendario::SITUACOES as $st => $rotuloStatus)
-                            <option value="{{ $st }}">{{ $rotuloStatus }}</option>
+                            <option value="{{ $st }}" @selected($filtros['situacao'] === $st)>{{ $rotuloStatus }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="filter-label">Origem</label>
-                        <select id="filtroOrigem" class="form-select form-select-sm">
-                            <option value="">Todos</option>
-                            <option value="grade">Grade</option>
-                            <option value="manual">Manual</option>
+                        <label class="filter-label" for="filtroOrigem">Origem</label>
+                        <select id="filtroOrigem" name="origem" class="form-select form-select-sm js-filtro-url">
+                            <option value="">Todas</option>
+                            <option value="grade" @selected($filtros['origem'] === 'grade')>Grade</option>
+                            <option value="manual" @selected($filtros['origem'] === 'manual')>Manual</option>
                         </select>
                     </div>
                     <div class="col-md-auto">
-                        <button class="btn-filter-clear" id="btnLimparFiltros">
+                        <a href="{{ route('admin.calendario.index', ['mes' => $mes->format('Y-m')]) }}" class="btn-filter-clear text-decoration-none">
                             <i class="bi bi-x-circle"></i> Limpar
-                        </button>
+                        </a>
                     </div>
                 </div>
                 <div class="mt-2"><small class="text-muted" id="filtroContador"></small></div>
-            </div>
+            </form>
         </div>
         {{-- Painel de filtros: Grade --}}
         @else
@@ -167,12 +179,17 @@
         <div class="table-card">
             <div class="table-card-toolbar d-flex flex-wrap align-items-center gap-2">
                 {{-- Lista por mês: setas e select (sem input type="month", que não funciona em todo navegador) --}}
+                {{-- Trocar de mês mantém os filtros --}}
                 @php
+                    $filtrosAtivos = array_filter($filtros);
                     $mesAnterior = $mes->copy()->subMonthNoOverflow()->format('Y-m');
                     $mesSeguinte = $mes->copy()->addMonthNoOverflow()->format('Y-m');
                 @endphp
                 <form method="GET" action="{{ route('admin.calendario.index') }}" class="d-flex align-items-center gap-1" id="formMesLista">
-                    <a href="{{ route('admin.calendario.index', ['mes' => $mesAnterior]) }}" class="btn btn-sm btn-outline-secondary"
+                    @foreach($filtrosAtivos as $campo => $valor)
+                    <input type="hidden" name="{{ $campo }}" value="{{ $valor }}">
+                    @endforeach
+                    <a href="{{ route('admin.calendario.index', ['mes' => $mesAnterior, ...$filtrosAtivos]) }}" class="btn btn-sm btn-outline-secondary"
                        title="Mês anterior" aria-label="Mês anterior"><i class="bi bi-chevron-left"></i></a>
                     <select name="mes" class="form-select form-select-sm" style="width:auto" aria-label="Mês"
                             onchange="this.form.submit()">
@@ -180,10 +197,17 @@
                         <option value="{{ $valor }}" @selected($valor === $mes->format('Y-m'))>{{ $rotulo }}</option>
                         @endforeach
                     </select>
-                    <a href="{{ route('admin.calendario.index', ['mes' => $mesSeguinte]) }}" class="btn btn-sm btn-outline-secondary"
+                    <a href="{{ route('admin.calendario.index', ['mes' => $mesSeguinte, ...$filtrosAtivos]) }}" class="btn btn-sm btn-outline-secondary"
                        title="Próximo mês" aria-label="Próximo mês"><i class="bi bi-chevron-right"></i></a>
                 </form>
-                <span class="tbl-count">{{ count($eventos) }} evento(s) em {{ \App\Models\EventoCalendario::rotuloDoMes($mes) }}</span>
+                <span class="tbl-count">
+                    {{ count($eventos) }} evento(s) em {{ \App\Models\EventoCalendario::rotuloDoMes($mes) }}
+                    @if($filtros['ramo']) · {{ \App\Models\EventoCalendario::RAMOS[$filtros['ramo']] }} @endif
+                </span>
+                @if($ocultosForaDaLista)
+                <a href="{{ route('admin.calendario.index', [...$filtrosAtivos, 'mes' => $mes->format('Y-m'), 'situacao' => 'INATIVO']) }}"
+                   class="small text-muted ms-auto">{{ $ocultosForaDaLista }} oculto(s) fora da lista · ver</a>
+                @endif
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -293,7 +317,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">Nenhum evento cadastrado.</td>
+                            <td colspan="8" class="text-center text-muted py-4">{{ array_filter($filtros) ? 'Nenhum evento com estes filtros neste mês.' : 'Nenhum evento neste mês.' }}</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -754,21 +778,16 @@ document.addEventListener('DOMContentLoaded', function () {
     function aplicarFiltros() {
         let visiveis = 0;
         if (!isGrade) {
+            // Ramo, tipo, situação e origem já vêm filtrados do servidor (URL); aqui só o título
             const titulo = document.getElementById('filtroTitulo')?.value.toLowerCase().trim() ?? '';
-            const tipo   = document.getElementById('filtroTipo')?.value ?? '';
-            const status = document.getElementById('filtroStatus')?.value ?? '';
-            const origem = document.getElementById('filtroOrigem')?.value ?? '';
             document.querySelectorAll('.linha-ev').forEach(row => {
-                const ok = (!titulo || row.dataset.titulo.includes(titulo))
-                        && (!tipo   || row.dataset.tipo === tipo)
-                        && (!status || row.dataset.status === status)
-                        && (!origem || row.dataset.origem === origem);
+                const ok = !titulo || row.dataset.titulo.includes(titulo);
                 row.style.display = ok ? '' : 'none';
                 if (ok) visiveis++;
             });
             const total = document.querySelectorAll('.linha-ev').length;
             const contador = document.getElementById('filtroContador');
-            if (contador) contador.textContent = (titulo || tipo || status || origem)
+            if (contador) contador.textContent = titulo
                 ? `${visiveis} de ${total} evento(s) encontrado(s)` : '';
         } else {
             const dia       = document.getElementById('filtroDia')?.value ?? '';
@@ -790,7 +809,15 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    const idsFiltros = ['filtroTitulo','filtroTipo','filtroStatus','filtroOrigem','filtroDia','filtroTipoGrade','filtroCategoria'];
+    // Filtros da URL (eventos): mudar o select recarrega a lista; Enter no título não envia o formulário
+    document.querySelectorAll('.js-filtro-url').forEach(sel => sel.addEventListener('change', () => sel.form.submit()));
+    document.getElementById('formFiltros')?.addEventListener('submit', e => {
+        if (document.activeElement?.id === 'filtroTitulo') e.preventDefault();
+    });
+
+    const idsFiltros = isGrade
+        ? ['filtroDia','filtroTipoGrade','filtroCategoria','filtroStatus']
+        : ['filtroTitulo'];
     idsFiltros.forEach(id => document.getElementById(id)?.addEventListener('input', aplicarFiltros));
 
     document.getElementById('btnLimparFiltros')?.addEventListener('click', () => {

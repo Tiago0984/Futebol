@@ -52,6 +52,29 @@ class Categoria extends Model
                     ]);
     }
 
+    /**
+     * Por que não pode ser excluída (ou null): atletas (histórico de tbl_categoria_atleta), times,
+     * campeonatos, eventos e linhas da grade apontam para ela com FK em NO ACTION. Em uso, só inativar.
+     */
+    public function motivoParaNaoExcluir(): ?string
+    {
+        $usos = array_filter([
+            'atleta(s)'           => $this->atletas()->count(),
+            'time(s)'             => $this->times()->count(),
+            'campeonato(s)'       => $this->campeonatos()->count(),
+            'evento(s)'           => EventoCalendario::where('id_categoria', $this->id_categoria)->count(),
+            'horário(s) da grade' => GradeTreino::where('id_categoria', $this->id_categoria)->count(),
+        ]);
+
+        if (! $usos) {
+            return null;
+        }
+
+        $lista = collect($usos)->map(fn ($n, $o) => "{$n} {$o}")->join(', ', ' e ');
+
+        return "A categoria {$this->rotulo} está em uso ({$lista}) e não pode ser excluída. Mantenha-a inativa.";
+    }
+
     // Nome com o sexo, para não confundir Sub-13 M e Sub-13 F nos selects: "Sub-13 Masculino"
     public function getRotuloAttribute(): string
     {

@@ -124,8 +124,13 @@ class EventoStatusTest extends TestCase
             ->assertOk()
             ->assertSee('<span class="badge-status ativo">Ativo</span>', false)
             ->assertSee('<span class="badge-status inativo">Cancelado</span>', false)
-            ->assertSee('<span class="badge-status rejeitado">Oculto</span>', false)
+            ->assertDontSee('<span class="badge-status rejeitado">Oculto</span>', false) // a lista abre sem os ocultos (Fase 10)
             ->assertDontSee('Confirmado');
+
+        $this->comoAdmin()
+            ->get(route('admin.calendario.index', ['situacao' => 'INATIVO']))
+            ->assertOk()
+            ->assertSee('<span class="badge-status rejeitado">Oculto</span>', false);
     }
 
     public function test_proximo_evento_do_site_ignora_cancelado_e_oculto(): void

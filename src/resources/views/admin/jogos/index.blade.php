@@ -21,40 +21,42 @@
             </div>
         </div>
 
-        <div class="collapse" id="filterPanel">
-            <div class="filter-panel">
+        {{-- Campeonato e situação vão na URL (o menu abre a lista já filtrada); o time filtra só na tela.
+             Com filtro na URL, o painel abre --}}
+        <div class="collapse {{ array_filter($filtros) ? 'show' : '' }}" id="filterPanel">
+            <form method="GET" action="{{ route('admin.jogos.index') }}" class="filter-panel" id="formFiltros">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-4">
-                        <label class="filter-label">Time</label>
+                        <label class="filter-label" for="filtroTime">Time</label>
                         <input type="text" id="filtroTime" class="form-control form-control-sm" placeholder="Buscar mandante ou visitante...">
                     </div>
                     <div class="col-md-3">
-                        <label class="filter-label">Campeonato</label>
-                        <select id="filtroCampeonato" class="form-select form-select-sm">
+                        <label class="filter-label" for="filtroCampeonato">Campeonato</label>
+                        <select id="filtroCampeonato" name="campeonato" class="form-select form-select-sm js-filtro-url">
                             <option value="">Todos</option>
-                            <option value="amistoso">Amistosos</option>
+                            <option value="amistoso" @selected($filtros['campeonato'] === 'amistoso')>Amistosos</option>
                             @foreach($campeonatos as $camp)
-                            <option value="{{ $camp->id_campeonato }}">{{ $camp->nome_campeonato }}</option>
+                            <option value="{{ $camp->id_campeonato }}" @selected($filtros['campeonato'] === (string) $camp->id_campeonato)>{{ $camp->nome_campeonato }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-2">
-                        <label class="filter-label">Situação</label>
-                        <select id="filtroStatus" class="form-select form-select-sm">
-                            <option value="">Todas</option>
+                        <label class="filter-label" for="filtroStatus">Situação</label>
+                        <select id="filtroStatus" name="situacao" class="form-select form-select-sm js-filtro-url">
+                            <option value="">Todas, menos ocultos</option>
                             @foreach(\App\Models\EventoCalendario::SITUACOES as $valor => $rotulo)
-                            <option value="{{ $valor }}">{{ $rotulo }}</option>
+                            <option value="{{ $valor }}" @selected($filtros['situacao'] === $valor)>{{ $rotulo }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-auto">
-                        <button class="btn-filter-clear" id="btnLimparFiltros">
+                        <a href="{{ route('admin.jogos.index') }}" class="btn-filter-clear text-decoration-none">
                             <i class="bi bi-x-circle"></i> Limpar
-                        </button>
+                        </a>
                     </div>
                 </div>
                 <div class="mt-2"><small class="text-muted" id="filtroContador"></small></div>
-            </div>
+            </form>
         </div>
 
         @if(session('sucesso'))
@@ -85,8 +87,12 @@
         @include('admin.calendario._conflitos')
 
         <div class="table-card">
-            <div class="table-card-toolbar">
+            <div class="table-card-toolbar d-flex flex-wrap align-items-center gap-2">
                 <span class="tbl-count">{{ count($jogos) }} jogo(s)</span>
+                @if($ocultosForaDaLista)
+                <a href="{{ route('admin.jogos.index', [...array_filter($filtros), 'situacao' => 'INATIVO']) }}"
+                   class="small text-muted ms-auto">{{ $ocultosForaDaLista }} oculto(s) fora da lista · ver</a>
+                @endif
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -214,7 +220,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center text-muted py-4">Nenhum jogo registrado.</td>
+                            <td colspan="7" class="text-center text-muted py-4">{{ array_filter($filtros) ? 'Nenhum jogo com estes filtros.' : 'Nenhum jogo registrado.' }}</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -231,30 +237,25 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
+    // Campeonato e situação já vêm filtrados do servidor (URL); aqui só o nome do time
     function aplicarFiltros() {
-        const time       = document.getElementById('filtroTime')?.value.toLowerCase().trim() ?? '';
-        const campeonato = document.getElementById('filtroCampeonato')?.value ?? '';
-        const status     = document.getElementById('filtroStatus')?.value ?? '';
+        const time = document.getElementById('filtroTime')?.value.toLowerCase().trim() ?? '';
         let visiveis = 0;
         document.querySelectorAll('.linha-jogo').forEach(row => {
-            const ok = (!time       || row.dataset.time.includes(time))
-                    && (!campeonato || row.dataset.campeonato === campeonato)
-                    && (!status     || row.dataset.status === status);
+            const ok = !time || row.dataset.time.includes(time);
             row.style.display = ok ? '' : 'none';
             if (ok) visiveis++;
         });
         const total = document.querySelectorAll('.linha-jogo').length;
         const contador = document.getElementById('filtroContador');
-        if (contador) contador.textContent = (time || campeonato || status)
-            ? `${visiveis} de ${total} jogo(s) encontrado(s)` : '';
+        if (contador) contador.textContent = time ? `${visiveis} de ${total} jogo(s) encontrado(s)` : '';
     }
-    ['filtroTime','filtroCampeonato','filtroStatus'].forEach(id =>
-        document.getElementById(id)?.addEventListener('input', aplicarFiltros));
-    document.getElementById('btnLimparFiltros')?.addEventListener('click', () => {
-        document.getElementById('filtroTime').value = '';
-        document.getElementById('filtroCampeonato').value = '';
-        document.getElementById('filtroStatus').value = '';
-        aplicarFiltros();
+    document.getElementById('filtroTime')?.addEventListener('input', aplicarFiltros);
+
+    // Mudar o select recarrega a lista; Enter no campo do time não envia o formulário
+    document.querySelectorAll('.js-filtro-url').forEach(sel => sel.addEventListener('change', () => sel.form.submit()));
+    document.getElementById('formFiltros')?.addEventListener('submit', e => {
+        if (document.activeElement?.id === 'filtroTime') e.preventDefault();
     });
 
     // Campeonato: mostra a categoria dele; Amistoso: mostra o select de categoria,

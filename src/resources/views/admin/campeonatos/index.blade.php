@@ -71,6 +71,13 @@
         </div>
         @endif
 
+        @if(session('erro'))
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <strong>Erro!</strong> {{ session('erro') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+
         <div class="table-card">
             <div class="table-card-toolbar">
                 <span class="tbl-count">{{ count($campeonatos) }} campeonato(s)</span>

@@ -24,12 +24,27 @@ class CalendarioController extends Controller
         // a lista inteira ficaria longa demais
         $mes = $this->mesDaLista($request->query('mes'));
 
-        $eventos = EventoCalendario::with(['categoria', 'responsavel', 'historico.usuario'])
+        // Filtros da URL (ramo do menu, tipo, origem e situação), que convivem com o mês. Sem situação, a
+        // lista abre sem os ocultos; o aviso mostra quantos ficaram de fora
+        $filtros = $this->filtrosDaLista($request);
+        $doMesFiltrado = fn () => EventoCalendario::doMes($mes)
+            ->doRamo($filtros['ramo'])
+            ->when($filtros['tipo'], fn ($q, $tipo) => $q->where('tipo_evento_calendario', $tipo))
+            ->when($filtros['origem'] === 'grade', fn ($q) => $q->whereNotNull('id_grade_treino'))
+            ->when($filtros['origem'] === 'manual', fn ($q) => $q->whereNull('id_grade_treino'));
+
+        $eventos = $doMesFiltrado()
+            ->with(['categoria', 'responsavel', 'historico.usuario'])
             ->comAlteracao()
             ->comInscritosAtivos()
-            ->doMes($mes)
+            ->daSituacao($filtros['situacao'])
             ->orderBy('data_evento_calendario', 'desc')
-            ->get();
+            ->get()
+            ->filter(fn ($ev) => $filtros['situacao'] === '' || $ev->situacao === $filtros['situacao'])
+            ->values();
+        $ocultosForaDaLista = $filtros['situacao'] === ''
+            ? $doMesFiltrado()->where('status_evento_calendario', 'INATIVO')->count()
+            : 0;
         $mesesLista = $this->mesesDaLista($mes);
         $grades  = GradeTreino::with('categoria')->ordenada()->get();
         $categorias = Categoria::ativas()->get();
@@ -44,7 +59,23 @@ class CalendarioController extends Controller
 
         return view('admin.calendario.index', compact(
             'eventos', 'grades', 'categorias', 'categoriasInativasEmUso', 'mes', 'mesesLista', 'mesesGeracao',
+            'filtros', 'ocultosForaDaLista',
         ));
+    }
+
+    // Filtros da lista lidos da URL; valor fora da lista vira vazio (sem filtro)
+    private function filtrosDaLista(Request $request): array
+    {
+        $valido = fn (string $campo, array $permitidos) => in_array($request->query($campo), $permitidos, true)
+            ? $request->query($campo)
+            : '';
+
+        return [
+            'ramo'     => $valido('ramo', array_keys(EventoCalendario::RAMOS)),
+            'tipo'     => $valido('tipo', array_keys(EventoCalendario::TIPOS)),
+            'origem'   => $valido('origem', ['grade', 'manual']),
+            'situacao' => $valido('situacao', array_keys(EventoCalendario::SITUACOES)),
+        ];
     }
 
     // Mês pedido na lista (AAAA-MM); vazio ou inválido = mês atual
@@ -84,15 +115,22 @@ class CalendarioController extends Controller
 
     /**
      * Depois de cancelar ou ocultar: veio da lista do calendário, volta para ela no mês do evento;
-     * veio de outra tela (Jogos, tela do evento), volta para ela.
+     * com os mesmos filtros; veio de outra tela (Jogos, tela do evento), volta para ela.
      */
     private function voltarDoEvento(EventoCalendario $evento)
     {
-        $caminho = fn (string $url) => rtrim((string) parse_url($url, PHP_URL_PATH), '/');
+        $anterior = url()->previous();
+        $caminho  = fn (string $url) => rtrim((string) parse_url($url, PHP_URL_PATH), '/');
 
-        return $caminho(url()->previous()) === $caminho(route('admin.calendario.index'))
-            ? $this->listaNoMesDo($evento)
-            : back();
+        if ($caminho($anterior) !== $caminho(route('admin.calendario.index'))) {
+            return back();
+        }
+
+        parse_str((string) parse_url($anterior, PHP_URL_QUERY), $filtros);
+
+        return redirect()->route('admin.calendario.index', [
+            ...$filtros, 'mes' => $evento->data_evento_calendario->format('Y-m'),
+        ]);
     }
 
     // ── Eventos ─────────────────────────────────────────────────────────────

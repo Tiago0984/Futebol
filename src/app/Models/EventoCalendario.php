@@ -76,6 +76,19 @@ class EventoCalendario extends Model
         'AVALIACAO'        => 'AVALIAÇÃO',
     ];
 
+    // Ramos do menu Eventos e do filtro "Ramo" da lista (Fase 10): chave => rótulo. A regra de cada um fica
+    // em scopeDoRamo() e ramo(). Evento JOGO antigo sem tbl_jogos não é de nenhum ramo (só no Calendário)
+    public const RAMOS = [
+        'campeonatos' => 'Campeonatos',
+        'amistosos'   => 'Amistosos',
+        'treinos'     => 'Treinos',
+        'individuais' => 'Individuais',
+        'outros'      => 'Outros',
+    ];
+
+    // Tipos do ramo "Outros"
+    public const TIPOS_OUTROS = ['REUNIAO', 'CONFRATERNIZACAO', 'EVENTO'];
+
     // id_usuario fica fora de propósito: o responsável é gravado só na criação (criarPor) e nenhum
     // update() com os dados do formulário pode trocá-lo. O mesmo vale para id_grade_treino e
     // data_grade_evento_calendario: só a geração pela grade grava a origem, e o formulário nunca a muda.
@@ -507,6 +520,53 @@ class EventoCalendario extends Model
             ->orWhere(fn ($jogo) => $jogo
                 ->where('tipo_evento_calendario', 'JOGO')
                 ->whereHas('jogo', fn ($j) => $j->whereNotNull('id_campeonato'))));
+    }
+
+    /**
+     * Eventos de um ramo do menu (RAMOS): Campeonatos = tipo CAMPEONATO e jogos com campeonato; Amistosos =
+     * jogos sem campeonato; Treinos = TREINO (gerado ou à mão); Individuais = AVALIACAO (exame médico e
+     * avaliação física pelo subtipo); Outros = TIPOS_OUTROS. Ramo desconhecido não filtra.
+     */
+    public function scopeDoRamo($query, ?string $ramo)
+    {
+        $jogo = fn (bool $comCampeonato) => fn ($q) => $q->where('tipo_evento_calendario', 'JOGO')
+            ->whereHas('jogo', fn ($j) => $comCampeonato ? $j->whereNotNull('id_campeonato') : $j->whereNull('id_campeonato'));
+
+        return match ($ramo) {
+            'campeonatos' => $query->where(fn ($q) => $q->where('tipo_evento_calendario', 'CAMPEONATO')->orWhere($jogo(true))),
+            'amistosos'   => $query->where($jogo(false)),
+            'treinos'     => $query->where('tipo_evento_calendario', 'TREINO'),
+            'individuais' => $query->where('tipo_evento_calendario', 'AVALIACAO'),
+            'outros'      => $query->whereIn('tipo_evento_calendario', self::TIPOS_OUTROS),
+            default       => $query,
+        };
+    }
+
+    /**
+     * Filtro "Situação" das listas do admin (Calendário e Jogos), parte que o banco resolve: vazio = tudo
+     * menos os ocultos (as listas abrem assim); INATIVO = só os ocultos; CANCELADO = só os cancelados; ATIVO,
+     * ALTERADO e CONCLUIDO = status ATIVO (Alterado e Concluído são derivados: a lista confere depois,
+     * pelo atributo situacao).
+     */
+    public function scopeDaSituacao($query, string $situacao)
+    {
+        return match ($situacao) {
+            ''                     => $query->where('status_evento_calendario', '<>', 'INATIVO'),
+            'INATIVO', 'CANCELADO' => $query->where('status_evento_calendario', $situacao),
+            default                => $query->where('status_evento_calendario', 'ATIVO'),
+        };
+    }
+
+    // Ramo do menu deste evento (a mesma regra de scopeDoRamo), para marcar o item ativo na tela do evento
+    public function ramo(): ?string
+    {
+        return match ($this->tipo_evento_calendario) {
+            'CAMPEONATO' => 'campeonatos',
+            'JOGO'       => $this->jogo ? ($this->jogo->id_campeonato ? 'campeonatos' : 'amistosos') : null,
+            'TREINO'     => 'treinos',
+            'AVALIACAO'  => 'individuais',
+            default      => in_array($this->tipo_evento_calendario, self::TIPOS_OUTROS, true) ? 'outros' : null,
+        };
     }
 
     // Eventos de um mês (lista do admin, por mês)

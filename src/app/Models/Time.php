@@ -42,4 +42,23 @@ class Time extends Model
                 'convocacao_atleta_time'
             ]);
     }
+
+    /**
+     * Por que não pode ser excluído (ou null). Jogo preserva o histórico (e a escalação dele aponta para o
+     * time); o elenco guarda camisa e contadores, e sai pela edição de cada atleta. FKs em NO ACTION.
+     */
+    public function motivoParaNaoExcluir(): ?string
+    {
+        $jogos = Jogo::where('id_time_casa', $this->id_time)->orWhere('id_time_visitante', $this->id_time)->count();
+        if ($jogos) {
+            return "O time {$this->nome_time} tem {$jogos} jogo(s) e não pode ser excluído. Mantenha-o inativo.";
+        }
+
+        $elenco = $this->atletas()->count();
+        if ($elenco) {
+            return "O time {$this->nome_time} tem {$elenco} atleta(s) no elenco. Tire-os do time na edição de cada atleta antes de excluir.";
+        }
+
+        return null;
+    }
 }

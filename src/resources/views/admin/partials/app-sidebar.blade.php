@@ -97,113 +97,112 @@
 
         <li class="nav-header">ESPORTE</li>
 
-        {{-- Eventos: árvore aninhada (Evento > Campeonato > Tipo > Jogos > Times > Jogadores) --}}
-        {{-- TODO: dados FICTÍCIOS só para validar o visual; depois virão do banco --}}
+        {{-- Eventos: só os ramos; o detalhe (jogos, times, atletas) fica nas páginas. Dados e item ativo
+             vêm do App\View\Composers\MenuAdminComposer --}}
         @php
-          $jogadores = fn (array $nomes) => array_map(fn ($n) => ['titulo' => $n, 'icone' => 'bi-person-fill'], $nomes);
-          $time = fn (string $nome, array $nomes) => ['titulo' => $nome, 'icone' => 'bi-shield-fill', 'filhos' => $jogadores($nomes)];
-          $jogo = fn (string $titulo, array $times) => ['titulo' => $titulo, 'icone' => 'bi-calendar2-week', 'filhos' => $times];
-
-          $aacj    = $time('AACJ Sub-13', ['Lucas Silva', 'Pedro Santos', 'Gabriel Lima']);
-          $leoes   = $time('Leões FC', ['Rafael Costa', 'João Souza', 'Mateus Alves']);
-          $estrela = $time('Estrela Azul', ['Davi Rocha', 'Enzo Pereira', 'Arthur Melo']);
-
-          $arvoreEventos = [
-            [
-              'titulo' => 'Eventos', 'icone' => 'bi-calendar-event',
-              'filhos' => [
-                [
-                  'titulo' => 'Campeonato', 'icone' => 'bi-trophy',
-                  'filhos' => [
-                    [
-                      'titulo' => 'Copa Escola', 'icone' => 'bi-award',
-                      'filhos' => [
-                        $jogo('AACJ x Leões', [$aacj, $leoes]),
-                        $jogo('AACJ x Estrela', [$aacj, $estrela]),
-                      ],
-                    ],
-                    [
-                      'titulo' => 'Copa Regional', 'icone' => 'bi-award',
-                      'filhos' => [
-                        $jogo('Leões x Estrela', [$leoes, $estrela]),
-                      ],
-                    ],
-                  ],
-                ],
-                [
-                  'titulo' => 'Amistoso', 'icone' => 'bi-hand-thumbs-up',
-                  'filhos' => [
-                    $jogo('AACJ x Leões', [$aacj, $leoes]),
-                  ],
-                ],
-                [
-                  'titulo' => 'Individual', 'icone' => 'bi-person',
-                  'filhos' => [
-                    [
-                      'titulo' => 'Exame médico', 'icone' => 'bi-heart-pulse',
-                      'filhos' => $jogadores(['Lucas Silva', 'Pedro Santos', 'Gabriel Lima']),
-                    ],
-                    [
-                      'titulo' => 'Avaliação física', 'icone' => 'bi-activity',
-                      'filhos' => $jogadores(['Rafael Costa', 'João Souza']),
-                    ],
-                  ],
-                ],
-              ],
-            ],
+          $ativo = fn (string $chave) => $menuAtivo === $chave;
+          $emCampeonatos = $ativo('ramo:campeonatos') || $ativo('campeonatos') || str_starts_with((string) $menuAtivo, 'campeonato:');
+          $emEventos = $emCampeonatos || $ativo('calendario') || str_starts_with((string) $menuAtivo, 'ramo:');
+          $ramosSimples = [
+            'amistosos'   => 'bi-hand-thumbs-up',
+            'treinos'     => 'bi-stopwatch',
+            'individuais' => 'bi-person-check',
+            'outros'      => 'bi-three-dots',
           ];
         @endphp
-        @include('admin.partials.sidebar-arvore', ['itens' => $arvoreEventos])
+        <li class="nav-item {{ $emEventos ? 'menu-open' : '' }}">
+          <a href="javascript:void(0)" class="nav-link {{ $emEventos ? 'active' : '' }}">
+            <i class="nav-icon bi bi-calendar-event"></i>
+            <p>Eventos <i class="nav-arrow bi bi-chevron-right"></i></p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="{{ route('admin.calendario.index') }}" class="nav-link {{ $ativo('calendario') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-calendar3"></i>
+                <p>Calendário</p>
+              </a>
+            </li>
 
-        {{-- Categorias --}}
-        <li class="nav-item {{ request()->routeIs('admin.categorias.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.categorias.*') ? 'active' : '' }}">
+            {{-- Campeonatos: o texto abre os eventos do ramo; a seta mostra os em andamento e "Ver todos" --}}
+            <li class="nav-item {{ $emCampeonatos ? 'menu-open' : '' }}">
+              <a href="{{ route('admin.calendario.index', ['ramo' => 'campeonatos']) }}"
+                class="nav-link {{ $ativo('ramo:campeonatos') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-trophy"></i>
+                <p>Campeonatos <i class="nav-arrow bi bi-chevron-right"></i></p>
+              </a>
+              <ul class="nav nav-treeview">
+                @foreach ($campeonatosEmAndamento as $camp)
+                <li class="nav-item">
+                  <a href="{{ route('admin.jogos.index', ['campeonato' => $camp->id_campeonato]) }}"
+                    class="nav-link {{ $ativo('campeonato:' . $camp->id_campeonato) ? 'active' : '' }}"
+                    title="Jogos de {{ $camp->nome_campeonato }}">
+                    <i class="nav-icon bi bi-award"></i>
+                    <p>{{ $camp->nome_campeonato }}</p>
+                  </a>
+                </li>
+                @endforeach
+                <li class="nav-item">
+                  <a href="{{ route('admin.campeonatos.index') }}" class="nav-link {{ $ativo('campeonatos') ? 'active' : '' }}">
+                    <i class="nav-icon bi bi-list-ul"></i>
+                    <p>Ver todos</p>
+                  </a>
+                </li>
+              </ul>
+            </li>
+
+            @foreach ($ramosSimples as $ramo => $icone)
+            <li class="nav-item">
+              <a href="{{ route('admin.calendario.index', ['ramo' => $ramo]) }}"
+                class="nav-link {{ $ativo('ramo:' . $ramo) ? 'active' : '' }}">
+                <i class="nav-icon bi {{ $icone }}"></i>
+                <p>{{ \App\Models\EventoCalendario::RAMOS[$ramo] }}</p>
+              </a>
+            </li>
+            @endforeach
+          </ul>
+        </li>
+
+        {{-- Jogos --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.jogos.index') }}" class="nav-link {{ $ativo('jogos') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-flag-fill"></i>
+            <p>Jogos</p>
+          </a>
+        </li>
+
+        {{-- Grade de treino: o texto abre a grade; a seta mostra "Gerar agenda do mês" --}}
+        <li class="nav-item {{ $ativo('grade') ? 'menu-open' : '' }}">
+          <a href="{{ route('admin.calendario.index', ['tab' => 'grade']) }}"
+            class="nav-link {{ $ativo('grade') && ! request()->routeIs('admin.calendario.grade.previa') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-clock"></i>
+            <p>Grade de treino <i class="nav-arrow bi bi-chevron-right"></i></p>
+          </a>
+          <ul class="nav nav-treeview">
+            <li class="nav-item">
+              <a href="{{ route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]) }}"
+                class="nav-link {{ request()->routeIs('admin.calendario.grade.previa') ? 'active' : '' }}">
+                <i class="nav-icon bi bi-calendar-plus"></i>
+                <p>Gerar agenda do mês</p>
+              </a>
+            </li>
+          </ul>
+        </li>
+
+        <li class="nav-header">CADASTROS</li>
+
+        <li class="nav-item">
+          <a href="{{ route('admin.categorias.index') }}" class="nav-link {{ $ativo('categorias') ? 'active' : '' }}">
             <i class="nav-icon bi bi-tags"></i>
-            <p>Categorias <i class="nav-arrow bi bi-chevron-right"></i></p>
+            <p>Categorias</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.categorias.index') }}"
-                class="nav-link {{ request()->routeIs('admin.categorias.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Sub-11, Sub-13, Sub-15...</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
-        {{-- Calendário --}}
-        <li class="nav-item {{ request()->routeIs('admin.calendario.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.calendario.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-calendar3"></i>
-            <p>Calendário <i class="nav-arrow bi bi-chevron-right"></i></p>
+        {{-- Times (o elenco de cada time interno abre pela linha dele) --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.times.index') }}" class="nav-link {{ $ativo('times') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-shield-fill"></i>
+            <p>Times</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.calendario.index') }}"
-                class="nav-link {{ request()->routeIs('admin.calendario.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Eventos e Grade</p>
-              </a>
-            </li>
-          </ul>
-        </li>
-
-        {{-- Escalação --}}
-        <li class="nav-item {{ request()->routeIs('admin.escalacao.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.escalacao.*') ? 'active' : '' }}">
-            <i class="nav-icon bi bi-people-fill"></i>
-            <p>Escalação <i class="nav-arrow bi bi-chevron-right"></i></p>
-          </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.escalacao.index') }}"
-                class="nav-link {{ request()->routeIs('admin.escalacao.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Por time</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
         <li class="nav-header">PESSOAS</li>
@@ -225,15 +224,14 @@
           </ul>
         </li>
 
-        {{-- Matrículas --}}
-        @php $pendentes = \App\Models\Atleta::whereIn('status_atleta', ['PENDENTE', 'pendente'])->count(); @endphp
+        {{-- Matrículas (contador de pendentes vem do MenuAdminComposer) --}}
         <li class="nav-item {{ request()->routeIs('admin.matriculas.*') ? 'menu-open' : '' }}">
           <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.matriculas.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-clipboard-check"></i>
             <p>
               Matrículas
-              @if ($pendentes > 0)
-                <span class="badge text-bg-danger ms-1 me-auto" style="font-size:0.65rem;">{{ $pendentes }}</span>
+              @if ($matriculasPendentes > 0)
+                <span class="badge text-bg-danger ms-1 me-auto" style="font-size:0.65rem;">{{ $matriculasPendentes }}</span>
               @endif
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>

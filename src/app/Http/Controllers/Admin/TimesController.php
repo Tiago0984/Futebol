@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\Time;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TimesController extends Controller
 {
@@ -15,13 +16,6 @@ class TimesController extends Controller
         $categorias = Categoria::orderBy('nome_categoria')->get();
 
         return view('admin.times.index', compact('times', 'categorias'));
-    }
-
-    public function create()
-    {
-        $categorias = Categoria::orderBy('nome_categoria')->get();
-
-        return view('admin.times.create', compact('categorias'));
     }
 
     public function store(Request $request)
@@ -44,14 +38,6 @@ class TimesController extends Controller
         Time::create($dados);
 
         return redirect()->route('admin.times.index')->with('sucesso', 'Time criado com sucesso.');
-    }
-
-    public function edit($id)
-    {
-        $time       = Time::findOrFail($id);
-        $categorias = Categoria::orderBy('nome_categoria')->get();
-
-        return view('admin.times.edit', compact('time', 'categorias'));
     }
 
     public function update(Request $request, $id)
@@ -86,10 +72,20 @@ class TimesController extends Controller
         return back()->with('sucesso', "Time {$novo} com sucesso.");
     }
 
+    // Time com jogos ou elenco não é excluído (mensagem em vez do erro de FK); a participação nos
+    // campeonatos (tbl_campeonato_time) sai junto
     public function destroy($id)
     {
         $time = Time::findOrFail($id);
-        $time->delete();
+
+        if ($motivo = $time->motivoParaNaoExcluir()) {
+            return redirect()->route('admin.times.index')->with('erro', $motivo);
+        }
+
+        DB::transaction(function () use ($time) {
+            $time->campeonatos()->detach();
+            $time->delete();
+        });
 
         return redirect()->route('admin.times.index')->with('sucesso', 'Time removido com sucesso.');
     }

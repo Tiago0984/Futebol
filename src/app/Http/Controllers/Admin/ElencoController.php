@@ -5,31 +5,21 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Time;
 use App\Models\Atleta;
-use App\Models\Categoria;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
-class EscalacaoController extends Controller
+/**
+ * Elenco de um time interno (antiga tela "Escalação", Fase 10): camisa, posição, titular/reserva e
+ * contadores manuais. Aberto pela linha do time em Times. A escalação de cada jogo fica na tela do evento.
+ */
+class ElencoController extends Controller
 {
-    public function index()
-    {
-        $times = Time::with('categoria')
-            ->withCount(['atletas as total_atletas'])
-            ->orderByRaw("FIELD(tipo_time, 'INTERNO', 'EXTERNO')")
-            ->orderBy('nome_time')
-            ->get();
-
-        $categorias = Categoria::orderBy('nome_categoria')->get();
-
-        return view('admin.escalacao.index', compact('times', 'categorias'));
-    }
-
     public function show($timeId)
     {
         $time = Time::with('categoria')->findOrFail($timeId);
 
         if ($time->tipo_time === 'EXTERNO') {
-            return redirect()->route('admin.escalacao.index')
+            return redirect()->route('admin.times.index')
                 ->with('erro', 'Times externos não possuem elenco cadastrado na associação.');
         }
 
@@ -63,14 +53,14 @@ class EscalacaoController extends Controller
             ->get()
             ->groupBy('id_atleta');
 
-        return view('admin.escalacao.show', compact('time', 'atletas', 'cartoes'));
+        return view('admin.times.elenco', compact('time', 'atletas', 'cartoes'));
     }
 
     public function update(Request $request, $timeId, $atletaId)
     {
         $time = Time::findOrFail($timeId);
         if ($time->tipo_time === 'EXTERNO') {
-            return redirect()->route('admin.escalacao.index')
+            return redirect()->route('admin.times.index')
                 ->with('erro', 'Times externos não possuem elenco cadastrado na associação.');
         }
 
@@ -122,7 +112,7 @@ class EscalacaoController extends Controller
             DB::table('tbl_cartoes')->insert($inserts);
         }
 
-        return redirect()->route('admin.escalacao.show', $timeId)
+        return redirect()->route('admin.times.elenco', $timeId)
             ->with('sucesso', 'Dados do atleta atualizados com sucesso.');
     }
 }

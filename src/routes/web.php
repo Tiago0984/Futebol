@@ -30,7 +30,7 @@ use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController;
 use App\Http\Controllers\Admin\VideosController;
-use App\Http\Controllers\Admin\EscalacaoController;
+use App\Http\Controllers\Admin\ElencoController;
 use App\Http\Controllers\Admin\ConfiguracoesController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
@@ -89,20 +89,27 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('/', [DashController::class, 'index'])->name('dash');
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');
 
+    // Resources só com as ações que existem: criar e editar são modais das listas (sem páginas
+    // create/edit/show, que davam erro 500). Campeonatos têm também as páginas create e edit
+    $acoesDaLista = ['index', 'store', 'update', 'destroy'];
+
     // Conteúdo do site
-    Route::resource('noticias', AdminNoticiasController::class);
-    Route::resource('banners',   BannersController::class);
+    Route::resource('noticias', AdminNoticiasController::class)->only($acoesDaLista);
+    Route::resource('banners',   BannersController::class)->only($acoesDaLista);
     Route::patch('banners/{id}/toggle-status', [BannersController::class, 'toggleStatus'])->name('banners.toggleStatus');
-    Route::resource('galeria',   GaleriaController::class);
+    Route::resource('galeria',   GaleriaController::class)->only($acoesDaLista);
 
     // Esporte
-    Route::resource('campeonatos', CampeonatosController::class);
+    Route::resource('campeonatos', CampeonatosController::class)->except(['show']);
     Route::patch('campeonatos/{id}/toggle-status', [CampeonatosController::class, 'toggleStatus'])->name('campeonatos.toggleStatus');
-    Route::resource('times',       TimesController::class);
+    Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
+    // Elenco do time interno (antiga Escalação), aberto pela linha do time em Times
+    Route::get('times/{timeId}/elenco',              [ElencoController::class, 'show'])->name('times.elenco');
+    Route::patch('times/{timeId}/elenco/{atletaId}', [ElencoController::class, 'update'])->name('times.elenco.update');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
-    Route::resource('categorias',  CategoriasController::class);
+    Route::resource('categorias',  CategoriasController::class)->only($acoesDaLista);
     Route::patch('categorias/{id}/toggle-status', [CategoriasController::class, 'toggleStatus'])->name('categorias.toggleStatus');
 
     // Calendário (Eventos + Grade de Treinos)
@@ -135,17 +142,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Pessoas (Corrigido para usar o alias AdminAtletasController)
     // toggle-status significa que o status do atleta será alternado entre ATIVO e INATIVO
     // Sem destroy: na tela de Atletas o atleta só é inativado; exclusão definitiva só em Matrículas Rejeitadas
-    Route::resource('atletas', AdminAtletasController::class)->except(['destroy']);
+    Route::resource('atletas', AdminAtletasController::class)->only(['index', 'store', 'update']);
     Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
     Route::post('atletas/{id}/mover-inscricoes', [AdminAtletasController::class, 'moverInscricoes'])->name('atletas.moverInscricoes');
     // Convite do app, "Defina sua senha" (Fase 9): um atleta/responsável, ou todos os que ainda não têm senha
     Route::post('atletas/convites-pendentes', [AdminAtletasController::class, 'convitesPendentes'])->name('atletas.convitesPendentes');
     Route::post('atletas/{id}/convite', [AdminAtletasController::class, 'convite'])->name('atletas.convite');
-
-    // Escalação
-    Route::get('escalacao',                                  [EscalacaoController::class, 'index'])->name('escalacao.index');
-    Route::get('escalacao/{timeId}',                         [EscalacaoController::class, 'show'])->name('escalacao.show');
-    Route::patch('escalacao/{timeId}/atleta/{atletaId}',     [EscalacaoController::class, 'update'])->name('escalacao.update');
 
     // Vídeos
     Route::get('videos',                         [VideosController::class, 'index'])->name('videos.index');

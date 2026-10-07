@@ -70,6 +70,13 @@
         </div>
         @endif
 
+        @if(session('erro'))
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <strong>Erro!</strong> {{ session('erro') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+
         @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Erro!</strong>
@@ -93,7 +100,7 @@
                             <th>Tipo</th>
                             <th>Categoria</th>
                             <th class="text-center">Status</th>
-                            <th class="text-center" style="width:110px">Ações</th>
+                            <th class="text-center" style="width:150px">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -132,6 +139,12 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
+                                    {{-- Elenco (camisa, posição, titular/reserva, contadores): só time interno --}}
+                                    @if(strtoupper($time->tipo_time) === 'INTERNO')
+                                    <a href="{{ route('admin.times.elenco', $time->id_time) }}" class="btn-tbl view" title="Elenco">
+                                        <i class="bi bi-people-fill"></i>
+                                    </a>
+                                    @endif
                                     <button type="button" class="btn-tbl edit btn-editar-time"
                                         data-bs-toggle="modal" data-bs-target="#modalEditarTime"
                                         data-id="{{ $time->id_time }}"

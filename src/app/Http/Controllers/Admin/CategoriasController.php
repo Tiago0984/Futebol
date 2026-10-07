@@ -16,11 +16,6 @@ class CategoriasController extends Controller
         return view('admin.categorias.index', compact('categorias'));
     }
 
-    public function create()
-    {
-        return view('admin.categorias.create');
-    }
-
     public function store(Request $request)
     {
         $request->validate([
@@ -36,13 +31,6 @@ class CategoriasController extends Controller
         ]);
 
         return redirect()->route('admin.categorias.index')->with('sucesso', 'Categoria criada com sucesso.');
-    }
-
-    public function edit($id)
-    {
-        $categoria = Categoria::findOrFail($id);
-
-        return view('admin.categorias.edit', compact('categoria'));
     }
 
     public function update(Request $request, $id)
@@ -78,6 +66,12 @@ class CategoriasController extends Controller
     public function destroy($id)
     {
         $categoria = Categoria::findOrFail($id);
+
+        // Categoria em uso não é excluída (mensagem em vez do erro de FK)
+        if ($motivo = $categoria->motivoParaNaoExcluir()) {
+            return redirect()->route('admin.categorias.index')->with('erro', $motivo);
+        }
+
         $categoria->delete();
 
         return redirect()->route('admin.categorias.index')->with('sucesso', 'Categoria removida com sucesso.');

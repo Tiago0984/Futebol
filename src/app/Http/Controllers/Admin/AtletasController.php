@@ -58,12 +58,6 @@ class AtletasController extends Controller
         return view('admin.atletas.index', compact('atletas', 'categorias', 'times', 'categoriasInativasEmUso', 'convitesPendentes'));
     }
 
-    public function create()
-    {
-        $categorias = Categoria::ativas()->get();
-        return view('admin.atletas.create', compact('categorias'));
-    }
-
     public function store(Request $request)
     {
         $nascimento = Atleta::regrasNascimento();
@@ -200,16 +194,6 @@ class AtletasController extends Controller
 
         // 6. Número de matrícula: o informado ou o próximo (A001, A002...)
         return $atleta->atribuirNumeroMatricula();
-    }
-
-    public function edit($id)
-    {
-        $atleta = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas', 'times'])
-            ->findOrFail($id);
-
-        $categorias = Categoria::ativas()->get();
-
-        return view('admin.atletas.edit', compact('atleta', 'categorias'));
     }
 
     public function update(Request $request, $id)

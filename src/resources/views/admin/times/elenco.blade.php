@@ -1,6 +1,6 @@
 @extends('layout.admin')
 
-@section('title', 'Escalação — ' . $time->nome_time)
+@section('title', 'Elenco — ' . $time->nome_time)
 
 @section('content')
 <main class="app-main">
@@ -9,7 +9,7 @@
     {{-- Cabeçalho da página --}}
     <div class="admin-page-header">
       <div class="d-flex align-items-center gap-3">
-        <a href="{{ route('admin.escalacao.index') }}" class="btn btn-sm btn-outline-secondary">
+        <a href="{{ route('admin.times.index') }}" class="btn btn-sm btn-outline-secondary" title="Voltar para Times" aria-label="Voltar para Times">
           <i class="bi bi-arrow-left"></i>
         </a>
         <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}"
@@ -17,7 +17,7 @@
              style="width:40px;height:40px;object-fit:contain;border-radius:8px;"
              onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
         <div>
-          <h1 class="page-title mb-0">{{ $time->nome_time }}</h1>
+          <h1 class="page-title mb-0">Elenco · {{ $time->nome_time }}</h1>
           <p class="page-subtitle mb-0">
             @if($time->categoria) {{ $time->categoria->nome_categoria }} &bull; @endif
             {{ $atletas->count() }} atleta{{ $atletas->count() != 1 ? 's' : '' }} no elenco
@@ -192,7 +192,7 @@
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                   </div>
-                  <form action="{{ route('admin.escalacao.update', [$time->id_time, $atleta->id_atleta]) }}"
+                  <form action="{{ route('admin.times.elenco.update', [$time->id_time, $atleta->id_atleta]) }}"
                         method="POST">
                     @csrf @method('PATCH')
                     <div class="modal-body">

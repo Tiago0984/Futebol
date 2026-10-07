@@ -7,6 +7,7 @@ use App\Models\Campeonato;
 use App\Models\Categoria;
 use App\Models\Time;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class CampeonatosController extends Controller
 {
@@ -132,8 +133,16 @@ class CampeonatosController extends Controller
     public function destroy($id)
     {
         $campeonato = Campeonato::findOrFail($id);
-        $campeonato->times()->detach();
-        $campeonato->delete();
+
+        // Campeonato com jogos não é excluído (mensagem em vez do erro de FK)
+        if ($motivo = $campeonato->motivoParaNaoExcluir()) {
+            return redirect()->route('admin.campeonatos.index')->with('erro', $motivo);
+        }
+
+        DB::transaction(function () use ($campeonato) {
+            $campeonato->times()->detach();
+            $campeonato->delete();
+        });
 
         return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato removido com sucesso.');
     }

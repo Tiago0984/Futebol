@@ -15,11 +15,6 @@ class BannersController extends Controller
         return view('admin.banners.index', compact('banners'));
     }
 
-    public function create()
-    {
-        return view('admin.banners.create');
-    }
-
     public function store(Request $request)
     {
         $request->validate([
@@ -45,13 +40,6 @@ class BannersController extends Controller
         Banner::create($dados);
 
         return redirect()->route('admin.banners.index')->with('sucesso', 'Banner criado com sucesso.');
-    }
-
-    public function edit($id)
-    {
-        $banner = Banner::findOrFail($id);
-
-        return view('admin.banners.edit', compact('banner'));
     }
 
     public function update(Request $request, $id)
