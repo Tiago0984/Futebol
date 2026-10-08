@@ -62,10 +62,11 @@ class Jogo extends Model
 
     // ── Consultas ───────────────────────────────────────────────────────────
 
-    // Jogos que o site mostra: evento ativo ou cancelado (oculto some, como no calendário do site)
+    // Jogos que o site e a API de campeonatos mostram: evento publicado, ativo ou cancelado (oculto e
+    // rascunho somem, como no calendário do site)
     public function scopeVisiveis($query)
     {
-        return $query->whereHas('evento', fn ($q) => $q->whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS));
+        return $query->whereHas('evento', fn ($q) => $q->publicados()->whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS));
     }
 
     // Jogos que a agenda do site mostra (hoje, só os de campeonato): a regra é a do evento,
@@ -143,16 +144,16 @@ class Jogo extends Model
     }
 
     /**
-     * Classificação: conta só jogos com placar e evento ATIVO (não cancelado nem oculto; jogo futuro
-     * sem placar não vira empate 0×0). Vitória 3, empate 1. Ordem: pontos, vitórias, saldo, gols marcados, nome.
-     * Devolve linhas com nome, logo, pj, v, e, d, gm, gc e pontos.
+     * Classificação: conta só jogos com placar e evento publicado e ATIVO (não rascunho, cancelado nem oculto;
+     * jogo futuro sem placar não vira empate 0×0). Vitória 3, empate 1. Ordem: pontos, vitórias, saldo, gols
+     * marcados, nome. Devolve linhas com nome, logo, pj, v, e, d, gm, gc e pontos.
      */
     public static function classificacao(Collection $jogos): array
     {
         $tabela = [];
 
         foreach ($jogos as $jogo) {
-            if (! $jogo->temPlacar() || $jogo->evento?->status_evento_calendario !== 'ATIVO') {
+            if (! $jogo->temPlacar() || ! $jogo->evento?->estaPublicado() || $jogo->evento->status_evento_calendario !== 'ATIVO') {
                 continue;
             }
 

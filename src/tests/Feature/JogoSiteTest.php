@@ -287,6 +287,36 @@ class JogoSiteTest extends TestCase
             ->assertSee('<h3 class="cal-next-title">Time Azul x Time Visitante</h3>', false);
     }
 
+    // ---------- rascunho (Fase 10, Etapa 4) ----------
+
+    public function test_jogo_em_rascunho_fica_fora_do_site_da_api_e_da_classificacao(): void
+    {
+        $passado = $this->jogo(-3, $this->azul, $this->visitante, [1, 0]);
+        $futuro  = $this->jogo(+5, $this->azul, $this->verde);
+        $this->rascunho($this->jogo(-2, $this->verde, $this->visitante, [7, 7]));
+        $this->rascunho($this->jogo(+1, $this->verde, $this->visitante)); // seria o próximo jogo
+
+        $this->get('/')->assertOk()
+            ->assertViewHas('proximoJogo', fn ($proximo) => $proximo->id_jogo === $futuro->id_jogo)
+            ->assertDontSee('7 × 7');
+
+        $this->get(route('calendario'))->assertOk()
+            ->assertViewHas('eventos', fn ($eventos) => $eventos->pluck('id_evento_calendario')->diff([$passado->id_evento, $futuro->id_evento])->isEmpty())
+            ->assertViewHas('proximoEvento', fn ($proximo) => $proximo->id_evento_calendario === $futuro->id_evento)
+            ->assertDontSee('Time Verde x Time Visitante');
+
+        $this->get(route('campeonato.show', $this->idCampeonato))->assertOk()
+            ->assertSee('2 jogos registrados')
+            ->assertDontSee('<span class="score-value">7</span>', false);
+
+        $this->assertSame([$passado->id_jogo, $futuro->id_jogo],
+            array_column($this->getJson("/api/v1/campeonatos/{$this->idCampeonato}")->assertOk()->json('data.jogos'), 'id_jogo'));
+
+        // A classificação ignora o rascunho mesmo quando ele chega na lista (o 7 × 7 do Verde não conta)
+        $tabela = Jogo::classificacao(Jogo::with(['evento', 'timeCasa', 'timeVisitante'])->get());
+        $this->assertEqualsCanonicalizing(['Time Azul', 'Time Visitante'], array_column($tabela, 'nome'));
+    }
+
     // ---------- dashboard ----------
 
     public function test_dashboard_mostra_a_data_do_evento_e_amistoso(): void
@@ -308,6 +338,14 @@ class JogoSiteTest extends TestCase
 
         $this->assertLessThan(array_search($segundo, $nomes, true), array_search($primeiro, $nomes, true),
             "{$primeiro} deveria ficar acima de {$segundo}: " . implode(', ', $nomes));
+    }
+
+    // Volta o jogo a rascunho (a tela de Jogos cria assim; aqui o helper jogo() cria publicado)
+    private function rascunho(Jogo $jogo): Jogo
+    {
+        DB::table('tbl_evento_calendario')->where('id_evento_calendario', $jogo->id_evento)->update(['data_publicacao_evento_calendario' => null]);
+
+        return $jogo;
     }
 
     private function novoTime(string $nome): int

@@ -331,13 +331,34 @@ class JogoElencoTest extends TestCase
             ->assertSee('id="faixaRascunho"', false)
             ->assertSee('Publicar e avisar os atletas');
         $this->actingAs($this->admin, 'admin')->get(route('admin.jogos.index'))->assertOk()->assertSee('>Rascunho</span>', false);
+        // Jogos dos amistosos (cartões por jogo): aviso no topo, selo e "Revisar e publicar" levando à tela do jogo
+        $this->actingAs($this->admin, 'admin')->get(route('admin.amistosos.times'))->assertOk()
+            ->assertSee('id="avisoRascunhos"', false)
+            ->assertSee('1 amistoso ainda não publicado')
+            ->assertSee('<a href="' . $tela . '" class="btn btn-warning btn-sm ms-auto js-publicar-jogo">', false);
 
         $this->publicar($jogo);
+
+        $this->actingAs($this->admin, 'admin')->get(route('admin.amistosos.times'))->assertOk()
+            ->assertDontSee('id="avisoRascunhos"', false)
+            ->assertDontSee('js-publicar-jogo');
 
         $this->actingAs($this->admin, 'admin')->get($tela)->assertOk()
             ->assertDontSee('id="faixaRascunho"', false)
             ->assertDontSee('Publicar e avisar os atletas');
         $this->actingAs($this->admin, 'admin')->get(route('admin.jogos.index'))->assertOk()->assertDontSee('>Rascunho</span>', false);
+    }
+
+    public function test_rascunho_conta_no_conflito_de_horario(): void
+    {
+        $ana = $this->atleta('Ana', [$this->azul]);
+        $this->postJogo($this->azul, $this->visitante); // rascunho, 19:00, com a Ana
+
+        $conflitos = $this->treinoNoHorarioDoJogo()->conflitosPara([$ana]);
+
+        $this->assertCount(1, $conflitos);
+        $this->assertFalse($conflitos->first()['fraco']); // conflito real
+        $this->assertSame(Jogo::sole()->id_evento, $conflitos->first()['evento']->id_evento_calendario);
     }
 
     public function test_eventos_que_nao_sao_jogo_continuam_avisando_na_hora(): void

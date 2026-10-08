@@ -92,6 +92,7 @@ class AppDoAtleta
     {
         return EventoCalendario::query()
             ->with(['categoria', 'jogo.campeonato', 'jogo.timeCasa', 'jogo.timeVisitante'])
+            ->publicados() // rascunho (jogo sendo montado) fica fora até publicar
             ->whereIn('status_evento_calendario', ['ATIVO', 'CANCELADO'])
             ->whereHas('inscricoes', fn ($q) => $q->where('id_atleta', $this->atleta->id_atleta));
     }

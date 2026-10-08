@@ -320,7 +320,7 @@ Content-Type: application/json
             <code>/api/v1/responsavel/atletas/{idAtleta}/agenda?page=1</code><span class="acesso responsavel">Responsável</span>
         </div>
         <ul>
-            <li>Só os eventos em que o atleta está <strong>inscrito</strong> (treinos, jogos, avaliações, reuniões...). Eventos ocultos pela secretaria não aparecem.</li>
+            <li>Só os eventos em que o atleta está <strong>inscrito</strong> (treinos, jogos, avaliações, reuniões...). Eventos ocultos pela secretaria e jogos ainda em rascunho (sendo montados, antes de publicar) não aparecem.</li>
             <li><code>situacao</code>: <code>CONFIRMADO</code> ou <code>CANCELADO</code>. Mudanças de data, horário ou local chegam pelos <a href="#avisos">avisos</a>; a agenda já mostra os dados novos.</li>
             <li><code>proximos</code>: o que ainda não terminou (inclusive o de hoje em andamento e os cancelados), do mais perto ao mais longe, <strong>paginado</strong>. No mesmo dia, evento sem horário vem por último.</li>
             <li><code>passados</code>: os <strong>3 últimos concluídos e não cancelados</strong>, do mais recente ao mais antigo; iguais em todas as páginas.</li>

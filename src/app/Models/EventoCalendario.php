@@ -584,12 +584,12 @@ class EventoCalendario extends Model
     /**
      * Agenda do site público (decisão de 06/10/2026, CLAUDE.md seção 4, "Site público"): só eventos do tipo
      * CAMPEONATO e jogos de campeonato (evento com tbl_jogos e campeonato preenchido). Ficam de fora
-     * amistosos, treinos (à mão ou da grade), eventos JOGO sem tbl_jogos e os outros tipos. O status
-     * (cancelado com o selo, oculto fora) é filtrado à parte.
+     * amistosos, treinos (à mão ou da grade), eventos JOGO sem tbl_jogos, os outros tipos e o rascunho
+     * (Fase 10, Etapa 4). O status (cancelado com o selo, oculto fora) é filtrado à parte.
      */
     public function scopeDaAgendaPublica($query)
     {
-        return $query->where(fn ($q) => $q
+        return $query->publicados()->where(fn ($q) => $q
             ->where('tipo_evento_calendario', 'CAMPEONATO')
             ->orWhere(fn ($jogo) => $jogo
                 ->where('tipo_evento_calendario', 'JOGO')

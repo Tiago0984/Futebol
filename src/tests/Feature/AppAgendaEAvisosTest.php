@@ -217,6 +217,26 @@ class AppAgendaEAvisosTest extends TestCase
             array_keys($filhos[0]));
     }
 
+    // Jogo em rascunho (Fase 10, Etapa 4): fora da agenda do app até publicar, para o atleta e o responsável
+    public function test_agenda_deixa_o_rascunho_de_fora_para_atleta_e_responsavel(): void
+    {
+        [, $filho] = $this->responsavelComFilho('mae@exemplo.com', 'ana@exemplo.com');
+        $publicado = $this->evento('Jogo publicado', '2026-10-12', '18:00:00', null, inscritos: [$filho], tipo: 'JOGO');
+        $rascunhos = [
+            $this->evento('Jogo em rascunho', '2026-10-11', '18:00:00', null, inscritos: [$filho], tipo: 'JOGO'),
+            $this->evento('Rascunho passado', '2026-10-01', '18:00:00', null, inscritos: [$filho], tipo: 'JOGO'),
+        ];
+        DB::table('tbl_evento_calendario')->whereIn('id_evento_calendario', $rascunhos)->update(['data_publicacao_evento_calendario' => null]);
+
+        foreach ([[$this->login('ana@exemplo.com'), '/api/v1/agenda'],
+                  [$this->login('mae@exemplo.com', 'responsavel'), "/api/v1/responsavel/atletas/{$filho}/agenda"]] as [$token, $rota]) {
+            $agenda = $this->comToken($token)->getJson($rota)->assertOk()->json('data');
+
+            $this->assertSame([$publicado], array_column($agenda['proximos'], 'id_evento'), $rota);
+            $this->assertSame([], $agenda['passados'], $rota);
+        }
+    }
+
     public function test_responsavel_ve_dados_agenda_e_avisos_do_filho_iguais_aos_do_atleta(): void
     {
         [, $filho] = $this->responsavelComFilho('mae@exemplo.com', 'ana@exemplo.com');
