@@ -71,11 +71,14 @@ class GradeGeracaoMesTest extends TestCase
 
         $resposta = $this->comoAdminFixo()->get(route('admin.calendario.grade.previa', ['mes' => '2026-11']))->assertOk();
 
-        $previa = $resposta->viewData('previa');
-        $linha  = $previa['linhas']->firstWhere('grade.id_grade_treino', $sub13);
-        // Seg/qua a partir de hoje (16/11): o das 08:00 às 09:30 de hoje já passou
-        $this->assertSame(['18/11', '23/11', '25/11', '30/11'], $linha['novas']->map->format('d/m')->all());
-        $this->assertSame(['16/11'], $linha['puladas']->map->format('d/m')->all());
+        $previa  = $resposta->viewData('previa');
+        $segunda = $previa['linhas']->firstWhere('grade.id_grade_treino', $sub13['segunda']);
+        $quarta  = $previa['linhas']->firstWhere('grade.id_grade_treino', $sub13['quarta']);
+        // A partir de hoje (segunda, 16/11): o das 08:00 às 09:30 de hoje já passou
+        $this->assertSame(['23/11', '30/11'], $segunda['novas']->map->format('d/m')->all());
+        $this->assertSame(['16/11'], $segunda['puladas']->map->format('d/m')->all());
+        $this->assertSame(['18/11', '25/11'], $quarta['novas']->map->format('d/m')->all());
+        $this->assertCount(0, $quarta['puladas']);
 
         $resposta->assertSee('Não gera: Jogos são criados na tela de Jogos.')
             ->assertSee('0 atletas')
@@ -108,7 +111,7 @@ class GradeGeracaoMesTest extends TestCase
             ->assertRedirect(route('admin.calendario.index', ['mes' => '2026-11']))
             ->assertSessionHas('sucesso', fn ($msg) => str_contains($msg, '10 evento(s) gerado(s), 14 inscrição(ões).'));
 
-        $evento = EventoCalendario::where('id_grade_treino', $sub13)->where('data_grade_evento_calendario', '2026-11-18')->firstOrFail();
+        $evento = EventoCalendario::where('id_grade_treino', $sub13['quarta'])->where('data_grade_evento_calendario', '2026-11-18')->firstOrFail();
         $this->assertSame('Treino Sub-13 Masculino', $evento->titulo_evento_calendario);
         $this->assertSame('TREINO', $evento->tipo_evento_calendario);
         $this->assertSame('2026-11-18', $evento->data_evento_calendario->toDateString());
@@ -128,7 +131,7 @@ class GradeGeracaoMesTest extends TestCase
         $this->assertSame(['INDIVIDUAL'], $integradoDia20->inscricoes()->distinct()->pluck('origem_evento_atleta')->all());
 
         // O treino de hoje que já passou não foi gerado; a linha "Jogos" também não
-        $this->assertFalse(EventoCalendario::where('id_grade_treino', $sub13)->where('data_grade_evento_calendario', '2026-11-16')->exists());
+        $this->assertFalse(EventoCalendario::where('id_grade_treino', $sub13['segunda'])->where('data_grade_evento_calendario', '2026-11-16')->exists());
         $this->assertSame(10, EventoCalendario::whereNotNull('id_grade_treino')->count());
     }
 
@@ -137,7 +140,7 @@ class GradeGeracaoMesTest extends TestCase
         [$sub13] = $this->cenario();
         $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-11']);
 
-        $eventos = EventoCalendario::where('id_grade_treino', $sub13)->orderBy('data_grade_evento_calendario')->get();
+        $eventos = EventoCalendario::whereIn('id_grade_treino', $sub13)->orderBy('data_grade_evento_calendario')->get();
         $eventos[0]->mudarStatus('CANCELADO', null);
         $eventos[1]->mudarStatus('INATIVO', null);
         $eventos[2]->atualizarComHistorico(['data_evento_calendario' => '2026-11-28'], null); // mudou de dia
@@ -223,7 +226,8 @@ class GradeGeracaoMesTest extends TestCase
         $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-12'])->assertSessionHas('sucesso');
 
         // Dezembro de 2026: seg 7, 14, 21, 28 e qua 2, 9, 16, 23, 30
-        $this->assertSame(9, EventoCalendario::where('id_grade_treino', $sub13)->count());
+        $this->assertSame(4, EventoCalendario::where('id_grade_treino', $sub13['segunda'])->count());
+        $this->assertSame(5, EventoCalendario::where('id_grade_treino', $sub13['quarta'])->count());
     }
 
     // ---------- site público ----------
@@ -324,19 +328,20 @@ class GradeGeracaoMesTest extends TestCase
 
     /**
      * Grade e atletas do cenário:
-     *  - Sub-13 M, seg/qua 08:00–09:30: Ana e Bia (ATIVO); Duda inativa e fora;
+     *  - Sub-13 M, segunda e quarta (uma linha por dia) 08:00–09:30: Ana e Bia (ATIVO); Duda inativa e fora;
      *  - Integrado, sexta 18:00–19:00: todos os ATIVO (Ana, Bia e Caio, que é Sub-15 M);
-     *  - Sub-9 F, ter/qui 07:00–08:00: nenhum atleta (0 atletas);
+     *  - Sub-9 F, terça e quinta 07:00–08:00: nenhum atleta (0 atletas);
      *  - Jogos (tipo JOGO): não gera.
+     * Sub-13 e Sub-9 F voltam como [dia => id da linha].
      */
     private function cenario(): array
     {
-        $sub13 = $this->grade(['categoria_grade_treino' => 'Sub-13', 'id_categoria' => $this->idCategoria('Sub-13', 'M'),
-            'dia_semana_grade_treino' => 'segunda_quarta', 'horario_inicio_grade_treino' => '08:00', 'horario_fim_grade_treino' => '09:30']);
+        $sub13 = $this->linhasNosDias(['segunda', 'quarta'], ['categoria_grade_treino' => 'Sub-13', 'id_categoria' => $this->idCategoria('Sub-13', 'M'),
+            'horario_inicio_grade_treino' => '08:00', 'horario_fim_grade_treino' => '09:30']);
         $integrado = $this->grade(['categoria_grade_treino' => 'Integrado', 'dia_semana_grade_treino' => 'sexta',
             'horario_inicio_grade_treino' => '18:00', 'horario_fim_grade_treino' => '19:00']);
-        $sub9f = $this->grade(['categoria_grade_treino' => 'Sub-9', 'id_categoria' => $this->idCategoria('Sub-9', 'F'),
-            'dia_semana_grade_treino' => 'terca_quinta', 'horario_inicio_grade_treino' => '07:00', 'horario_fim_grade_treino' => '08:00']);
+        $sub9f = $this->linhasNosDias(['terca', 'quinta'], ['categoria_grade_treino' => 'Sub-9', 'id_categoria' => $this->idCategoria('Sub-9', 'F'),
+            'horario_inicio_grade_treino' => '07:00', 'horario_fim_grade_treino' => '08:00']);
         $jogos = $this->grade(['categoria_grade_treino' => 'Jogos', 'tipo_grade_treino' => 'JOGO', 'dia_semana_grade_treino' => 'sabado',
             'horario_inicio_grade_treino' => null, 'horario_fim_grade_treino' => null]);
 
@@ -353,6 +358,12 @@ class GradeGeracaoMesTest extends TestCase
         $atleta('Duda', 'INATIVO', 'Sub-13');
 
         return [$sub13, $integrado, $sub9f, $jogos, $ana, $bia, $caio];
+    }
+
+    // Mesmo horário em vários dias: uma linha por dia (como o "Novo Horário" com vários dias marcados)
+    private function linhasNosDias(array $dias, array $dados): array
+    {
+        return collect($dias)->mapWithKeys(fn (string $dia) => [$dia => $this->grade(['dia_semana_grade_treino' => $dia] + $dados)])->all();
     }
 
     private function grade(array $dados): int

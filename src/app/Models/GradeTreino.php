@@ -29,19 +29,26 @@ class GradeTreino extends Model
         'status_grade_treino',
     ];
 
+    // Um dia por linha, na ordem da semana: é a ordem do admin, do site e da ordenação (scopeOrdenada)
     public const DIAS_SEMANA = [
-        'segunda_quarta' => 'Segunda/Quarta',
-        'terca_quinta'   => 'Terça/Quinta',
-        'sexta'          => 'Sexta',
-        'sabado'         => 'Sábado',
+        'segunda' => 'Segunda',
+        'terca'   => 'Terça',
+        'quarta'  => 'Quarta',
+        'quinta'  => 'Quinta',
+        'sexta'   => 'Sexta',
+        'sabado'  => 'Sábado',
+        'domingo' => 'Domingo',
     ];
 
-    // Dias reais de cada valor do ENUM (Carbon: 0 = domingo ... 6 = sábado). segunda_quarta gera dois eventos por semana.
+    // Dia real de cada valor do ENUM (Carbon: 0 = domingo ... 6 = sábado). Cada linha gera um evento por semana.
     public const DIAS_CARBON = [
-        'segunda_quarta' => [Carbon::MONDAY, Carbon::WEDNESDAY],
-        'terca_quinta'   => [Carbon::TUESDAY, Carbon::THURSDAY],
-        'sexta'          => [Carbon::FRIDAY],
-        'sabado'         => [Carbon::SATURDAY],
+        'segunda' => Carbon::MONDAY,
+        'terca'   => Carbon::TUESDAY,
+        'quarta'  => Carbon::WEDNESDAY,
+        'quinta'  => Carbon::THURSDAY,
+        'sexta'   => Carbon::FRIDAY,
+        'sabado'  => Carbon::SATURDAY,
+        'domingo' => Carbon::SUNDAY,
     ];
 
     /**
@@ -51,7 +58,7 @@ class GradeTreino extends Model
     public function scopeOrdenada($query)
     {
         return $query
-            ->orderByRaw("FIELD(dia_semana_grade_treino, 'segunda_quarta', 'terca_quinta', 'sexta', 'sabado')")
+            ->orderByRaw("FIELD(dia_semana_grade_treino, 'segunda', 'terca', 'quarta', 'quinta', 'sexta', 'sabado', 'domingo')")
             ->orderByRaw('horario_inicio_grade_treino IS NULL')
             ->orderBy('horario_inicio_grade_treino')
             ->orderBy('ordem_grade_treino');
@@ -88,13 +95,13 @@ class GradeTreino extends Model
      */
     public function datasNoMes(int $ano, int $mes, ?Carbon $aPartirDe = null): Collection
     {
-        $dias   = self::DIAS_CARBON[$this->dia_semana_grade_treino] ?? [];
+        $dia    = self::DIAS_CARBON[$this->dia_semana_grade_treino] ?? null;
         $inicio = Carbon::create($ano, $mes, 1)->startOfDay();
         $minimo = $aPartirDe?->copy()->startOfDay();
 
         return collect(range(0, $inicio->daysInMonth - 1))
             ->map(fn (int $i) => $inicio->copy()->addDays($i))
-            ->filter(fn (Carbon $data) => in_array($data->dayOfWeek, $dias, true))
+            ->filter(fn (Carbon $data) => $data->dayOfWeek === $dia)
             ->filter(fn (Carbon $data) => $minimo === null || $data->gte($minimo))
             ->values();
     }

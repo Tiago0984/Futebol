@@ -25,9 +25,9 @@ class GradeAvisoEventosGeradosTest extends TestCase
         parent::setUp();
         $this->travelTo('2026-11-16 10:00:00');
 
-        // Sub-13 M, seg/qua 08:00–09:30
+        // Sub-13 M, segunda 08:00–09:30 (os eventos de teste são criados direto, em qualquer dia)
         $this->idGrade = DB::table('tbl_grade_treino')->insertGetId([
-            'dia_semana_grade_treino' => 'segunda_quarta', 'categoria_grade_treino' => 'Sub-13',
+            'dia_semana_grade_treino' => 'segunda', 'categoria_grade_treino' => 'Sub-13',
             'id_categoria' => $this->idCategoria('Sub-13', 'M'), 'tipo_grade_treino' => 'TREINO',
             'horario_inicio_grade_treino' => '08:00', 'horario_fim_grade_treino' => '09:30',
             'local_grade_treino' => 'Campo A', 'status_grade_treino' => 'ATIVO',
@@ -63,7 +63,7 @@ class GradeAvisoEventosGeradosTest extends TestCase
         $this->gerarEventos();
 
         $mudancas = [
-            ['dia_semana_grade_treino' => 'terca_quinta'],
+            ['dia_semana_grade_treino' => 'terca'],
             ['horario_fim_grade_treino' => '10:00'],
             ['local_grade_treino' => 'Campo B'],
             ['id_categoria' => $this->idCategoria('Sub-15', 'M')],
@@ -136,7 +136,7 @@ class GradeAvisoEventosGeradosTest extends TestCase
     private function dados(array $extra = []): array
     {
         return array_merge([
-            'dia_semana_grade_treino'     => 'segunda_quarta',
+            'dia_semana_grade_treino'     => 'segunda',
             'id_categoria'                => $this->idCategoria('Sub-13', 'M'),
             'categoria_grade_treino'      => '',
             'tipo_grade_treino'           => 'TREINO',

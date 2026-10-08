@@ -688,14 +688,34 @@ class CalendarioController extends Controller
 
     // ── Grade de Treinos ────────────────────────────────────────────────────
 
+    /**
+     * Novo horário: os dias marcados viram uma linha cada, com os mesmos dados (a grade tem um dia por linha;
+     * na edição, cada linha muda sozinha). Tudo ou nada.
+     */
     public function storeGrade(Request $request)
     {
-        GradeTreino::create([
-            ...$this->dadosGrade($request),
-            'status_grade_treino' => 'ATIVO',
+        $request->validate([
+            'dias_semana_grade_treino'   => ['required', 'array'],
+            'dias_semana_grade_treino.*' => ['distinct', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
+        ], [
+            'dias_semana_grade_treino.required' => 'Marque pelo menos um dia da semana.',
         ]);
 
-        return redirect()->route('admin.calendario.index', ['tab' => 'grade'])->with('sucesso', 'Horário adicionado à grade.');
+        $dados = $this->dadosGrade($request);
+        $dias  = array_values(array_intersect(array_keys(GradeTreino::DIAS_SEMANA), $request->dias_semana_grade_treino));
+
+        DB::transaction(function () use ($dados, $dias) {
+            foreach ($dias as $dia) {
+                GradeTreino::create([...$dados, 'dia_semana_grade_treino' => $dia, 'status_grade_treino' => 'ATIVO']);
+            }
+        });
+
+        $mensagem = count($dias) === 1
+            ? 'Horário adicionado à grade.'
+            : count($dias) . ' horários adicionados à grade (um por dia: '
+                . implode(', ', array_map(fn ($dia) => GradeTreino::DIAS_SEMANA[$dia], $dias)) . ').';
+
+        return redirect()->route('admin.calendario.index', ['tab' => 'grade'])->with('sucesso', $mensagem);
     }
 
     // Campos da grade que mudam os eventos gerados (observação e ordem não mudam)
@@ -708,8 +728,12 @@ class CalendarioController extends Controller
     {
         $grade = GradeTreino::findOrFail($id);
 
+        $request->validate([
+            'dia_semana_grade_treino' => ['required', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
+        ]);
+
         $antes = $this->camposDoEvento($grade);
-        $grade->update($this->dadosGrade($request));
+        $grade->update([...$this->dadosGrade($request), 'dia_semana_grade_treino' => $request->dia_semana_grade_treino]);
 
         // Mudou algo que o evento copia: os eventos futuros já gerados NÃO acompanham (só avisa)
         $mensagem = 'Horário atualizado.';
@@ -738,7 +762,7 @@ class CalendarioController extends Controller
     }
 
     /**
-     * Valida e monta os dados de um horário da grade.
+     * Valida e monta os dados de um horário da grade, menos o dia (vários no store, um só no update).
      * Com categoria: o rótulo (categoria_grade_treino) vem do nome da categoria.
      * Sem categoria ("Geral", ex.: Integrado, Treino Livre): o rótulo é obrigatório.
      * Tipo e local são NOT NULL no banco, por isso obrigatórios aqui.
@@ -746,7 +770,6 @@ class CalendarioController extends Controller
     private function dadosGrade(Request $request): array
     {
         $request->validate([
-            'dia_semana_grade_treino'        => ['required', Rule::in(array_keys(GradeTreino::DIAS_SEMANA))],
             'id_categoria'                   => ['nullable', 'integer', Rule::exists('tbl_categoria', 'id_categoria')->where('status_categoria', 'ATIVO')],
             'categoria_grade_treino'         => 'required_without:id_categoria|nullable|string|max:60',
             'tipo_grade_treino'              => ['required', Rule::in(GradeTreino::TIPOS)],
@@ -764,7 +787,7 @@ class CalendarioController extends Controller
 
         return [
             ...$request->only([
-                'dia_semana_grade_treino', 'tipo_grade_treino',
+                'tipo_grade_treino',
                 'horario_inicio_grade_treino', 'horario_fim_grade_treino',
                 'horario_obs_grade_treino', 'local_grade_treino',
             ]),

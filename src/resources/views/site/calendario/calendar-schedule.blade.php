@@ -7,24 +7,15 @@
             <p>Horários fixos dos treinos regulares por categoria. Eventos especiais e jogos são publicados na agenda acima.</p>
         </div>
 
-        @php
-            $diasOrdem = ['segunda_quarta', 'terca_quinta', 'sexta', 'sabado'];
-            $diaLabels = [
-                'segunda_quarta' => 'Segunda &amp; Quarta',
-                'terca_quinta'   => 'Terça &amp; Quinta',
-                'sexta'          => 'Sexta-feira',
-                'sabado'         => 'Sábado',
-            ];
-        @endphp
-
         <div class="cal-schedule-grid">
 
-            @foreach($diasOrdem as $dia)
+            {{-- Um cartão por dia que tem horário ativo, na ordem da semana (GradeTreino::DIAS_SEMANA) --}}
+            @foreach(\App\Models\GradeTreino::DIAS_SEMANA as $dia => $diaLabel)
                 @if($gradeTreinos->has($dia))
                 <div class="cal-schedule-card {{ $dia === 'sabado' ? 'cal-schedule-card--destaque' : '' }}">
                     <div class="cal-schedule-day">
                         <i class="fa fa-calendar-o"></i>
-                        <span>{!! $diaLabels[$dia] !!}</span>
+                        <span>{{ $diaLabel }}</span>
                     </div>
                     <div class="cal-schedule-body">
                         @foreach($gradeTreinos[$dia] as $item)
@@ -55,7 +46,11 @@
 
         <p class="cal-schedule-obs">
             <i class="fa fa-info-circle"></i>
-            Os treinos de domingo são reservados para repouso. Alterações de horário são comunicadas com antecedência no grupo de WhatsApp dos responsáveis.
+            {{-- A frase do domingo só vale enquanto não houver horário ativo nele --}}
+            @unless($gradeTreinos->has('domingo'))
+                Os treinos de domingo são reservados para repouso.
+            @endunless
+            Alterações de horário são comunicadas com antecedência no grupo de WhatsApp dos responsáveis.
         </p>
 
     </div>

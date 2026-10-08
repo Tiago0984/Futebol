@@ -22,13 +22,16 @@ class GradeGeracaoTest extends TestCase
 
     // ---------- datas do mês ----------
 
-    public function test_datas_do_mes_para_os_quatro_dias_da_grade(): void
+    public function test_datas_do_mes_para_os_sete_dias_da_grade(): void
     {
         $esperado = [
-            'segunda_quarta' => ['02', '04', '09', '11', '16', '18', '23', '25', '30'], // 5 segundas + 4 quartas
-            'terca_quinta'   => ['03', '05', '10', '12', '17', '19', '24', '26'],
-            'sexta'          => ['06', '13', '20', '27'],
-            'sabado'         => ['07', '14', '21', '28'],
+            'segunda' => ['02', '09', '16', '23', '30'],
+            'terca'   => ['03', '10', '17', '24'],
+            'quarta'  => ['04', '11', '18', '25'],
+            'quinta'  => ['05', '12', '19', '26'],
+            'sexta'   => ['06', '13', '20', '27'],
+            'sabado'  => ['07', '14', '21', '28'],
+            'domingo' => ['01', '08', '15', '22', '29'],
         ];
 
         foreach ($esperado as $dia => $dias) {
@@ -40,11 +43,11 @@ class GradeGeracaoTest extends TestCase
 
     public function test_datas_do_mes_a_partir_de_uma_data_minima(): void
     {
-        $grade = $this->grade(['dia_semana_grade_treino' => 'segunda_quarta']);
+        $grade = $this->grade(['dia_semana_grade_treino' => 'segunda']);
 
         // A data mínima conta (16/11 é segunda); a hora não importa
         $datas = $grade->datasNoMes(2026, 11, Carbon::parse('2026-11-16 15:00'));
-        $this->assertSame(['2026-11-16', '2026-11-18', '2026-11-23', '2026-11-25', '2026-11-30'],
+        $this->assertSame(['2026-11-16', '2026-11-23', '2026-11-30'],
             $datas->map->toDateString()->all());
 
         // Data mínima depois do fim do mês: nada

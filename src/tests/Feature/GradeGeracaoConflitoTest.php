@@ -241,16 +241,20 @@ class GradeGeracaoConflitoTest extends TestCase
         ]);
     }
 
+    // Horário de terça e quinta: duas linhas iguais (uma por dia); devolve o id da de terça
     private function grade(array $dados): int
     {
-        return DB::table('tbl_grade_treino')->insertGetId(array_merge([
-            'dia_semana_grade_treino'     => 'terca_quinta',
+        $linha = array_merge([
             'categoria_grade_treino'      => 'Integrado',
             'tipo_grade_treino'           => 'TREINO',
             'horario_inicio_grade_treino' => '09:30',
             'horario_fim_grade_treino'    => '11:00',
             'local_grade_treino'          => 'Campo A',
             'status_grade_treino'         => 'ATIVO',
-        ], $dados));
+        ], $dados);
+
+        DB::table('tbl_grade_treino')->insert(['dia_semana_grade_treino' => 'quinta'] + $linha);
+
+        return DB::table('tbl_grade_treino')->insertGetId(['dia_semana_grade_treino' => 'terca'] + $linha);
     }
 }

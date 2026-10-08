@@ -532,14 +532,19 @@
                 @csrf
                 <div class="modal-body">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Dia da Semana <span class="text-danger">*</span></label>
-                            <select name="dia_semana_grade_treino" class="form-select" required>
-                                <option value="">— Selecionar —</option>
+                        <div class="col-12">
+                            <label class="form-label mb-1">Dias da Semana <span class="text-danger">*</span></label>
+                            <div class="d-flex flex-wrap gap-3">
                                 @foreach(\App\Models\GradeTreino::DIAS_SEMANA as $valor => $label)
-                                <option value="{{ $valor }}">{{ $label }}</option>
+                                <div class="form-check m-0">
+                                    <input class="form-check-input" type="checkbox" name="dias_semana_grade_treino[]"
+                                        id="cad_g_dia_{{ $valor }}" value="{{ $valor }}"
+                                        @checked(in_array($valor, (array) old('dias_semana_grade_treino', []), true))>
+                                    <label class="form-check-label" for="cad_g_dia_{{ $valor }}">{{ $label }}</label>
+                                </div>
                                 @endforeach
-                            </select>
+                            </div>
+                            <div class="form-text">Cada dia marcado vira uma linha da grade, com os mesmos dados (na edição, cada linha muda sozinha).</div>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Ordem</label>
