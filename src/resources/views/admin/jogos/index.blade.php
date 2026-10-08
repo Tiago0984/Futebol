@@ -194,6 +194,10 @@
                             </td>
                             <td class="text-center">
                                 <span class="badge-status {{ $classeStatus }}">{{ $ev->situacao_label }}</span>
+                                @unless ($ev->estaPublicado())
+                                    {{-- Ninguém avisado ainda: publicar na tela do jogo --}}
+                                    <span class="badge bg-warning text-dark d-block mt-1" title="Os atletas serão avisados ao publicar, na tela do jogo">Rascunho</span>
+                                @endunless
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">

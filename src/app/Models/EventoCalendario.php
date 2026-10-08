@@ -143,11 +143,15 @@ class EventoCalendario extends Model
      * já nasce com os atletas ativos da categoria inscritos (origem CATEGORIA). Usado pelo formulário
      * de evento e pela tela de Jogos; a geração da grade usa criarDaGrade().
      * $inscreverCategoria = false: o jogo, que inscreve o elenco dos times (Jogo::inscreverElenco).
+     * $rascunho = true: o jogo (Fase 10, Etapa 4), que nasce sem avisar ninguém até publicar().
      */
-    public static function criarPor(?int $idUsuario, array $dados, bool $inscreverCategoria = true): self
+    public static function criarPor(?int $idUsuario, array $dados, bool $inscreverCategoria = true, bool $rascunho = false): self
     {
-        return DB::transaction(function () use ($idUsuario, $dados, $inscreverCategoria) {
+        return DB::transaction(function () use ($idUsuario, $dados, $inscreverCategoria, $rascunho) {
             $evento = self::novoPor($idUsuario, $dados);
+            if ($rascunho) {
+                $evento->data_publicacao_evento_calendario = null; // o booted() respeita o NULL explícito
+            }
             $evento->save();
 
             if ($inscreverCategoria && $evento->id_categoria) {
@@ -216,7 +220,7 @@ class EventoCalendario extends Model
             }
 
             if ($notificar) {
-                $this->atletasNotificados += Notificacao::inscricao($this, $idAtleta, $idUsuario);
+                $this->atletasNotificados += Notificacao::inscricao($this, $idAtleta, $idUsuario, $idTime);
             }
 
             return true;
@@ -272,8 +276,10 @@ class EventoCalendario extends Model
     }
 
     /**
-     * Publica o rascunho: grava a data de publicação e registra no histórico (quem e quando). Já publicado
-     * (inclusive por outro admin ao mesmo tempo: a linha é travada e relida) não faz nada e devolve false.
+     * Publica o rascunho: grava a data de publicação, registra no histórico (quem e quando) e avisa os
+     * inscritos, uma INSCRICAO por atleta com o time da escalação (Notificacao::publicacao; rascunho que já
+     * aconteceu, cancelado ou oculto é publicado sem avisar). Já publicado (inclusive por outro admin ao
+     * mesmo tempo: a linha é travada e relida) não faz nada e devolve false.
      */
     public function publicar(?int $idUsuario): bool
     {
@@ -296,6 +302,8 @@ class EventoCalendario extends Model
                 'id_usuario'                    => $idUsuario,
                 'data_evento_historico'         => $agora,
             ]);
+
+            $this->atletasNotificados += Notificacao::publicacao($this, $idUsuario);
 
             return true;
         });

@@ -109,6 +109,31 @@
                 </div>
             @endif
 
+            {{-- Jogo em rascunho (Fase 10, Etapa 4): ninguém foi avisado; publicar avisa cada inscrito uma vez, com o time --}}
+            @unless ($evento->estaPublicado())
+                @php $avisaAoPublicar = $evento->status_evento_calendario === 'ATIVO' && ! $evento->estaConcluido(); @endphp
+                <div class="alert alert-warning d-flex flex-wrap align-items-center gap-3" role="alert" id="faixaRascunho">
+                    <div class="me-auto">
+                        <strong><i class="bi bi-pencil-square"></i> Rascunho.</strong>
+                        @if ($avisaAoPublicar)
+                            Os atletas ainda não foram avisados e o {{ $rotuloEvento }} não aparece no app nem no site.
+                            Confira os inscritos e a escalação e publique: cada atleta recebe um aviso só, já com o time.
+                        @else
+                            O {{ $rotuloEvento }} já aconteceu, está cancelado ou oculto: publicar não avisa ninguém.
+                        @endif
+                    </div>
+                    @if ($jogo)
+                    <form action="{{ route('admin.jogos.publicar', $jogo->id_jogo) }}" method="POST" class="d-inline"
+                          onsubmit="return confirm(@js($avisaAoPublicar ? 'Publicar o jogo e avisar os atletas inscritos? Depois de publicado, ele não volta a ser rascunho.' : 'Publicar o jogo sem avisar ninguém?'))">
+                        @csrf @method('PATCH')
+                        <button type="submit" class="btn btn-warning btn-sm" id="btnPublicar">
+                            <i class="bi bi-send"></i> {{ $avisaAoPublicar ? 'Publicar e avisar os atletas' : 'Publicar' }}
+                        </button>
+                    </form>
+                    @endif
+                </div>
+            @endunless
+
             {{-- Dados do evento --}}
             @php
                 $classeSituacao = [

@@ -112,16 +112,42 @@ class Notificacao extends Model
     // Único lugar que monta os textos e grava. Só atletas ATIVO recebem; quem chama já está dentro da
     // transação da ação. Cada método devolve quantos atletas foram notificados.
 
-    // Inscrição num evento (EventoCalendario::inscrever). Evento concluído, cancelado ou oculto não avisa.
-    public static function inscricao(EventoCalendario $evento, int $idAtleta, ?int $idUsuario): int
+    // Inscrição num evento (EventoCalendario::inscrever). Evento em rascunho, concluído, cancelado ou oculto
+    // não avisa. $idTime: escalado num jogo, a mensagem diz por qual time ele joga
+    public static function inscricao(EventoCalendario $evento, int $idAtleta, ?int $idUsuario, ?int $idTime = null): int
     {
         if (! $evento->avisaAtletas()) {
             return 0;
         }
 
-        return self::gravarParaAtivos([$idAtleta], $idUsuario, fn () => self::linha(
-            'INSCRICAO', $evento, 'Nova atividade na sua agenda', self::descreverEvento($evento) . self::recado($evento),
-        ));
+        $nomeTime = $idTime ? Time::whereKey($idTime)->value('nome_time') : null;
+
+        return self::gravarParaAtivos([$idAtleta], $idUsuario, fn () => self::linhaDeInscricao($evento, $nomeTime));
+    }
+
+    /**
+     * Publicação do jogo em rascunho (EventoCalendario::publicar): uma INSCRICAO por inscrito ativo, a mesma da
+     * inscrição comum, já com os dados finais e o time da escalação (sem time, sem a frase). Rascunho que já
+     * aconteceu, cancelado ou oculto é publicado sem avisar (avisaAtletas).
+     */
+    public static function publicacao(EventoCalendario $evento, ?int $idUsuario): int
+    {
+        if (! $evento->avisaAtletas()) {
+            return 0;
+        }
+
+        $timeDe = $evento->inscricoes()->leftJoin('tbl_time', 'tbl_time.id_time', '=', 'tbl_evento_atleta.id_time')
+            ->pluck('tbl_time.nome_time', 'tbl_evento_atleta.id_atleta');
+
+        return self::gravarParaAtivos($timeDe->keys()->all(), $idUsuario,
+            fn (int $idAtleta) => self::linhaDeInscricao($evento, $timeDe[$idAtleta] ?? null));
+    }
+
+    // "Nova atividade na sua agenda" / "Time Azul x Visitante · sáb, 18/10 · 19:00 · Quadra A. Você joga pelo Time Azul."
+    private static function linhaDeInscricao(EventoCalendario $evento, ?string $nomeTime): array
+    {
+        return self::linha('INSCRICAO', $evento, 'Nova atividade na sua agenda', self::descreverEvento($evento)
+            . self::recado($evento) . ($nomeTime ? ". Você joga pelo {$nomeTime}." : ''));
     }
 
     // Descrição do evento ("o que o atleta vai fazer") resumida no fim da inscrição: " — Venha em jejum".

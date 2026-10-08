@@ -54,8 +54,8 @@ class JogoElencoTest extends TestCase
         $this->atleta('Fabio', [$this->azul], 'INATIVO');
 
         $this->postJogo($this->azul, $this->verde)
-            ->assertSessionHas('sucesso', 'Jogo registrado. 3 atleta(s) do elenco inscrito(s). 1 atleta(s) estão nos elencos dos dois times:'
-                . ' escolha o time de cada um na tela do jogo. 3 atleta(s) notificado(s).')
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 3 atleta(s) do elenco inscrito(s). 1 atleta(s) estão nos elencos dos dois times:'
+                . ' escolha o time de cada um na tela do jogo. Os atletas serão avisados ao publicar.')
             ->assertSessionMissing('aviso');
 
         $jogo = Jogo::sole();
@@ -64,7 +64,15 @@ class JogoElencoTest extends TestCase
             $bia  => ['ELENCO', $this->verde],
             $caio => ['ELENCO', null],
         ], $this->inscricoesDo($jogo));
-        $this->assertEqualsCanonicalizing([$ana, $bia, $caio], Notificacao::where('tipo_notificacao', 'INSCRICAO')->pluck('id_atleta')->all());
+        $this->assertSame(0, Notificacao::count()); // rascunho: ninguém avisado ainda
+
+        // Ao publicar, cada um recebe uma INSCRICAO só, com o time da escalação (Caio, sem time, sem a frase)
+        $this->publicar($jogo)->assertSessionHas('sucesso', 'Jogo publicado. 3 atleta(s) notificado(s).');
+        $this->assertSame([$ana => 'INSCRICAO', $bia => 'INSCRICAO', $caio => 'INSCRICAO'], $this->notificacoesPorAtleta());
+        $mensagens = Notificacao::pluck('mensagem_notificacao', 'id_atleta');
+        $this->assertStringEndsWith('. Você joga pelo Time Azul.', $mensagens[$ana]);
+        $this->assertStringEndsWith('. Você joga pelo Time Verde.', $mensagens[$bia]);
+        $this->assertStringNotContainsString('Você joga', $mensagens[$caio]);
     }
 
     public function test_time_interno_sem_elenco_fica_sem_inscritos_daquele_lado_e_avisa(): void
@@ -73,7 +81,7 @@ class JogoElencoTest extends TestCase
         $this->atleta('Fabio', [$this->preto], 'INATIVO'); // o Preto só tem atleta inativo
 
         $this->postJogo($this->azul, $this->preto)
-            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) do elenco inscrito(s). 1 atleta(s) notificado(s).')
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.')
             ->assertSessionHas('aviso', 'Sem elenco cadastrado: Time Preto. Nenhum atleta foi inscrito por esse time;'
                 . ' cadastre o elenco e use "Preencher pelo elenco" na tela do jogo, ou inscreva à mão.');
 
@@ -242,9 +250,111 @@ class JogoElencoTest extends TestCase
 
         $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
             ->assertSessionHas('sucesso', 'Escalação pelo elenco: 0 inscrito(s) escalado(s), 1 atleta(s) inscrito(s) e escalado(s). 1 atleta(s) notificado(s).');
+        $this->assertStringEndsWith('. Você joga pelo Time Azul.', Notificacao::where('id_atleta', $hugo)->value('mensagem_notificacao'));
         $this->assertSame(['ELENCO', $this->azul], $this->inscricoesDo($jogo)[$hugo]);
 
         $this->actingAs($this->admin, 'admin')->get($tela)->assertSee('Todo o elenco ativo está inscrito');
+    }
+
+    // ---------- rascunho e publicação (Fase 10, Etapa 4) ----------
+
+    public function test_rascunho_nao_avisa_troca_de_time_edicao_preencher_nem_status(): void
+    {
+        $this->atleta('Ana', [$this->azul]);
+        $this->atleta('Bia', [$this->verde]);
+        $this->postJogo($this->azul, $this->visitante);
+        $jogo = Jogo::with('evento')->sole();
+        $this->atleta('Hugo', [$this->verde]); // entra no elenco depois
+
+        $this->putJogo($jogo, ['id_time_casa' => $this->verde, 'horario_inicio_evento_calendario' => '20:00'])
+            ->assertSessionHas('sucesso', fn ($msg) => str_ends_with($msg, ' 0 atleta(s) notificado(s).'));
+        $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento));
+        $this->actingAs($this->admin, 'admin')->patch(route('admin.calendario.eventos.cancelar', $jogo->id_evento));
+        $this->actingAs($this->admin, 'admin')->patch(route('admin.calendario.eventos.cancelar', $jogo->id_evento)); // reativa
+
+        $this->assertSame(2, $jogo->evento->inscricoes()->count()); // Bia e Hugo, do Verde
+        $this->assertSame(0, Notificacao::count());
+        $this->assertFalse($jogo->evento->fresh()->estaPublicado());
+    }
+
+    public function test_publicar_avisa_cada_um_uma_vez_com_a_escalacao_feita_no_rascunho(): void
+    {
+        $ana  = $this->atleta('Ana', [$this->azul]);
+        $caio = $this->atleta('Caio', [$this->azul, $this->verde]); // nos dois: entra sem time
+        $this->postJogo($this->azul, $this->verde);
+        $jogo = Jogo::with('evento')->sole();
+
+        // O admin escala o Caio no Verde ainda no rascunho: o aviso já sai com o time certo
+        $this->actingAs($this->admin, 'admin')->patch(route('admin.calendario.eventos.inscricoes.time', [$jogo->id_evento, $caio]),
+            ['id_time' => $this->verde]);
+
+        $this->publicar($jogo)
+            ->assertRedirect(route('admin.calendario.eventos.show', $jogo->id_evento))
+            ->assertSessionHas('sucesso', 'Jogo publicado. 2 atleta(s) notificado(s).');
+
+        $this->assertSame([$ana => 'INSCRICAO', $caio => 'INSCRICAO'], $this->notificacoesPorAtleta());
+        $this->assertStringEndsWith('. Você joga pelo Time Verde.', Notificacao::where('id_atleta', $caio)->value('mensagem_notificacao'));
+        $this->assertSame($this->admin->id_usuario, Notificacao::where('id_atleta', $ana)->value('id_usuario'));
+        $this->assertTrue($jogo->evento->fresh()->estaPublicado());
+        $this->assertSame('data_publicacao_evento_calendario', $jogo->evento->historico()->sole()->campo_evento_historico);
+
+        // De novo: não avisa ninguém
+        $this->publicar($jogo)->assertSessionHas('aviso', 'Este jogo já estava publicado. Nenhum atleta foi avisado de novo.');
+        $this->assertSame(2, Notificacao::count());
+    }
+
+    public function test_publicar_rascunho_concluido_ou_cancelado_nao_avisa(): void
+    {
+        $this->atleta('Ana', [$this->azul]);
+        $semAviso = 'Jogo publicado. Nenhum atleta foi avisado: o jogo já aconteceu, está cancelado ou oculto.';
+
+        $this->postJogo($this->azul, $this->visitante, ['data_evento_calendario' => now()->subWeek()->toDateString()]);
+        $this->publicar(Jogo::latest('id_jogo')->first())->assertSessionHas('sucesso', $semAviso);
+
+        $this->postJogo($this->azul, $this->visitante);
+        $cancelado = Jogo::latest('id_jogo')->first();
+        $this->actingAs($this->admin, 'admin')->patch(route('admin.calendario.eventos.cancelar', $cancelado->id_evento));
+        $this->publicar($cancelado)->assertSessionHas('sucesso', $semAviso);
+
+        $this->assertSame(0, Notificacao::count());
+        $this->assertTrue($cancelado->evento->fresh()->estaPublicado());
+    }
+
+    public function test_tela_e_lista_mostram_o_rascunho_ate_publicar(): void
+    {
+        $this->atleta('Ana', [$this->azul]);
+        $this->postJogo($this->azul, $this->visitante);
+        $jogo = Jogo::sole();
+        $tela = route('admin.calendario.eventos.show', $jogo->id_evento);
+
+        $this->actingAs($this->admin, 'admin')->get($tela)->assertOk()
+            ->assertSee('id="faixaRascunho"', false)
+            ->assertSee('Publicar e avisar os atletas');
+        $this->actingAs($this->admin, 'admin')->get(route('admin.jogos.index'))->assertOk()->assertSee('>Rascunho</span>', false);
+
+        $this->publicar($jogo);
+
+        $this->actingAs($this->admin, 'admin')->get($tela)->assertOk()
+            ->assertDontSee('id="faixaRascunho"', false)
+            ->assertDontSee('Publicar e avisar os atletas');
+        $this->actingAs($this->admin, 'admin')->get(route('admin.jogos.index'))->assertOk()->assertDontSee('>Rascunho</span>', false);
+    }
+
+    public function test_eventos_que_nao_sao_jogo_continuam_avisando_na_hora(): void
+    {
+        $ana = $this->atleta('Ana');
+
+        $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.store'), [
+            'titulo_evento_calendario'         => 'Treino extra',
+            'tipo_evento_calendario'           => 'TREINO',
+            'id_categoria'                     => $this->idSub11M,
+            'data_evento_calendario'           => $this->dia,
+            'horario_inicio_evento_calendario' => '08:00',
+            'status_evento_calendario'         => 'ATIVO',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertTrue(EventoCalendario::sole()->estaPublicado());
+        $this->assertSame([$ana => 'INSCRICAO'], $this->notificacoesPorAtleta());
     }
 
     // ---------- helpers ----------
@@ -286,11 +396,19 @@ class JogoElencoTest extends TestCase
         return $this->actingAs($this->admin, 'admin')->post(route('admin.jogos.store'), $this->dadosJogo($casa, $visitante, $extra));
     }
 
+    // Cria o jogo pela tela e já publica (os testes de troca de time e da tela olham o jogo publicado)
     private function criarJogo(int $casa, int $visitante, array $extra = []): Jogo
     {
         $this->postJogo($casa, $visitante, $extra)->assertSessionHasNoErrors()->assertSessionHas('sucesso');
+        $jogo = Jogo::latest('id_jogo')->first();
+        $this->publicar($jogo)->assertSessionHas('sucesso');
 
-        return Jogo::with('evento')->latest('id_jogo')->first();
+        return $jogo->load('evento');
+    }
+
+    private function publicar(Jogo $jogo)
+    {
+        return $this->actingAs($this->admin, 'admin')->patch(route('admin.jogos.publicar', $jogo->id_jogo));
     }
 
     // Edita o jogo mantendo o resto como está

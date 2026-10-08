@@ -118,6 +118,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
     Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo
+    Route::patch('jogos/{id}/publicar', [JogosController::class, 'publicar'])->name('jogos.publicar'); // rascunho → publicado, avisa os atletas
     // Times dos amistosos, separados por jogo, e jogadores de um time: só leitura, pelo subitem "Times" do menu
     Route::get('amistosos/times',          [AmistososController::class, 'times'])->name('amistosos.times');
     // Jogadores escalados por um time num jogo (cartão do time nas telas de times por jogo): só leitura

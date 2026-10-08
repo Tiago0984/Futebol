@@ -46,7 +46,7 @@ class JogoEventoTest extends TestCase
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
             ->assertRedirect(route('admin.calendario.eventos.show', Jogo::sole()->id_evento)) // abre a tela do jogo (Fase 10)
-            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) do elenco inscrito(s). 1 atleta(s) notificado(s).')
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.')
             ->assertSessionMissing('aviso');
 
         $jogo   = Jogo::with('evento')->sole();
@@ -60,12 +60,15 @@ class JogoEventoTest extends TestCase
         $this->assertNotNull($evento->id_usuario);                       // responsável = admin logado
         $this->assertSame([$idAtleta => ['ELENCO', $this->azul]], $this->inscricoesDo($jogo)); // já escalado no Azul
 
-        // O atleta inscrito pelo elenco recebe a INSCRICAO do jogo
+        // Nasce rascunho (Fase 10, Etapa 4): ninguém avisado; ao publicar, o inscrito recebe a INSCRICAO com o time
+        $this->assertFalse($evento->estaPublicado());
+        $this->assertSame(0, \App\Models\Notificacao::count());
+        $this->comoAdmin()->patch(route('admin.jogos.publicar', $jogo->id_jogo));
         $notificacao = \App\Models\Notificacao::where('id_atleta', $idAtleta)->sole();
         $this->assertSame('INSCRICAO', $notificacao->tipo_notificacao);
         $this->assertSame($evento->id_evento_calendario, $notificacao->id_evento_calendario);
         $this->assertStringStartsWith('Time Azul x Time Visitante · ', $notificacao->mensagem_notificacao);
-        $this->assertStringEndsWith(' · 19:00 · Quadra A', $notificacao->mensagem_notificacao);
+        $this->assertStringEndsWith(' · 19:00 · Quadra A. Você joga pelo Time Azul.', $notificacao->mensagem_notificacao);
 
         $this->assertNull($jogo->placar_time_casa_jogos);                // vazio = não jogado
         $this->assertSame("{$this->dia} 19:00:00", $jogo->data_jogo->format('Y-m-d H:i:s')); // vem do evento
@@ -94,7 +97,7 @@ class JogoEventoTest extends TestCase
         $this->atletaSub11();
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_campeonato' => 'AMISTOSO']))
-            ->assertSessionHas('sucesso', 'Jogo registrado. 1 atleta(s) do elenco inscrito(s). 1 atleta(s) notificado(s).');
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.');
 
         $jogo = Jogo::sole();
         $this->assertNull($jogo->evento->id_categoria);
@@ -170,6 +173,7 @@ class JogoEventoTest extends TestCase
     {
         $idAtleta = $this->atletaSub11();
         $jogo = $this->criarJogo();
+        $this->comoAdmin()->patch(route('admin.jogos.publicar', $jogo->id_jogo)); // rascunho não avisaria
         \App\Models\Notificacao::query()->delete(); // só interessa o que a edição gera
 
         $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([

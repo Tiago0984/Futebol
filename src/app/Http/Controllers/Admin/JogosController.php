@@ -112,8 +112,9 @@ class JogosController extends Controller
         }
 
         [$evento, $jogo, $elenco] = DB::transaction(function () use ($dadosJogo, $dadosEvento) {
-            // Responsável = admin logado. A categoria fica no evento só para exibição: quem joga é o elenco
-            $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento, inscreverCategoria: false);
+            // Responsável = admin logado. A categoria fica no evento só para exibição: quem joga é o elenco.
+            // Nasce rascunho (Fase 10, Etapa 4): inscritos e escalados, ninguém avisado até publicar
+            $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento, inscreverCategoria: false, rascunho: true);
 
             $jogo = Jogo::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
             $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
@@ -122,10 +123,10 @@ class JogosController extends Controller
         });
 
         $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
-        $mensagem  = 'Jogo registrado.'
+        $mensagem  = 'Jogo registrado como rascunho.'
             . ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) do elenco inscrito(s)." : '')
             . ($elenco['nos_dois'] ? " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times: escolha o time de cada um na tela do jogo." : '')
-            . ($inscritos ? Notificacao::textoNotificados($evento->atletasNotificados) : '');
+            . ' Os atletas serão avisados ao publicar.';
 
         // Elenco de outra categoria/sexo: só avisa, como na tela do jogo (CLAUDE.md, seção 8, pergunta 14)
         if ($avisos = $evento->avisosForaDaCategoria($elenco['ids_mexidos'])) {
@@ -196,6 +197,26 @@ class JogosController extends Controller
             ->with('sucesso', $jogo->temPlacar()
                 ? "Placar salvo: {$jogo->placar_time_casa_jogos} × {$jogo->placar_time_visitante_jogos}."
                 : 'Placar apagado (jogo ainda não jogado).');
+    }
+
+    /**
+     * "Publicar e avisar os atletas" (Fase 10, Etapa 4), na tela do jogo: o rascunho passa a valer e cada
+     * inscrito ativo recebe um aviso só, com o time. Jogo que já aconteceu, cancelado ou oculto é publicado
+     * sem avisar. Sem "despublicar": depois de publicado, usar cancelar ou ocultar.
+     */
+    public function publicar($id)
+    {
+        $jogo   = Jogo::with('evento')->findOrFail($id);
+        $evento = $jogo->evento;
+        $tela   = redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario);
+
+        if (! $evento->publicar(auth('admin')->id())) {
+            return $tela->with('aviso', 'Este jogo já estava publicado. Nenhum atleta foi avisado de novo.');
+        }
+
+        return $tela->with('sucesso', 'Jogo publicado.' . ($evento->avisaAtletas()
+            ? Notificacao::textoNotificados($evento->atletasNotificados)
+            : ' Nenhum atleta foi avisado: o jogo já aconteceu, está cancelado ou oculto.'));
     }
 
     public function update(Request $request, $id)
