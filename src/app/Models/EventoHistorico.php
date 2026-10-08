@@ -50,19 +50,21 @@ class EventoHistorico extends Model
             . $this->valorExibido($this->valor_novo_evento_historico);
     }
 
-    // Valor gravado em formato legível (data dd/mm/aaaa, rótulos de status/tipo, nome da categoria)
+    // Valor gravado em formato legível (data dd/mm/aaaa, rótulos de status/tipo, nome da categoria).
+    // Publicação: antes dela o evento era rascunho
     private function valorExibido(?string $valor): string
     {
         if ($valor === null) {
-            return '(vazio)';
+            return $this->campo_evento_historico === 'data_publicacao_evento_calendario' ? 'Rascunho' : '(vazio)';
         }
 
         return match ($this->campo_evento_historico) {
-            'data_evento_calendario'   => Carbon::parse($valor)->format('d/m/Y'),
-            'status_evento_calendario' => EventoCalendario::STATUS[$valor] ?? $valor,
-            'tipo_evento_calendario'   => EventoCalendario::TIPOS[$valor] ?? $valor,
-            'id_categoria'             => Categoria::find($valor)?->rotulo ?? "#{$valor}",
-            default                    => $valor,
+            'data_evento_calendario'            => Carbon::parse($valor)->format('d/m/Y'),
+            'data_publicacao_evento_calendario' => 'Publicado em ' . Carbon::parse($valor)->format('d/m/Y H:i'),
+            'status_evento_calendario'          => EventoCalendario::STATUS[$valor] ?? $valor,
+            'tipo_evento_calendario'            => EventoCalendario::TIPOS[$valor] ?? $valor,
+            'id_categoria'                      => Categoria::find($valor)?->rotulo ?? "#{$valor}",
+            default                             => $valor,
         };
     }
 }

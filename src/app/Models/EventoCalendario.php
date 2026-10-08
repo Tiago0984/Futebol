@@ -33,14 +33,15 @@ class EventoCalendario extends Model
 
     // Campos registrados no histórico de alterações => rótulo (CLAUDE.md, seção 4)
     public const CAMPOS_HISTORICO = [
-        'titulo_evento_calendario'         => 'Título',
-        'tipo_evento_calendario'           => 'Tipo',
-        'id_categoria'                     => 'Categoria',
-        'data_evento_calendario'           => 'Data',
-        'horario_inicio_evento_calendario' => 'Horário de início',
-        'horario_fim_evento_calendario'    => 'Horário de fim',
-        'local_evento_calendario'          => 'Local',
-        'status_evento_calendario'         => 'Status',
+        'titulo_evento_calendario'          => 'Título',
+        'tipo_evento_calendario'            => 'Tipo',
+        'id_categoria'                      => 'Categoria',
+        'data_evento_calendario'            => 'Data',
+        'horario_inicio_evento_calendario'  => 'Horário de início',
+        'horario_fim_evento_calendario'     => 'Horário de fim',
+        'local_evento_calendario'           => 'Local',
+        'status_evento_calendario'          => 'Status',
+        'data_publicacao_evento_calendario' => 'Publicação', // só publicar() grava (fora do $fillable)
     ];
 
     // Só estes contam para o derivado "Alterado"
@@ -100,6 +101,7 @@ class EventoCalendario extends Model
     // id_usuario fica fora de propósito: o responsável é gravado só na criação (criarPor) e nenhum
     // update() com os dados do formulário pode trocá-lo. O mesmo vale para id_grade_treino e
     // data_grade_evento_calendario: só a geração pela grade grava a origem, e o formulário nunca a muda.
+    // E data_publicacao_evento_calendario: o evento nasce publicado (booted) ou rascunho, e só publicar() muda.
     protected $fillable = [
         'titulo_evento_calendario',
         'descricao_evento_calendario',
@@ -115,13 +117,26 @@ class EventoCalendario extends Model
     ];
 
     protected $casts = [
-        'data_evento_calendario'       => 'date',
-        'data_grade_evento_calendario' => 'date',
+        'data_evento_calendario'            => 'date',
+        'data_grade_evento_calendario'      => 'date',
+        'data_publicacao_evento_calendario' => 'datetime',
     ];
 
     // Quantos atletas foram notificados pelas inscrições e remoções feitas nesta instância (não é coluna:
     // serve só para a mensagem de sucesso do admin, ex.: "5 atleta(s) notificado(s)")
     public int $atletasNotificados = 0;
+
+    // Evento novo nasce publicado (Fase 10, Etapa 4). O banco também tem DEFAULT CURRENT_TIMESTAMP, mas o
+    // model não relê a linha depois do insert: sem isto, estaPublicado() daria falso logo depois de criar.
+    // O rascunho grava NULL explicitamente antes de salvar (a chave existe, então não é sobrescrita).
+    protected static function booted(): void
+    {
+        static::creating(function (self $evento) {
+            if (! array_key_exists('data_publicacao_evento_calendario', $evento->getAttributes())) {
+                $evento->data_publicacao_evento_calendario = now();
+            }
+        });
+    }
 
     /**
      * Cria o evento já com o responsável (quem criou), que depois nunca muda. Evento com categoria
@@ -236,11 +251,54 @@ class EventoCalendario extends Model
         });
     }
 
-    // Avisa os atletas de inscrição e remoção: só evento ATIVO que ainda não aconteceu (concluído,
-    // cancelado e oculto não avisam)
+    // Avisa os atletas de inscrição, remoção e alteração: só evento publicado, ATIVO e que ainda não
+    // aconteceu (rascunho, concluído, cancelado e oculto não avisam)
     public function avisaAtletas(): bool
     {
-        return $this->status_evento_calendario === 'ATIVO' && ! $this->estaConcluido();
+        return $this->estaPublicado() && $this->status_evento_calendario === 'ATIVO' && ! $this->estaConcluido();
+    }
+
+    // ── Rascunho e publicação (Fase 10, Etapa 4) ────────────────────────────
+
+    // Publicado = data de publicação preenchida; NULL = rascunho (jogo sendo montado, ninguém avisado)
+    public function estaPublicado(): bool
+    {
+        return $this->data_publicacao_evento_calendario !== null;
+    }
+
+    public function scopePublicados($query)
+    {
+        return $query->whereNotNull('data_publicacao_evento_calendario');
+    }
+
+    /**
+     * Publica o rascunho: grava a data de publicação e registra no histórico (quem e quando). Já publicado
+     * (inclusive por outro admin ao mesmo tempo: a linha é travada e relida) não faz nada e devolve false.
+     */
+    public function publicar(?int $idUsuario): bool
+    {
+        return DB::transaction(function () use ($idUsuario) {
+            $publicadoEm = self::whereKey($this->getKey())->lockForUpdate()->value('data_publicacao_evento_calendario');
+
+            if ($publicadoEm !== null) {
+                $this->data_publicacao_evento_calendario = $publicadoEm;
+                return false;
+            }
+
+            $agora = now();
+            $this->data_publicacao_evento_calendario = $agora;
+            $this->save();
+
+            $this->historico()->create([
+                'campo_evento_historico'        => 'data_publicacao_evento_calendario',
+                'valor_antigo_evento_historico' => null,
+                'valor_novo_evento_historico'   => $agora->format('Y-m-d H:i'),
+                'id_usuario'                    => $idUsuario,
+                'data_evento_historico'         => $agora,
+            ]);
+
+            return true;
+        });
     }
 
     /**

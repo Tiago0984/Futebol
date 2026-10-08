@@ -176,7 +176,8 @@ class Notificacao extends Model
     /**
      * Mudança de status (EventoCalendario::mudarStatus): sair de ATIVO avisa CANCELAMENTO (cancelar, ou ocultar
      * um evento ativo); voltar a ATIVO avisa REATIVACAO (reativar, ou mostrar de volta como ativo). Entre
-     * cancelado e oculto não avisa. Evento concluído não avisa.
+     * cancelado e oculto não avisa. Evento concluído ou em rascunho não avisa. Não usa o avisaAtletas(): ele
+     * exige o evento ATIVO, e o cancelamento avisa justamente quando o evento deixa de estar.
      */
     public static function mudancaDeStatus(EventoCalendario $evento, string $statusAntes, ?int $idUsuario): int
     {
@@ -187,7 +188,7 @@ class Notificacao extends Model
             default                                              => null,
         };
 
-        if ($tipo === null || $evento->estaConcluido()) {
+        if ($tipo === null || ! $evento->estaPublicado() || $evento->estaConcluido()) {
             return 0;
         }
 
