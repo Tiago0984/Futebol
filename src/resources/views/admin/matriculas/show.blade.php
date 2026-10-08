@@ -44,17 +44,20 @@
                         $situacaoAut = $atleta->situacaoAutorizacao();
                         $bloqueio    = $atleta->bloqueioAprovacao();
                     @endphp
-                    @if ($foto = $atleta->urlFoto())
+                    {{-- Iniciais por baixo e a foto por cima: foto que não carrega some e deixa as iniciais --}}
+                    <div style="position:relative;width:80px;height:80px;flex-shrink:0;">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                            style="width:80px;height:80px;background:{{ $corAvatar }};font-size:1.5rem;position:absolute;top:0;left:0;">
+                            {{ $iniciais }}
+                        </div>
+                        @if ($foto = $atleta->urlFoto())
                         <img src="{{ $foto }}"
                             alt="{{ $atleta->nome_atleta }}"
                             class="rounded-circle object-fit-cover"
-                            style="width:80px;height:80px;">
-                    @else
-                        <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                            style="width:80px;height:80px;background:{{ $corAvatar }};font-size:1.5rem;">
-                            {{ $iniciais }}
-                        </div>
-                    @endif
+                            style="width:80px;height:80px;position:absolute;top:0;left:0;"
+                            onerror="this.style.display='none'">
+                        @endif
+                    </div>
                     <div>
                         <h3 class="mb-1">{{ $atleta->nome_atleta }}</h3>
                         <span class="badge bg-warning text-dark" style="font-size:0.85rem;">PENDENTE</span>

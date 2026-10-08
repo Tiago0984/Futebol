@@ -88,17 +88,21 @@
                             data-nome="{{ strtolower($atleta->nome_atleta) }}"
                             data-escola="{{ strtolower($atleta->escola_atleta ?? '') }}">
                             <td>
-                                @if($foto = $atleta->urlFoto())
+                                {{-- Iniciais por baixo e a foto por cima: foto que não carrega (arquivo ausente) some e
+                                     deixa as iniciais, como na tela de Atletas --}}
+                                <div style="position:relative;width:42px;height:42px;flex-shrink:0;">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
+                                         style="width:42px;height:42px;background:{{ $corAvatar }};font-size:0.8rem;position:absolute;top:0;left:0;">
+                                        {{ $iniciais }}
+                                    </div>
+                                    @if($foto = $atleta->urlFoto())
                                     <img src="{{ $foto }}"
                                          alt="{{ $atleta->nome_atleta }}"
                                          class="rounded-circle object-fit-cover"
-                                         style="width:42px;height:42px;">
-                                @else
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                         style="width:42px;height:42px;background:{{ $corAvatar }};font-size:0.8rem;">
-                                        {{ $iniciais }}
-                                    </div>
-                                @endif
+                                         style="width:42px;height:42px;position:absolute;top:0;left:0;"
+                                         onerror="this.style.display='none'">
+                                    @endif
+                                </div>
                             </td>
                             <td>
                                 <strong>{{ $atleta->nome_atleta }}</strong>
