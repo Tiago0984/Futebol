@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Admin\Concerns\ListaPorMes;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
+use App\Models\EventoCalendario;
 use App\Models\Notificacao;
 use Illuminate\Http\Request;
 
@@ -12,7 +13,8 @@ use Illuminate\Http\Request;
  * Página geral das notificações enviadas aos atletas (Fase 10, Etapa 3), só leitura e só no admin (dados
  * de menores). Inclui as AGENDA, que não têm evento. Por mês do envio, com filtros de atleta, tipo e
  * leitura do atleta na URL; 50 por página, da mais nova para a mais antiga (no empate, pelo id: a ordem
- * real, CLAUDE.md seção 1, "Relógio do WSL2").
+ * real, CLAUDE.md seção 1, "Relógio do WSL2"). Filtro "evento" (o "ver todas" da tela do evento): só as
+ * daquele evento, de qualquer mês de envio (o mês deixa de valer).
  */
 class NotificacoesController extends Controller
 {
@@ -31,6 +33,12 @@ class NotificacoesController extends Controller
         $mes     = $this->mesDaLista($request->query('mes'));
         $filtros = $this->filtrosDaLista($request);
 
+        // Evento filtrado (aviso no topo): só as dele, de qualquer mês. Evento inexistente: sem filtro
+        $eventoFiltrado = $filtros['evento']
+            ? EventoCalendario::find($filtros['evento'], ['id_evento_calendario', 'titulo_evento_calendario', 'data_evento_calendario'])
+            : null;
+        $filtros['evento'] = $eventoFiltrado?->id_evento_calendario ?? '';
+
         // Atleta (com o número de responsáveis), evento e quem fez a ação carregados de uma vez; as leituras
         // dos responsáveis contadas na mesma consulta das notificações
         $notificacoes = Notificacao::query()
@@ -40,7 +48,9 @@ class NotificacoesController extends Controller
                 'usuario' => fn ($q) => $q->select('id_usuario', 'nome_usuario'),
             ])
             ->withCount('leiturasDosResponsaveis')
-            ->whereBetween('data_notificacao', [$mes->copy()->startOfMonth(), $mes->copy()->endOfMonth()])
+            ->when($eventoFiltrado,
+                fn ($q) => $q->where('id_evento_calendario', $eventoFiltrado->id_evento_calendario),
+                fn ($q) => $q->whereBetween('data_notificacao', [$mes->copy()->startOfMonth(), $mes->copy()->endOfMonth()]))
             ->when($filtros['atleta'], fn ($q, $id) => $q->where('id_atleta', $id))
             ->when($filtros['tipo'], fn ($q, $tipo) => $q->where('tipo_notificacao', $tipo))
             ->when($filtros['leitura'] === 'lidas', fn ($q) => $q->whereNotNull('data_leitura_notificacao'))
@@ -57,17 +67,19 @@ class NotificacoesController extends Controller
 
         $mesesLista = $this->mesesEntre([Notificacao::min('data_notificacao'), now(), $mes]);
 
-        return view('admin.notificacoes.index', compact('notificacoes', 'filtros', 'mes', 'mesesLista', 'atletas'));
+        return view('admin.notificacoes.index', compact('notificacoes', 'filtros', 'mes', 'mesesLista', 'atletas', 'eventoFiltrado'));
     }
 
-    // Filtros da URL; valor inválido vira vazio (sem filtro). O atleta só vale se existir
+    // Filtros da URL; valor inválido vira vazio (sem filtro). O atleta só vale se existir; o evento, no index
     private function filtrosDaLista(Request $request): array
     {
+        $evento  = (string) $request->query('evento', '');
         $atleta  = (string) $request->query('atleta', '');
         $tipo    = (string) $request->query('tipo', '');
         $leitura = (string) $request->query('leitura', '');
 
         return [
+            'evento'  => ctype_digit($evento) ? (int) $evento : '',
             'atleta'  => ctype_digit($atleta) && Atleta::whereKey((int) $atleta)->exists() ? (int) $atleta : '',
             'tipo'    => array_key_exists($tipo, Notificacao::TIPOS) ? $tipo : '',
             'leitura' => array_key_exists($leitura, self::LEITURAS) ? $leitura : '',

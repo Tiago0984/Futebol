@@ -332,7 +332,7 @@
             <div class="card shadow-sm mt-4">
                 <div class="card-header bg-dark text-white fw-semibold d-flex align-items-center">
                     <span><i class="bi bi-bell me-2"></i> Notificações ({{ $notificacoes->count() }})</span>
-                    <a href="{{ route('admin.notificacoes.index', ['mes' => $evento->data_evento_calendario->format('Y-m')]) }}"
+                    <a href="{{ route('admin.notificacoes.index', ['evento' => $evento->id_evento_calendario]) }}"
                        class="ms-auto small text-white" id="verTodasNotificacoes">ver todas</a>
                 </div>
                 <div class="card-body p-0">

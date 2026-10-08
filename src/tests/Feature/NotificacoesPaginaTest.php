@@ -190,9 +190,46 @@ class NotificacoesPaginaTest extends TestCase
         $resposta = $this->comoAdmin()->get(route('admin.notificacoes.index'))->getContent();
         $this->assertMatchesRegularExpression('#href="' . preg_quote(route('admin.notificacoes.index'), '#') . '" class="nav-link active"#', $resposta);
 
+        // "ver todas" abre só as notificações do evento (de qualquer mês de envio)
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $this->treino->id_evento_calendario))
-            ->assertSee('href="' . e(route('admin.notificacoes.index', ['mes' => '2026-11'])) . '"', false)
+            ->assertSee('href="' . route('admin.notificacoes.index', ['evento' => $this->treino->id_evento_calendario]) . '"', false)
             ->assertSee('ver todas');
+    }
+
+    public function test_filtro_por_evento_mostra_as_dele_de_qualquer_mes(): void
+    {
+        $outro = EventoCalendario::criarPor($this->admin->id_usuario, [
+            'titulo_evento_calendario' => 'Reunião de Pais', 'tipo_evento_calendario' => 'REUNIAO',
+            'data_evento_calendario' => '2026-11-20', 'status_evento_calendario' => 'ATIVO',
+        ], inscreverCategoria: false);
+        $doTreino = ['id_evento_calendario' => $this->treino->id_evento_calendario];
+
+        $setembro = $this->notificar($this->ana, [...$doTreino, 'data_notificacao' => '2026-09-05 10:00:00']);
+        $outubro  = $this->notificar($this->bia, [...$doTreino, 'tipo_notificacao' => 'ALTERACAO']);
+        $novembro = $this->notificar($this->ana, [...$doTreino, 'data_notificacao' => '2026-11-02 08:00:00']);
+        $this->notificar($this->ana, ['id_evento_calendario' => $outro->id_evento_calendario]); // outro evento
+        $this->notificar($this->bia, ['tipo_notificacao' => 'AGENDA']);                          // sem evento
+
+        $filtro = ['evento' => $this->treino->id_evento_calendario];
+        $resposta = $this->lista($filtro);
+        $this->assertSame([$novembro->id_notificacao, $outubro->id_notificacao, $setembro->id_notificacao], $this->ids($resposta));
+
+        // Mostra qual evento está filtrado, com o jeito de limpar; o mês some
+        $resposta->assertSee('Só as notificações do evento')
+            ->assertSee('<a href="' . route('admin.calendario.eventos.show', $this->treino->id_evento_calendario) . '" class="fw-semibold">Treino Sub-13</a>', false)
+            ->assertSee('Limpar filtro do evento')
+            ->assertSee('href="' . route('admin.notificacoes.index', ['mes' => '2026-10']) . '"', false)
+            ->assertSee('3 notificação(ões) deste evento')
+            ->assertDontSee('id="formMesLista"', false)
+            ->assertSee('<input type="hidden" name="evento" value="' . $this->treino->id_evento_calendario . '">', false);
+
+        // Convive com os outros filtros; limpar o evento mantém eles
+        $this->assertSame([$outubro->id_notificacao], $this->ids($this->lista([...$filtro, 'tipo' => 'ALTERACAO'])));
+        $this->lista([...$filtro, 'atleta' => $this->ana])
+            ->assertSee('href="' . e(route('admin.notificacoes.index', ['mes' => '2026-10', 'atleta' => $this->ana])) . '"', false);
+
+        // Evento inexistente: sem filtro (o mês volta a valer)
+        $this->lista(['evento' => 999999])->assertDontSee('Só as notificações do evento')->assertSee('id="formMesLista"', false);
     }
 
     // ---------- apoio ----------

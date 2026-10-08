@@ -14,9 +14,31 @@
         </div>
 
         {{-- Filtros na URL (convivem com o mês e com a paginação); mudar um select recarrega a lista --}}
-        @php $filtrosAtivos = array_filter($filtros, fn ($v) => $v !== ''); @endphp
+        @php
+            $filtrosAtivos = array_filter($filtros, fn ($v) => $v !== '');
+            $semEvento     = \Illuminate\Support\Arr::except($filtrosAtivos, 'evento');
+        @endphp
+
+        {{-- Filtro por evento ("ver todas" da tela do evento): todos os meses de envio; o mês fica sem efeito --}}
+        @if($eventoFiltrado)
+        <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 mb-3" role="status" id="filtroEvento">
+            <i class="bi bi-funnel"></i>
+            <span>
+                Só as notificações do evento
+                <a href="{{ route('admin.calendario.eventos.show', $eventoFiltrado->id_evento_calendario) }}" class="fw-semibold">{{ $eventoFiltrado->titulo_evento_calendario }}</a>
+                ({{ $eventoFiltrado->data_evento_calendario->format('d/m/Y') }}), de todos os meses de envio.
+            </span>
+            <a href="{{ route('admin.notificacoes.index', ['mes' => $mes->format('Y-m'), ...$semEvento]) }}" class="ms-auto btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Limpar filtro do evento
+            </a>
+        </div>
+        @endif
+
         <form method="GET" action="{{ route('admin.notificacoes.index') }}" class="filter-panel mb-3" id="formFiltros">
             <input type="hidden" name="mes" value="{{ $mes->format('Y-m') }}">
+            @if($eventoFiltrado)
+            <input type="hidden" name="evento" value="{{ $eventoFiltrado->id_evento_calendario }}">
+            @endif
             <div class="row g-3 align-items-end">
                 <div class="col-md-4">
                     <label class="filter-label" for="filtroAtleta">Atleta</label>
@@ -55,7 +77,11 @@
 
         <div class="table-card">
             <div class="table-card-toolbar d-flex flex-wrap align-items-center gap-2">
-                {{-- Mês do envio: setas e select (como no Calendário); trocar de mês mantém os filtros --}}
+                {{-- Mês do envio: setas e select (como no Calendário); trocar de mês mantém os filtros. Com o
+                     filtro de evento, o mês não vale: some, e a contagem é do evento --}}
+                @if($eventoFiltrado)
+                <span class="tbl-count">{{ $notificacoes->total() }} notificação(ões) deste evento</span>
+                @else
                 @php
                     $mesAnterior = $mes->copy()->subMonthNoOverflow()->format('Y-m');
                     $mesSeguinte = $mes->copy()->addMonthNoOverflow()->format('Y-m');
@@ -75,6 +101,7 @@
                        title="Próximo mês" aria-label="Próximo mês"><i class="bi bi-chevron-right"></i></a>
                 </form>
                 <span class="tbl-count">{{ $notificacoes->total() }} notificação(ões) em {{ \App\Models\EventoCalendario::rotuloDoMes($mes) }}</span>
+                @endif
             </div>
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -124,7 +151,7 @@
                         @empty
                         <tr>
                             <td colspan="8" class="text-center text-muted py-4">
-                                {{ $filtrosAtivos ? 'Nenhuma notificação com estes filtros neste mês.' : 'Nenhuma notificação enviada neste mês.' }}
+                                {{ $eventoFiltrado ? 'Nenhuma notificação enviada sobre este evento.' : ($filtrosAtivos ? 'Nenhuma notificação com estes filtros neste mês.' : 'Nenhuma notificação enviada neste mês.') }}
                             </td>
                         </tr>
                         @endforelse
