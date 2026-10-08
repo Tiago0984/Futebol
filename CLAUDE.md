@@ -122,6 +122,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - **"Preencher pelo elenco"** (único botão): inscreve quem falta do elenco (origem `ELENCO`) e escala quem está inscrito sem time; ninguém sai. Ao lado, quantos do elenco ainda não estão inscritos. No jogo, o card "Pela categoria" e o "Atualizar inscritos pela categoria" não existem.
   - **Trocar time** (`Jogo::sincronizarPeloElenco()`): sai quem veio pelo elenco de um time que saiu (a não ser que também seja do elenco de um time que ficou); entra o elenco do time novo; as `INDIVIDUAL` ficam (sem time, se estavam no que saiu). **Inverter o mando não troca ninguém.** Jogo **concluído** não muda as inscrições, só tira da escalação quem estava no time que saiu. Regra de quem sai única (`Jogo::idsQueSaemNaTroca()`), usada também pelo alerta de conflito.
   - **Atleta que entra no elenco depois:** não é inscrito sozinho (usar "Preencher pelo elenco"). **Atleta que sai do elenco:** a inscrição fica; a tela do jogo marca **"Fora do elenco"** (aviso no cadastro do atleta é débito, seção 7).
+  - **"Fora do elenco"** compara com o **time escalado** (08/10/2026; igual na tela do jogo e na de jogadores do time no jogo): escalado num time de cujo elenco não é = "Fora do elenco" (com "· é do Time X" se for do elenco do outro time do jogo); sem time escolhido, a tela só informa "Elenco: …" (ou "Fora do elenco", se não é de nenhum dos dois). Só aviso, não bloqueia.
   - **Jogos anteriores à regra:** sem migração de dados (os inscritos pela categoria ficam como estão).
   - **Provisório** (seção 8, pergunta 17): elenco ativo inteiro (sem convocação por jogo); atleta pode estar em dois times do mesmo campeonato (entra sem time); a notificação do jogo não cita o time.
 - **Escalação** (Fase 6, Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Inscrever pela tela do evento já escalando inscreve como **INDIVIDUAL** (com alerta de conflito). Atleta de outra categoria/sexo: **aviso**, sem bloquear (seção 8, pergunta 14).
@@ -186,6 +187,9 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
+- **Um dia por linha** (08/10/2026): `dia_semana_grade_treino` ENUM `segunda, terca, quarta, quinta, sexta, sabado, domingo` (rótulos e ordem em `GradeTreino::DIAS_SEMANA`); cada linha gera um evento por semana. Antes eram `segunda_quarta`/`terca_quinta`/`sexta`/`sabado`; a migration `2026_10_08_000001` separou cada linha de dois dias (a original ficou com o primeiro dia e uma cópia com o segundo, levando os eventos gerados pela **data de origem**).
+  - **"Novo Horário"** tem uma caixa por dia: cada dia marcado vira uma linha, com os mesmos dados (tudo ou nada). A **edição** muda uma linha só (um dia).
+  - **Site:** um cartão por dia com horário ativo, na ordem da semana; a frase "Os treinos de domingo são reservados para repouso." só aparece sem horário ativo no domingo.
 - Vira **modelo**: gera **eventos reais por data**, já com os atletas da categoria inscritos.
 - **Origem do evento gerado:** linha da grade + data de origem (`id_grade_treino` + `data_grade_evento_calendario`), únicas juntas. A data de origem fica separada da data do evento (o treino pode mudar de dia sem ser gerado de novo). O formulário de evento nunca grava nem troca a origem (fora do `$fillable`).
 - **Mapeamento:** título "Treino {rótulo}" (rótulo que já começa com "Treino" fica como está); `LIVRE` vira `TREINO` com subtipo "Livre"; horários, local e categoria vêm direto da linha.
@@ -208,10 +212,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 
 ### Menu do dashboard (Fase 10; decisões do dono do projeto)
 - **Padrão:** item pai só abre e fecha os subitens; cada item abre a tela dele; "Ver todos" abre a mesma tela com todos daquele nível. Nenhum nome de atleta na barra. Dados e item ativo montados no `App\View\Composers\MenuAdminComposer` (registrado no `layout.admin`, 3 consultas fixas).
-- **ESPORTE › Eventos:** Calendário; **Campeonatos** (gaveta, `role="button"`, sem navegar); **Amistosos**; **Individuais**. Treinos e Outros **saíram do menu** (os ramos continuam no filtro "Ramo" do Calendário e na linha de caminho).
-  - **Cada campeonato em andamento:** o nome abre a tela de Campeonatos filtrada (`?campeonato=ID`); subitens: **o próximo jogo** ("Mandante x Visitante"; sem futuro, o último realizado; nunca cancelado nem oculto), que abre a lista de Jogos só com ele (`?jogo=ID`), **"Ver todos os jogos"** (Jogos filtrados pelo campeonato) e **"Times"**. "Ver todos" (fim da gaveta) abre todos os campeonatos.
+- **ESPORTE › Eventos:** Calendário; **Campeonatos** (o texto abre a tela de Campeonatos com todos, sem filtro; a seta abre e fecha); **Amistosos**; **Individuais**. Treinos e Outros **saíram do menu** (os ramos continuam no filtro "Ramo" do Calendário e na linha de caminho).
+  - **Cada campeonato em andamento** vira um item **"Jogos"** dentro de Campeonatos (com mais de um, "Jogos · Nome"): o texto abre a lista de Jogos filtrada pelo campeonato (`?campeonato=ID`); único subitem: **"Times"** (os do campeonato). Sem campeonato em andamento, Campeonatos fica sem seta. Não há mais "Ver todos", "Ver todos os jogos" nem o próximo jogo no menu (08/10/2026); as telas continuam aceitando `?campeonato=ID` e `?jogo=ID` (linha de caminho e tela de Times).
   - **Amistosos:** o nome abre a lista de Jogos dos amistosos; subitem **"Times"**.
-  - **"Times" (campeonato e amistosos):** um bloco por jogo (próximos, depois os 10 últimos realizados; `Jogo::separadosParaTelaDeTimes`) com o cartão do mandante e do visitante (visual da antiga Escalação); o cartão abre os **jogadores escalados por aquele time naquele jogo**, só leitura (`/admin/jogos/{id}/times/{time}`). No campeonato, no fim, os participantes sem jogo na lista (abrem o elenco, só leitura).
+  - **"Times" (campeonato e amistosos):** um bloco por jogo, em duas **abas** com contador, no visual das do Calendário (sem recarregar; abre em "Próximos", ou em "Já realizados" se não houver próximo): próximos e os 10 últimos realizados (`Jogo::separadosParaTelaDeTimes`, partial `admin.partials.blocos-de-jogos`) com o cartão do mandante e do visitante (visual da antiga Escalação); o cartão abre os **jogadores escalados por aquele time naquele jogo**, só leitura (`/admin/jogos/{id}/times/{time}`). No campeonato, no fim, os participantes sem jogo na lista (abrem o elenco, só leitura).
 - **ESPORTE:** Jogos; Grade de treino (com "Gerar agenda do mês"); Notificações. **CADASTROS:** Categorias; Times (o **Elenco** de cada time interno, editável, abre pela linha: a antiga "Escalação").
 - **Ramos (`EventoCalendario::RAMOS`, `doRamo()`/`ramo()`):** Campeonatos = tipo CAMPEONATO e jogos com campeonato; Amistosos = jogos sem campeonato; Treinos = TREINO; **Individuais = AVALIACAO, REUNIAO e EVENTO sem categoria**; Outros = CONFRATERNIZACAO e esses tipos com categoria.
 - **Evento individual** (botão em Individuais): o técnico descreve "o que o atleta vai fazer" e marca os atletas (caixas por categoria, com busca); só eles são inscritos (INDIVIDUAL) e avisados. A notificação de inscrição leva a descrição resumida (120 caracteres, `Notificacao::RECADO_MAX`); o texto inteiro vai na agenda (campo `descricao` da API).
@@ -220,7 +224,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 
 ## 5. Recomendações em uso (confirmar com o professor quando possível)
 
-- **Geração da grade:** manual, botão "gerar agenda do mês", com chave única (grade + data) para não duplicar. `segunda_quarta`/`terca_quinta` geram dois eventos.
+- **Geração da grade:** manual, botão "gerar agenda do mês", com chave única (grade + data) para não duplicar. Um dia por linha (um evento por semana).
 - **Notificação dos treinos gerados:** uma única por atleta ("agenda do mês disponível").
 - **Mudança na grade:** atualizar os eventos futuros já gerados, perguntando a partir de qual data. Evento gerado e **editado à mão** não é sobrescrito; a tela lista os que ficaram de fora.
 - **Geração (Fase 7):**
@@ -315,6 +319,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `2df8ec7` feat: página geral de notificações no admin (Fase 10, Etapa 3)
 - `e30907e` feat: notificações filtradas por evento, de qualquer mês (Fase 10, Etapa 3)
 - `eb6600d` feat: menu de Eventos com jogos e times por jogo, e evento individual (Fase 10, Etapa 3)
+- `b87c2a1` docs: andamento da Fase 10 (menu, etapas 1 a 3)
+- `ec67114` feat: grade de treino com um dia por linha, de segunda a domingo
+- `5132a25` feat: menu de Campeonatos com Jogos e Times, e abas na tela de Times
+- `d7176c6` feat: escalação do jogo lado a lado por time, com logos e dicas da origem
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -425,12 +433,25 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
   - login e senhas, no navegador e no terminal: convite, página de senha, login do responsável, separação dos perfis, esqueci-senha e login do atleta sem perfil;
   - agenda e avisos, no terminal e no admin, com a conta de teste do atleta (id 7) e o responsável de teste (id 5). A senha de teste é definida localmente e não fica registrada no repositório.
 
-### Fase 10 em andamento — menu e telas finais com dados reais (sem migration até aqui)
+### Fase 10 em andamento — menu e telas finais com dados reais
 - **Etapa 1** (`05bdae0`): barra lateral real (sem a árvore fictícia); filtros das listas de Calendário e Jogos pela URL (ramo, tipo, origem, situação; ocultos fora por padrão, filtro "Oculto"); resources sem páginas create/edit/show que davam 500; exclusão de time, campeonato e categoria em uso bloqueada com mensagem; Escalação virou o **Elenco** (`/admin/times/{id}/elenco`). `MenuAdminTest`.
 - **Etapa 2** (`fb36c69`): tela do evento com linha de caminho, ações (editar, placar rápido do jogo, cancelar/reativar, ocultar/mostrar) e "Voltar" pela origem; criar jogo ou evento sem categoria abre a tela dele; o Calendário não cria nem edita evento JOGO (só o JOGO antigo sem `tbl_jogos`); times do jogo de campeonato só entre os participantes; aviso de fora da categoria ao criar o jogo; sugestões de Local e de Subtipo (partial `admin.partials.sugestoes`); elenco editável (adicionar/remover); tipo do campeonato em `Campeonato::TIPOS` (maiúsculas); composers do site só nas views do site (lista do Calendário: 27 → 12 consultas). `EventoFluxoTest`.
 - **Etapa 3** (`2df8ec7`, `e30907e`, `eb6600d`): página `/admin/notificacoes` (todas, inclusive AGENDA; filtros de mês, atleta, tipo, leitura e **evento**, este de qualquer mês; 50 por página; "ver todas" da tela do evento abre o filtro do evento) e o menu de Eventos da seção 4 ("Menu do dashboard"), com o evento individual. `NotificacoesPaginaTest`, `MenuAdminTest`.
 - **482 testes passando** no fim da Etapa 3.
-- **Falta (próximas etapas):** dashboard com dados reais; app no outro repositório mostrar a `descricao` da agenda.
+- **Grade com um dia por linha** (08/10; regras na seção 4, "Grade de treino"): migration `2026_10_08_000001_grade_treino_um_dia_por_linha` (trava de datas de origem antes do ALTER; `down()` junta só pares idênticos), caixas de dias no "Novo Horário", site com um cartão por dia. `GradeUmDiaPorLinhaMigrationTest` roda **sem a transação** do `RefreshDatabase` (o ALTER confirmaria a transação) e marca o banco para ser recriado no fim de cada teste.
+  - **Migration no `db_futebol` (computador do Senac): batch 25.** 11 → 17 linhas; os 166 eventos gerados ficaram na linha do dia de origem. Ensaiada antes no `db_futebol_test` com o backup. **O banco de casa é atualizado restaurando o dump do Senac** (não rodar o `migrate` lá sobre o banco antigo: os ids das linhas novas poderiam ser outros).
+  - **Backup** em `backup/` (só no computador do Senac): `db_futebol_antes_grade_um_dia_20261008_085656.sql`.
+  - **493 testes passando.**
+- **Ajustes de 08/10 no Senac** (`ec67114`, `5132a25`, `d7176c6`; regras na seção 4): grade com um dia por linha; menu de Campeonatos (Campeonatos abre todos; um "Jogos" por campeonato em andamento, filtrado por ele, com "Times"; sem "Ver todos" nem próximo jogo no menu; composer sem a consulta do próximo jogo); abas "Próximos"/"Já realizados" na tela de Times; escalação do jogo **lado a lado** (bloco por time com a logo, "Sem time" embaixo em amarelo, formulários de inscrição embaixo; partials `_inscritos_do_bloco`, `_time_da_inscricao`, `_remover_inscricao`); "Fora do elenco" pelo time escalado; dica de cada origem ao passar o mouse (`EventoAtleta::DICAS_ORIGEM`, `origem_dica`). **498 testes passando.**
+- **Dump para o computador de casa:** `backup/db_futebol_para_casa_20261008.sql` (feito no Senac, depois do batch 25). Em casa: restaurar este dump (não rodar o `migrate` da grade lá) e `php artisan view:clear`.
+
+#### Próxima: Etapa 4 — jogo em rascunho e publicação (plano APROVADO pelo dono do projeto em 08/10; ainda não iniciada)
+Ideia: montar o jogo inteiro (inscritos, escalação) sem avisar ninguém e, no fim, **"Publicar e avisar os atletas"**: cada um recebe um aviso só, já com tudo certo. Decisões: **só para jogos** (Calendário, evento individual e grade continuam avisando na hora); **rascunho escondido no app e no site** até publicar; **a notificação cita o time** ("… Você joga pelo Time Azul.", resolve a parte do time da pergunta 17).
+- **Etapa A (migration, com backup e ensaio):** `tbl_evento_calendario.data_publicacao_evento_calendario` DATETIME NULL (NULL = rascunho); a migration preenche todos os eventos existentes (ficam publicados); fora do `$fillable`. Model: `estaPublicado()`, escopo `publicados()`; `avisaAtletas()` exige publicado (cobre inscrição, remoção e alteração); `Notificacao::mudancaDeStatus()` também passa a respeitar o rascunho (hoje não usa o `avisaAtletas()`); publicação registrada no histórico do evento.
+- **Etapa B:** criar jogo (tela de Jogos) nasce rascunho (elenco inscrito e escalado, ninguém avisado; mensagem "Rascunho: os atletas serão avisados ao publicar"); os outros caminhos de criação nascem publicados. Botão **"Publicar e avisar os atletas"** (com confirmação) na tela do jogo: INSCRICAO para cada inscrito ativo, com o time na mensagem (sem time: sem a frase). Rascunho concluído, cancelado ou oculto pode ser publicado sem avisar ninguém. Sem "despublicar" (usar cancelar/ocultar). Faixa amarela na tela do jogo; selo "Rascunho" na lista de Jogos.
+- **Etapa C:** app (`AppDoAtleta::eventosInscritos`) só publicados (atleta e responsável); `Jogo::visiveis()` e `EventoCalendario::daAgendaPublica()` exigem publicado (home, página do campeonato, API de campeonatos, agenda do site) e a classificação não conta rascunho. **Conflito de horário continua contando o rascunho.**
+- **Testes:** rascunho não avisa (inscrição, remoção, troca de time, alteração, cancelamento); publicar avisa uma vez cada um, com o time; rascunho fora do app, site, API e classificação; publicar jogo passado não avisa; eventos que não são jogo avisam na hora. Atualizar as seções 3, 4 e 6.
+- **Falta depois (próximas etapas):** dashboard com dados reais (com contador de jogos em rascunho); app no outro repositório mostrar a `descricao` da agenda.
 
 ---
 
