@@ -206,10 +206,15 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Os dois tipos na mesma ação:** pede confirmação e lista os dois, separados por tipo.
 - **Onde é verificado:** criar evento com categoria, editar data/horário/categoria, inscrição individual, "Adicionar todos de uma categoria", "Atualizar inscritos pela categoria", Reativar/Mostrar (avisa sem bloquear) e "Mover inscrições" do atleta. **No jogo** (Fase 8): criar (pelo elenco), trocar time (quem ficará inscrito depois da troca, `Jogo::idsInscritosDepoisDaTroca()`), editar data/horário e "Preencher pelo elenco".
 
-### Menu do dashboard
-- **Eventos** centraliza tudo: Campeonato → jogos; Amistoso → jogo; Individual → tipo (exame médico, avaliação física).
-- Saem do menu: **Categorias, Calendário e Escalação**.
-- A sidebar atual (commit `eb5e65a`) usa **dados fictícios**.
+### Menu do dashboard (Fase 10; decisões do dono do projeto)
+- **Padrão:** item pai só abre e fecha os subitens; cada item abre a tela dele; "Ver todos" abre a mesma tela com todos daquele nível. Nenhum nome de atleta na barra. Dados e item ativo montados no `App\View\Composers\MenuAdminComposer` (registrado no `layout.admin`, 3 consultas fixas).
+- **ESPORTE › Eventos:** Calendário; **Campeonatos** (gaveta, `role="button"`, sem navegar); **Amistosos**; **Individuais**. Treinos e Outros **saíram do menu** (os ramos continuam no filtro "Ramo" do Calendário e na linha de caminho).
+  - **Cada campeonato em andamento:** o nome abre a tela de Campeonatos filtrada (`?campeonato=ID`); subitens: **o próximo jogo** ("Mandante x Visitante"; sem futuro, o último realizado; nunca cancelado nem oculto), que abre a lista de Jogos só com ele (`?jogo=ID`), **"Ver todos os jogos"** (Jogos filtrados pelo campeonato) e **"Times"**. "Ver todos" (fim da gaveta) abre todos os campeonatos.
+  - **Amistosos:** o nome abre a lista de Jogos dos amistosos; subitem **"Times"**.
+  - **"Times" (campeonato e amistosos):** um bloco por jogo (próximos, depois os 10 últimos realizados; `Jogo::separadosParaTelaDeTimes`) com o cartão do mandante e do visitante (visual da antiga Escalação); o cartão abre os **jogadores escalados por aquele time naquele jogo**, só leitura (`/admin/jogos/{id}/times/{time}`). No campeonato, no fim, os participantes sem jogo na lista (abrem o elenco, só leitura).
+- **ESPORTE:** Jogos; Grade de treino (com "Gerar agenda do mês"); Notificações. **CADASTROS:** Categorias; Times (o **Elenco** de cada time interno, editável, abre pela linha: a antiga "Escalação").
+- **Ramos (`EventoCalendario::RAMOS`, `doRamo()`/`ramo()`):** Campeonatos = tipo CAMPEONATO e jogos com campeonato; Amistosos = jogos sem campeonato; Treinos = TREINO; **Individuais = AVALIACAO, REUNIAO e EVENTO sem categoria**; Outros = CONFRATERNIZACAO e esses tipos com categoria.
+- **Evento individual** (botão em Individuais): o técnico descreve "o que o atleta vai fazer" e marca os atletas (caixas por categoria, com busca); só eles são inscritos (INDIVIDUAL) e avisados. A notificação de inscrição leva a descrição resumida (120 caracteres, `Notificacao::RECADO_MAX`); o texto inteiro vai na agenda (campo `descricao` da API).
 
 ---
 
@@ -304,7 +309,12 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `fcd8fcf` feat: login do responsável, perfis no app e links de senha (Fase 9)
 - `47939dc` feat: agenda e avisos do app para atleta e responsável (Fase 9)
 - `3645f7a` docs: documentação da API do app (Fase 9)
-- docs: Fase 9 concluída
+- `ea06166` docs: Fase 9 concluída
+- `05bdae0` feat: menu real do admin, filtros pela URL e exclusões bloqueadas (Fase 10, Etapa 1)
+- `fb36c69` feat: fluxo de eventos na tela do evento, elenco editável e correções (Fase 10, Etapa 2)
+- `2df8ec7` feat: página geral de notificações no admin (Fase 10, Etapa 3)
+- `e30907e` feat: notificações filtradas por evento, de qualquer mês (Fase 10, Etapa 3)
+- `eb6600d` feat: menu de Eventos com jogos e times por jogo, e evento individual (Fase 10, Etapa 3)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -415,9 +425,12 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
   - login e senhas, no navegador e no terminal: convite, página de senha, login do responsável, separação dos perfis, esqueci-senha e login do atleta sem perfil;
   - agenda e avisos, no terminal e no admin, com a conta de teste do atleta (id 7) e o responsável de teste (id 5). A senha de teste é definida localmente e não fica registrada no repositório.
 
-### Próxima: Fase 10 — menu e telas finais com dados reais
-- Inclui a **página geral de notificações do admin** (com as AGENDA, que não têm evento).
-- A sidebar de Eventos ainda usa dados fictícios (`eb5e65a`); regras do menu na seção 4, "Menu do dashboard", e na seção 5.
+### Fase 10 em andamento — menu e telas finais com dados reais (sem migration até aqui)
+- **Etapa 1** (`05bdae0`): barra lateral real (sem a árvore fictícia); filtros das listas de Calendário e Jogos pela URL (ramo, tipo, origem, situação; ocultos fora por padrão, filtro "Oculto"); resources sem páginas create/edit/show que davam 500; exclusão de time, campeonato e categoria em uso bloqueada com mensagem; Escalação virou o **Elenco** (`/admin/times/{id}/elenco`). `MenuAdminTest`.
+- **Etapa 2** (`fb36c69`): tela do evento com linha de caminho, ações (editar, placar rápido do jogo, cancelar/reativar, ocultar/mostrar) e "Voltar" pela origem; criar jogo ou evento sem categoria abre a tela dele; o Calendário não cria nem edita evento JOGO (só o JOGO antigo sem `tbl_jogos`); times do jogo de campeonato só entre os participantes; aviso de fora da categoria ao criar o jogo; sugestões de Local e de Subtipo (partial `admin.partials.sugestoes`); elenco editável (adicionar/remover); tipo do campeonato em `Campeonato::TIPOS` (maiúsculas); composers do site só nas views do site (lista do Calendário: 27 → 12 consultas). `EventoFluxoTest`.
+- **Etapa 3** (`2df8ec7`, `e30907e`, `eb6600d`): página `/admin/notificacoes` (todas, inclusive AGENDA; filtros de mês, atleta, tipo, leitura e **evento**, este de qualquer mês; 50 por página; "ver todas" da tela do evento abre o filtro do evento) e o menu de Eventos da seção 4 ("Menu do dashboard"), com o evento individual. `NotificacoesPaginaTest`, `MenuAdminTest`.
+- **482 testes passando** no fim da Etapa 3.
+- **Falta (próximas etapas):** dashboard com dados reais; app no outro repositório mostrar a `descricao` da agenda.
 
 ---
 
