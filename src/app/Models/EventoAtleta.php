@@ -19,6 +19,13 @@ class EventoAtleta extends Model
         'ELENCO'     => 'Pelo elenco',
     ];
 
+    // Explicação curta de cada origem (dica ao passar o mouse no selo, no admin)
+    public const DICAS_ORIGEM = [
+        'CATEGORIA'  => 'Entrou automaticamente por ser da categoria do evento. Sai se o evento mudar de categoria.',
+        'INDIVIDUAL' => 'Escolhido à mão pelo admin. Nenhuma troca de categoria ou de time tira o atleta; só a remoção.',
+        'ELENCO'     => 'Entrou automaticamente pelo elenco do time. Sai do jogo se o time dele sair do jogo.',
+    ];
+
     protected $fillable = [
         'id_evento_calendario',
         'id_atleta',
@@ -51,5 +58,13 @@ class EventoAtleta extends Model
     public function getOrigemLabelAttribute(): string
     {
         return self::ORIGENS[$this->origem_evento_atleta] ?? $this->origem_evento_atleta;
+    }
+
+    // Dica do selo: o que a origem quer dizer e quem inscreveu, quando
+    public function getOrigemDicaAttribute(): string
+    {
+        return trim((self::DICAS_ORIGEM[$this->origem_evento_atleta] ?? '')
+            . ' Inscrito por ' . ($this->usuario?->nome_usuario ?? '—')
+            . ($this->data_evento_atleta ? ' em ' . $this->data_evento_atleta->format('d/m/Y H:i') : '') . '.');
     }
 }

@@ -318,6 +318,87 @@ class JogoEscalacaoTest extends TestCase
 
     // ---------- ajudantes ----------
 
+    public function test_fora_do_elenco_compara_com_o_time_escalado(): void
+    {
+        $jogo = $this->jogo($this->azul, $this->preto);
+        $doAzul     = $this->atleta('Ana Do Azul', [$this->azul]);
+        $doPreto    = $this->atleta('Bia Do Preto', [$this->preto]);   // escalada no adversário do time dela
+        $semElenco  = $this->atleta('Caio Sem Elenco');
+        $semTime    = $this->atleta('Davi Sem Time', [$this->preto]);
+        $nosDois    = $this->atleta('Edu Nos Dois', [$this->azul, $this->preto]);
+        foreach ([[$doAzul, $this->azul], [$doPreto, $this->azul], [$semElenco, $this->azul], [$semTime, null], [$nosDois, $this->preto]] as [$id, $time]) {
+            $jogo->evento->inscrever($id, 'INDIVIDUAL', null, $time, notificar: false);
+        }
+
+        $html = $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))->assertOk()->getContent();
+        $aviso = function (string $nome) use ($html) {
+            preg_match('#aria-label="Time de ' . $nome . '".*?<small[^>]*>(.*?)</small>#s', $html, $m);
+
+            return trim($m[1] ?? '');
+        };
+
+        $this->assertSame('Elenco: Time Azul', $aviso('Ana Do Azul'));
+        $this->assertSame('Fora do elenco · é do Time Preto', $aviso('Bia Do Preto'));
+        $this->assertSame('Fora do elenco', $aviso('Caio Sem Elenco'));
+        $this->assertSame('Elenco: Time Preto', $aviso('Davi Sem Time'));       // sem time: só informa
+        $this->assertSame('Elenco: Time Azul, Time Preto', $aviso('Edu Nos Dois'));
+        $this->assertStringContainsString('<small class="text-warning fw-semibold">Fora do elenco · é do Time Preto</small>', $html);
+    }
+
+    public function test_inscritos_do_jogo_em_blocos_por_time(): void
+    {
+        $jogo = $this->jogo($this->azul, $this->preto);
+        $ana  = $this->atleta('Ana Azul', [$this->azul]);
+        $bia  = $this->atleta('Bia Azul', [$this->azul]);
+        $caio = $this->atleta('Caio Sem Time');
+        $jogo->evento->inscrever($ana, 'INDIVIDUAL', null, $this->azul, notificar: false);
+        $jogo->evento->inscrever($bia, 'INDIVIDUAL', null, $this->azul, notificar: false);
+        $jogo->evento->inscrever($caio, 'INDIVIDUAL', null, null, notificar: false);
+        $tela = fn () => preg_replace('/\s+/', ' ', $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))->assertOk()->getContent());
+
+        // Mandante, visitante (vazio, com o aviso) e "Sem time" no fim, cada um com os seus atletas
+        $html = $tela();
+        $this->assertSame(3, substr_count($html, 'class="js-bloco-time"'));
+        $this->assertMatchesRegularExpression('#Time Azul <span class="fw-normal text-muted small">· mandante \(2\)</span>.*Ana Azul.*Bia Azul'
+            . '.*Time Preto <span class="fw-normal text-muted small">· visitante \(0\)</span>.*Ninguém escalado neste time\.'
+            . '.*Sem time <span class="fw-normal text-muted small">· falta escolher o time \(1\)</span>.*Caio Sem Time#', $html);
+
+        // Escalando o último, o bloco "Sem time" some
+        $this->escalar($jogo, $caio, $this->preto);
+        $html = $tela();
+        $this->assertSame(2, substr_count($html, 'class="js-bloco-time"'));
+        $this->assertStringContainsString('· visitante (1)', $html);
+        $this->assertStringNotContainsString('falta escolher o time', $html);
+    }
+
+    public function test_selo_da_origem_explica_ao_passar_o_mouse(): void
+    {
+        $jogo = $this->jogo($this->azul, $this->preto);
+        $jogo->evento->inscrever($this->atleta('Ana', [$this->azul]), 'ELENCO', null, $this->azul, notificar: false);
+        $jogo->evento->inscrever($this->atleta('Bia'), 'INDIVIDUAL', null, $this->azul, notificar: false);
+
+        $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))->assertOk()
+            ->assertSee('title="Entrou automaticamente pelo elenco do time. Sai do jogo se o time dele sair do jogo. Inscrito por —', false)
+            ->assertSee('title="Escolhido à mão pelo admin. Nenhuma troca de categoria ou de time tira o atleta; só a remoção. Inscrito por —', false);
+
+        // Evento comum (lista única): a mesma dica, também na origem pela categoria
+        $treino = $this->treinoNoHorarioDoJogo($jogo);
+        $treino->inscrever($this->atleta('Caio'), 'CATEGORIA', null, notificar: false);
+        $this->comoAdmin()->get(route('admin.calendario.eventos.show', $treino->id_evento_calendario))
+            ->assertSee('title="Entrou automaticamente por ser da categoria do evento. Sai se o evento mudar de categoria. Inscrito por —', false);
+    }
+
+    public function test_evento_que_nao_e_jogo_lista_os_inscritos_sem_blocos(): void
+    {
+        $treino = $this->treinoNoHorarioDoJogo($this->jogo($this->azul, $this->preto));
+        $treino->inscrever($this->atleta('Rui'), 'INDIVIDUAL', null, notificar: false);
+
+        $html = $this->comoAdmin()->get(route('admin.calendario.eventos.show', $treino->id_evento_calendario))->assertOk()->getContent();
+        $this->assertSame(1, substr_count($html, 'class="js-bloco-time"'));
+        $this->assertStringNotContainsString('mandante (', $html);
+        $this->assertStringContainsString('Rui', $html);
+    }
+
     private function jogo(int $casa, int $visitante, ?int $idCampeonato = null, ?int $categoria = null): Jogo
     {
         $evento = EventoCalendario::criarPor(null, [
