@@ -9,8 +9,9 @@ use App\Models\Jogo;
 use App\Models\Time;
 
 /**
- * Times de um campeonato (subitem "Times" de cada campeonato no menu), só para ver, separados por jogo como
- * nos amistosos: um bloco por jogo (próximos e últimos realizados) com o cartão do mandante e o do visitante;
+ * Jogos de um campeonato (o "Jogos" de cada campeonato no menu; a rota mantém o nome "times"), só para ver,
+ * como nos Times dos amistosos: um bloco por jogo (próximos e últimos realizados) com o cartão do mandante e o
+ * do visitante, e um filtro para trocar de campeonato;
  * no fim, os participantes que não aparecem em nenhum desses jogos. O time interno abre os jogadores do
  * elenco, sem edição (a edição continua em Times > Elenco). Externo não tem elenco na associação.
  */
@@ -37,7 +38,11 @@ class TimesDoCampeonatoController extends Controller
 
         $caminho = $this->caminho($campeonato);
 
-        return view('admin.campeonatos.times', compact('campeonato', 'proximos', 'realizados', 'semJogo', 'caminho'));
+        // Filtro "Campeonato" da tela: todos, do mais recente para o mais antigo (o encerrado também pode ser visto)
+        $campeonatos = Campeonato::orderByDesc('data_inicio_campeonato')->orderBy('nome_campeonato')
+            ->get(['id_campeonato', 'nome_campeonato']);
+
+        return view('admin.campeonatos.times', compact('campeonato', 'proximos', 'realizados', 'semJogo', 'caminho', 'campeonatos'));
     }
 
     // Jogadores do time no campeonato (o elenco), só leitura, na mesma tela do Elenco
@@ -66,14 +71,14 @@ class TimesDoCampeonatoController extends Controller
         return view('admin.times.elenco', compact('time', 'atletas', 'cartoes', 'somenteLeitura', 'voltar', 'caminho'));
     }
 
-    // Eventos › Campeonatos › nome do campeonato › Times (a última sem link, a não ser nos jogadores)
+    // Eventos › Campeonatos › nome do campeonato › Jogos (a última sem link, a não ser nos jogadores)
     private function caminho(Campeonato $campeonato, bool $comLink = false): array
     {
         return [
             ['Eventos', route('admin.calendario.index')],
             ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
             [$campeonato->nome_campeonato, route('admin.campeonatos.index', ['campeonato' => $campeonato->id_campeonato])],
-            ['Times', $comLink ? route('admin.campeonatos.times', $campeonato->id_campeonato) : null],
+            ['Jogos', $comLink ? route('admin.campeonatos.times', $campeonato->id_campeonato) : null],
         ];
     }
 }

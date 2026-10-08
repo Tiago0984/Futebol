@@ -1,6 +1,7 @@
 {{--
-    Times por jogo (Times dos amistosos e Times do campeonato): um bloco por jogo, com data, horário, local,
-    "Cancelado" ou placar e o link para o jogo, e os cartões do mandante e do visitante.
+    Jogos dos amistosos e Jogos do campeonato: um bloco por jogo, com data, horário, local, "Cancelado" ou
+    placar e o link para o jogo, e os cartões do mandante e do visitante. Jogo em rascunho: selo e "Revisar e
+    publicar" (tela do jogo), com um aviso no topo contando quantos faltam.
     $proximos, $realizados (Jogo::separadosParaTelaDeTimes); $rotulo = "amistoso" ou "jogo" (textos);
     $linkDoJogo(Jogo) = a lista de Jogos só com ele. O cartão do time abre os jogadores escalados por ele
     naquele jogo (admin.jogos.times.show); $jogo->escalados = quantos por time (Jogo::separadosParaTelaDeTimes).
@@ -14,7 +15,18 @@
       'realizados' => ['jogos' => $realizados, 'titulo' => 'Já realizados',      'icone' => 'bi-check2-circle'],
   ];
   $abaInicial = $proximos->isEmpty() && $realizados->isNotEmpty() ? 'realizados' : 'proximos';
+  // Jogos em rascunho (Fase 10, Etapa 4): os atletas ainda não foram avisados
+  $rascunhos = $proximos->concat($realizados)->reject(fn ($jogo) => $jogo->evento->estaPublicado())->count();
 @endphp
+@if ($rascunhos > 0)
+<div class="alert alert-warning d-flex align-items-center gap-2 mt-3 mb-0" role="alert" id="avisoRascunhos">
+  <i class="bi bi-pencil-square"></i>
+  <div>
+    <strong>{{ $rascunhos }} {{ $rascunhos === 1 ? $rotulo . ' ainda não publicado' : $plural . ' ainda não publicados' }}:</strong>
+    os atletas não foram avisados. Procure o selo "Rascunho" e use "Revisar e publicar".
+  </div>
+</div>
+@endif
 <ul class="nav nav-tabs mt-3 mb-3" id="abasDeJogos" role="tablist">
   @foreach ($secoes as $secao => $dados)
   <li class="nav-item" role="presentation">
@@ -47,7 +59,14 @@
     @elseif ($jogo->temPlacar())
       <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
     @endif
-    <a href="{{ $linkDoJogo($jogo) }}" class="ms-auto small">Ver o jogo <i class="bi bi-arrow-right"></i></a>
+    @unless ($ev->estaPublicado())
+      {{-- Rascunho: revisar os inscritos e a escalação na tela do jogo, onde fica o "Publicar e avisar os atletas" --}}
+      <span class="badge bg-warning text-dark" title="Os atletas ainda não foram avisados">Rascunho</span>
+      <a href="{{ route('admin.calendario.eventos.show', $jogo->id_evento) }}" class="btn btn-warning btn-sm ms-auto js-publicar-jogo">
+        <i class="bi bi-send"></i> Revisar e publicar
+      </a>
+    @endunless
+    <a href="{{ $linkDoJogo($jogo) }}" class="{{ $ev->estaPublicado() ? 'ms-auto ' : '' }}small">Ver o jogo <i class="bi bi-arrow-right"></i></a>
   </div>
   <div class="card-body">
     <div class="row g-3 align-items-center">

@@ -267,14 +267,14 @@ class EventoFluxoTest extends TestCase
 
     // ---------- 8: atalhos para os jogos ----------
 
-    public function test_campeonatos_linkam_os_jogos_e_amistosos_abrem_a_lista_de_jogos(): void
+    public function test_campeonatos_linkam_os_jogos_e_a_lista_dos_amistosos_marca_amistosos(): void
     {
         $this->comoAdmin()->get(route('admin.campeonatos.index'))
             ->assertSee('href="' . route('admin.jogos.index', ['campeonato' => $this->copa]) . '"', false);
 
-        $amistosos = route('admin.jogos.index', ['campeonato' => 'amistoso']);
-        $barra = $this->comoAdmin()->get($amistosos)->getContent();
-        $this->assertMatchesRegularExpression('#href="' . preg_quote(e($amistosos), '#') . '"\s+class="nav-link active"#', $barra);
+        // A lista de Jogos dos amistosos marca o item Amistosos (que abre a tela de jogos dos amistosos)
+        $barra = $this->comoAdmin()->get(route('admin.jogos.index', ['campeonato' => 'amistoso']))->getContent();
+        $this->assertMatchesRegularExpression('#href="' . preg_quote(route('admin.amistosos.times'), '#') . '"\s+class="nav-link active"#', $barra);
     }
 
     // ---------- 9: sugestões ----------

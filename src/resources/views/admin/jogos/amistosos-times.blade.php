@@ -1,9 +1,9 @@
 @extends('layout.admin')
 
-@section('title', 'Times dos amistosos')
+@section('title', 'Jogos dos amistosos')
 
 {{--
-    Times dos amistosos (subitem "Times" de Amistosos), só para ver: um bloco por jogo (data, horário, local,
+    Jogos dos amistosos (o item Amistosos do menu), só para ver: um bloco por jogo (data, horário, local,
     situação e o link para o jogo) com o cartão do mandante e o do visitante. Próximos primeiro, depois os
     últimos realizados. O time interno abre os jogadores do elenco (sem edição).
 --}}
@@ -25,7 +25,7 @@
 
     <div class="admin-page-header">
       <div>
-        <h1 class="page-title">Times dos amistosos</h1>
+        <h1 class="page-title">Jogos dos amistosos</h1>
         <p class="page-subtitle">Cada amistoso com os dois times; clique num time interno para ver os jogadores</p>
       </div>
     </div>

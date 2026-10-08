@@ -134,52 +134,31 @@
               </a>
               @if ($campeonatosEmAndamento->isNotEmpty())
               <ul class="nav nav-treeview">
-                {{-- Um "Jogos" por campeonato em andamento (com mais de um, leva o nome): o texto abre a lista de
-                     Jogos filtrada por ele (?campeonato=ID); a seta mostra "Times" = os participantes em cartões
-                     (só leitura). Sem atletas aqui --}}
+                {{-- Um "Jogos" por campeonato em andamento (com mais de um, leva o nome), sem subitens: abre a tela
+                     de jogos do campeonato (um bloco por jogo com os dois times; o time interno abre os jogadores
+                     escalados, só leitura). Ativo também na lista de Jogos filtrada só por ele. Sem atletas aqui --}}
                 @foreach ($campeonatosEmAndamento as $camp)
-                @php $noSubitem = $ativo('times-do-campeonato:' . $camp->id_campeonato); @endphp
-                <li class="nav-item {{ $noSubitem ? 'menu-open' : '' }}">
-                  <a href="{{ route('admin.jogos.index', ['campeonato' => $camp->id_campeonato]) }}"
-                    class="nav-link {{ $noSubitem || $ativo('jogos-do-campeonato:' . $camp->id_campeonato) ? 'active' : '' }}"
+                <li class="nav-item">
+                  <a href="{{ route('admin.campeonatos.times', $camp->id_campeonato) }}"
+                    class="nav-link {{ $ativo('times-do-campeonato:' . $camp->id_campeonato) || $ativo('jogos-do-campeonato:' . $camp->id_campeonato) ? 'active' : '' }}"
                     id="itemJogosCampeonato{{ $camp->id_campeonato }}" title="Jogos de {{ $camp->nome_campeonato }}">
                     <i class="nav-icon bi bi-flag"></i>
-                    <p>{{ $variosCampeonatos ? 'Jogos · ' . $camp->nome_campeonato : 'Jogos' }} <i class="nav-arrow bi bi-chevron-right"></i></p>
+                    <p>{{ $variosCampeonatos ? 'Jogos · ' . $camp->nome_campeonato : 'Jogos' }}</p>
                   </a>
-                  <ul class="nav nav-treeview">
-                    {{-- Times participantes em cartões; o time interno abre os jogadores (só leitura) --}}
-                    <li class="nav-item">
-                      <a href="{{ route('admin.campeonatos.times', $camp->id_campeonato) }}"
-                        class="nav-link {{ $ativo('times-do-campeonato:' . $camp->id_campeonato) ? 'active' : '' }}"
-                        title="Times de {{ $camp->nome_campeonato }}">
-                        <i class="nav-icon bi bi-shield"></i>
-                        <p>Times</p>
-                      </a>
-                    </li>
-                  </ul>
                 </li>
                 @endforeach
               </ul>
               @endif
             </li>
 
-            {{-- Amistosos: o texto abre a lista de Jogos dos amistosos; a seta mostra "Times" (os times de cada
-                 amistoso, separados por jogo, em cartões; só leitura) --}}
-            <li class="nav-item {{ $emAmistosos ? 'menu-open' : '' }}">
-              <a href="{{ \App\Models\EventoCalendario::urlDoRamo('amistosos') }}"
-                class="nav-link {{ $ativo('ramo:amistosos') ? 'active' : '' }}" id="itemAmistosos">
+            {{-- Amistosos, sem subitens: abre a tela "Jogos dos amistosos" (um bloco por jogo com os dois times, em
+                 cartões; só leitura). Ativo também na lista de Jogos dos amistosos e na tela de um amistoso --}}
+            <li class="nav-item">
+              <a href="{{ route('admin.amistosos.times') }}"
+                class="nav-link {{ $emAmistosos ? 'active' : '' }}" id="itemAmistosos" title="Jogos dos amistosos">
                 <i class="nav-icon bi bi-hand-thumbs-up"></i>
-                <p>Amistosos <i class="nav-arrow bi bi-chevron-right"></i></p>
+                <p>Amistosos</p>
               </a>
-              <ul class="nav nav-treeview">
-                <li class="nav-item">
-                  <a href="{{ route('admin.amistosos.times') }}" class="nav-link {{ $ativo('times-dos-amistosos') ? 'active' : '' }}"
-                    title="Times de cada amistoso">
-                    <i class="nav-icon bi bi-shield"></i>
-                    <p>Times</p>
-                  </a>
-                </li>
-              </ul>
             </li>
 
             @foreach ($ramosSimples as $ramo => $icone)

@@ -165,7 +165,7 @@ class JogosController extends Controller
                 ? [['Amistosos', EventoCalendario::urlDoRamo('amistosos')]]
                 : [['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
                    [$jogo->campeonato->nome_campeonato, route('admin.campeonatos.index', ['campeonato' => $jogo->id_campeonato])]]),
-            ['Times', $voltar],
+            ['Jogos', $voltar], // a tela de jogos do campeonato ou dos amistosos
             [$time->nome_time, null],
         ];
 

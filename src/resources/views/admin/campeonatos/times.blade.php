@@ -1,12 +1,12 @@
 @extends('layout.admin')
 
-@section('title', 'Times — ' . $campeonato->nome_campeonato)
+@section('title', 'Jogos — ' . $campeonato->nome_campeonato)
 
 {{--
-    Times do campeonato (subitem "Times" do menu), só para ver, separados por jogo como nos amistosos: um bloco
+    Jogos do campeonato (o "Jogos" do campeonato no menu), só para ver, como nos Times dos amistosos: um bloco
     por jogo (próximos e últimos realizados) com o cartão do mandante e o do visitante, que abre os jogadores
     escalados por aquele time naquele jogo; no fim, os participantes que não aparecem em nenhum desses jogos,
-    que abrem o elenco (sem edição).
+    que abrem o elenco (sem edição). O filtro "Campeonato" troca de campeonato (cada opção é a URL da tela dele).
 --}}
 @section('content')
 <main class="app-main">
@@ -25,10 +25,21 @@
       </ol>
     </nav>
 
-    <div class="admin-page-header">
+    <div class="admin-page-header d-flex flex-wrap align-items-end justify-content-between gap-3">
       <div>
-        <h1 class="page-title">Times · {{ $campeonato->nome_campeonato }}</h1>
+        <h1 class="page-title">Jogos · {{ $campeonato->nome_campeonato }}</h1>
         <p class="page-subtitle">Cada jogo com os dois times; clique num time interno para ver os jogadores escalados</p>
+      </div>
+      <div>
+        <label for="filtroCampeonato" class="form-label small text-muted mb-1">Campeonato</label>
+        <select id="filtroCampeonato" class="form-select form-select-sm" style="min-width: 220px;"
+                onchange="if (this.value) window.location.href = this.value">
+          @foreach ($campeonatos as $opcao)
+          <option value="{{ route('admin.campeonatos.times', $opcao->id_campeonato) }}" @selected($opcao->id_campeonato === $campeonato->id_campeonato)>
+            {{ $opcao->nome_campeonato }}
+          </option>
+          @endforeach
+        </select>
       </div>
     </div>
 
