@@ -86,8 +86,13 @@ class EventoCalendario extends Model
         'outros'      => 'Outros',
     ];
 
-    // Tipos do ramo "Outros"
-    public const TIPOS_OUTROS = ['REUNIAO', 'CONFRATERNIZACAO', 'EVENTO'];
+    // Tipos do evento individual (o técnico escolhe os atletas; sem categoria): exame, teste ou avaliação,
+    // reunião com o atleta ou a família, outro compromisso. Ramo "Individuais" = esses tipos SEM categoria
+    public const TIPOS_INDIVIDUAIS = ['AVALIACAO', 'REUNIAO', 'EVENTO'];
+
+    // Tipos do ramo "Outros": a confraternização e os tipos individuais quando o evento tem categoria
+    // (ex.: reunião de pais da Sub-13)
+    public const TIPOS_OUTROS = ['REUNIAO', 'CONFRATERNIZACAO', 'EVENTO', 'AVALIACAO'];
 
     // Sugestões do campo Subtipo quando o tipo é AVALIACAO (o campo continua livre)
     public const SUBTIPOS_AVALIACAO = ['Exame médico', 'Avaliação física'];
@@ -527,8 +532,9 @@ class EventoCalendario extends Model
 
     /**
      * Eventos de um ramo do menu (RAMOS): Campeonatos = tipo CAMPEONATO e jogos com campeonato; Amistosos =
-     * jogos sem campeonato; Treinos = TREINO (gerado ou à mão); Individuais = AVALIACAO (exame médico e
-     * avaliação física pelo subtipo); Outros = TIPOS_OUTROS. Ramo desconhecido não filtra.
+     * jogos sem campeonato; Treinos = TREINO (gerado ou à mão); Individuais = TIPOS_INDIVIDUAIS sem
+     * categoria (os atletas são escolhidos um a um: exame, teste, reunião); Outros = confraternização e os
+     * tipos individuais com categoria. Ramo desconhecido não filtra.
      */
     public function scopeDoRamo($query, ?string $ramo)
     {
@@ -539,8 +545,9 @@ class EventoCalendario extends Model
             'campeonatos' => $query->where(fn ($q) => $q->where('tipo_evento_calendario', 'CAMPEONATO')->orWhere($jogo(true))),
             'amistosos'   => $query->where($jogo(false)),
             'treinos'     => $query->where('tipo_evento_calendario', 'TREINO'),
-            'individuais' => $query->where('tipo_evento_calendario', 'AVALIACAO'),
-            'outros'      => $query->whereIn('tipo_evento_calendario', self::TIPOS_OUTROS),
+            'individuais' => $query->whereIn('tipo_evento_calendario', self::TIPOS_INDIVIDUAIS)->whereNull('id_categoria'),
+            'outros'      => $query->whereIn('tipo_evento_calendario', self::TIPOS_OUTROS)
+                ->where(fn ($q) => $q->where('tipo_evento_calendario', 'CONFRATERNIZACAO')->orWhereNotNull('id_categoria')),
             default       => $query,
         };
     }
@@ -589,8 +596,11 @@ class EventoCalendario extends Model
             'CAMPEONATO' => 'campeonatos',
             'JOGO'       => $this->jogo ? ($this->jogo->id_campeonato ? 'campeonatos' : 'amistosos') : null,
             'TREINO'     => 'treinos',
-            'AVALIACAO'  => 'individuais',
-            default      => in_array($this->tipo_evento_calendario, self::TIPOS_OUTROS, true) ? 'outros' : null,
+            default      => match (true) {
+                in_array($this->tipo_evento_calendario, self::TIPOS_INDIVIDUAIS, true) && ! $this->id_categoria => 'individuais',
+                in_array($this->tipo_evento_calendario, self::TIPOS_OUTROS, true)                              => 'outros',
+                default                                                                                         => null,
+            },
         };
     }
 

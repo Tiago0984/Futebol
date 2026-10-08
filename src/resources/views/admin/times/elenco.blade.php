@@ -2,14 +2,38 @@
 
 @section('title', 'Elenco — ' . $time->nome_time)
 
+{{--
+    Elenco do time. Pela tela de Times (ElencoController): editável (adicionar, editar, tirar do elenco).
+    Pelos Times do campeonato (TimesDoCampeonatoController): $somenteLeitura, sem formulário, ações nem modais,
+    com $caminho (linha de caminho) e $voltar (os cartões dos times do campeonato).
+--}}
+@php
+  $somenteLeitura = $somenteLeitura ?? false;
+  $voltar = $voltar ?? route('admin.times.index');
+@endphp
+
 @section('content')
 <main class="app-main">
   <div class="container-fluid py-4">
 
+    @isset($caminho)
+    <nav aria-label="Caminho" class="mb-2">
+      <ol class="breadcrumb mb-0 small" id="caminhoElenco">
+        @foreach ($caminho as [$rotulo, $url])
+          @if ($url)
+          <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
+          @else
+          <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
+          @endif
+        @endforeach
+      </ol>
+    </nav>
+    @endisset
+
     {{-- Cabeçalho da página --}}
     <div class="admin-page-header">
       <div class="d-flex align-items-center gap-3">
-        <a href="{{ route('admin.times.index') }}" class="btn btn-sm btn-outline-secondary" title="Voltar para Times" aria-label="Voltar para Times">
+        <a href="{{ $voltar }}" class="btn btn-sm btn-outline-secondary" title="Voltar" aria-label="Voltar" id="btnVoltarElenco">
           <i class="bi bi-arrow-left"></i>
         </a>
         <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}"
@@ -54,7 +78,8 @@
       </div>
     @endif
 
-    {{-- Adicionar ao elenco: atletas ativos que ainda não estão no time (Fase 10) --}}
+    {{-- Adicionar ao elenco: atletas ativos que ainda não estão no time (Fase 10). Não no modo só leitura --}}
+    @unless($somenteLeitura)
     <form action="{{ route('admin.times.elenco.adicionar', $time->id_time) }}" method="POST"
           class="card card-body shadow-sm mb-3 d-flex flex-row flex-wrap align-items-end gap-2" id="formAdicionarElenco">
       @csrf
@@ -81,11 +106,12 @@
       </button>
       <small class="text-muted w-100">Quem entra não é inscrito sozinho nos jogos já criados: use "Preencher pelo elenco" na tela de cada jogo.</small>
     </form>
+    @endunless
 
     @if($atletas->isEmpty())
       <div class="text-center py-5 text-muted">
         <i class="bi bi-people" style="font-size:3rem; opacity:.3;"></i>
-        <p class="mt-3">Nenhum atleta no elenco deste time. Adicione pelo campo acima.</p>
+        <p class="mt-3">Nenhum atleta no elenco deste time.{{ $somenteLeitura ? '' : ' Adicione pelo campo acima.' }}</p>
       </div>
     @else
 
@@ -147,7 +173,7 @@
               <th class="text-center escal-th-defesas">Defesas</th>
               <th class="text-center">Convocações</th>
               <th class="text-center">Cartões</th>
-              <th class="text-center">Ações</th>
+              @unless($somenteLeitura)<th class="text-center">Ações</th>@endunless
             </tr>
           </thead>
           <tbody id="escal-tbody">
@@ -214,6 +240,7 @@
                   <span class="text-muted" style="font-size:.75rem;">—</span>
                 @endif
               </td>
+              @unless($somenteLeitura)
               <td class="text-center text-nowrap">
                 <button class="btn btn-sm btn-outline-secondary"
                         data-bs-toggle="modal"
@@ -334,11 +361,12 @@
                 </div>
               </div>
             </div>
+            @endunless
 
             @endforeach
 
             <tr class="d-none" id="escal-empty-row">
-              <td colspan="10" class="text-center py-4 text-muted">
+              <td colspan="{{ $somenteLeitura ? 9 : 10 }}" class="text-center py-4 text-muted">
                 <i class="bi bi-search me-2"></i>Nenhum atleta encontrado com os filtros selecionados.
               </td>
             </tr>

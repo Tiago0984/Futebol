@@ -12,13 +12,23 @@ use Illuminate\Validation\Rule;
 
 class CampeonatosController extends Controller
 {
-    public function index()
+    /**
+     * Lista de campeonatos. ?campeonato=ID (o nome do campeonato no menu) mostra só aquele, com o aviso e
+     * o "Ver todos"; ID inexistente ou inválido é ignorado (lista todos).
+     */
+    public function index(Request $request)
     {
-        $campeonatos = Campeonato::with(['categoria', 'times'])->orderBy('data_inicio_campeonato', 'desc')->get();
+        $idFiltro = (string) $request->query('campeonato', '');
+        $campeonatoFiltrado = ctype_digit($idFiltro) ? Campeonato::find((int) $idFiltro, ['id_campeonato', 'nome_campeonato']) : null;
+
+        $campeonatos = Campeonato::with(['categoria', 'times'])
+            ->when($campeonatoFiltrado, fn ($q) => $q->whereKey($campeonatoFiltrado->id_campeonato))
+            ->orderBy('data_inicio_campeonato', 'desc')
+            ->get();
         $categorias  = $this->categorias();
         $times       = Time::orderBy('nome_time')->get();
 
-        return view('admin.campeonatos.index', compact('campeonatos', 'categorias', 'times'));
+        return view('admin.campeonatos.index', compact('campeonatos', 'categorias', 'times', 'campeonatoFiltrado'));
     }
 
     public function create()

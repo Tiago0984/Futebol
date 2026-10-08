@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Time extends Model
 {
@@ -41,6 +42,43 @@ class Time extends Model
                 'jogos_atleta_time',
                 'convocacao_atleta_time'
             ]);
+    }
+
+    /**
+     * Elenco para as telas (Elenco do time e jogadores do time no campeonato): os atletas com os dados do
+     * vínculo (camisa, posição, titular/reserva e contadores), titulares primeiro, e os cartões de cada um,
+     * por tipo. Duas consultas. Devolve [atletas, cartoes].
+     */
+    public function elencoParaTela(): array
+    {
+        $atletas = Atleta::join('tbl_atleta_time', 'tbl_atletas.id_atleta', '=', 'tbl_atleta_time.id_atleta')
+            ->where('tbl_atleta_time.id_time', $this->id_time)
+            ->select(
+                'tbl_atletas.id_atleta',
+                'tbl_atletas.nome_atleta',
+                'tbl_atletas.foto_atleta',
+                'tbl_atletas.posicao_atleta',
+                'tbl_atleta_time.id_atleta_time',
+                'tbl_atleta_time.camisa_atleta_time',
+                'tbl_atleta_time.posicao_atleta_time',
+                'tbl_atleta_time.status_atleta_time',
+                'tbl_atleta_time.jogos_atleta_time',
+                'tbl_atleta_time.gols_atleta_time',
+                'tbl_atleta_time.defesas_atleta_time',
+                'tbl_atleta_time.convocacao_atleta_time'
+            )
+            ->orderByRaw("FIELD(tbl_atleta_time.status_atleta_time, 'TITULAR', 'RESERVA', 'ATIVO')")
+            ->orderBy('tbl_atleta_time.camisa_atleta_time')
+            ->get();
+
+        $cartoes = DB::table('tbl_cartoes')
+            ->whereIn('id_atleta', $atletas->pluck('id_atleta'))
+            ->select('id_atleta', 'tipo_cartao', DB::raw('COUNT(*) as total'))
+            ->groupBy('id_atleta', 'tipo_cartao')
+            ->get()
+            ->groupBy('id_atleta');
+
+        return [$atletas, $cartoes];
     }
 
     /**

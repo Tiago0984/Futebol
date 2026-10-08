@@ -28,33 +28,44 @@ class JogosController extends Controller
     public const AMISTOSO = 'AMISTOSO';
 
     /**
-     * Lista de jogos com os filtros da URL: campeonato (id ou "amistoso") e situação. Sem situação, abre
-     * sem os ocultos (o filtro "Oculto" mostra só eles); o aviso mostra quantos ficaram de fora.
+     * Lista de jogos com os filtros da URL: campeonato (id ou "amistoso"), time (mandante ou visitante),
+     * situação e jogo (id_jogo: o jogo do campeonato no menu). Sem situação, abre sem os ocultos (o filtro
+     * "Oculto" mostra só eles); o aviso mostra quantos ficaram de fora. O jogo pedido por ?jogo=ID aparece
+     * mesmo oculto (com o aviso da situação); jogo inexistente é ignorado.
      */
     public function index(Request $request)
     {
         $campeonatos = self::campeonatosDoFormulario();
-        $filtros     = $this->filtrosDaLista($request, $campeonatos);
+        $times       = Time::orderBy('nome_time')->get();
+        $filtros     = $this->filtrosDaLista($request, $campeonatos, $times);
 
+        $jogoFiltrado = $filtros['jogo'] ? Jogo::with(['evento', 'timeCasa', 'timeVisitante'])->find($filtros['jogo']) : null;
+        $filtros['jogo'] = $jogoFiltrado ? (string) $jogoFiltrado->id_jogo : '';
+        // Ocultos fora por padrão, menos o jogo pedido pelo id
+        $situacaoDaConsulta = $jogoFiltrado && $filtros['situacao'] === '' ? null : $filtros['situacao'];
+
+        // Campeonato e time convivem (ex.: jogos do Time Azul na Copa Escola, pelo menu)
         $doCampeonato = fn () => Jogo::query()
             ->when($filtros['campeonato'] === 'amistoso', fn ($q) => $q->whereNull('id_campeonato'))
-            ->when(ctype_digit($filtros['campeonato']), fn ($q) => $q->where('id_campeonato', (int) $filtros['campeonato']));
+            ->when(ctype_digit($filtros['campeonato']), fn ($q) => $q->where('id_campeonato', (int) $filtros['campeonato']))
+            ->when($filtros['time'], fn ($q, $idTime) => $q->where(fn ($t) => $t
+                ->where('id_time_casa', $idTime)->orWhere('id_time_visitante', $idTime)))
+            ->when($jogoFiltrado, fn ($q) => $q->whereKey($jogoFiltrado->id_jogo));
 
         $jogos = $doCampeonato()
             ->with(['evento' => fn ($q) => $q->comAlteracao()->comInscritosAtivos(), 'evento.categoria', 'timeCasa', 'timeVisitante', 'campeonato'])
-            ->whereHas('evento', fn ($q) => $q->daSituacao($filtros['situacao']))
+            ->whereHas('evento', fn ($q) => $situacaoDaConsulta === null ? $q : $q->daSituacao($situacaoDaConsulta))
             ->get()
             ->filter(fn ($jogo) => $filtros['situacao'] === '' || $jogo->evento->situacao === $filtros['situacao'])
             ->sortByDesc(fn ($jogo) => $jogo->evento?->dataHoraDoJogo())
             ->values();
-        $ocultosForaDaLista = $filtros['situacao'] === ''
+        $ocultosForaDaLista = $filtros['situacao'] === '' && ! $jogoFiltrado
             ? $doCampeonato()->whereHas('evento', fn ($q) => $q->where('status_evento_calendario', 'INATIVO'))->count()
             : 0;
 
-        $times       = Time::orderBy('nome_time')->get();
         $categorias  = Categoria::ativas()->get();
 
-        return view('admin.jogos.index', compact('jogos', 'campeonatos', 'times', 'categorias', 'filtros', 'ocultosForaDaLista'));
+        return view('admin.jogos.index', compact('jogos', 'campeonatos', 'times', 'categorias', 'filtros', 'ocultosForaDaLista', 'jogoFiltrado'));
     }
 
     // Campeonatos do select do formulário do jogo, com a categoria e os times participantes (o select de
@@ -67,15 +78,20 @@ class JogosController extends Controller
     }
 
     // Filtros da lista lidos da URL; valor fora da lista vira vazio (sem filtro)
-    private function filtrosDaLista(Request $request, $campeonatos): array
+    private function filtrosDaLista(Request $request, $campeonatos, $times): array
     {
         $campeonato = (string) $request->query('campeonato', '');
+        $time       = (string) $request->query('time', '');
         $situacao   = (string) $request->query('situacao', '');
+        $jogo       = (string) $request->query('jogo', '');
         $idsValidos = $campeonatos->pluck('id_campeonato')->map(fn ($id) => (string) $id)->all();
+        $idsTimes   = $times->pluck('id_time')->map(fn ($id) => (string) $id)->all();
 
         return [
             'campeonato' => in_array($campeonato, ['amistoso', ...$idsValidos], true) ? $campeonato : '',
+            'time'       => in_array($time, $idsTimes, true) ? $time : '',
             'situacao'   => array_key_exists($situacao, EventoCalendario::SITUACOES) ? $situacao : '',
+            'jogo'       => ctype_digit($jogo) ? $jogo : '', // conferido no index (o jogo precisa existir)
         ];
     }
 
@@ -120,6 +136,39 @@ class JogosController extends Controller
         return $this->comAvisoSemElenco(
             redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)->with('sucesso', $mensagem), $jogo,
         );
+    }
+
+    /**
+     * Jogadores de um time num jogo (cartão do time nas telas de times por jogo), só leitura: os atletas
+     * ativos inscritos e escalados por aquele time naquele jogo. Voltar e linha de caminho levam à tela de
+     * times de onde se veio (Amistosos ou o campeonato). A escalação é feita na tela do evento.
+     */
+    public function escaladosDoTime($id, $timeId)
+    {
+        $jogo = Jogo::with(['evento', 'campeonato', 'timeCasa.categoria', 'timeVisitante.categoria'])->findOrFail($id);
+        $time = collect([$jogo->timeCasa, $jogo->timeVisitante])->first(fn ($t) => (string) $t?->id_time === (string) $timeId);
+        abort_unless($time, 404);
+
+        $voltar = $jogo->ehAmistoso()
+            ? route('admin.amistosos.times')
+            : route('admin.campeonatos.times', $jogo->id_campeonato);
+
+        if (strtoupper($time->tipo_time) === 'EXTERNO') {
+            return redirect($voltar)->with('erro', 'Times externos não possuem elenco cadastrado na associação.');
+        }
+
+        $escalados = $jogo->escaladosDoTime($time->id_time);
+        $caminho = [
+            ['Eventos', route('admin.calendario.index')],
+            ...($jogo->ehAmistoso()
+                ? [['Amistosos', EventoCalendario::urlDoRamo('amistosos')]]
+                : [['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
+                   [$jogo->campeonato->nome_campeonato, route('admin.campeonatos.index', ['campeonato' => $jogo->id_campeonato])]]),
+            ['Times', $voltar],
+            [$time->nome_time, null],
+        ];
+
+        return view('admin.jogos.escalados', compact('jogo', 'time', 'escalados', 'voltar', 'caminho'));
     }
 
     /**

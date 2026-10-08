@@ -24,35 +24,8 @@ class ElencoController extends Controller
                 ->with('erro', 'Times externos não possuem elenco cadastrado na associação.');
         }
 
-        // Atletas do time com pivot completo + contagem de cartões
-        $atletas = Atleta::join('tbl_atleta_time', 'tbl_atletas.id_atleta', '=', 'tbl_atleta_time.id_atleta')
-            ->where('tbl_atleta_time.id_time', $timeId)
-            ->select(
-                'tbl_atletas.id_atleta',
-                'tbl_atletas.nome_atleta',
-                'tbl_atletas.foto_atleta',
-                'tbl_atletas.posicao_atleta',
-                'tbl_atleta_time.id_atleta_time',
-                'tbl_atleta_time.camisa_atleta_time',
-                'tbl_atleta_time.posicao_atleta_time',
-                'tbl_atleta_time.status_atleta_time',
-                'tbl_atleta_time.jogos_atleta_time',
-                'tbl_atleta_time.gols_atleta_time',
-                'tbl_atleta_time.defesas_atleta_time',
-                'tbl_atleta_time.convocacao_atleta_time'
-            )
-            ->orderByRaw("FIELD(tbl_atleta_time.status_atleta_time, 'TITULAR', 'RESERVA', 'ATIVO')")
-            ->orderBy('tbl_atleta_time.camisa_atleta_time')
-            ->get();
-
-        // Cartões por atleta neste time (via jogos do campeonato do time, ou todos)
-        $atletaIds = $atletas->pluck('id_atleta');
-        $cartoes = DB::table('tbl_cartoes')
-            ->whereIn('id_atleta', $atletaIds)
-            ->select('id_atleta', 'tipo_cartao', DB::raw('COUNT(*) as total'))
-            ->groupBy('id_atleta', 'tipo_cartao')
-            ->get()
-            ->groupBy('id_atleta');
+        // Atletas do time com os dados do vínculo e os cartões de cada um
+        [$atletas, $cartoes] = $time->elencoParaTela();
 
         // Atletas ativos que ainda não estão no elenco, pela categoria atual (select "Adicionar ao elenco")
         $disponiveis = Atleta::with('categoriasAtivas')

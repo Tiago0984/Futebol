@@ -21,14 +21,22 @@
             </div>
         </div>
 
-        {{-- Campeonato e situação vão na URL (o menu abre a lista já filtrada); o time filtra só na tela.
-             Com filtro na URL, o painel abre --}}
+        {{-- Campeonato, time e situação vão na URL (o menu abre a lista já filtrada, inclusive pelo time de
+             um campeonato). Com filtro na URL, o painel abre --}}
         <div class="collapse {{ array_filter($filtros) ? 'show' : '' }}" id="filterPanel">
             <form method="GET" action="{{ route('admin.jogos.index') }}" class="filter-panel" id="formFiltros">
+                @if($jogoFiltrado)
+                <input type="hidden" name="jogo" value="{{ $jogoFiltrado->id_jogo }}">
+                @endif
                 <div class="row g-3 align-items-end">
                     <div class="col-md-4">
-                        <label class="filter-label" for="filtroTime">Time</label>
-                        <input type="text" id="filtroTime" class="form-control form-control-sm" placeholder="Buscar mandante ou visitante...">
+                        <label class="filter-label" for="filtroTime">Time (mandante ou visitante)</label>
+                        <select id="filtroTime" name="time" class="form-select form-select-sm js-filtro-url">
+                            <option value="">Todos</option>
+                            @foreach($times as $timeFiltro)
+                            <option value="{{ $timeFiltro->id_time }}" @selected($filtros['time'] === (string) $timeFiltro->id_time)>{{ $timeFiltro->nome_time }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="col-md-3">
                         <label class="filter-label" for="filtroCampeonato">Campeonato</label>
@@ -55,7 +63,6 @@
                         </a>
                     </div>
                 </div>
-                <div class="mt-2"><small class="text-muted" id="filtroContador"></small></div>
             </form>
         </div>
 
@@ -85,6 +92,32 @@
         @endif
 
         @include('admin.calendario._conflitos')
+
+        {{-- Filtrada por um jogo (?jogo=ID, o jogo do campeonato no menu): qual é, a situação (aparece mesmo
+             oculto) e como voltar a ver todos os jogos do campeonato --}}
+        @if($jogoFiltrado)
+        @php
+            $semJogo = \Illuminate\Support\Arr::except(array_filter($filtros), 'jogo');
+            if ($jogoFiltrado->id_campeonato && ! isset($semJogo['campeonato'])) {
+                $semJogo['campeonato'] = $jogoFiltrado->id_campeonato;
+            }
+        @endphp
+        <div class="alert {{ $jogoFiltrado->evento->estaOculto() || $jogoFiltrado->evento->estaCancelado() ? 'alert-warning' : 'alert-info' }} d-flex flex-wrap align-items-center gap-2 mb-3" role="status" id="filtroJogo">
+            <i class="bi bi-funnel"></i>
+            <span>
+                Mostrando só o jogo <strong>{{ $jogoFiltrado->timeCasa->nome_time ?? '—' }} x {{ $jogoFiltrado->timeVisitante->nome_time ?? '—' }}</strong>
+                ({{ $jogoFiltrado->evento->data_evento_calendario->format('d/m/Y') }}).
+                @if($jogoFiltrado->evento->estaOculto())
+                    Este jogo está <strong>oculto</strong>: não aparece na lista sem este filtro nem no site.
+                @elseif($jogoFiltrado->evento->estaCancelado())
+                    Este jogo está <strong>cancelado</strong>.
+                @endif
+            </span>
+            <a href="{{ route('admin.jogos.index', $semJogo) }}" class="ms-auto btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> {{ $jogoFiltrado->id_campeonato ? 'Ver todos os jogos do campeonato' : 'Ver todos os jogos' }}
+            </a>
+        </div>
+        @endif
 
         <div class="table-card">
             <div class="table-card-toolbar d-flex flex-wrap align-items-center gap-2">
@@ -118,7 +151,6 @@
                             ][$ev->situacao];
                         @endphp
                         <tr class="linha-jogo"
-                            data-time="{{ strtolower(($jogo->timeCasa->nome_time ?? '') . ' ' . ($jogo->timeVisitante->nome_time ?? '')) }}"
                             data-campeonato="{{ $jogo->id_campeonato ?? 'amistoso' }}"
                             data-status="{{ $ev->situacao }}">
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
@@ -239,26 +271,8 @@
 <script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    // Campeonato e situação já vêm filtrados do servidor (URL); aqui só o nome do time
-    function aplicarFiltros() {
-        const time = document.getElementById('filtroTime')?.value.toLowerCase().trim() ?? '';
-        let visiveis = 0;
-        document.querySelectorAll('.linha-jogo').forEach(row => {
-            const ok = !time || row.dataset.time.includes(time);
-            row.style.display = ok ? '' : 'none';
-            if (ok) visiveis++;
-        });
-        const total = document.querySelectorAll('.linha-jogo').length;
-        const contador = document.getElementById('filtroContador');
-        if (contador) contador.textContent = time ? `${visiveis} de ${total} jogo(s) encontrado(s)` : '';
-    }
-    document.getElementById('filtroTime')?.addEventListener('input', aplicarFiltros);
-
-    // Mudar o select recarrega a lista; Enter no campo do time não envia o formulário
+    // Filtros da URL: mudar o select recarrega a lista
     document.querySelectorAll('.js-filtro-url').forEach(sel => sel.addEventListener('change', () => sel.form.submit()));
-    document.getElementById('formFiltros')?.addEventListener('submit', e => {
-        if (document.activeElement?.id === 'filtroTime') e.preventDefault();
-    });
 
     document.querySelectorAll('.btn-editar-jogo').forEach(btn => {
         btn.addEventListener('click', function () {

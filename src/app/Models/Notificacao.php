@@ -31,6 +31,9 @@ class Notificacao extends Model
         'AGENDA'       => 'Agenda',
     ];
 
+    // Tamanho máximo da descrição do evento na mensagem de inscrição (o texto inteiro fica na agenda)
+    public const RECADO_MAX = 120;
+
     // data_leitura_notificacao fica de fora: só marcarComoLida() / marcarTodasComoLidas() preenchem
     protected $fillable = [
         'id_atleta',
@@ -117,8 +120,17 @@ class Notificacao extends Model
         }
 
         return self::gravarParaAtivos([$idAtleta], $idUsuario, fn () => self::linha(
-            'INSCRICAO', $evento, 'Nova atividade na sua agenda', self::descreverEvento($evento),
+            'INSCRICAO', $evento, 'Nova atividade na sua agenda', self::descreverEvento($evento) . self::recado($evento),
         ));
+    }
+
+    // Descrição do evento ("o que o atleta vai fazer") resumida no fim da inscrição: " — Venha em jejum".
+    // O texto inteiro fica na agenda (campo descricao da API)
+    private static function recado(EventoCalendario $evento): string
+    {
+        $descricao = trim(preg_replace('/\s+/', ' ', (string) $evento->descricao_evento_calendario));
+
+        return $descricao === '' ? '' : ' — ' . Str::limit($descricao, self::RECADO_MAX, '…');
     }
 
     // Saída de um evento (remoção pelo admin ou troca de categoria do evento). Mesmas regras da inscrição.

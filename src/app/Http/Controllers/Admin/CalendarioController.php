@@ -14,6 +14,7 @@ use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CalendarioController extends Controller
@@ -59,9 +60,15 @@ class CalendarioController extends Controller
 
         $mesesGeracao = GradeTreino::mesesPermitidos();
 
+        // Formulário "Novo evento individual" (só na lista de Individuais): atletas ativos pela categoria atual
+        $atletasParaIndividual = $filtros['ramo'] === 'individuais'
+            ? Atleta::with('categoriasAtivas')->where('status_atleta', 'ATIVO')->orderBy('nome_atleta')->get()
+                ->groupBy(fn ($atleta) => $atleta->categoriasAtivas->first()?->rotulo ?? 'Sem categoria')->sortKeys()
+            : collect();
+
         return view('admin.calendario.index', compact(
             'eventos', 'grades', 'categorias', 'categoriasInativasEmUso', 'mes', 'mesesLista', 'mesesGeracao',
-            'filtros', 'ocultosForaDaLista',
+            'filtros', 'ocultosForaDaLista', 'atletasParaIndividual',
         ));
     }
 
@@ -151,6 +158,48 @@ class CalendarioController extends Controller
         }
 
         return $this->listaNoMesDo($evento)->with('sucesso', $mensagem);
+    }
+
+    /**
+     * Evento individual (botão "Novo evento individual" em Individuais): o técnico descreve o que o atleta vai
+     * fazer e escolhe os atletas, num formulário só. Sem categoria; tipos EventoCalendario::TIPOS_INDIVIDUAIS.
+     * Inscreve só os escolhidos (origem INDIVIDUAL; cada um recebe a notificação, com a descrição resumida) e
+     * o evento aparece só na agenda deles. Conflito de horário conferido antes, como nas outras inscrições.
+     */
+    public function storeEventoIndividual(Request $request)
+    {
+        $request->merge(['id_categoria' => null]);
+        $request->validate([
+            'tipo_evento_calendario' => ['required', Rule::in(EventoCalendario::TIPOS_INDIVIDUAIS)],
+            'atletas'                => 'required|array|min:1',
+            'atletas.*'              => ['integer', Rule::exists('tbl_atletas', 'id_atleta')->where('status_atleta', 'ATIVO')],
+        ], [
+            'tipo_evento_calendario.in' => 'Evento individual: escolha Avaliação, Reunião ou Evento.',
+            'atletas.required'          => 'Escolha pelo menos um atleta.',
+            'atletas.min'               => 'Escolha pelo menos um atleta.',
+            'atletas.*.exists'          => 'Escolha só atletas ativos.',
+        ]);
+
+        $dados = [...$this->dadosEvento($request), 'id_categoria' => null, 'status_evento_calendario' => 'ATIVO'];
+        $ids   = collect($request->input('atletas'))->map(fn ($id) => (int) $id)->unique()->values()->all();
+
+        if ($confirmar = $this->confirmarConflitos($request, (new EventoCalendario($dados))->conflitosPara($ids))) {
+            return $confirmar;
+        }
+
+        $idUsuario = auth('admin')->id();
+        $evento = DB::transaction(function () use ($dados, $ids, $idUsuario) {
+            $evento = EventoCalendario::criarPor($idUsuario, $dados);
+            foreach ($ids as $idAtleta) {
+                $evento->inscrever($idAtleta, 'INDIVIDUAL', $idUsuario);
+            }
+
+            return $evento;
+        });
+
+        return redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)
+            ->with('sucesso', 'Evento individual criado. ' . count($ids) . ' atleta(s) inscrito(s).'
+                . Notificacao::textoNotificados($evento->atletasNotificados));
     }
 
     // Tela do evento: dados e inscritos (só atletas ATIVO aparecem; CLAUDE.md, seção 4)

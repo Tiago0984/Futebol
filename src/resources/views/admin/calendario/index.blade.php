@@ -20,11 +20,18 @@
                     <i class="bi bi-calendar-plus"></i> Gerar agenda do mês
                 </button>
                 @endif
+                @if(request('tab') !== 'grade' && $filtros['ramo'] === 'individuais')
+                {{-- Individuais: o técnico cria o evento já escolhendo os atletas --}}
+                <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalEventoIndividual">
+                    <i class="bi bi-person-plus"></i> Novo evento individual
+                </button>
+                @else
                 <button class="btn-admin-primary" data-bs-toggle="modal"
                     data-bs-target="{{ request('tab') === 'grade' ? '#modalCriarGrade' : '#modalCriarEvento' }}">
                     <i class="bi bi-plus-lg"></i>
                     {{ request('tab') === 'grade' ? 'Novo Horário' : 'Novo Evento' }}
                 </button>
+                @endif
             </div>
         </div>
 
@@ -507,6 +514,11 @@
 
 {{-- ── Modal Editar Evento (partial; também usado na tela do evento) ───────── --}}
 @include('admin.calendario.modals.editar-evento')
+
+{{-- ── Modal Novo Evento Individual (só na lista de Individuais) ─────────── --}}
+@if($filtros['ramo'] === 'individuais')
+@include('admin.calendario.modals.evento-individual')
+@endif
 
 {{-- ── Modal Criar Grade ──────────────────────────────────────────────────── --}}
 <div class="modal fade" id="modalCriarGrade" tabindex="-1" aria-hidden="true">

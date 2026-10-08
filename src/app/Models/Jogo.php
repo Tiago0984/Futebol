@@ -75,6 +75,64 @@ class Jogo extends Model
         return $query->whereHas('evento', fn ($q) => $q->daAgendaPublica());
     }
 
+    // Quantos jogos já realizados aparecem abaixo dos próximos nas telas de times por jogo
+    public const REALIZADOS_NA_TELA = 10;
+
+    /**
+     * Jogos para as telas de times por jogo (Times dos amistosos e Times do campeonato): só os não ocultos,
+     * com o evento e os dois times (com a categoria) de uma vez, e, em $jogo->escalados, quantos atletas
+     * ativos cada time tem escalados no jogo ([id_time => n], numa consulta para todos). Devolve
+     * [próximos, realizados]: próximos (não concluídos) do mais perto ao mais longe; realizados (concluídos)
+     * do mais recente para trás, no máximo REALIZADOS_NA_TELA.
+     */
+    public static function separadosParaTelaDeTimes($query): array
+    {
+        $jogos = $query
+            ->whereHas('evento', fn ($q) => $q->where('status_evento_calendario', '<>', 'INATIVO'))
+            ->with(['evento', 'timeCasa.categoria', 'timeVisitante.categoria'])
+            ->get();
+
+        $escalados = $jogos->isEmpty() ? collect() : DB::table('tbl_evento_atleta as ea')
+            ->join('tbl_atletas as a', 'a.id_atleta', '=', 'ea.id_atleta')
+            ->where('a.status_atleta', 'ATIVO')
+            ->whereIn('ea.id_evento_calendario', $jogos->pluck('id_evento'))
+            ->whereNotNull('ea.id_time')
+            ->groupBy('ea.id_evento_calendario', 'ea.id_time')
+            ->get(['ea.id_evento_calendario', 'ea.id_time', DB::raw('COUNT(*) as total')])
+            ->groupBy('id_evento_calendario');
+        foreach ($jogos as $jogo) {
+            $jogo->setAttribute('escalados', ($escalados[$jogo->id_evento] ?? collect())
+                ->mapWithKeys(fn ($linha) => [(int) $linha->id_time => (int) $linha->total])->all());
+        }
+
+        [$realizados, $proximos] = $jogos->partition(fn ($jogo) => $jogo->evento->estaConcluido());
+
+        return [
+            $proximos->sortBy(fn ($jogo) => $jogo->evento->dataHoraDoJogo())->values(),
+            $realizados->sortByDesc(fn ($jogo) => $jogo->evento->dataHoraDoJogo())->take(self::REALIZADOS_NA_TELA)->values(),
+        ];
+    }
+
+    /**
+     * Atletas ativos escalados por um time neste jogo (tela "jogadores do time no jogo"), por nome, com os
+     * dados do elenco desse time quando o atleta está nele (camisa, posição, titular/reserva; null fora do
+     * elenco). Uma consulta.
+     */
+    public function escaladosDoTime(int $idTime): Collection
+    {
+        return DB::table('tbl_evento_atleta as ea')
+            ->join('tbl_atletas as a', 'a.id_atleta', '=', 'ea.id_atleta')
+            ->leftJoin('tbl_atleta_time as at', fn ($j) => $j->on('at.id_atleta', '=', 'ea.id_atleta')->where('at.id_time', $idTime))
+            ->where('ea.id_evento_calendario', $this->id_evento)
+            ->where('ea.id_time', $idTime)
+            ->where('a.status_atleta', 'ATIVO')
+            ->orderBy('a.nome_atleta')
+            ->get([
+                'a.id_atleta', 'a.nome_atleta', 'ea.origem_evento_atleta', 'at.id_atleta_time',
+                'at.camisa_atleta_time', 'at.posicao_atleta_time', 'at.status_atleta_time',
+            ]);
+    }
+
     // Ordena pela data e horário do evento (join; as colunas do jogo continuam sendo as do resultado)
     public function scopeOrdenadosPelaData($query, string $direcao = 'asc')
     {

@@ -78,6 +78,17 @@
         </div>
         @endif
 
+        {{-- Filtrada pelo nome do campeonato no menu (?campeonato=ID): mostra qual e como voltar a ver todos --}}
+        @if($campeonatoFiltrado)
+        <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 mb-3" role="status" id="filtroCampeonato">
+            <i class="bi bi-funnel"></i>
+            <span>Mostrando só o campeonato <strong>{{ $campeonatoFiltrado->nome_campeonato }}</strong>.</span>
+            <a href="{{ route('admin.campeonatos.index') }}" class="ms-auto btn btn-sm btn-outline-secondary">
+                <i class="bi bi-x-circle"></i> Ver todos os campeonatos
+            </a>
+        </div>
+        @endif
+
         <div class="table-card">
             <div class="table-card-toolbar">
                 <span class="tbl-count">{{ count($campeonatos) }} campeonato(s)</span>
