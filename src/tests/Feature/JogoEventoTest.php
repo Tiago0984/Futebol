@@ -221,6 +221,28 @@ class JogoEventoTest extends TestCase
             ->assertSessionHas('erro', 'No jogo, os inscritos vêm do elenco dos times: use "Preencher pelo elenco".');
     }
 
+    public function test_tela_do_jogo_mostra_o_time_externo_travado_do_lado_dele(): void
+    {
+        $this->atletaSub11();
+        $jogo = $this->criarJogo(); // Time Azul (interno, mandante) x Time Visitante (externo)
+        $html = $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))->assertOk()->getContent();
+
+        // O externo aparece só para ver: com o aviso, sem select de time e sem remover
+        preg_match('#js-bloco-externo.*?Elenco não disponível nesta associação#s', $html, $bloco);
+        $this->assertNotEmpty($bloco);
+        $this->assertStringContainsString('Time Visitante', $bloco[0]);
+        $this->assertStringContainsString('visitante', $bloco[0]);
+        $this->assertStringNotContainsString('<select', $bloco[0]);
+        $this->assertStringNotContainsString('<form', $bloco[0]);
+
+        // Mandante à esquerda, visitante à direita
+        $this->assertLessThan(strpos($html, 'js-bloco-externo'), strpos($html, '· mandante'));
+
+        // O select de time dos inscritos continua só com o time interno
+        $this->assertStringNotContainsString('<option value="' . $this->visitante . '"',
+            substr($html, strpos($html, 'Inscritos ('), strpos($html, 'id="modalEditarJogo"') - strpos($html, 'Inscritos (')));
+    }
+
     public function test_acoes_do_jogo_nos_jogos_do_campeonato_voltam_para_a_mesma_tela(): void
     {
         $jogo = $this->criarJogo();

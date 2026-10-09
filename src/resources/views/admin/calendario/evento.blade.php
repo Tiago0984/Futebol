@@ -192,117 +192,33 @@
 
             {{-- Jogo com time interno: os inscritos lado a lado, um bloco por time escalável (mandante à esquerda,
                  visitante à direita, com a quantidade) e, embaixo, "Sem time" (só quando há alguém; quem está num
-                 time que não é mais do jogo também cai aqui, como o select mostra). Nesse caso o card ocupa a
-                 largura toda e os formulários de inscrição descem. Outros eventos: lista única, com os formulários
-                 ao lado --}}
+                 time que não é mais do jogo também cai aqui, como o select mostra). Outros eventos: lista única.
+                 Nos dois casos, os formulários de inscrição ficam acima, entre a escalação e os inscritos --}}
             @php
               $porBlocos = $jogo && isset($escalaveis) && $escalaveis->isNotEmpty();
               $idsEscalaveis = $porBlocos ? $escalaveis->pluck('id_time')->map(fn ($id) => (int) $id) : collect();
+              // Mandante e visitante nos seus lados; o time externo aparece travado (só para ver: sem elenco na
+              // associação, ninguém é escalado nele)
               $blocosDosTimes = $porBlocos
-                  ? $escalaveis->map(fn ($time) => [
-                        'titulo'     => $time->nome_time,
-                        'logo'       => $time->logo_time,
-                        'papel'      => (int) $time->id_time === (int) $jogo->id_time_casa ? 'mandante' : 'visitante',
-                        'inscricoes' => $inscricoes->filter(fn ($i) => (int) $i->id_time === (int) $time->id_time),
-                    ])
+                  ? collect([[$jogo->timeCasa, 'mandante'], [$jogo->timeVisitante, 'visitante']])
+                      ->filter(fn ($par) => $par[0])
+                      ->map(fn ($par) => [
+                        'titulo'     => $par[0]->nome_time,
+                        'logo'       => $par[0]->logo_time,
+                        'papel'      => $par[1],
+                        'externo'    => $par[0]->tipo_time !== 'INTERNO',
+                        'categoria'  => $par[0]->categoria?->rotulo,
+                        'inscricoes' => $inscricoes->filter(fn ($i) => (int) $i->id_time === (int) $par[0]->id_time),
+                    ])->values()
                   : collect();
               $semTime = $porBlocos ? $inscricoes->reject(fn ($i) => $idsEscalaveis->contains((int) $i->id_time)) : collect();
             @endphp
-            <div class="row g-4">
-
-                {{-- Inscritos --}}
-                <div class="{{ $porBlocos ? 'col-12' : 'col-lg-7' }}">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header bg-dark text-white fw-semibold">
-                            <i class="bi bi-people me-2"></i> Inscritos ({{ $inscricoes->count() }})
-                        </div>
-
-                        @if ($porBlocos)
-                        <div class="card-body">
-                            <div class="row g-3">
-                                @foreach ($blocosDosTimes as $bloco)
-                                <div class="{{ $blocosDosTimes->count() > 1 ? 'col-md-6' : 'col-12' }}">
-                                    <div class="js-bloco-time">
-                                    <div class="border rounded h-100">
-                                        <div class="bg-light border-bottom px-3 py-2 fw-semibold d-flex align-items-center gap-2">
-                                            {{-- Logo do time (mesmo caminho e imagem padrão do cartão da tela de Times) --}}
-                                            <img src="{{ asset('futebol/images/team/' . $bloco['logo']) }}" alt="" width="28" height="28"
-                                                 style="object-fit:contain" onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
-                                            {{ $bloco['titulo'] }}
-                                            <span class="fw-normal text-muted small">· {{ $bloco['papel'] }} ({{ $bloco['inscricoes']->count() }})</span>
-                                        </div>
-                                        @include('admin.calendario._inscritos_do_bloco', ['lista' => $bloco['inscricoes'], 'vazio' => 'Ninguém escalado neste time.'])
-                                    </div>
-                                    </div>
-                                </div>
-                                @endforeach
-
-                                @if ($semTime->isNotEmpty())
-                                <div class="col-12">
-                                    <div class="js-bloco-time">
-                                    <div class="border border-warning rounded">
-                                        <div class="bg-warning-subtle border-bottom border-warning px-3 py-2 fw-semibold">
-                                            <i class="bi bi-exclamation-triangle me-1"></i>
-                                            Sem time
-                                            <span class="fw-normal text-muted small">· falta escolher o time ({{ $semTime->count() }})</span>
-                                        </div>
-                                        @include('admin.calendario._inscritos_do_bloco', ['lista' => $semTime, 'vazio' => ''])
-                                    </div>
-                                    </div>
-                                </div>
-                                @endif
-                            </div>
-                        </div>
-                        @else
-                        <div class="card-body p-0">
-                            <table class="table table-sm table-hover align-middle mb-0">
-                                <thead>
-                                    <tr>
-                                        <th class="ps-3">Atleta</th>
-                                        <th>Categoria</th>
-                                        <th>Origem</th>
-                                        <th>Inscrito por</th>
-                                        <th class="text-center" style="width:60px"></th>
-                                    </tr>
-                                </thead>
-                                <tbody class="js-bloco-time">
-                                    @forelse ($inscricoes as $inscricao)
-                                    <tr>
-                                        <td class="ps-3 fw-semibold">{{ $inscricao->atleta->nome_atleta }}</td>
-                                        <td class="text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</td>
-                                        <td><span class="badge-cat" style="cursor:help" title="{{ $inscricao->origem_dica }}">{{ $inscricao->origem_label }}</span></td>
-                                        <td class="text-muted small">
-                                            {{ $inscricao->usuario?->nome_usuario ?? '—' }}<br>
-                                            {{ $inscricao->data_evento_atleta?->format('d/m/Y H:i') }}
-                                        </td>
-                                        <td class="text-center">@include('admin.calendario._remover_inscricao')</td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">Nenhum atleta inscrito.</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                        @endif
-
-                        @if ($inscritosInativos > 0)
-                            <p class="text-muted small px-3 py-2 mb-0">
-                                <i class="bi bi-info-circle"></i>
-                                {{ $inscritosInativos }} inscrito(s) com atleta inativo, pendente ou rejeitado não aparece(m) aqui.
-                                Se o atleta voltar a ficar ativo, a inscrição volta a valer.
-                            </p>
-                        @endif
-                    </div>
-                </div>
-
-                {{-- Adicionar (no jogo lado a lado, embaixo dos inscritos) --}}
-                <div class="{{ $porBlocos ? 'col-12' : 'col-lg-5' }}">
-                <div class="{{ $porBlocos ? 'row g-4' : '' }}">
-                    {{-- No jogo, os inscritos vêm do elenco ("Preencher pelo elenco"), não da categoria --}}
-                    @if ($evento->categoria && ! $jogo)
-                    <div class="card shadow-sm mb-4">
+            {{-- Adicionar: entre a escalação e os inscritos, nos jogos e nos outros eventos ("Pela categoria" só no
+                 evento com categoria que não é jogo; no jogo, os inscritos vêm do elenco: "Preencher pelo elenco") --}}
+            <div class="row g-4 mb-4">
+                @if ($evento->categoria && ! $jogo)
+                <div class="col-12">
+                    <div class="card shadow-sm">
                         <div class="card-header bg-dark text-white fw-semibold">
                             <i class="bi bi-arrow-repeat me-2"></i> Pela categoria ({{ $evento->categoria->rotulo }})
                         </div>
@@ -323,10 +239,11 @@
                             @endif
                         </div>
                     </div>
-                    @endif
+                </div>
+                @endif
 
-                    <div class="{{ $porBlocos ? 'col-lg-6' : '' }}">
-                    <div class="card shadow-sm {{ $porBlocos ? 'h-100' : 'mb-4' }}">
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
                         <div class="card-header bg-dark text-white fw-semibold">
                             <i class="bi bi-person-plus me-2"></i> Inscrever atleta
                         </div>
@@ -355,10 +272,10 @@
                             </form>
                         </div>
                     </div>
-                    </div>
+                </div>
 
-                    <div class="{{ $porBlocos ? 'col-lg-6' : '' }}">
-                    <div class="card shadow-sm {{ $porBlocos ? 'h-100' : '' }}">
+                <div class="col-lg-6">
+                    <div class="card shadow-sm h-100">
                         <div class="card-header bg-dark text-white fw-semibold">
                             <i class="bi bi-people-fill me-2"></i> Adicionar todos de uma categoria
                         </div>
@@ -379,10 +296,110 @@
                             </form>
                         </div>
                     </div>
-                    </div>
                 </div>
+            </div>
+
+            {{-- Inscritos (largura toda) --}}
+            <div class="card shadow-sm">
+                <div class="card-header bg-dark text-white fw-semibold">
+                    <i class="bi bi-people me-2"></i> Inscritos ({{ $inscricoes->count() }})
                 </div>
 
+                @if ($porBlocos)
+                <div class="card-body">
+                    <div class="row g-3">
+                        @foreach ($blocosDosTimes as $bloco)
+                        <div class="{{ $blocosDosTimes->count() > 1 ? 'col-md-6' : 'col-12' }}">
+                            @if ($bloco['externo'])
+                            {{-- Time externo: travado, só para ver (sem select, sem remover) --}}
+                            <div class="border rounded h-100 js-bloco-externo" style="background:#fafafa;" title="Time externo: só para visualizar">
+                                <div class="bg-light border-bottom px-3 py-2 fw-semibold d-flex align-items-center gap-2 text-muted">
+                                    <img src="{{ asset('futebol/images/team/' . $bloco['logo']) }}" alt="" width="28" height="28"
+                                         style="object-fit:contain;opacity:.7" onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
+                                    {{ $bloco['titulo'] }}
+                                    <span class="badge escal-badge-externo">Externo</span>
+                                    <span class="fw-normal small">· {{ $bloco['papel'] }}</span>
+                                    <i class="bi bi-lock ms-auto" style="color:#9ca3af;"></i>
+                                </div>
+                                <div class="px-3 py-3 text-muted small">
+                                    @if ($bloco['categoria'])<div>{{ $bloco['categoria'] }}</div>@endif
+                                    <i class="bi bi-lock-fill"></i> <em>Elenco não disponível nesta associação</em>
+                                </div>
+                            </div>
+                            @else
+                            <div class="js-bloco-time">
+                            <div class="border rounded h-100">
+                                <div class="bg-light border-bottom px-3 py-2 fw-semibold d-flex align-items-center gap-2">
+                                    {{-- Logo do time (mesmo caminho e imagem padrão do cartão da tela de Times) --}}
+                                    <img src="{{ asset('futebol/images/team/' . $bloco['logo']) }}" alt="" width="28" height="28"
+                                         style="object-fit:contain" onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
+                                    {{ $bloco['titulo'] }}
+                                    <span class="fw-normal text-muted small">· {{ $bloco['papel'] }} ({{ $bloco['inscricoes']->count() }})</span>
+                                </div>
+                                @include('admin.calendario._inscritos_do_bloco', ['lista' => $bloco['inscricoes'], 'vazio' => 'Ninguém escalado neste time.'])
+                            </div>
+                            </div>
+                            @endif
+                        </div>
+                        @endforeach
+
+                        @if ($semTime->isNotEmpty())
+                        <div class="col-12">
+                            <div class="js-bloco-time">
+                            <div class="border border-warning rounded">
+                                <div class="bg-warning-subtle border-bottom border-warning px-3 py-2 fw-semibold">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    Sem time
+                                    <span class="fw-normal text-muted small">· falta escolher o time ({{ $semTime->count() }})</span>
+                                </div>
+                                @include('admin.calendario._inscritos_do_bloco', ['lista' => $semTime, 'vazio' => ''])
+                            </div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @else
+                <div class="card-body p-0">
+                    <table class="table table-sm table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-3">Atleta</th>
+                                <th>Categoria</th>
+                                <th>Origem</th>
+                                <th>Inscrito por</th>
+                                <th class="text-center" style="width:60px"></th>
+                            </tr>
+                        </thead>
+                        <tbody class="js-bloco-time">
+                            @forelse ($inscricoes as $inscricao)
+                            <tr>
+                                <td class="ps-3 fw-semibold">{{ $inscricao->atleta->nome_atleta }}</td>
+                                <td class="text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</td>
+                                <td><span class="badge-cat" style="cursor:help" title="{{ $inscricao->origem_dica }}">{{ $inscricao->origem_label }}</span></td>
+                                <td class="text-muted small">
+                                    {{ $inscricao->usuario?->nome_usuario ?? '—' }}<br>
+                                    {{ $inscricao->data_evento_atleta?->format('d/m/Y H:i') }}
+                                </td>
+                                <td class="text-center">@include('admin.calendario._remover_inscricao')</td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">Nenhum atleta inscrito.</td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                @endif
+
+                @if ($inscritosInativos > 0)
+                    <p class="text-muted small px-3 py-2 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        {{ $inscritosInativos }} inscrito(s) com atleta inativo, pendente ou rejeitado não aparece(m) aqui.
+                        Se o atleta voltar a ficar ativo, a inscrição volta a valer.
+                    </p>
+                @endif
             </div>
 
             {{-- Notificações enviadas aos atletas sobre este evento (só no admin: dados de menores).
