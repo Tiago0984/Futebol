@@ -16,20 +16,21 @@
                     <i class="bi bi-funnel"></i> Filtrar
                 </button>
                 @if(request('tab') === 'grade')
+                {{-- Grade: "Novo Horário" e, por último (no canto), "Gerar agenda do mês" --}}
+                <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalCriarGrade">
+                    <i class="bi bi-plus-lg"></i> Novo Horário
+                </button>
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalGerarAgenda">
                     <i class="bi bi-calendar-plus"></i> Gerar agenda do mês
                 </button>
-                @endif
-                @if(request('tab') !== 'grade' && $filtros['ramo'] === 'individuais')
+                @elseif($filtros['ramo'] === 'individuais')
                 {{-- Individuais: o técnico cria o evento já escolhendo os atletas --}}
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalEventoIndividual">
                     <i class="bi bi-person-plus"></i> Novo evento individual
                 </button>
                 @else
-                <button class="btn-admin-primary" data-bs-toggle="modal"
-                    data-bs-target="{{ request('tab') === 'grade' ? '#modalCriarGrade' : '#modalCriarEvento' }}">
-                    <i class="bi bi-plus-lg"></i>
-                    {{ request('tab') === 'grade' ? 'Novo Horário' : 'Novo Evento' }}
+                <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalCriarEvento">
+                    <i class="bi bi-plus-lg"></i> Novo Evento
                 </button>
                 @endif
             </div>
@@ -546,11 +547,8 @@
                             </div>
                             <div class="form-text">Cada dia marcado vira uma linha da grade, com os mesmos dados (na edição, cada linha muda sozinha).</div>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Ordem</label>
-                            <input type="number" name="ordem_grade_treino" class="form-control" min="0" value="0">
-                        </div>
-                        <div class="col-md-3">
+                        {{-- Sem o campo Ordem: a linha nova grava 0 (a ordem só desempata horários iguais no mesmo dia) --}}
+                        <div class="col-md-4">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_grade_treino" class="form-select" required>
                                 @foreach(\App\Models\GradeTreino::TIPOS as $t)
@@ -558,7 +556,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-8">
                             <label class="form-label">Categoria <span class="text-danger">*</span></label>
                             <select name="id_categoria" id="cad_g_categoria" class="form-select js-grade-categoria"
                                 data-geral="#cad_g_geral">
