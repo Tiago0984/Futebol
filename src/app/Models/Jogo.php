@@ -81,7 +81,7 @@ class Jogo extends Model
 
     /**
      * Jogos para as telas de times por jogo (Times dos amistosos e Times do campeonato): só os não ocultos,
-     * com o evento e os dois times (com a categoria) de uma vez, e, em $jogo->escalados, quantos atletas
+     * com o evento (e os inscritos ativos, para as ações do jogo), o campeonato e os dois times (com a categoria) de uma vez, e, em $jogo->escalados, quantos atletas
      * ativos cada time tem escalados no jogo ([id_time => n], numa consulta para todos). Devolve
      * [próximos, realizados]: próximos (não concluídos) do mais perto ao mais longe; realizados (concluídos)
      * do mais recente para trás, no máximo REALIZADOS_NA_TELA.
@@ -90,7 +90,7 @@ class Jogo extends Model
     {
         $jogos = $query
             ->whereHas('evento', fn ($q) => $q->where('status_evento_calendario', '<>', 'INATIVO'))
-            ->with(['evento', 'timeCasa.categoria', 'timeVisitante.categoria'])
+            ->with(['evento' => fn ($q) => $q->comInscritosAtivos(), 'campeonato', 'timeCasa.categoria', 'timeVisitante.categoria'])
             ->get();
 
         $escalados = $jogos->isEmpty() ? collect() : DB::table('tbl_evento_atleta as ea')

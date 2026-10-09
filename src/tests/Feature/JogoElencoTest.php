@@ -335,7 +335,7 @@ class JogoElencoTest extends TestCase
         $this->actingAs($this->admin, 'admin')->get(route('admin.amistosos.times'))->assertOk()
             ->assertSee('id="avisoRascunhos"', false)
             ->assertSee('1 amistoso ainda não publicado')
-            ->assertSee('<a href="' . $tela . '" class="btn btn-warning btn-sm ms-auto js-publicar-jogo">', false);
+            ->assertSee('<a href="' . $tela . '" class="btn btn-warning btn-sm js-publicar-jogo">', false);
 
         $this->publicar($jogo);
 

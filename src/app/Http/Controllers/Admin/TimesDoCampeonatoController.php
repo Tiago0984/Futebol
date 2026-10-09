@@ -11,7 +11,7 @@ use App\Models\Time;
 /**
  * Jogos de um campeonato (o "Jogos" de cada campeonato no menu; a rota mantém o nome "times"), só para ver,
  * como nos Times dos amistosos: um bloco por jogo (próximos e últimos realizados) com o cartão do mandante e o
- * do visitante, e um filtro para trocar de campeonato;
+ * do visitante, e um filtro para trocar de campeonato (ou ver os jogos de todos, em todos());
  * no fim, os participantes que não aparecem em nenhum desses jogos. O time interno abre os jogadores do
  * elenco, sem edição (a edição continua em Times > Elenco). Externo não tem elenco na associação.
  */
@@ -38,11 +38,43 @@ class TimesDoCampeonatoController extends Controller
 
         $caminho = $this->caminho($campeonato);
 
-        // Filtro "Campeonato" da tela: todos, do mais recente para o mais antigo (o encerrado também pode ser visto)
-        $campeonatos = Campeonato::orderByDesc('data_inicio_campeonato')->orderBy('nome_campeonato')
-            ->get(['id_campeonato', 'nome_campeonato']);
+        return view('admin.campeonatos.times', [
+            ...compact('campeonato', 'proximos', 'realizados', 'semJogo', 'caminho'),
+            ...$this->dadosDaTela(),
+        ]);
+    }
 
-        return view('admin.campeonatos.times', compact('campeonato', 'proximos', 'realizados', 'semJogo', 'caminho', 'campeonatos'));
+    // Opção "Todos" do filtro: os jogos de todos os campeonatos (sem os amistosos), cada bloco com o nome do
+    // campeonato; sem a lista de participantes sem jogo (ela é de um campeonato só)
+    public function todos()
+    {
+        [$proximos, $realizados] = Jogo::separadosParaTelaDeTimes(Jogo::whereNotNull('id_campeonato'));
+
+        $campeonato = null;
+        $semJogo    = collect();
+        $caminho    = [
+            ['Eventos', route('admin.calendario.index')],
+            ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
+            ['Jogos', null],
+        ];
+
+        return view('admin.campeonatos.times', [
+            ...compact('campeonato', 'proximos', 'realizados', 'semJogo', 'caminho'),
+            ...$this->dadosDaTela(),
+        ]);
+    }
+
+    /**
+     * Filtro "Campeonato" da tela ("Todos" e cada campeonato, do mais recente para o mais antigo; o encerrado
+     * também pode ser visto) e as listas do modal "Editar jogo" das ações de cada jogo.
+     */
+    private function dadosDaTela(): array
+    {
+        return [
+            'campeonatos'    => Campeonato::orderByDesc('data_inicio_campeonato')->orderBy('nome_campeonato')
+                ->get(['id_campeonato', 'nome_campeonato']),
+            'formularioJogo' => JogosController::dadosDoFormulario(),
+        ];
     }
 
     // Jogadores do time no campeonato (o elenco), só leitura, na mesma tela do Elenco

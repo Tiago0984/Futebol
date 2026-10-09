@@ -106,6 +106,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::resource('campeonatos', CampeonatosController::class)->except(['show']);
     Route::patch('campeonatos/{id}/toggle-status', [CampeonatosController::class, 'toggleStatus'])->name('campeonatos.toggleStatus');
     // Times do campeonato (cartões) e jogadores de um time: só leitura, pelo subitem "Times" do menu
+    Route::get('campeonatos/jogos',               [TimesDoCampeonatoController::class, 'todos'])->name('campeonatos.jogos');
     Route::get('campeonatos/{id}/times',          [TimesDoCampeonatoController::class, 'index'])->name('campeonatos.times');
     Route::get('campeonatos/{id}/times/{timeId}', [TimesDoCampeonatoController::class, 'show'])->name('campeonatos.times.show');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);

@@ -148,7 +148,8 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
-                                    <a href="{{ route('admin.jogos.index', ['campeonato' => $camp->id_campeonato]) }}"
+                                    {{-- Jogos do campeonato: a tela de jogos (blocos com ações), com o filtro já nele --}}
+                                    <a href="{{ route('admin.campeonatos.times', $camp->id_campeonato) }}"
                                        class="btn-tbl view" title="Jogos do campeonato">
                                         <i class="bi bi-calendar2-week"></i><small class="ms-1">Jogos</small>
                                     </a>

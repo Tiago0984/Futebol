@@ -30,18 +30,15 @@
       </div>
     </div>
 
-    @if(session('erro'))
-      <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
-        <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('erro') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      </div>
-    @endif
+    @include('admin.jogos._mensagens')
 
-    @include('admin.partials.blocos-de-jogos', [
-        'rotulo'     => 'amistoso',
-        'linkDoJogo' => fn ($jogo) => route('admin.jogos.index', ['campeonato' => 'amistoso', 'jogo' => $jogo->id_jogo]),
-    ])
+    @include('admin.partials.blocos-de-jogos', ['rotulo' => 'amistoso'])
 
   </div>
 </main>
+
+{{-- Editar jogo pelas ações de cada bloco: salva e volta para esta tela --}}
+@include('admin.jogos.modals.edit', [...$formularioJogo, 'voltarParaPagina' => true])
+@include('admin.partials.sugestoes')
+@include('admin.jogos._script_form')
 @endsection

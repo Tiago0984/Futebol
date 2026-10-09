@@ -5,7 +5,8 @@
     - Times: no jogo de campeonato, só os participantes (data-times da opção); no amistoso, ou campeonato
       sem participantes cadastrados, todos. O time que o formulário abriu selecionado continua na lista
       (jogo antigo); o servidor confere de novo (JogosController::conferirParticipantes).
-    window.atualizarFormJogo(form) refaz tudo (a lista chama depois de preencher o modal de edição).
+    window.atualizarFormJogo(form) refaz tudo (chamado depois de preencher o modal de edição).
+    - Botão Editar das ações do jogo (admin.jogos._acoes): preenche o modal #modalEditarJogo.
 --}}
 <script>
 (function () {
@@ -57,6 +58,27 @@
             form.querySelector('.js-campeonato').addEventListener('change', () => window.atualizarFormJogo(form));
             form.querySelector('.js-time-casa').addEventListener('change', () => window.atualizarFormJogo(form));
             window.atualizarFormJogo(form);
+        });
+
+        // Botão Editar das ações do jogo (admin.jogos._acoes): preenche o modal de edição com os dados do botão
+        document.querySelectorAll('.btn-editar-jogo').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const f = document.getElementById('formEditarJogo');
+                f.action = `{{ url('admin/jogos') }}/${this.dataset.id}`;
+                document.getElementById('edit_id_campeonato').value    = this.dataset.campeonato;
+                document.getElementById('edit_id_categoria').value     = this.dataset.categoria;
+                document.getElementById('edit_id_time_casa').value     = this.dataset.casa;
+                document.getElementById('edit_id_time_visitante').value = this.dataset.visitante;
+                document.getElementById('edit_data').value             = this.dataset.data;
+                document.getElementById('edit_inicio').value           = this.dataset.inicio;
+                document.getElementById('edit_fim').value              = this.dataset.fim;
+                document.getElementById('edit_local').value            = this.dataset.local;
+                document.getElementById('edit_placar_casa').value      = this.dataset.placarCasa;
+                document.getElementById('edit_placar_visitante').value = this.dataset.placarVisitante;
+                // Times com que o modal abriu ficam na lista mesmo fora dos participantes (jogo antigo)
+                window.guardarTimesIniciais(f.querySelector('.form-jogo'));
+                window.atualizarFormJogo(f.querySelector('.form-jogo'));
+            });
         });
     });
 })();

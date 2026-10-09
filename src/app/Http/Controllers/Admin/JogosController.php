@@ -77,6 +77,16 @@ class JogosController extends Controller
             ->get();
     }
 
+    // Listas do modal de edição do jogo (admin.jogos.modals.edit) nas telas que não são a lista de Jogos
+    public static function dadosDoFormulario(): array
+    {
+        return [
+            'campeonatos' => self::campeonatosDoFormulario(),
+            'times'       => Time::orderBy('nome_time')->get(),
+            'categorias'  => Categoria::ativas()->get(),
+        ];
+    }
+
     // Filtros da lista lidos da URL; valor fora da lista vira vazio (sem filtro)
     private function filtrosDaLista(Request $request, $campeonatos, $times): array
     {
@@ -239,10 +249,13 @@ class JogosController extends Controller
         $mensagem = 'Jogo atualizado.' . $this->salvarEdicaoDoEvento($evento, $dadosEvento,
             fn () => $this->gravarJogoETrocarTimes($jogo, $dadosJogo, $timesAntes));
 
-        // Editado pela tela do jogo (voltar=evento): volta para ela; pela lista, volta à lista
-        $resposta = ($request->input('voltar') === 'evento'
-            ? redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)
-            : redirect()->route('admin.jogos.index'))->with('sucesso', $mensagem);
+        // Editado pela tela do jogo (voltar=evento): volta para ela; pelos Jogos do campeonato ou dos amistosos
+        // (voltar=pagina), volta para a página de onde veio; pela lista, volta à lista
+        $resposta = (match ($request->input('voltar')) {
+            'evento' => redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario),
+            'pagina' => back(fallback: route('admin.jogos.index')),
+            default  => redirect()->route('admin.jogos.index'),
+        })->with('sucesso', $mensagem);
 
         return $this->timesMudaram($timesAntes, $timesNovos) ? $this->comAvisoSemElenco($resposta, $jogo) : $resposta;
     }

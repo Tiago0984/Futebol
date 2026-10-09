@@ -1,7 +1,8 @@
 {{--
     Editar jogo. Na lista de Jogos, o JS preenche o modal (ação e campos) pelo botão da linha.
     Na tela do jogo, $jogoEmEdicao vem preenchido: o formulário já abre com os valores atuais e, depois de
-    salvar, volta para a tela do jogo (voltar=evento).
+    salvar, volta para a tela do jogo (voltar=evento). Com $voltarParaPagina (Jogos do campeonato e dos
+    amistosos), volta para a página de onde foi aberto (voltar=pagina).
 --}}
 @php
     $jogoEmEdicao = $jogoEmEdicao ?? null;
@@ -30,6 +31,8 @@
                 @csrf @method('PUT')
                 @if($jogoEmEdicao)
                 <input type="hidden" name="voltar" value="evento">
+                @elseif(! empty($voltarParaPagina))
+                <input type="hidden" name="voltar" value="pagina">
                 @endif
                 <div class="modal-body">
                     @include('admin.jogos.modals._campos', ['p' => 'edit_', 'comOld' => (bool) $jogoEmEdicao, 'valores' => $valoresJogo])

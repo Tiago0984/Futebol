@@ -24,6 +24,9 @@ class AmistososController extends Controller
             ['Jogos', null],
         ];
 
-        return view('admin.jogos.amistosos-times', compact('proximos', 'realizados', 'caminho'));
+        // Listas do modal "Editar jogo" das ações de cada jogo
+        $formularioJogo = JogosController::dadosDoFormulario();
+
+        return view('admin.jogos.amistosos-times', compact('proximos', 'realizados', 'caminho', 'formularioJogo'));
     }
 }

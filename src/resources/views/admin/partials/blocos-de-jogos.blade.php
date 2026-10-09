@@ -1,12 +1,17 @@
 {{--
     Jogos dos amistosos e Jogos do campeonato: um bloco por jogo, com data, horário, local, "Cancelado" ou
-    placar e o link para o jogo, e os cartões do mandante e do visitante. Jogo em rascunho: selo e "Revisar e
+    placar, o nome do campeonato no centro (identifica o jogo na opção "Todos"), e os cartões do mandante e
+    do visitante. Jogo em rascunho: selo e "Revisar e
     publicar" (tela do jogo), com um aviso no topo contando quantos faltam.
-    $proximos, $realizados (Jogo::separadosParaTelaDeTimes); $rotulo = "amistoso" ou "jogo" (textos);
-    $linkDoJogo(Jogo) = a lista de Jogos só com ele. O cartão do time abre os jogadores escalados por ele
+    $proximos, $realizados (Jogo::separadosParaTelaDeTimes); $rotulo = "amistoso" ou "jogo" (textos).
+    Sem o antigo "Ver o jogo" (a lista de Jogos só com ele): a tela do jogo abre pelo botão de inscritos.
+    O cartão do time abre os jogadores escalados por ele
     naquele jogo (admin.jogos.times.show); $jogo->escalados = quantos por time (Jogo::separadosParaTelaDeTimes).
     Próximos e realizados em abas (visual das abas do Calendário, sem recarregar a página): abre em "Próximos";
     sem nenhum próximo, em "Já realizados".
+    À direita do cabeçalho, as ações do jogo (admin.jogos._acoes): a página precisa incluir o modal de edição
+    (admin.jogos.modals.edit, com voltarParaPagina) e o admin.jogos._script_form. Jogo ocultado sai da tela
+    (mostrar de novo: lista de Jogos, situação Oculto).
 --}}
 @php
   $plural = $rotulo === 'amistoso' ? 'amistosos' : 'jogos';
@@ -47,26 +52,49 @@
 @forelse ($dados['jogos'] as $jogo)
 @php $ev = $jogo->evento; @endphp
 <div class="card shadow-sm mb-3 js-bloco-jogo" data-id-jogo="{{ $jogo->id_jogo }}">
+  {{-- Três partes: data e selos | nome do campeonato (centralizado; o amistoso não tem) | ações.
+       As laterais dividem o espaço por igual (flex 1 1 0), para o nome ficar no meio do cabeçalho --}}
   <div class="card-header bg-white d-flex flex-wrap align-items-center gap-2">
-    <i class="bi bi-calendar2-event text-muted"></i>
-    <strong>{{ $ev->data_evento_calendario->locale('pt_BR')->isoFormat('ddd, DD/MM/YYYY') }}</strong>
-    <span class="text-muted">· {{ $ev->horario_texto }}</span>
-    @if ($ev->local_evento_calendario)
-      <span class="text-muted">· {{ $ev->local_evento_calendario }}</span>
+    <div class="d-flex flex-wrap align-items-center gap-2" style="flex: 1 1 0;">
+      <i class="bi bi-calendar2-event text-muted"></i>
+      <strong>{{ $ev->data_evento_calendario->locale('pt_BR')->isoFormat('ddd, DD/MM/YYYY') }}</strong>
+      <span class="text-muted">· {{ $ev->horario_texto }}</span>
+      @if ($ev->local_evento_calendario)
+        <span class="text-muted">· {{ $ev->local_evento_calendario }}</span>
+      @endif
+      @if ($ev->estaCancelado())
+        <span class="badge-status inativo">Cancelado</span>
+      @elseif ($jogo->temPlacar())
+        <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
+      @endif
+      @unless ($ev->estaPublicado())
+        <span class="badge bg-warning text-dark" title="Os atletas ainda não foram avisados">Rascunho</span>
+      @endunless
+    </div>
+    @if ($jogo->campeonato)
+      {{-- Logo do campeonato (a mesma da tela de Campeonatos); sem logo, o troféu --}}
+      <div class="d-flex align-items-center gap-2 fw-semibold text-center px-2 js-campeonato-do-jogo">
+        @if ($jogo->campeonato->logo_evento)
+          <img src="{{ asset('futebol/images/campeonatos/' . $jogo->campeonato->logo_evento) }}" alt=""
+               style="width:32px;height:32px;object-fit:contain;">
+        @else
+          <i class="bi bi-trophy text-muted"></i>
+        @endif
+        {{ $jogo->campeonato->nome_campeonato }}
+      </div>
     @endif
-    @if ($ev->estaCancelado())
-      <span class="badge-status inativo">Cancelado</span>
-    @elseif ($jogo->temPlacar())
-      <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
-    @endif
-    @unless ($ev->estaPublicado())
-      {{-- Rascunho: revisar os inscritos e a escalação na tela do jogo, onde fica o "Publicar e avisar os atletas" --}}
-      <span class="badge bg-warning text-dark" title="Os atletas ainda não foram avisados">Rascunho</span>
-      <a href="{{ route('admin.calendario.eventos.show', $jogo->id_evento) }}" class="btn btn-warning btn-sm ms-auto js-publicar-jogo">
-        <i class="bi bi-send"></i> Revisar e publicar
-      </a>
-    @endunless
-    <a href="{{ $linkDoJogo($jogo) }}" class="{{ $ev->estaPublicado() ? 'ms-auto ' : '' }}small">Ver o jogo <i class="bi bi-arrow-right"></i></a>
+    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2" style="flex: 1 1 0;">
+      @unless ($ev->estaPublicado())
+        {{-- Rascunho: revisar os inscritos e a escalação na tela do jogo, onde fica o "Publicar e avisar os atletas" --}}
+        <a href="{{ route('admin.calendario.eventos.show', $jogo->id_evento) }}" class="btn btn-warning btn-sm js-publicar-jogo">
+          <i class="bi bi-send"></i> Revisar e publicar
+        </a>
+      @endunless
+      {{-- Inscritos, editar, cancelar/reativar e ocultar, como na lista de Jogos --}}
+      <div class="d-flex gap-1 js-acoes-jogo">
+        @include('admin.jogos._acoes')
+      </div>
+    </div>
   </div>
   <div class="card-body">
     <div class="row g-3 align-items-center">

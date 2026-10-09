@@ -221,6 +221,31 @@ class JogoEventoTest extends TestCase
             ->assertSessionHas('erro', 'No jogo, os inscritos vêm do elenco dos times: use "Preencher pelo elenco".');
     }
 
+    public function test_acoes_do_jogo_nos_jogos_do_campeonato_voltam_para_a_mesma_tela(): void
+    {
+        $jogo = $this->criarJogo();
+        $pagina = route('admin.campeonatos.times', $this->idCampeonato);
+
+        // No bloco do jogo: inscritos, editar (modal que volta para a página), cancelar e ocultar
+        $this->comoAdmin()->get($pagina)->assertOk()
+            ->assertSee('title="Inscritos (0)"', false)
+            ->assertSee('data-id="' . $jogo->id_jogo . '"', false)
+            ->assertSee(route('admin.calendario.eventos.cancelar', $jogo->id_evento), false)
+            ->assertSee(route('admin.calendario.eventos.ocultar', $jogo->id_evento), false)
+            ->assertSee('<input type="hidden" name="voltar" value="pagina">', false);
+
+        // Editar com voltar=pagina volta para a tela de origem; sem ele, continua indo para a lista de Jogos
+        $this->comoAdmin()->from($pagina)->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo(['voltar' => 'pagina']))
+            ->assertRedirect($pagina)->assertSessionHas('sucesso');
+        $this->comoAdmin()->from($pagina)->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo())
+            ->assertRedirect(route('admin.jogos.index'));
+
+        // Cancelar pela tela também volta para ela (a mensagem aparece lá)
+        $this->comoAdmin()->from($pagina)->patch(route('admin.calendario.eventos.cancelar', $jogo->id_evento))
+            ->assertRedirect($pagina);
+        $this->comoAdmin()->get($pagina)->assertOk()->assertSee('Evento cancelado.')->assertSee('title="Reativar jogo"', false);
+    }
+
     public function test_editar_a_data_pelo_calendario_muda_a_data_do_jogo(): void
     {
         $jogo = $this->criarJogo();

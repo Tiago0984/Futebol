@@ -101,9 +101,7 @@
              vêm do App\View\Composers\MenuAdminComposer --}}
         @php
           $ativo = fn (string $chave) => $menuAtivo === $chave;
-          $emCampeonatos = $ativo('ramo:campeonatos') || $ativo('campeonatos')
-            || str_starts_with((string) $menuAtivo, 'jogos-do-campeonato:')
-            || str_starts_with((string) $menuAtivo, 'times-do-campeonato:');
+          $emCampeonatos = $ativo('ramo:campeonatos') || $ativo('campeonatos') || $ativo('jogos-dos-campeonatos');
           $emAmistosos = $ativo('ramo:amistosos') || $ativo('times-dos-amistosos');
           $emEventos = $emCampeonatos || $emAmistosos || $ativo('calendario') || str_starts_with((string) $menuAtivo, 'ramo:');
           $ramosSimples = [
@@ -123,32 +121,27 @@
               </a>
             </li>
 
-            {{-- Campeonatos: o texto abre a tela de Campeonatos com todos (sem filtro); a seta só abre e fecha os
-                 "Jogos" dos campeonatos em andamento. Ativo e aberto em qualquer página do ramo Campeonatos --}}
-            @php $variosCampeonatos = $campeonatosEmAndamento->count() > 1; @endphp
+            {{-- Campeonatos: o texto abre a tela de Campeonatos com todos (sem filtro); a seta só abre e fecha o
+                 "Jogos". Ativo e aberto em qualquer página do ramo Campeonatos --}}
             <li class="nav-item {{ $emCampeonatos ? 'menu-open' : '' }}">
               <a href="{{ route('admin.campeonatos.index') }}" aria-expanded="{{ $emCampeonatos ? 'true' : 'false' }}"
                 class="nav-link {{ $emCampeonatos ? 'active' : '' }}" id="gavetaCampeonatos">
                 <i class="nav-icon bi bi-trophy"></i>
-                <p>Campeonatos @if ($campeonatosEmAndamento->isNotEmpty())<i class="nav-arrow bi bi-chevron-right"></i>@endif</p>
+                <p>Campeonatos <i class="nav-arrow bi bi-chevron-right"></i></p>
               </a>
-              @if ($campeonatosEmAndamento->isNotEmpty())
               <ul class="nav nav-treeview">
-                {{-- Um "Jogos" por campeonato em andamento (com mais de um, leva o nome), sem subitens: abre a tela
-                     de jogos do campeonato (um bloco por jogo com os dois times; o time interno abre os jogadores
-                     escalados, só leitura). Ativo também na lista de Jogos filtrada só por ele. Sem atletas aqui --}}
-                @foreach ($campeonatosEmAndamento as $camp)
+                {{-- "Jogos", sem subitens: os jogos de todos os campeonatos (filtro "Todos"; o filtro da tela troca
+                     para um campeonato). Ativo também na tela de um campeonato, nos jogadores de um time e na lista
+                     de Jogos filtrada só por um campeonato. Sem atletas aqui --}}
                 <li class="nav-item">
-                  <a href="{{ route('admin.campeonatos.times', $camp->id_campeonato) }}"
-                    class="nav-link {{ $ativo('times-do-campeonato:' . $camp->id_campeonato) || $ativo('jogos-do-campeonato:' . $camp->id_campeonato) ? 'active' : '' }}"
-                    id="itemJogosCampeonato{{ $camp->id_campeonato }}" title="Jogos de {{ $camp->nome_campeonato }}">
+                  <a href="{{ route('admin.campeonatos.jogos') }}"
+                    class="nav-link {{ $ativo('jogos-dos-campeonatos') ? 'active' : '' }}"
+                    id="itemJogosCampeonatos" title="Jogos dos campeonatos">
                     <i class="nav-icon bi bi-flag"></i>
-                    <p>{{ $variosCampeonatos ? 'Jogos · ' . $camp->nome_campeonato : 'Jogos' }}</p>
+                    <p>Jogos</p>
                   </a>
                 </li>
-                @endforeach
               </ul>
-              @endif
             </li>
 
             {{-- Amistosos, sem subitens: abre a tela "Jogos dos amistosos" (um bloco por jogo com os dois times, em

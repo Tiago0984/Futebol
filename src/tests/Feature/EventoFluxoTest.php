@@ -269,8 +269,9 @@ class EventoFluxoTest extends TestCase
 
     public function test_campeonatos_linkam_os_jogos_e_a_lista_dos_amistosos_marca_amistosos(): void
     {
+        // O botão "Jogos" da linha abre a tela de jogos já filtrada pelo campeonato
         $this->comoAdmin()->get(route('admin.campeonatos.index'))
-            ->assertSee('href="' . route('admin.jogos.index', ['campeonato' => $this->copa]) . '"', false);
+            ->assertSee('href="' . route('admin.campeonatos.times', $this->copa) . '"', false);
 
         // A lista de Jogos dos amistosos marca o item Amistosos (que abre a tela de jogos dos amistosos)
         $barra = $this->comoAdmin()->get(route('admin.jogos.index', ['campeonato' => 'amistoso']))->getContent();
