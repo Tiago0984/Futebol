@@ -143,11 +143,20 @@ class Notificacao extends Model
             fn (int $idAtleta) => self::linhaDeInscricao($evento, $timeDe[$idAtleta] ?? null));
     }
 
-    // "Nova atividade na sua agenda" / "Time Azul x Visitante · sáb, 18/10 · 19:00 · Quadra A. Você joga pelo Time Azul."
+    // "Nova atividade na sua agenda" / "Time Azul x Visitante · sáb, 18/10 · 19:00 · Quadra A. Chegue às 18:00
+    // (1 hora antes). Você joga pelo Time Azul." (a chegada só no jogo com horário; o time só se escalado)
     private static function linhaDeInscricao(EventoCalendario $evento, ?string $nomeTime): array
     {
+        $frases = array_filter([self::fraseDaChegada($evento), $nomeTime ? "Você joga pelo {$nomeTime}." : '']);
+
         return self::linha('INSCRICAO', $evento, 'Nova atividade na sua agenda', self::descreverEvento($evento)
-            . self::recado($evento) . ($nomeTime ? ". Você joga pelo {$nomeTime}." : ''));
+            . self::recado($evento) . ($frases ? '. ' . implode(' ', $frases) : ''));
+    }
+
+    // Chegada antes do jogo (Jogo::ANTECEDENCIA_MINUTOS); '' em evento que não é jogo ou sem horário
+    private static function fraseDaChegada(EventoCalendario $evento): string
+    {
+        return $evento->jogo ? Jogo::fraseDaChegada($evento->horario_inicio_evento_calendario) : '';
     }
 
     // Descrição do evento ("o que o atleta vai fazer") resumida no fim da inscrição: " — Venha em jejum".
@@ -192,9 +201,12 @@ class Notificacao extends Model
                 . self::valorAlterado($campo, $valores[0]) . ' → ' . self::valorAlterado($campo, $valores[1]))
             ->implode('; ');
 
+        // Jogo com o horário de início mudado: a chegada muda junto
+        $chegada = isset($mudancas['horario_inicio_evento_calendario']) ? self::fraseDaChegada($evento) : '';
+
         return self::gravarParaAtivos(array_diff(self::idsInscritos($evento), $exceto), $idUsuario, fn () => self::linha(
             'ALTERACAO', $evento, 'Atividade alterada',
-            self::descreverEvento($evento) . ". Mudanças: {$oQueMudou}.",
+            self::descreverEvento($evento) . ". Mudanças: {$oQueMudou}." . ($chegada ? " {$chegada}" : ''),
             ['campos' => $mudancas],
         ));
     }

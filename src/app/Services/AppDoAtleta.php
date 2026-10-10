@@ -118,14 +118,17 @@ class AppDoAtleta
             'fim'            => $momento($evento->horario_fim_evento_calendario),
             'local'          => $evento->local_evento_calendario,
             'situacao'       => $evento->estaCancelado() ? 'CANCELADO' : 'CONFIRMADO',
-            'jogo'           => $evento->jogo ? $this->jogo($evento->jogo, $idTimeDoAtleta) : null,
+            'jogo'           => $evento->jogo ? $this->jogo($evento->jogo, $idTimeDoAtleta, $evento, $momento) : null,
         ];
     }
 
-    // Bloco do jogo: campeonato (null no amistoso), times, placar (null = ainda não jogado) e o time em
-    // que o atleta está escalado (null = inscrito sem time)
-    private function jogo(Jogo $jogo, ?int $idTimeDoAtleta): array
+    // Bloco do jogo: campeonato (null no amistoso), times, placar (null = ainda não jogado), o time em
+    // que o atleta está escalado (null = inscrito sem time) e a chegada (Jogo::ANTECEDENCIA_MINUTOS antes
+    // do início; null sem horário de início)
+    private function jogo(Jogo $jogo, ?int $idTimeDoAtleta, EventoCalendario $evento, callable $momento): array
     {
+        $chegada = Jogo::chegadaPara($evento->horario_inicio_evento_calendario);
+
         $time = fn ($t) => $t ? ['id_time' => $t->id_time, 'nome_time' => $t->nome_time, 'logo_time' => $t->logo_time] : null;
         $doAtleta = match ($idTimeDoAtleta) {
             null                     => null,
@@ -135,17 +138,19 @@ class AppDoAtleta
         };
 
         return [
-            'id_jogo'        => $jogo->id_jogo,
-            'amistoso'       => $jogo->ehAmistoso(),
-            'campeonato'     => $jogo->campeonato
+            'id_jogo'         => $jogo->id_jogo,
+            'amistoso'        => $jogo->ehAmistoso(),
+            'campeonato'      => $jogo->campeonato
                 ? ['id_campeonato' => $jogo->campeonato->id_campeonato, 'nome_campeonato' => $jogo->campeonato->nome_campeonato]
                 : null,
-            'time_casa'      => $time($jogo->timeCasa),
-            'time_visitante' => $time($jogo->timeVisitante),
-            'placar'         => $jogo->temPlacar()
+            'time_casa'       => $time($jogo->timeCasa),
+            'time_visitante'  => $time($jogo->timeVisitante),
+            'placar'          => $jogo->temPlacar()
                 ? ['casa' => (int) $jogo->placar_time_casa_jogos, 'visitante' => (int) $jogo->placar_time_visitante_jogos]
                 : null,
-            'time_do_atleta' => $time($doAtleta),
+            'time_do_atleta'  => $time($doAtleta),
+            'horario_chegada' => $chegada,
+            'chegada'         => $momento($chegada),
         ];
     }
 

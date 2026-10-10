@@ -79,6 +79,24 @@ class Jogo extends Model
     // Quantos jogos já realizados aparecem abaixo dos próximos nas telas de times por jogo
     public const REALIZADOS_NA_TELA = 10;
 
+    // O atleta chega antes do jogo (professor, 09/10/2026: "sempre com uma hora de antecedência")
+    public const ANTECEDENCIA_MINUTOS = 60;
+    public const ANTECEDENCIA_TEXTO   = '1 hora';
+
+    // Horário de chegada ("12:00") para o jogo que começa em $inicio ("13:00:00"); null sem horário de início
+    public static function chegadaPara(?string $inicio): ?string
+    {
+        return $inicio ? Carbon::parse($inicio)->subMinutes(self::ANTECEDENCIA_MINUTOS)->format('H:i') : null;
+    }
+
+    // Frase dos avisos do jogo: "Chegue às 12:00 (1 hora antes)." ('' sem horário de início)
+    public static function fraseDaChegada(?string $inicio): string
+    {
+        $chegada = self::chegadaPara($inicio);
+
+        return $chegada ? "Chegue às {$chegada} (" . self::ANTECEDENCIA_TEXTO . ' antes).' : '';
+    }
+
     /**
      * Jogos para as telas de times por jogo (Times dos amistosos e Times do campeonato): só os não ocultos,
      * com o evento (e os inscritos ativos, para as ações do jogo), o campeonato e os dois times (com a categoria) de uma vez, e, em $jogo->escalados, quantos atletas

@@ -155,6 +155,9 @@
                 <div class="card-body d-flex flex-wrap gap-4 align-items-center">
                     <div><span class="text-muted small d-block">Data</span>{{ $evento->data_evento_calendario->format('d/m/Y') }}</div>
                     <div><span class="text-muted small d-block">Horário</span>{{ $evento->horario_texto }}</div>
+                    @if ($jogo && ($chegada = \App\Models\Jogo::chegadaPara($evento->horario_inicio_evento_calendario)))
+                    <div title="Os atletas chegam {{ \App\Models\Jogo::ANTECEDENCIA_TEXTO }} antes"><span class="text-muted small d-block">Chegada</span>{{ $chegada }}</div>
+                    @endif
                     <div><span class="text-muted small d-block">Local</span>{{ $evento->local_evento_calendario ?? '—' }}</div>
                     <div><span class="text-muted small d-block">Tipo</span><span class="badge-cat">{{ $evento->tipo_label }}</span></div>
                     <div><span class="text-muted small d-block">Categoria</span>{{ $evento->categoria?->rotulo ?? 'Sem categoria (individual)' }}</div>

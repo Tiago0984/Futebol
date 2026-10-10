@@ -68,7 +68,7 @@ class JogoEventoTest extends TestCase
         $this->assertSame('INSCRICAO', $notificacao->tipo_notificacao);
         $this->assertSame($evento->id_evento_calendario, $notificacao->id_evento_calendario);
         $this->assertStringStartsWith('Time Azul x Time Visitante · ', $notificacao->mensagem_notificacao);
-        $this->assertStringEndsWith(' · 19:00 · Quadra A. Você joga pelo Time Azul.', $notificacao->mensagem_notificacao);
+        $this->assertStringEndsWith(' · 19:00 · Quadra A. Chegue às 18:00 (1 hora antes). Você joga pelo Time Azul.', $notificacao->mensagem_notificacao);
 
         $this->assertNull($jogo->placar_time_casa_jogos);                // vazio = não jogado
         $this->assertSame("{$this->dia} 19:00:00", $jogo->data_jogo->format('Y-m-d H:i:s')); // vem do evento
@@ -184,7 +184,8 @@ class JogoEventoTest extends TestCase
         $alteracao = \App\Models\Notificacao::sole();
         $this->assertSame($idAtleta, $alteracao->id_atleta);
         $this->assertSame('ALTERACAO', $alteracao->tipo_notificacao);
-        $this->assertStringEndsWith('· 20:00 · Campo C. Mudanças: horário de início 19:00 → 20:00; local Quadra A → Campo C.', $alteracao->mensagem_notificacao);
+        $this->assertStringEndsWith('· 20:00 · Campo C. Mudanças: horário de início 19:00 → 20:00; local Quadra A → Campo C.'
+            . ' Chegue às 19:00 (1 hora antes).', $alteracao->mensagem_notificacao);
 
         // Só o placar: não avisa
         $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([

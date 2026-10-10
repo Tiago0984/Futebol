@@ -108,6 +108,7 @@ class AppAgendaEAvisosTest extends TestCase
             'time_visitante' => ['id_time' => $visitante, 'nome_time' => 'Rival FC', 'logo_time' => 'time.png'],
             'placar' => null,
             'time_do_atleta' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png'],
+            'horario_chegada' => '09:00', 'chegada' => '2026-10-15T09:00:00-03:00', // 1 hora antes das 10:00
         ], $agenda['proximos'][0]['jogo']);
 
         $passado = $agenda['passados'][0]['jogo'];
