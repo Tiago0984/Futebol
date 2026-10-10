@@ -131,7 +131,13 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - **Rascunho não avisa nada** (inscrição, remoção, troca de time, alteração, cancelar/reativar, ocultar/mostrar) e **fica fora do app** (atleta e responsável), **do site** (agenda, home, página do campeonato), **da API de campeonatos** e **da classificação**. **Continua contando no conflito de horário** (os atletas estão reservados).
   - **"Publicar e avisar os atletas"** (com confirmação), na faixa amarela da tela do jogo: uma INSCRICAO por inscrito ativo, com o time ("… Você joga pelo Time Azul."; sem time, sem a frase). Rascunho que já aconteceu, cancelado ou oculto é publicado **sem avisar** (a mensagem explica). Publicar de novo não avisa; a publicação entra no histórico. **Sem "despublicar"** (usar cancelar/ocultar). Selo "Rascunho" na lista de Jogos.
   - **Toda inscrição já escalada num jogo publicado cita o time** (ex.: "Preencher pelo elenco"); trocar o time depois continua sem aviso.
-- **Escalação** (Fase 6, Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Inscrever pela tela do evento já escalando inscreve como **INDIVIDUAL** (com alerta de conflito). Atleta de outra categoria/sexo: **aviso**, sem bloquear (seção 8, pergunta 14).
+- **Escalação** (Fase 6, Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Inscrever pela tela do evento já escalando inscreve como **INDIVIDUAL** (com alerta de conflito). Atleta de outra categoria/sexo: **aviso**, sem bloquear (seção 8, pergunta 14), menos a idade no campeonato (abaixo).
+- **Idade no campeonato** (professor, 09/10/2026): campeonato é por faixa de idade; o **mais novo pode jogar acima** (Sub-13 no Sub-15, normalmente como reserva) e o **mais velho nunca joga abaixo**. Limite = `idade_max_categoria` da categoria do **campeonato**, com a idade pelo **ano do jogo** (`Categoria::idadeNoAno`). Regra em `Jogo::acimaDaIdade()` (com `limiteDeIdade()`, `erroDeIdade()`, `textoAcimaDaIdade()`).
+  - **Bloqueia:** inscrição individual e escalação de quem passa da idade (tirar do time pode); o select da tela do jogo mostra o atleta desabilitado ("· acima da idade").
+  - **Fica de fora, com os nomes na mensagem:** criar o jogo, "Preencher pelo elenco", troca de time e "Adicionar todos de uma categoria" (o contador de faltantes do elenco não conta quem não pode entrar).
+  - **Inscrito que já passa da idade** (de antes da regra, ou o campeonato do jogo mudou): aviso vermelho e selo na tela do jogo; o rascunho **não é publicado** até remover.
+  - **Mais novo do mesmo sexo** no jogo de campeonato **não gera** o aviso de fora da categoria. Sexo diferente continua só avisando.
+  - **Amistoso e campeonato sem categoria:** sem limite de idade (aviso de fora da categoria como antes; seção 8, pergunta 20). O elenco do time não é conferido (o time pode jogar campeonatos de faixas diferentes).
 - **API:** continua devolvendo `data_jogo` no JSON (calculado do evento), para não quebrar o app.
 
 ### Status
@@ -513,10 +519,10 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 8. Assinaturas antigas com valor `assinatura.png` (responsáveis 1, 2 e 3): considerar inválidas?
 9. ~~O feminino treina junto com o masculino da mesma faixa?~~ ✅ **RESOLVIDA** (professor): feminino treina **só com feminino**. A grade usa **uma coluna** `id_categoria` (sem tabela de ligação); horários femininos entram como **linhas novas** da grade.
 10. ~~Atleta pode jogar numa categoria acima da idade?~~ ✅ **RESOLVIDA** (professor): **pode, a critério do técnico** (atleta mais robusto). Escolher categoria **acima** da sugerida gera **aviso** (não bloqueia) e exige um **motivo**, gravado em `observacao_categoria_atleta`.
-11. Atleta numa categoria **abaixo** da idade: hoje **bloqueado** (provisório). Confirmar com o professor se há exceção.
+11. ~~Atleta numa categoria **abaixo** da idade: há exceção?~~ ✅ **RESOLVIDA** (professor, 09/10/2026): **nunca**, "sempre de baixo para cima". Bloqueado no cadastro e no jogo de campeonato (seção 4, "Idade no campeonato").
 12. **Duração padrão dos eventos sem horário de fim** (usada no alerta de conflito), hoje provisória: JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h. Confirmar os valores com o professor.
 13. **Critério de desempate da classificação** (site: home e página do campeonato), hoje provisório em `Jogo::classificacao()`: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, por fim, nome do time (sem acentos e sem maiúsculas). Confirmar com o professor (confronto direto? cartões?).
-14. **Escalar ou inscrever num jogo atleta de outra categoria ou sexo** (ex.: Sub-15 Feminino num jogo Sub-11 Masculino): hoje só **avisa** (`EventoCalendario::avisosForaDaCategoria`), não bloqueia. Deve ser bloqueado? Há exceção (atleta acima da idade, como na pergunta 10)?
+14. **Escalar ou inscrever num jogo atleta de outra categoria ou sexo**: ✅ **idade RESOLVIDA** (professor, 09/10/2026): no jogo de campeonato, o mais novo joga acima e o mais velho é bloqueado (seção 4, "Idade no campeonato"). **Em aberto:** o **sexo** (menina num jogo masculino; hoje só avisa).
 15. **Quem participa das linhas da grade sem categoria:** o **Integrado** inclui o feminino? O **Treino Livre** vale para todos mesmo em dia de jogo? **Provisório:** todos os atletas ATIVO são inscritos (seção 4, "Grade de treino").
 16. **Notificações** (seção 4, "Notificações"). Hoje, provisório:
     - **remoção** da inscrição avisa o atleta;
@@ -531,6 +537,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
     - ~~a notificação do jogo não cita o time~~ ✅ resolvido na Fase 10, Etapa 4: a inscrição escalada e a publicação do jogo citam o time.
 18. **Consentimento (LGPD) para mostrar ao responsável os dados do menor no app** (dados, agenda, avisos, inclusive exames e avaliações): a autorização assinada na matrícula cobre isso, ou é preciso um termo próprio? E quando o atleta faz 18 anos (ou um responsável deixa de ser responsável), o acesso dele termina? **Hoje:** todo responsável vinculado a um filho ATIVO vê tudo do filho.
 19. **Família sem e-mail** (nem o atleta nem o responsável têm e-mail; selo "Sem acesso ao app"): a secretaria cadastra um e-mail depois, o app fica sem uso para essa família, ou há outro meio (WhatsApp, código impresso)? **Hoje:** fica sem acesso até alguém informar um e-mail no cadastro.
+20. **Idade no amistoso:** vale a mesma regra do campeonato (o mais velho não joga abaixo)? **Hoje:** amistoso sem limite, só o aviso de fora da categoria. E os **dois times de um mesmo campeonato** são sempre da mesma faixa?
 
 ---
 
