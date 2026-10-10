@@ -132,6 +132,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - **"Publicar e avisar os atletas"** (com confirmação), na faixa amarela da tela do jogo: uma INSCRICAO por inscrito ativo, com o time ("… Você joga pelo Time Azul."; sem time, sem a frase). Rascunho que já aconteceu, cancelado ou oculto é publicado **sem avisar** (a mensagem explica). Publicar de novo não avisa; a publicação entra no histórico. **Sem "despublicar"** (usar cancelar/ocultar). Selo "Rascunho" na lista de Jogos.
   - **Toda inscrição já escalada num jogo publicado cita o time** (ex.: "Preencher pelo elenco"); trocar o time depois continua sem aviso.
 - **Escalação** (Fase 6, Etapa 3): `tbl_evento_atleta.id_time`, só o mandante ou o visitante do jogo, só time INTERNO. O único (evento, atleta) já impede o atleta nos dois times. Inscrever pela tela do evento já escalando inscreve como **INDIVIDUAL** (com alerta de conflito). Atleta de outra categoria/sexo: **aviso**, sem bloquear (seção 8, pergunta 14), menos a idade no campeonato (abaixo).
+- **Chegada 1 hora antes** (professor, 09/10/2026: "sempre com uma hora de antecedência"): `Jogo::ANTECEDENCIA_MINUTOS` (60) e `ANTECEDENCIA_TEXTO`, sem coluna (vale para todo jogo); `Jogo::chegadaPara()`/`fraseDaChegada()`. Aparece no aviso de inscrição e de publicação ("… · Quadra A. Chegue às 12:00 (1 hora antes). Você joga pelo Time Azul."), no de alteração quando muda o **horário de início**, no bloco `jogo` da agenda da API (`horario_chegada`, `chegada`) e na tela do jogo no admin. Jogo sem horário de início e evento que não é jogo: sem chegada.
 - **Idade no campeonato** (professor, 09/10/2026): campeonato é por faixa de idade; o **mais novo pode jogar acima** (Sub-13 no Sub-15, normalmente como reserva) e o **mais velho nunca joga abaixo**. Limite = `idade_max_categoria` da categoria do **campeonato**, com a idade pelo **ano do jogo** (`Categoria::idadeNoAno`). Regra em `Jogo::acimaDaIdade()` (com `limiteDeIdade()`, `erroDeIdade()`, `textoAcimaDaIdade()`).
   - **Bloqueia:** inscrição individual e escalação de quem passa da idade (tirar do time pode); o select da tela do jogo mostra o atleta desabilitado ("· acima da idade").
   - **Fica de fora, com os nomes na mensagem:** criar o jogo, "Preencher pelo elenco", troca de time e "Adicionar todos de uma categoria" (o contador de faltantes do elenco não conta quem não pode entrar).
@@ -340,6 +341,17 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `e49b8ce` docs: ajustes de 08/10 e plano do jogo em rascunho (Fase 10, Etapa 4)
 - `53b2c4a` feat: data de publicação do evento e rascunho sem avisos (Fase 10, Etapa 4A)
 - `3585064` feat: jogo nasce em rascunho e publicar avisa os atletas com o time (Fase 10, Etapa 4B)
+- `5472267` feat: jogo em rascunho fora do app, do site e da classificação (Fase 10, Etapa 4C)
+- `fa7512b` feat: Jogos do campeonato e dos amistosos abrem a tela por jogo, com filtro e rascunhos a publicar
+- `79cb6ab` fix: iniciais no lugar da foto quebrada nas telas de Matrículas
+- `05ef9b4` docs: Etapa 4 concluída e menu de jogos
+- `86e5562` chore: logo e banner da Liga das comunidades
+- `5582405` feat: grade sem o campo Ordem no Novo Horário e Gerar agenda no canto
+- `01aa1e8` feat: telas de jogos dos campeonatos e amistosos com ações, opção Todos e logo
+- `c8e3f71` feat: tela do evento com inscrição acima dos inscritos e time externo travado
+- `6872693` feat: idade no campeonato, mais novo joga acima e mais velho nunca abaixo
+- `0d0929b` docs: regra de idade no campeonato e perguntas 11, 14 e 20
+- `3bf4eb2` feat: chegada 1 hora antes do jogo no aviso, no app e no admin
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -470,7 +482,24 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
   - **O banco do Senac é atualizado restaurando um dump de casa** (ou rodando só esta migration lá, que não depende de ids).
 - **Etapa B** (`3585064`): `criarPor(..., rascunho: true)` na tela de Jogos; `PATCH /admin/jogos/{id}/publicar` (`JogosController::publicar`); `Notificacao::publicacao()` e a frase do time em `Notificacao::inscricao()` (`linhaDeInscricao`); faixa `#faixaRascunho` na tela do jogo e selo na lista. Testes em `JogoElencoTest` (seção rascunho e publicação); os testes antigos de criação de jogo agora publicam antes de conferir os avisos.
 - **Etapa C:** `AppDoAtleta::eventosInscritos()`, `Jogo::visiveis()`, `EventoCalendario::daAgendaPublica()` e `Jogo::classificacao()` sem rascunho; o conflito continua contando. Testes em `AppAgendaEAvisosTest`, `JogoSiteTest` e `JogoElencoTest`. **520 testes passando.**
-- **Falta depois (próximas etapas):** dashboard com dados reais (com contador de jogos em rascunho); app no outro repositório mostrar a `descricao` da agenda.
+- **Falta depois (próximas etapas):** dashboard com dados reais (com contador de jogos em rascunho); app no outro repositório mostrar a `descricao` da agenda e a `chegada` do jogo.
+
+#### Respostas do professor (áudios de WhatsApp, 09/10/2026) e fases combinadas
+Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 09/10; o banco anterior de casa ficou em `backup/db_futebol_casa_antes_restaurar_20261009.sql`). Nenhuma migration nova nem dado alterado no `db_futebol` depois disso: **o banco do Senac já está igual, não precisa de dump**.
+- **O que ele disse:**
+  - **Treino não é por categoria (por enquanto):** vai quem pode, todos juntos, divididos por coletes na hora; a ideia é separar por categoria no futuro (a grade já aceita).
+  - **Horários reais:** treino **terça e quinta, 9h–11h e 14h–17h**; **sábado 13h–17h** jogos (amistoso ou campeonato); **chegar 1 hora antes**. Não existe a rotina de segunda, quarta e sexta da grade de teste.
+  - **Campeonato por faixa de idade**, mais novo pode subir, mais velho nunca desce; ele monta tudo **antes** (a "prescrição": convocação e escalação) e trabalha **por posição** (titular e reserva; atleta pode jogar 2 ou 3 posições).
+  - **Avaliação técnica (peneira):** de vez em quando um clube (ex.: São Caetano) pede atletas de certas idades; a escolinha divulga para outros times também (fora do sistema).
+  - **Link público:** meninos e pessoas de fora acompanham pelo site o campeonato e os eventos, como observadores.
+- **Fases (letras desta conversa):**
+  - **B — idade no campeonato:** ✅ feita (`6872693`; seção 4, "Idade no campeonato").
+  - **C — chegada 1 hora antes:** ✅ feita (`3bf4eb2`; seção 4, "Chegada 1 hora antes"). **535 testes passando.**
+  - **A — grade real** (pelas telas do admin, sem código): 4 treinos sem categoria (ter/qui 09:00–11:00 e 14:00–17:00) e a linha de jogos de sábado 13:00–17:00 (só informação, resolve a pergunta 4); inativar as 18 linhas de teste. **Esperando o professor:** o atleta vai **num turno só ou nos dois**? (num só: usar o `periodo_escolar_atleta`, que hoje está com "MANHÃ"/"Manhã" misturados e metade vazia, ou um campo de turno de treino; nos dois: todos nos 4 treinos) e as **meninas treinam junto**? (a pergunta 9 dizia que não).
+  - **D — posições e titular/reserva no jogo** (precisa de migration): lista fixa de posições, várias por atleta, titular/reserva na escalação; pode virar a **convocação** (pergunta 17; `convocacao_atleta_time` existe e não é usada). Falta a lista de posições que ele usa.
+  - **E — avaliação técnica** escolhendo atletas por faixa de idade; aparece no site? (a regra atual esconde avaliações, pensada para a física).
+  - **F — site público com mais eventos** (amistosos? treinos?), a confirmar.
+- **Perguntas ainda para o professor:** turno (acima); meninas no treino; idade no amistoso e dois times no mesmo campeonato (pergunta 20); sexo no jogo (pergunta 14); lista de posições; o que o observador vê no site; peneira no site.
 
 ---
 
