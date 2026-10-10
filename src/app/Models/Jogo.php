@@ -225,6 +225,57 @@ class Jogo extends Model
             : 'Time externo não tem atletas da escolinha: não dá para escalar nele.';
     }
 
+    // ── Idade no campeonato ─────────────────────────────────────────────────
+
+    /**
+     * Campeonato é por faixa de idade (professor, 09/10/2026): o mais novo pode jogar numa categoria acima
+     * (Sub-13 no Sub-15), o mais velho nunca joga abaixo. Devolve [id_atleta => "Nome (16 anos)"] dos atletas
+     * informados que passam da idade máxima da categoria do campeonato, com a idade pelo ano do jogo
+     * (Categoria::idadeNoAno). Amistoso e campeonato sem categoria não têm limite: [].
+     */
+    public function acimaDaIdade(array $idsAtletas): array
+    {
+        $categoria = $this->campeonato?->categoria;
+        if (! $categoria || ! $idsAtletas) {
+            return [];
+        }
+
+        $ano = (int) ($this->evento?->data_evento_calendario ?? now())->format('Y');
+
+        return Atleta::whereIn('id_atleta', $idsAtletas)
+            ->whereNotNull('data_nasc_atleta')
+            ->orderBy('nome_atleta')
+            ->get(['id_atleta', 'nome_atleta', 'data_nasc_atleta'])
+            ->map(fn ($atleta) => [$atleta, Categoria::idadeNoAno($atleta->data_nasc_atleta, $ano)])
+            ->filter(fn ($par) => $par[1] > $categoria->idade_max_categoria)
+            ->mapWithKeys(fn ($par) => [(int) $par[0]->id_atleta => "{$par[0]->nome_atleta} ({$par[1]} anos)"])
+            ->all();
+    }
+
+    // Faixa do campeonato para as mensagens: "Sub-15 Masculino, até 15 anos" (null sem limite de idade)
+    public function limiteDeIdade(): ?string
+    {
+        $categoria = $this->campeonato?->categoria;
+
+        return $categoria ? "{$categoria->rotulo}, até {$categoria->idade_max_categoria} anos" : null;
+    }
+
+    // Motivo para o atleta não jogar este jogo por passar da idade do campeonato, ou null se pode
+    public function erroDeIdade(int $idAtleta): ?string
+    {
+        $acima = $this->acimaDaIdade([$idAtleta]);
+
+        return $acima ? "{$acima[$idAtleta]} passa da idade do campeonato ({$this->limiteDeIdade()}): "
+            . 'atleta mais velho não joga em categoria abaixo da idade dele.' : null;
+    }
+
+    // Trecho da mensagem para quem ficou de fora de uma inscrição em massa ($quem: "do elenco", "da categoria")
+    public function textoAcimaDaIdade(array $acima, string $quem = 'do elenco'): string
+    {
+        return $acima ? ' ' . count($acima) . " atleta(s) {$quem} ficaram de fora por passar da idade do campeonato"
+            . " ({$this->limiteDeIdade()}): " . implode(', ', $acima) . '.' : '';
+    }
+
     /**
      * Atletas do elenco (tbl_atleta_time) dos times escaláveis deste jogo, só atletas ATIVO:
      * [id_atleta => [id_time, ...]]. Quem está nos dois elencos aparece com os dois times.
@@ -265,6 +316,8 @@ class Jogo extends Model
      * Inscreve o elenco ativo dos times internos do jogo (origem ELENCO, com INSCRICAO para cada um, pelo
      * inscrever()): quem é de um time só entra escalado nele; quem está nos dois elencos entra sem time, para
      * o admin escolher. Quem já está inscrito sem time e é de um time só é escalado. Ninguém sai.
+     * Quem passa da idade do campeonato fica de fora (nem inscrito nem escalado; 'acima_da_idade', com os
+     * nomes de quem não estava inscrito).
      * Usado ao criar o jogo, no "Preencher pelo elenco" e na troca de time. Devolve os números para a
      * mensagem e quem entrou (para não receber também a ALTERACAO da mesma edição).
      */
@@ -274,11 +327,17 @@ class Jogo extends Model
             $evento     = $this->evento;
             $elencos    = $this->elencosDoJogo();
             $inscricoes = $evento->inscricoes()->get(['id_atleta', 'id_time'])->keyBy('id_atleta');
+            $acima      = $this->acimaDaIdade(array_keys($elencos));
 
             $resultado = ['inscritos_com_time' => 0, 'inscritos_sem_time' => 0, 'escalados' => 0,
-                'nos_dois' => 0, 'ids_entraram' => [], 'ids_mexidos' => []];
+                'nos_dois' => 0, 'ids_entraram' => [], 'ids_mexidos' => [],
+                'acima_da_idade' => array_diff_key($acima, $inscricoes->all())];
 
             foreach ($elencos as $idAtleta => $times) {
+                if (isset($acima[$idAtleta])) {
+                    continue;
+                }
+
                 $idTime = count($times) === 1 ? $times[0] : null;
                 $resultado['nos_dois'] += $idTime === null ? 1 : 0;
                 $inscricao = $inscricoes->get($idAtleta);
@@ -299,12 +358,14 @@ class Jogo extends Model
         });
     }
 
-    // Atletas ativos do elenco dos times do jogo que ainda não estão inscritos (para a tela do jogo)
+    // Atletas ativos do elenco dos times do jogo que ainda não estão inscritos (para a tela do jogo), sem
+    // quem passa da idade do campeonato (não entra pelo elenco)
     public function idsFaltantesDoElenco(): array
     {
         $inscritos = $this->evento->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+        $faltantes = array_values(array_diff(array_keys($this->elencosDoJogo()), $inscritos));
 
-        return array_values(array_diff(array_keys($this->elencosDoJogo()), $inscritos));
+        return array_values(array_diff($faltantes, array_keys($this->acimaDaIdade($faltantes))));
     }
 
     // Times internos do jogo sem nenhum atleta ativo no elenco (o jogo fica sem inscritos daquele lado)

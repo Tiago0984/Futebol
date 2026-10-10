@@ -128,6 +128,7 @@ class JogosController extends Controller
 
             $jogo = Jogo::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
             $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
+            $evento->setRelation('jogo', $jogo);   // o aviso de categoria sabe que é jogo de campeonato
 
             return [$evento, $jogo, $jogo->inscreverElenco(auth('admin')->id())];
         });
@@ -136,6 +137,7 @@ class JogosController extends Controller
         $mensagem  = 'Jogo registrado como rascunho.'
             . ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) do elenco inscrito(s)." : '')
             . ($elenco['nos_dois'] ? " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times: escolha o time de cada um na tela do jogo." : '')
+            . $jogo->textoAcimaDaIdade($elenco['acima_da_idade'])
             . ' Os atletas serão avisados ao publicar.';
 
         // Elenco de outra categoria/sexo: só avisa, como na tela do jogo (CLAUDE.md, seção 8, pergunta 14)
@@ -213,12 +215,22 @@ class JogosController extends Controller
      * "Publicar e avisar os atletas" (Fase 10, Etapa 4), na tela do jogo: o rascunho passa a valer e cada
      * inscrito ativo recebe um aviso só, com o time. Jogo que já aconteceu, cancelado ou oculto é publicado
      * sem avisar. Sem "despublicar": depois de publicado, usar cancelar ou ocultar.
+     * Rascunho com inscrito ativo que passa da idade do campeonato não é publicado (remover antes).
      */
     public function publicar($id)
     {
-        $jogo   = Jogo::with('evento')->findOrFail($id);
+        $jogo   = Jogo::with(['evento', 'campeonato.categoria'])->findOrFail($id);
         $evento = $jogo->evento;
         $tela   = redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario);
+
+        if (! $evento->estaPublicado()) {
+            $ativos = $evento->inscricoes()->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))->pluck('id_atleta')->all();
+
+            if ($acima = $jogo->acimaDaIdade($ativos)) {
+                return $tela->with('erro', 'Jogo não publicado: ' . implode(', ', $acima) . ' ' . (count($acima) === 1 ? 'passa' : 'passam')
+                    . " da idade do campeonato ({$jogo->limiteDeIdade()}). Remova a inscrição antes de publicar.");
+            }
+        }
 
         if (! $evento->publicar(auth('admin')->id())) {
             return $tela->with('aviso', 'Este jogo já estava publicado. Nenhum atleta foi avisado de novo.');
@@ -269,7 +281,7 @@ class JogosController extends Controller
     private function gravarJogoETrocarTimes(Jogo $jogo, array $dadosJogo, array $timesAntes): ?array
     {
         $jogo->update($dadosJogo);
-        $jogo->load(['timeCasa', 'timeVisitante']);
+        $jogo->load(['timeCasa', 'timeVisitante', 'campeonato.categoria']); // o campeonato pode ter mudado (limite de idade)
         $timesAgora = [(int) $jogo->id_time_casa, (int) $jogo->id_time_visitante];
 
         if (! $this->timesMudaram($timesAntes, $timesAgora)) {
@@ -287,7 +299,8 @@ class JogosController extends Controller
 
         return [
             'mensagem'     => " Inscrições pelo elenco: {$entraram} atleta(s) inscrito(s), {$troca['sairam']} removido(s)."
-                . ' As inscrições individuais foram mantidas.' . $foraDaEscalacao($troca['sem_time']),
+                . ' As inscrições individuais foram mantidas.' . $foraDaEscalacao($troca['sem_time'])
+                . $jogo->textoAcimaDaIdade($troca['acima_da_idade']),
             'ids_entraram' => $troca['ids_entraram'],
             'mexeu'        => $entraram + $troca['sairam'] > 0,
         ];

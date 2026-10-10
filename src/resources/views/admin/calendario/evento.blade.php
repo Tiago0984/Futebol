@@ -95,6 +95,16 @@
                 </div>
             @endif
 
+            {{-- Jogo de campeonato com inscrito que passa da idade (de antes da regra, ou o campeonato mudou):
+                 o mais velho não joga abaixo da idade; o rascunho não é publicado assim --}}
+            @if ($inscritosAcimaDaIdade)
+                <div class="alert alert-danger" role="alert">
+                    <strong><i class="bi bi-exclamation-triangle"></i> Acima da idade do campeonato ({{ $jogo->limiteDeIdade() }})</strong>
+                    <div class="mt-1">{{ implode(', ', $inscritosAcimaDaIdade) }}.
+                        Atleta mais velho não joga em categoria abaixo da idade dele: remova a inscrição.</div>
+                </div>
+            @endif
+
             @if (session('erro'))
                 <div class="alert alert-danger alert-dismissible fade show" role="alert">
                     {{ session('erro') }}
@@ -255,7 +265,12 @@
                                     @foreach ($disponiveis as $rotuloCategoria => $atletasDaCategoria)
                                     <optgroup label="{{ $rotuloCategoria }}">
                                         @foreach ($atletasDaCategoria as $atleta)
+                                        @if (isset($disponiveisAcimaDaIdade[$atleta->id_atleta]))
+                                        {{-- Jogo de campeonato: o mais velho não joga abaixo da idade --}}
+                                        <option value="{{ $atleta->id_atleta }}" disabled>{{ $disponiveisAcimaDaIdade[$atleta->id_atleta] }} · acima da idade</option>
+                                        @else
                                         <option value="{{ $atleta->id_atleta }}">{{ $atleta->nome_atleta }}</option>
+                                        @endif
                                         @endforeach
                                     </optgroup>
                                     @endforeach
@@ -374,7 +389,12 @@
                         <tbody class="js-bloco-time">
                             @forelse ($inscricoes as $inscricao)
                             <tr>
-                                <td class="ps-3 fw-semibold">{{ $inscricao->atleta->nome_atleta }}</td>
+                                <td class="ps-3 fw-semibold">
+                                    {{ $inscricao->atleta->nome_atleta }}
+                                    @if (isset($inscritosAcimaDaIdade[$inscricao->id_atleta]))
+                                        <small class="d-block text-danger">Acima da idade do campeonato</small>
+                                    @endif
+                                </td>
                                 <td class="text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</td>
                                 <td><span class="badge-cat" style="cursor:help" title="{{ $inscricao->origem_dica }}">{{ $inscricao->origem_label }}</span></td>
                                 <td class="text-muted small">

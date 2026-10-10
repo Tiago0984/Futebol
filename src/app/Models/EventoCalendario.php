@@ -227,13 +227,14 @@ class EventoCalendario extends Model
         });
     }
 
-    // Inscreve os atletas ativos com categoria ativa nesta categoria; devolve quantos entraram
-    public function inscreverCategoria(int $idCategoria, string $origem, ?int $idUsuario): int
+    // Inscreve os atletas ativos com categoria ativa nesta categoria, menos os ids de $exceto (no jogo de
+    // campeonato, quem passa da idade); devolve quantos entraram
+    public function inscreverCategoria(int $idCategoria, string $origem, ?int $idUsuario, array $exceto = []): int
     {
-        return DB::transaction(function () use ($idCategoria, $origem, $idUsuario) {
+        return DB::transaction(function () use ($idCategoria, $origem, $idUsuario, $exceto) {
             $novos = 0;
 
-            foreach (Atleta::idsAtivosNaCategoria($idCategoria) as $idAtleta) {
+            foreach (array_diff(Atleta::idsAtivosNaCategoria($idCategoria), $exceto) as $idAtleta) {
                 $novos += $this->inscrever($idAtleta, $origem, $idUsuario) ? 1 : 0;
             }
 
@@ -350,6 +351,8 @@ class EventoCalendario extends Model
      * Aviso (não bloqueia) para atletas fora da categoria do evento, que também cobre o sexo, porque
      * cada categoria é M ou F. Ex.: "Fulana é Sub-15 Feminino; o jogo é Sub-11 Masculino."
      * Evento sem categoria: nada a avisar. Se deve bloquear: CLAUDE.md, seção 8, pergunta 14.
+     * Jogo de campeonato: o mais novo do mesmo sexo jogando acima da idade é normal (professor, 09/10/2026)
+     * e não gera aviso; o mais velho nem chega a ser inscrito (Jogo::acimaDaIdade).
      */
     public function avisosForaDaCategoria(array $idsAtletas): array
     {
@@ -359,12 +362,18 @@ class EventoCalendario extends Model
 
         $rotuloEvento = $this->categoria->rotulo;
         $oQue = $this->tipo_evento_calendario === 'JOGO' ? 'o jogo' : 'o evento';
+        $deCampeonato = $this->jogo?->id_campeonato !== null;
+        $ano = (int) $this->data_evento_calendario->format('Y');
+        $maisNovoDoMesmoSexo = fn ($atleta) => $atleta->sexo_atleta === $this->categoria->sexo_categoria
+            && $atleta->data_nasc_atleta
+            && Categoria::idadeNoAno($atleta->data_nasc_atleta, $ano) <= $this->categoria->idade_max_categoria;
 
         return Atleta::with('categoriasAtivas')
             ->whereIn('id_atleta', $idsAtletas)
             ->orderBy('nome_atleta')
             ->get()
-            ->reject(fn ($atleta) => $atleta->categoriasAtivas->contains('id_categoria', $this->id_categoria))
+            ->reject(fn ($atleta) => $atleta->categoriasAtivas->contains('id_categoria', $this->id_categoria)
+                || ($deCampeonato && $maisNovoDoMesmoSexo($atleta)))
             ->map(fn ($atleta) => ($categoria = $atleta->categoriasAtivas->first())
                 ? "{$atleta->nome_atleta} é {$categoria->rotulo}; {$oQue} é {$rotuloEvento}."
                 : "{$atleta->nome_atleta} está sem categoria; {$oQue} é {$rotuloEvento}.")

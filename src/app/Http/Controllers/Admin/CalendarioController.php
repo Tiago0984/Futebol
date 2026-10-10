@@ -234,9 +234,15 @@ class CalendarioController extends Controller
 
         // Evento de jogo: escalação por time (mandante/visitante internos), elenco de cada atleta e quantos
         // do elenco ainda não estão inscritos (ao lado do "Preencher pelo elenco")
-        $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato'])->first();
+        $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato.categoria'])->first();
+        $jogo?->setRelation('evento', $evento);
         $elencos = $jogo?->elencosDoJogo() ?? [];
         $faltantesDoElenco = $jogo ? count($jogo->idsFaltantesDoElenco()) : 0;
+
+        // Jogo de campeonato: inscritos que passam da idade (de antes da regra, ou o campeonato mudou), com
+        // aviso e selo na lista, e os do select que não podem entrar ([id_atleta => "Nome (16 anos)"])
+        $inscritosAcimaDaIdade = $jogo?->acimaDaIdade($inscricoes->pluck('id_atleta')->all()) ?? [];
+        $disponiveisAcimaDaIdade = $jogo?->acimaDaIdade($disponiveis->flatten()->pluck('id_atleta')->all()) ?? [];
 
         // Notificações enviadas sobre o evento, da mais nova para a mais antiga (só no admin)
         // Leitura pelos responsáveis (Fase 9): quantos leram, de quantos o atleta tem
@@ -266,7 +272,7 @@ class CalendarioController extends Controller
 
         return view('admin.calendario.evento', compact(
             'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos',
-            'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar',
+            'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar', 'inscritosAcimaDaIdade', 'disponiveisAcimaDaIdade',
         ) + [
             'campeonatosDoJogo'       => $campeonatosDoJogo ?? collect(),
             'timesDoJogo'             => $timesDoJogo ?? collect(),
@@ -314,6 +320,11 @@ class CalendarioController extends Controller
             return back()->with('erro', $erro);
         }
 
+        // Inscrito de antes (ou o campeonato mudou) que passa da idade: não é escalado; tirar do time pode
+        if ($idTime !== null && ($erro = $jogo->erroDeIdade((int) $idAtleta))) {
+            return back()->with('erro', $erro);
+        }
+
         $inscricao->update(['id_time' => $idTime]);
         $nome = $inscricao->atleta->nome_atleta;
 
@@ -330,7 +341,8 @@ class CalendarioController extends Controller
      * "Preencher pelo elenco" (Jogo::inscreverElenco): inscreve quem falta do elenco (tbl_atleta_time) dos
      * times internos do jogo (origem ELENCO, com alerta de conflito) e escala quem está inscrito sem time.
      * Quem é de um time só entra escalado nele; quem está nos dois elencos entra SEM time, para o admin
-     * escolher na lista. Quem já tem time não muda; ninguém sai. Atleta fora da categoria do jogo gera aviso.
+     * escolher na lista. Quem já tem time não muda; ninguém sai. Atleta fora da categoria do jogo gera aviso;
+     * quem passa da idade do campeonato fica de fora (a mensagem diz quem).
      */
     public function preencherPeloElenco(Request $request, $id)
     {
@@ -359,6 +371,7 @@ class CalendarioController extends Controller
         if ($inscritos > 0) {
             $mensagem .= Notificacao::textoNotificados($evento->atletasNotificados);
         }
+        $mensagem .= $jogo->textoAcimaDaIdade($elenco['acima_da_idade']);
 
         $this->avisarForaDaCategoria($evento, $elenco['ids_mexidos']);
 
@@ -411,13 +424,19 @@ class CalendarioController extends Controller
         ]);
 
         $idTime = $request->filled('id_time') ? (int) $request->id_time : null;
+        $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato.categoria'])->first();
+        $jogo?->setRelation('evento', $evento);
         if ($idTime !== null) {
-            $jogo = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
             $erro = $jogo ? $jogo->erroDeEscalacao($idTime) : 'Este evento não é um jogo: não tem escalação.';
 
             if ($erro) {
                 return back()->with('erro', $erro)->withInput();
             }
+        }
+
+        // Jogo de campeonato: quem passa da idade não entra (o mais novo pode jogar acima)
+        if ($jogo && ($erro = $jogo->erroDeIdade((int) $request->id_atleta))) {
+            return back()->with('erro', $erro)->withInput();
         }
 
         if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara([(int) $request->id_atleta]))) {
@@ -460,14 +479,21 @@ class CalendarioController extends Controller
         $inscritos = $evento->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
         $entrariam = array_values(array_diff(Atleta::idsAtivosNaCategoria($categoria->id_categoria), $inscritos));
 
+        // Jogo de campeonato: quem passa da idade fica de fora (a mensagem diz quem)
+        $jogo = $evento->jogo()->with('campeonato.categoria')->first();
+        $jogo?->setRelation('evento', $evento);
+        $acima     = $jogo?->acimaDaIdade($entrariam) ?? [];
+        $entrariam = array_values(array_diff($entrariam, array_keys($acima)));
+
         if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara($entrariam))) {
             return $confirmar;
         }
 
-        $novos = $evento->inscreverCategoria($categoria->id_categoria, 'INDIVIDUAL', auth('admin')->id());
+        $novos = $evento->inscreverCategoria($categoria->id_categoria, 'INDIVIDUAL', auth('admin')->id(), array_keys($acima));
 
         return back()->with('sucesso', "{$categoria->rotulo}: {$novos} atleta(s) inscrito(s)"
-            . ($novos === 0 ? ' (todos já estavam inscritos ou não há atletas ativos).' : '.' . Notificacao::textoNotificados($evento->atletasNotificados)));
+            . ($novos === 0 ? ' (todos já estavam inscritos ou não há atletas ativos).' : '.' . Notificacao::textoNotificados($evento->atletasNotificados))
+            . ($jogo?->textoAcimaDaIdade($acima, 'da categoria') ?? ''));
     }
 
     public function removerInscricao($id, $idAtleta)
