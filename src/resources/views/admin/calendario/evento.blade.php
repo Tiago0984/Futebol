@@ -30,9 +30,9 @@
                 </button>
 
                 @if ($jogo)
-                <button type="button" class="btn btn-outline-dark btn-sm" data-bs-toggle="modal" data-bs-target="#modalPlacar">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalPlacar">
                     <i class="bi bi-123"></i> Placar
-                    @if ($jogo->temPlacar())<span class="badge bg-dark ms-1">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>@endif
+                    @if ($jogo->temPlacar())<span class="badge bg-secondary ms-1">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>@endif
                 </button>
                 @endif
 
@@ -333,8 +333,8 @@
                         <div class="{{ $blocosDosTimes->count() > 1 ? 'col-md-6' : 'col-12' }}">
                             @if ($bloco['externo'])
                             {{-- Time externo: travado, só para ver (sem select, sem remover) --}}
-                            <div class="border rounded h-100 js-bloco-externo" style="background:#fafafa;" title="Time externo: só para visualizar">
-                                <div class="bg-light border-bottom px-3 py-2 fw-semibold d-flex align-items-center gap-2 text-muted">
+                            <div class="border rounded h-100 bg-body-tertiary js-bloco-externo" title="Time externo: só para visualizar">
+                                <div class="bg-body-secondary border-bottom px-3 py-2 fw-semibold d-flex align-items-center gap-2 text-muted">
                                     <img src="{{ asset('futebol/images/team/' . $bloco['logo']) }}" alt="" width="28" height="28"
                                          style="object-fit:contain;opacity:.7" onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
                                     {{ $bloco['titulo'] }}
@@ -353,7 +353,7 @@
                             @else
                             <div class="js-bloco-time">
                             <div class="border rounded h-100">
-                                <div class="bg-light border-bottom px-3 py-2 fw-semibold d-flex align-items-center gap-2">
+                                <div class="bg-body-secondary border-bottom px-3 py-2 fw-semibold d-flex align-items-center gap-2">
                                     {{-- Logo do time (mesmo caminho e imagem padrão do cartão da tela de Times) --}}
                                     <img src="{{ asset('futebol/images/team/' . $bloco['logo']) }}" alt="" width="28" height="28"
                                          style="object-fit:contain" onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
