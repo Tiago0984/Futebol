@@ -228,6 +228,11 @@
                                                title="Nem o atleta nem o responsável têm e-mail: ninguém consegue entrar no app">
                                         <i class="bi bi-phone"></i> Sem acesso ao app</span></div>
                                 @endif
+                                @unless($atleta->periodo_escolar_atleta)
+                                    <div><span class="badge bg-warning-subtle text-warning-emphasis js-sem-periodo" style="font-size:0.7rem;"
+                                               title="O treino é no turno oposto ao da escola: informe o período na edição do atleta">
+                                        <i class="bi bi-clock"></i> Sem período escolar</span></div>
+                                @endunless
                             </td>
                             <td>
                                 @if($nomeResponsavel)
@@ -282,6 +287,7 @@
                                             data-escola="{{ $atleta->escola_atleta }}"
                                             data-serie="{{ $atleta->serie_atleta }}"
                                             data-periodo="{{ $atleta->periodo_escolar_atleta }}"
+                                            data-turno-treino="{{ $atleta->turno_treino_atleta }}"
                                             data-sala="{{ $atleta->sala_atleta }}"
                                             data-descricao="{{ $atleta->descricao_atleta }}"
                                             data-categoria="{{ $idCategoria }}"
@@ -376,7 +382,20 @@
 @endif
 
 <script>
+// Período escolar: o turno do treino só aparece (e só é obrigatório) para quem estuda à noite
+function mostrarTurnoDoTreino(selPeriodo) {
+    const turno  = document.getElementById(selPeriodo.dataset.turno);
+    const coluna = document.getElementById(selPeriodo.dataset.turno + '_col');
+    const noite  = selPeriodo.value === 'NOITE';
+    coluna.classList.toggle('d-none', !noite);
+    turno.required = noite;
+    if (!noite) turno.value = '';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('.js-periodo-escolar').forEach(sel =>
+        sel.addEventListener('change', () => mostrarTurnoDoTreino(sel)));
+
     // --- Modal editar ---
     const formEditar = document.getElementById('formEditarAtleta');
     document.querySelectorAll('.btn-editar').forEach(btn => {
@@ -398,6 +417,8 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_descricao').value = g('data-descricao');
             document.getElementById('edit_sexo').value      = g('data-sexo');
             document.getElementById('edit_periodo').value   = g('data-periodo');
+            document.getElementById('edit_turno').value     = g('data-turno-treino');
+            mostrarTurnoDoTreino(document.getElementById('edit_periodo'));
             document.getElementById('edit_id_atleta').value = g('data-id');
             document.getElementById('edit_motivo_categoria').value = '';
 
@@ -545,6 +566,9 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('edit_motivo_categoria').value = @js(old('motivo_categoria', ''));
         document.getElementById('edit_email').value            = @js(old('email_atleta', ''));
         document.getElementById('edit_email_responsavel').value = @js(old('email_responsavel', ''));
+        document.getElementById('edit_periodo').value          = @js(old('periodo_escolar_atleta', ''));
+        mostrarTurnoDoTreino(document.getElementById('edit_periodo'));
+        document.getElementById('edit_turno').value            = @js(old('turno_treino_atleta', ''));
         sugestaoEdicao.atualizar(false);
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarAtleta')).show();
     }

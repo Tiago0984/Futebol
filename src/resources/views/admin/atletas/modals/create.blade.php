@@ -111,26 +111,18 @@
                             <input type="file" name="foto_atleta" class="form-control" accept="image/*">
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-5">
                             <label class="form-label">Escola <span class="text-danger">*</span></label>
                             <input type="text" name="escola_atleta" class="form-control @error('escola_atleta') is-invalid @enderror"
                                 placeholder="Nome da escola" required value="{{ old('escola_atleta') }}">
                             @error('escola_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Série</label>
                             <input type="text" name="serie_atleta" class="form-control" placeholder="Ex: 7º Ano"
                                 value="{{ old('serie_atleta') }}">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Período</label>
-                            <select name="periodo_escolar_atleta" class="form-select">
-                                <option value="">—</option>
-                                @foreach(['MANHÃ', 'TARDE', 'NOITE'] as $per)
-                                <option value="{{ $per }}" {{ old('periodo_escolar_atleta') == $per ? 'selected' : '' }}>{{ $per }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        @include('admin.atletas.modals._periodo', ['prefixo' => 'cad', 'comOld' => true])
                         <div class="col-md-1">
                             <label class="form-label">Sala</label>
                             <input type="text" name="sala_atleta" class="form-control text-center" placeholder="A1"

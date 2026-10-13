@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\Atleta;
 use App\Services\AppDoAtleta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -26,14 +27,16 @@ class AtletaController extends Controller
     {
         $atleta = $request->user();
 
-        // "sometimes" permite enviar só alguns campos (atualização parcial)
+        // "sometimes" permite enviar só alguns campos (atualização parcial). Período: MANHA, TARDE, NOITE ou
+        // INTEGRAL; NOITE exige o turno do treino (Atleta::regrasPeriodo)
+        $periodo = Atleta::regrasPeriodo(parcial: true);
         $dados = $request->validate([
             'email_atleta'           => ['sometimes', 'required', 'email', 'max:255', Rule::unique('tbl_atletas', 'email_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
             'telefone_atleta'        => 'sometimes|nullable|string|max:20',
             'escola_atleta'          => 'sometimes|required|string|max:100',
             'serie_atleta'           => 'sometimes|nullable|string|max:20',
             'sala_atleta'            => 'sometimes|nullable|string|max:255',
-            'periodo_escolar_atleta' => 'sometimes|nullable|string|max:20',
+            ...$periodo['regras'],
             'peso_atleta'            => 'sometimes|nullable|numeric|min:0|max:999',
             'altura_atleta'          => 'sometimes|nullable|numeric|min:0|max:9.99',
             'descricao_atleta'       => 'sometimes|nullable|string|max:1000',

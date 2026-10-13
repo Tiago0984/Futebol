@@ -231,7 +231,8 @@ Content-Type: application/json
 
     <div class="card">
         <div class="rota"><span class="metodo PUT">PUT</span><span class="metodo PATCH">PATCH</span><code>/api/v1/atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Atualiza os dados que o atleta pode mudar (pode mandar só alguns): <code>email_atleta</code> (único), <code>telefone_atleta</code>, <code>escola_atleta</code>, <code>serie_atleta</code>, <code>sala_atleta</code>, <code>periodo_escolar_atleta</code>, <code>peso_atleta</code>, <code>altura_atleta</code>, <code>descricao_atleta</code>. Nome, CPF, RG, matrícula e status só a secretaria muda.</p>
+        <p>Atualiza os dados que o atleta pode mudar (pode mandar só alguns): <code>email_atleta</code> (único), <code>telefone_atleta</code>, <code>escola_atleta</code>, <code>serie_atleta</code>, <code>sala_atleta</code>, <code>periodo_escolar_atleta</code>, <code>turno_treino_atleta</code>, <code>peso_atleta</code>, <code>altura_atleta</code>, <code>descricao_atleta</code>. Nome, CPF, RG, matrícula e status só a secretaria muda.</p>
+        <p><code>periodo_escolar_atleta</code> (quando vier, não pode ser vazio): <code>MANHA</code>, <code>TARDE</code>, <code>NOITE</code> ou <code>INTEGRAL</code>. O treino é no turno oposto ao da escola (integral treina à tarde). Com <code>NOITE</code>, mande junto <code>turno_treino_atleta</code>: <code>MANHA</code>, <code>TARDE</code> ou <code>AMBOS</code>; nos outros períodos ele volta como <code>null</code>.</p>
 <pre>PATCH /api/v1/atleta
 { "telefone_atleta": "(11) 90000-0001" }
 

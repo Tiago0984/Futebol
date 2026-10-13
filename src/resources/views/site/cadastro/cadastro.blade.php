@@ -113,23 +113,44 @@
                             <input type="text" name="escola_atleta" value="{{ old('escola_atleta') }}" required class="mat-input">
                         </div>
                     </div>
-                    <div class="col-sm-3">
+                    <div class="col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Série *</label>
                             <input type="text" name="serie_atleta" value="{{ old('serie_atleta') }}" required class="mat-input" placeholder="Ex: 7º Ano">
                         </div>
                     </div>
-                    <div class="col-sm-3">
+                    {{-- O treino é no turno oposto ao da escola; quem estuda à noite escolhe o turno do treino --}}
+                    <div class="col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Período *</label>
-                            <select name="periodo_escolar_atleta" required class="mat-input">
+                            <select name="periodo_escolar_atleta" id="periodoEscolar" required class="mat-input">
                                 <option value="">Selecione</option>
-                                <option value="Manhã" {{ old('periodo_escolar_atleta')=='Manhã'?'selected':'' }}>Manhã</option>
-                                <option value="Tarde" {{ old('periodo_escolar_atleta')=='Tarde'?'selected':'' }}>Tarde</option>
-                                <option value="Noite" {{ old('periodo_escolar_atleta')=='Noite'?'selected':'' }}>Noite</option>
+                                @foreach(\App\Models\Atleta::PERIODOS as $valor => $rotulo)
+                                <option value="{{ $valor }}" @selected(old('periodo_escolar_atleta') === $valor)>{{ $rotulo }}</option>
+                                @endforeach
                             </select>
                         </div>
                     </div>
+                    <div class="col-sm-2 {{ old('periodo_escolar_atleta') === 'NOITE' ? '' : 'd-none' }}" id="turnoTreinoCol">
+                        <div class="mat-group">
+                            <label class="mat-label">Treina de *</label>
+                            <select name="turno_treino_atleta" id="turnoTreino" class="mat-input" @required(old('periodo_escolar_atleta') === 'NOITE')>
+                                <option value="">Selecione</option>
+                                @foreach(\App\Models\Atleta::TURNOS_TREINO as $valor => $rotulo)
+                                <option value="{{ $valor }}" @selected(old('turno_treino_atleta') === $valor)>{{ $rotulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <script>
+                    document.getElementById('periodoEscolar').addEventListener('change', function () {
+                        const noite = this.value === 'NOITE';
+                        const turno = document.getElementById('turnoTreino');
+                        document.getElementById('turnoTreinoCol').classList.toggle('d-none', !noite);
+                        turno.required = noite;
+                        if (!noite) turno.value = '';
+                    });
+                    </script>
                     <div class="col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Sala</label>

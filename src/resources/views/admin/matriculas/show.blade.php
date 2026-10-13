@@ -136,7 +136,7 @@
                                 <tr><td class="text-muted">E-mail</td><td>{{ $atleta->email_atleta }}</td></tr>
                                 <tr><td class="text-muted">Escola</td><td>{{ $atleta->escola_atleta }}</td></tr>
                                 <tr><td class="text-muted">Série</td><td>{{ $atleta->serie_atleta }}</td></tr>
-                                <tr><td class="text-muted">Período</td><td>{{ $atleta->periodo_escolar_atleta }}</td></tr>
+                                <tr><td class="text-muted">Período</td><td>{{ $atleta->periodo_escolar_texto }}</td></tr>
                                 @if ($atleta->descricao_atleta)
                                 <tr><td class="text-muted">Observações</td><td>{{ $atleta->descricao_atleta }}</td></tr>
                                 @endif

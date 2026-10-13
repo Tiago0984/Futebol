@@ -61,6 +61,7 @@ class AtletasController extends Controller
     public function store(Request $request)
     {
         $nascimento = Atleta::regrasNascimento();
+        $periodo    = Atleta::regrasPeriodo();
 
         // Responsável já cadastrado com o CPF (só os dígitos): o atleta é vinculado a ele
         $responsavelExistente = Responsavel::porCpf($request->cpf_responsavel);
@@ -73,6 +74,7 @@ class AtletasController extends Controller
             'numero_matricula_atleta'     => 'nullable|string|max:20|unique:tbl_atletas,numero_matricula_atleta',
             'email_atleta'                => 'nullable|email|max:255|unique:tbl_atletas,email_atleta',
             'escola_atleta'               => 'required|string|max:255',
+            ...$periodo['regras'],
             'sexo_atleta'                 => 'required|in:M,F',
             'id_categoria'                => 'required|integer|exists:tbl_categoria,id_categoria',
             'motivo_categoria'            => 'nullable|string|max:500',
@@ -89,7 +91,7 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], [...$nascimento['mensagens'], ...self::MENSAGENS_EMAIL, 'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA]);
+        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...self::MENSAGENS_EMAIL, 'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA]);
 
         $this->validarCategoria($request);
 
@@ -179,7 +181,8 @@ class AtletasController extends Controller
             'peso_atleta'            => $request->peso_atleta ?? 0,
             'altura_atleta'          => $request->altura_atleta ?? 0,
             'serie_atleta'           => $request->serie_atleta ?? '',
-            'periodo_escolar_atleta' => $request->periodo_escolar_atleta ?? '',
+            'periodo_escolar_atleta' => $request->periodo_escolar_atleta,
+            'turno_treino_atleta'    => $request->turno_treino_atleta,
             'descricao_atleta'       => $request->descricao_atleta ?? '',
             'sala_atleta'            => $request->sala_atleta,
         ]);
@@ -200,6 +203,7 @@ class AtletasController extends Controller
     {
         $atleta     = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas', 'times'])->findOrFail($id);
         $nascimento = Atleta::regrasNascimento();
+        $periodo    = Atleta::regrasPeriodo();
 
         // Responsável que esta edição altera: o atual do atleta, ou (sem nenhum) o já cadastrado com o CPF
         $responsavelAtual     = $atleta->responsaveis->first();
@@ -213,6 +217,7 @@ class AtletasController extends Controller
             'rg_atleta'                   => 'required|string|max:20',
             'email_atleta'                => ['nullable', 'email', 'max:255', Rule::unique('tbl_atletas', 'email_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
             'escola_atleta'               => 'required|string|max:255',
+            ...$periodo['regras'],
             'sexo_atleta'                 => 'required|in:M,F',
             'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
             'motivo_categoria'            => 'nullable|string|max:500',
@@ -230,7 +235,7 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], [...$nascimento['mensagens'], ...self::MENSAGENS_EMAIL]);
+        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...self::MENSAGENS_EMAIL]);
 
         // CPF do responsável trocado para o de OUTRO responsável já cadastrado: recusa (viraria um cadastro
         // repetido). Trocar o responsável do atleta por um já cadastrado ainda não é possível pela edição
@@ -276,6 +281,7 @@ class AtletasController extends Controller
                 'escola_atleta'           => $request->escola_atleta,
                 'serie_atleta'            => $request->serie_atleta,
                 'periodo_escolar_atleta'  => $request->periodo_escolar_atleta,
+                'turno_treino_atleta'     => $request->turno_treino_atleta,
                 'sexo_atleta'             => $request->sexo_atleta,
                 'peso_atleta'             => $request->peso_atleta,
                 'altura_atleta'           => $request->altura_atleta,

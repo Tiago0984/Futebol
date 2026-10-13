@@ -53,7 +53,7 @@
             </div>
             <div class="info-row">
                 <span>Série / Período</span>
-                <span>{{ $atleta->serie_atleta }} — {{ $atleta->periodo_escolar_atleta }}</span>
+                <span>{{ $atleta->serie_atleta }} — {{ $atleta->periodo_escolar_texto }}</span>
             </div>
         </div>
 

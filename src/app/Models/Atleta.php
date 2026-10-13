@@ -8,6 +8,7 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Laravel\Sanctum\HasApiTokens;
 
 class Atleta extends Authenticatable
@@ -40,6 +41,21 @@ class Atleta extends Authenticatable
     // Validade do token do app (Sanctum), em dias: gravada em expires_at no login
     public const VALIDADE_TOKEN_DIAS = 30;
 
+    // Período escolar (ENUM sem acento => rótulo). O atleta treina no turno oposto ao da escola (professor,
+    // 13/10/2026); quem estuda à noite escolhe o turno do treino (TURNOS_TREINO)
+    public const PERIODOS = [
+        'MANHA'    => 'Manhã',
+        'TARDE'    => 'Tarde',
+        'NOITE'    => 'Noite',
+        'INTEGRAL' => 'Integral',
+    ];
+
+    public const TURNOS_TREINO = [
+        'MANHA' => 'Manhã',
+        'TARDE' => 'Tarde',
+        'AMBOS' => 'Manhã e tarde',
+    ];
+
     /**
      * Atleta que deixa de ser ATIVO (inativado, rejeitado, de volta a pendente) perde os tokens do app,
      * em qualquer caminho que mude o status pelo model (botão de status, edição, Matrículas). A rota
@@ -50,6 +66,13 @@ class Atleta extends Authenticatable
         static::updated(function (Atleta $atleta) {
             if ($atleta->wasChanged('status_atleta') && strtoupper((string) $atleta->status_atleta) !== 'ATIVO') {
                 $atleta->tokens()->delete();
+            }
+        });
+
+        // O turno do treino só é escolhido por quem estuda à noite; nos outros sai do período (turnosDeTreino)
+        static::saving(function (Atleta $atleta) {
+            if ($atleta->periodo_escolar_atleta !== 'NOITE' && $atleta->turno_treino_atleta !== null) {
+                $atleta->turno_treino_atleta = null;
             }
         });
     }
@@ -71,6 +94,7 @@ class Atleta extends Authenticatable
         'foto_atleta',
         'sala_atleta',
         'periodo_escolar_atleta',
+        'turno_treino_atleta',
         'status_atleta',
         'token_cadastro',
         'id_endereco',
@@ -232,6 +256,62 @@ class Atleta extends Authenticatable
                 'data_nasc_atleta.before_or_equal' => $limites['mensagem'],
             ],
         ];
+    }
+
+    /**
+     * Regras do período escolar e do turno do treino, com as mensagens, para o site, o admin e o app.
+     * O período é obrigatório (decide os treinos do atleta); "Noite" exige o turno do treino.
+     * $parcial = true: atualização parcial da API (só valida o que veio).
+     */
+    public static function regrasPeriodo(bool $parcial = false): array
+    {
+        $antes = $parcial ? ['sometimes'] : [];
+
+        return [
+            'regras' => [
+                'periodo_escolar_atleta' => [...$antes, 'required', Rule::in(array_keys(self::PERIODOS))],
+                'turno_treino_atleta'    => ['nullable', 'required_if:periodo_escolar_atleta,NOITE', Rule::in(array_keys(self::TURNOS_TREINO))],
+            ],
+            'mensagens' => [
+                'periodo_escolar_atleta.required' => 'Informe o período em que o atleta estuda: o treino é no turno oposto ao da escola.',
+                'periodo_escolar_atleta.in'       => 'Período inválido: escolha Manhã, Tarde, Noite ou Integral.',
+                'turno_treino_atleta.required_if' => 'Quem estuda à noite escolhe o turno do treino: manhã, tarde ou os dois.',
+                'turno_treino_atleta.in'          => 'Turno do treino inválido: escolha Manhã, Tarde ou Manhã e tarde.',
+            ],
+        ];
+    }
+
+    /**
+     * Turnos em que o atleta treina (MANHA e/ou TARDE): o oposto ao da escola; integral treina à tarde;
+     * quem estuda à noite, o que escolheu. Vazio sem período (ou noite sem a escolha).
+     */
+    public function turnosDeTreino(): array
+    {
+        return match ($this->periodo_escolar_atleta) {
+            'MANHA', 'INTEGRAL' => ['TARDE'],
+            'TARDE'             => ['MANHA'],
+            'NOITE'             => match ($this->turno_treino_atleta) {
+                'AMBOS' => ['MANHA', 'TARDE'],
+                null    => [],
+                default => [$this->turno_treino_atleta],
+            },
+            default => [],
+        };
+    }
+
+    // "Manhã", "Noite · treina à tarde"; null sem período
+    public function getPeriodoEscolarTextoAttribute(): ?string
+    {
+        $periodo = self::PERIODOS[$this->periodo_escolar_atleta] ?? null;
+        if ($periodo && $this->periodo_escolar_atleta === 'NOITE' && $this->turno_treino_atleta) {
+            $periodo .= ' · treina ' . match ($this->turno_treino_atleta) {
+                'MANHA' => 'de manhã',
+                'TARDE' => 'à tarde',
+                default => 'de manhã e à tarde',
+            };
+        }
+
+        return $periodo;
     }
 
     // Histórico completo de categorias (linhas ativas e encerradas)

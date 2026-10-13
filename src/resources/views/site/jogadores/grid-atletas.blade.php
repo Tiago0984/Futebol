@@ -148,7 +148,7 @@
                                     </div>
                                     <div class="stat-item-box">
                                         <span class="stat-label">Período Escolar</span>
-                                        <span class="stat-value">{{ $atleta->periodo_escolar_atleta ?? '-' }}</span>
+                                        <span class="stat-value">{{ $atleta->periodo_escolar_texto ?? '-' }}</span>
                                     </div>
                                 </section>
 

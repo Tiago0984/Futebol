@@ -109,23 +109,15 @@
                             <input type="file" name="foto_atleta" class="form-control" accept="image/*">
                         </div>
 
-                        <div class="col-md-6">
+                        <div class="col-md-5">
                             <label class="form-label">Escola <span class="text-danger">*</span></label>
                             <input type="text" name="escola_atleta" id="edit_escola" class="form-control" placeholder="Nome da escola" required>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-2">
                             <label class="form-label">Série</label>
                             <input type="text" name="serie_atleta" id="edit_serie" class="form-control" placeholder="Ex: 7º Ano">
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Período</label>
-                            <select name="periodo_escolar_atleta" id="edit_periodo" class="form-select">
-                                <option value="">—</option>
-                                <option value="MANHÃ">MANHÃ</option>
-                                <option value="TARDE">TARDE</option>
-                                <option value="NOITE">NOITE</option>
-                            </select>
-                        </div>
+                        @include('admin.atletas.modals._periodo', ['prefixo' => 'edit', 'comOld' => false])
                         <div class="col-md-1">
                             <label class="form-label">Sala</label>
                             <input type="text" name="sala_atleta" id="edit_sala" class="form-control text-center" placeholder="A1">

@@ -56,6 +56,7 @@ class CadastroController extends Controller
 
         // Idade pelo ano (9 a 17 anos no ano), mesma regra do cadastro pelo admin
         $nascimento = Atleta::regrasNascimento();
+        $periodo    = Atleta::regrasPeriodo(); // obrigatório: o treino é no turno oposto ao da escola
 
         // Responsável já cadastrado com o mesmo CPF (só os dígitos): é reaproveitado se o e-mail bater
         // (irmãos), e o e-mail único não acusa o próprio cadastro dele
@@ -70,7 +71,7 @@ class CadastroController extends Controller
             'sexo_atleta'            => 'required|in:M,F',
             'escola_atleta'          => 'required|string|max:100',
             'serie_atleta'           => 'required|string|max:20',
-            'periodo_escolar_atleta' => 'required|string|max:20',
+            ...$periodo['regras'],
             'email_atleta'           => 'required|email|unique:tbl_atletas,email_atleta',
             // Endereço atleta
             'cep_endereco'           => ['required', 'string', 'max:10', 'regex:' . $cepRegex],
@@ -108,6 +109,7 @@ class CadastroController extends Controller
             'telefone_responsavel.regex' => 'Informe um telefone válido com DDD.',
             'whatsapp_responsavel.regex' => 'Informe um WhatsApp válido com DDD.',
             ...$nascimento['mensagens'],
+            ...$periodo['mensagens'],
         ]);
 
         if (!$this->cpfValido($request->cpf_atleta)) {
@@ -157,6 +159,7 @@ class CadastroController extends Controller
             'escola_atleta'          => $request->escola_atleta,
             'serie_atleta'           => $request->serie_atleta,
             'periodo_escolar_atleta' => $request->periodo_escolar_atleta,
+            'turno_treino_atleta'    => $request->turno_treino_atleta,
             'sala_atleta'            => $request->sala_atleta,
             'descricao_atleta'       => $request->descricao_atleta,
             'foto_atleta'            => $fotoNome,

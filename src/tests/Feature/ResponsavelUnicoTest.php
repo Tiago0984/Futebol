@@ -360,7 +360,7 @@ class ResponsavelUnicoTest extends TestCase
         return array_merge([
             'nome_atleta' => 'Atleta do Site', 'data_nasc_atleta' => $this->nascidoComIdade(12), 'cpf_atleta' => $this->cpfValido('111444777'),
             'rg_atleta' => '12.345.678-9', 'sexo_atleta' => 'M', 'escola_atleta' => 'Escola', 'serie_atleta' => '6º ano',
-            'periodo_escolar_atleta' => 'Manhã', 'email_atleta' => 'novo@atleta.com',
+            'periodo_escolar_atleta' => 'MANHA', 'email_atleta' => 'novo@atleta.com',
             'cep_endereco' => '01000-000', 'rua_endereco' => 'Rua do Atleta', 'numero_endereco' => '10', 'bairro_endereco' => 'Centro',
             'cidade_endereco' => 'São Paulo', 'estado_endereco' => 'SP',
             'nome_responsavel' => 'Responsável do Site', 'cpf_responsavel' => $this->cpfValido('987654321'), 'rg_responsavel' => '98.765.432-1',

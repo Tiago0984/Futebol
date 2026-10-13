@@ -118,7 +118,7 @@
                             </td>
                             <td>
                                 <div class="small">{{ $atleta->escola_atleta }}</div>
-                                <div class="text-muted" style="font-size:0.75rem;">{{ $atleta->serie_atleta }} · {{ $atleta->periodo_escolar_atleta }}</div>
+                                <div class="text-muted" style="font-size:0.75rem;">{{ $atleta->serie_atleta }} · {{ $atleta->periodo_escolar_texto }}</div>
                             </td>
                             <td class="text-center">
                                 @include('admin.matriculas._selo-autorizacao', ['situacao' => $atleta->situacaoAutorizacao()])

@@ -45,6 +45,7 @@ trait CriaDadosDeAtleta
             'rg_atleta'        => '00.000.000-0',
             'sexo_atleta'      => $sexo,
             'escola_atleta'    => 'Escola de Teste',
+            'periodo_escolar_atleta' => 'MANHA',
             'status_atleta'    => $status,
         ]);
     }
@@ -108,6 +109,7 @@ trait CriaDadosDeAtleta
             'cpf_atleta'                  => '222.222.222-22',
             'rg_atleta'                   => '22.222.222-2',
             'escola_atleta'               => 'Escola de Teste',
+            'periodo_escolar_atleta'      => 'MANHA',
             'sexo_atleta'                 => 'M',
             'id_categoria'                => $this->idCategoria('Sub-13', 'M'), // obrigatória; combina com 12 anos e M
             'nome_responsavel'            => 'Responsável de Teste',
@@ -138,6 +140,8 @@ trait CriaDadosDeAtleta
             'cpf_atleta'                  => $atleta->cpf_atleta,
             'rg_atleta'                   => $atleta->rg_atleta,
             'escola_atleta'               => $atleta->escola_atleta,
+            'periodo_escolar_atleta'      => $atleta->periodo_escolar_atleta ?? '',
+            'turno_treino_atleta'         => $atleta->turno_treino_atleta ?? '',
             'sexo_atleta'                 => $atleta->sexo_atleta,
             'status_atleta'               => $atleta->status_atleta,
             'nome_responsavel'            => 'Responsável de Teste',
