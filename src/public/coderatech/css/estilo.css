@@ -9186,7 +9186,12 @@ body {
     font-size: 0.7rem !important;
 }
 
-/* Bloco do usuário */
+/* Bloco do usuário, fixo no rodapé da barra. A área do menu (que rola) termina acima dele: com a altura
+   padrão do AdminLTE (tela inteira menos a marca), os últimos itens, como SISTEMA, ficavam escondidos
+   atrás do bloco quando um grupo era aberto. 60px = 12px + 34px (avatar) + 12px + 1px (borda) e folga. */
+.app-sidebar .sidebar-wrapper {
+    height: calc(100vh - (3.5rem + 1px) - 60px);
+}
 .sidebar-user-wrap {
     position: absolute;
     bottom: 0;
