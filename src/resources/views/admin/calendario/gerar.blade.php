@@ -57,6 +57,16 @@
                 </div>
             </div>
 
+            {{-- Treino no turno oposto ao da escola: quem está sem período escolar não entra em nenhum treino --}}
+            @if ($totais['sem_periodo'])
+            <div class="alert alert-warning mb-3" role="alert" id="avisoSemPeriodo">
+                <strong><i class="bi bi-clock"></i> {{ count($totais['sem_periodo']) }} atleta(s) ativo(s) sem período escolar</strong>
+                não {{ count($totais['sem_periodo']) === 1 ? 'será inscrito' : 'serão inscritos' }} nos treinos:
+                {{ implode(', ', $totais['sem_periodo']) }}.
+                Preencha o período em <a href="{{ route('admin.atletas.index') }}">Atletas</a> e atualize a prévia.
+            </div>
+            @endif
+
             {{-- Dia sem treino: desmarca a data em todas as linhas (feriado, dia sem aula) --}}
             @php
                 $diasDoLote = $previa['linhas']
@@ -163,9 +173,17 @@
                                         @else
                                             {{ count($linha['atletas']) }}
                                         @endif
+                                        {{-- Só quem treina neste turno (o oposto ao da escola) --}}
                                         <div class="text-muted" style="font-size:0.75rem;">
-                                            {{ $linha['origem'] === 'CATEGORIA' ? 'da categoria' : 'todos os ativos' }}
+                                            {{ $linha['origem'] === 'CATEGORIA' ? 'da categoria' : 'ativos' }}
+                                            {{ $linha['turno'] === 'MANHA' ? 'que treinam de manhã' : 'que treinam à tarde' }}
                                         </div>
+                                        @if ($linha['semPeriodo'])
+                                            <div class="text-warning-emphasis js-sem-periodo-linha" style="font-size:0.75rem;"
+                                                 title="{{ implode(', ', $linha['semPeriodo']) }}">
+                                                <i class="bi bi-clock"></i> {{ count($linha['semPeriodo']) }} sem período escolar
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="text-center">{{ $linha['novas']->count() * count($linha['atletas']) }}</td>
                                 @endif

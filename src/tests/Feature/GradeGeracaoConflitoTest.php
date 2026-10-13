@@ -225,7 +225,8 @@ class GradeGeracaoConflitoTest extends TestCase
     private function atleta(string $nome, string $categoria = 'Sub-15'): int
     {
         $id = $this->criarAtleta($this->nascidoComIdade(14), 'M', 'ATIVO');
-        DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome]);
+        // Treina nos dois turnos: os conflitos aqui não dependem do turno (Atleta::turnosDeTreino)
+        DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome, 'periodo_escolar_atleta' => 'NOITE', 'turno_treino_atleta' => 'AMBOS']);
         $this->colocarNaCategoria($id, $this->idCategoria($categoria, 'M'));
 
         return $id;

@@ -273,6 +273,56 @@ class GradeGeracaoMesTest extends TestCase
         $this->assertSame(0, EventoCalendario::whereNotNull('id_grade_treino')->count());
     }
 
+    // ---------- treino no turno oposto ao da escola (Fase A, Etapa 2) ----------
+
+    public function test_cada_atleta_entra_so_nos_treinos_do_turno_dele(): void
+    {
+        $manha = $this->grade(['categoria_grade_treino' => 'Treino', 'dia_semana_grade_treino' => 'terca',
+            'horario_inicio_grade_treino' => '09:00', 'horario_fim_grade_treino' => '11:00']);
+        $tarde = $this->grade(['categoria_grade_treino' => 'Treino', 'dia_semana_grade_treino' => 'terca',
+            'horario_inicio_grade_treino' => '14:00', 'horario_fim_grade_treino' => '17:00']);
+
+        $estudaDeManha = $this->atletaComPeriodo('Ana', 'MANHA');           // treina à tarde
+        $estudaATarde  = $this->atletaComPeriodo('Bia', 'TARDE');           // treina de manhã
+        $integral      = $this->atletaComPeriodo('Caio', 'INTEGRAL');       // treina à tarde
+        $noiteManha    = $this->atletaComPeriodo('Duda', 'NOITE', 'MANHA'); // escolheu a manhã
+        $noiteAmbos    = $this->atletaComPeriodo('Edu', 'NOITE', 'AMBOS');  // os dois turnos
+        $this->atletaComPeriodo('Fabi', null);                              // sem período: nenhum
+
+        $previa = $this->comoAdminFixo()->get(route('admin.calendario.grade.previa', ['mes' => '2026-12']))
+            ->assertSee('1 atleta(s) ativo(s) sem período escolar')
+            ->assertSee('não será inscrito nos treinos:')
+            ->assertSee('que treinam de manhã')
+            ->assertSee('que treinam à tarde')
+            ->viewData('previa');
+        $linhas = $previa['linhas']->keyBy(fn ($l) => $l['grade']->id_grade_treino);
+
+        $this->assertSame('MANHA', $linhas[$manha]['turno']);
+        $this->assertEqualsCanonicalizing([$estudaATarde, $noiteManha, $noiteAmbos], $linhas[$manha]['atletas']);
+        $this->assertSame('TARDE', $linhas[$tarde]['turno']);
+        $this->assertEqualsCanonicalizing([$estudaDeManha, $integral, $noiteAmbos], $linhas[$tarde]['atletas']);
+        $this->assertSame(['Fabi'], $linhas[$manha]['semPeriodo']);
+        $this->assertSame(['Fabi'], $previa['totais']['sem_periodo']);
+
+        // Gerar inscreve do mesmo jeito; a agenda de cada um conta só os treinos dele (5 terças em dezembro)
+        $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-12'])->assertSessionHas('sucesso');
+        $treinoDaManha = EventoCalendario::where('id_grade_treino', $manha)->where('data_grade_evento_calendario', '2026-12-01')->firstOrFail();
+        $this->assertEqualsCanonicalizing([$estudaATarde, $noiteManha, $noiteAmbos], $treinoDaManha->inscricoes()->pluck('id_atleta')->all());
+        $this->assertStringContainsString('Seus 10 treinos', DB::table('tbl_notificacao')->where('id_atleta', $noiteAmbos)->value('mensagem_notificacao'));
+        $this->assertStringContainsString('Seus 5 treinos', DB::table('tbl_notificacao')->where('id_atleta', $estudaDeManha)->value('mensagem_notificacao'));
+    }
+
+    public function test_turno_da_linha_pelo_horario_de_inicio(): void
+    {
+        $turno = fn (?string $inicio) => (new \App\Models\GradeTreino(['horario_inicio_grade_treino' => $inicio]))->turno();
+
+        $this->assertSame('MANHA', $turno('07:30:00'));
+        $this->assertSame('MANHA', $turno('11:59'));
+        $this->assertSame('TARDE', $turno('12:00:00'));
+        $this->assertSame('TARDE', $turno('18:00'));
+        $this->assertNull($turno(null));
+    }
+
     public function test_mes_futuro_gera_todas_as_datas(): void
     {
         [$sub13] = $this->cenario();
@@ -401,7 +451,8 @@ class GradeGeracaoMesTest extends TestCase
 
         $atleta = function (string $nome, string $status, string $categoria) {
             $id = $this->criarAtleta($this->nascidoComIdade(12), 'M', $status);
-            DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome]);
+            // Treina nos dois turnos (o turno tem testes próprios, abaixo)
+            DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome, 'periodo_escolar_atleta' => 'NOITE', 'turno_treino_atleta' => 'AMBOS']);
             $this->colocarNaCategoria($id, $this->idCategoria($categoria, 'M'));
 
             return $id;
@@ -412,6 +463,17 @@ class GradeGeracaoMesTest extends TestCase
         $atleta('Duda', 'INATIVO', 'Sub-13');
 
         return [$sub13, $integrado, $sub9f, $jogos, $ana, $bia, $caio];
+    }
+
+    // Atleta ATIVO (Sub-13 M) com o período escolar e, para quem estuda à noite, o turno do treino
+    private function atletaComPeriodo(string $nome, ?string $periodo, ?string $turno = null): int
+    {
+        $id = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
+        DB::table('tbl_atletas')->where('id_atleta', $id)
+            ->update(['nome_atleta' => $nome, 'periodo_escolar_atleta' => $periodo, 'turno_treino_atleta' => $turno]);
+        $this->colocarNaCategoria($id, $this->idCategoria('Sub-13', 'M'));
+
+        return $id;
     }
 
     // Mesmo horário em vários dias: uma linha por dia (como o "Novo Horário" com vários dias marcados)

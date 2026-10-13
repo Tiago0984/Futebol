@@ -126,6 +126,17 @@ class GradeTreino extends Model
         return $this->motivoQueNaoGera() === null;
     }
 
+    // Treino que começa a partir deste horário é da tarde; antes, da manhã
+    public const INICIO_DA_TARDE = '12:00';
+
+    // Turno do treino desta linha (MANHA ou TARDE), pelo horário de início; null sem horário
+    public function turno(): ?string
+    {
+        $inicio = $this->horario_inicio_grade_treino;
+
+        return $inicio === null ? null : (substr($inicio, 0, 5) < self::INICIO_DA_TARDE ? 'MANHA' : 'TARDE');
+    }
+
     /**
      * Dados do evento desta linha numa data (mesmas chaves do formulário de evento, para EventoCalendario::criarPor).
      * A origem (id_grade_treino e data_grade_evento_calendario) fica de fora: não é fillable e é gravada à parte.
@@ -178,7 +189,10 @@ class GradeTreino extends Model
      *  - desmarcadas: datas novas que o admin desmarcou (feriado, dia sem aula): não são geradas;
      *  - existentes: datas que já têm evento desta linha (com o status; cancelado e oculto não voltam);
      *  - puladas: hoje, com o treino já concluído (não é gerado);
-     *  - atletas: ids que serão inscritos em cada evento (ATIVO da categoria; sem categoria, todos os ATIVO);
+     *  - atletas: ids que serão inscritos em cada evento: ATIVO da categoria (sem categoria, todos os ATIVO) que
+     *    treinam no turno da linha (Atleta::turnosDeTreino: o oposto ao da escola; Fase A, Etapa 2);
+     *  - turno: MANHA ou TARDE (turno());
+     *  - semPeriodo: nomes dos atletas da linha sem período escolar (sem turno de treino: não entram);
      *  - origem: CATEGORIA (linha com categoria) ou INDIVIDUAL (linha sem categoria);
      *  - lote: os eventos novos ainda não salvos, com os atletas (para o conflito).
      * Mais os conflitos de horário do lote (EventoCalendario::conflitosEmLote) e os totais.
@@ -203,17 +217,20 @@ class GradeTreino extends Model
             ->get(['id_grade_treino', 'data_grade_evento_calendario', 'status_evento_calendario'])
             ->groupBy('id_grade_treino');
 
-        // Atletas: uma consulta por categoria e uma para todos os ativos (não uma por evento)
+        // Atletas: uma consulta por categoria e uma para todos os ativos, com o período escolar (não uma por evento)
         $porCategoria = [];
-        $todosAtivos  = null;
+        $ativos = Atleta::where('status_atleta', 'ATIVO')->orderBy('nome_atleta')
+            ->get(['id_atleta', 'nome_atleta', 'periodo_escolar_atleta', 'turno_treino_atleta'])
+            ->keyBy('id_atleta');
 
         $marcadas = $marcadas === null ? null : array_flip($marcadas);
 
-        $linhas = $grades->map(function (self $grade) use ($inicio, $minimo, $existentes, $marcadas, &$porCategoria, &$todosAtivos) {
+        $linhas = $grades->map(function (self $grade) use ($inicio, $minimo, $existentes, $marcadas, $ativos, &$porCategoria) {
             $linha = [
                 'grade' => $grade, 'motivo' => $grade->motivoQueNaoGera(),
                 'novas' => collect(), 'desmarcadas' => collect(), 'existentes' => collect(), 'puladas' => collect(),
-                'atletas' => [], 'origem' => $grade->id_categoria ? 'CATEGORIA' : 'INDIVIDUAL', 'lote' => [],
+                'atletas' => [], 'turno' => $grade->turno(), 'semPeriodo' => [],
+                'origem' => $grade->id_categoria ? 'CATEGORIA' : 'INDIVIDUAL', 'lote' => [],
             ];
 
             if ($linha['motivo'] !== null) {
@@ -223,9 +240,18 @@ class GradeTreino extends Model
             $jaGeradas = ($existentes[$grade->id_grade_treino] ?? collect())
                 ->keyBy(fn ($e) => $e->data_grade_evento_calendario->toDateString());
 
-            $linha['atletas'] = $grade->id_categoria
+            // Da categoria (ou todos os ativos), só quem treina no turno da linha; sem período, fica de fora
+            $candidatos = $grade->id_categoria
                 ? ($porCategoria[$grade->id_categoria] ??= Atleta::idsAtivosNaCategoria($grade->id_categoria))
-                : ($todosAtivos ??= Atleta::where('status_atleta', 'ATIVO')->orderBy('nome_atleta')->pluck('id_atleta')->all());
+                : $ativos->keys()->all();
+            foreach ($candidatos as $idAtleta) {
+                $atleta = $ativos[$idAtleta];
+                if (! $atleta->periodo_escolar_atleta) {
+                    $linha['semPeriodo'][] = $atleta->nome_atleta;
+                } elseif (in_array($linha['turno'], $atleta->turnosDeTreino(), true)) {
+                    $linha['atletas'][] = (int) $idAtleta;
+                }
+            }
 
             foreach ($grade->datasNoMes((int) $inicio->year, (int) $inicio->month, $minimo) as $data) {
                 // Evento ainda não salvo: para a regra de Concluído e para o conflito em lote
@@ -259,6 +285,8 @@ class GradeTreino extends Model
                 'existentes'   => $linhas->sum(fn ($l) => $l['existentes']->count()),
                 'puladas'      => $linhas->sum(fn ($l) => $l['puladas']->count()),
                 'desmarcadas'  => $linhas->sum(fn ($l) => $l['desmarcadas']->count()),
+                // Atletas sem período escolar das linhas que geram algo: não entram em nenhum treino
+                'sem_periodo'  => $linhas->filter(fn ($l) => $l['novas']->isNotEmpty())->flatMap(fn ($l) => $l['semPeriodo'])->unique()->sort()->values()->all(),
                 'nao_geram'    => $linhas->whereNotNull('motivo')->count(),
                 'conflitos_reais'  => $conflitos['totais']['reais'],
                 'conflitos_fracos' => $conflitos['totais']['fracos'],
