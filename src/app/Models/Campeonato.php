@@ -81,6 +81,27 @@ class Campeonato extends Model
             ->whereDate('data_fim_campeonato', '>=', $hoje);
     }
 
+    /**
+     * O evento de cada jogo guarda uma cópia da categoria do campeonato (JogosController), que é só exibição
+     * desde a Fase 8. Quando a categoria do campeonato muda, a cópia acompanha em todos os jogos dele (inclusive
+     * concluídos, cancelados e ocultos), com histórico e sem avisar nem mexer nas inscrições. Devolve quantos
+     * jogos mudaram.
+     */
+    public function atualizarCategoriaDosJogos(?int $idUsuario): int
+    {
+        $eventos = EventoCalendario::whereIn('id_evento_calendario', $this->jogos()->select('id_evento'))
+            ->where(fn ($q) => $this->id_categoria === null
+                ? $q->whereNotNull('id_categoria')
+                : $q->whereNull('id_categoria')->orWhere('id_categoria', '<>', $this->id_categoria))
+            ->get();
+
+        foreach ($eventos as $evento) {
+            $evento->atualizarComHistorico(['id_categoria' => $this->id_categoria], $idUsuario);
+        }
+
+        return $eventos->count();
+    }
+
     // Por que não pode ser excluído (ou null): jogo preserva o histórico e a FK de tbl_jogos é NO ACTION
     public function motivoParaNaoExcluir(): ?string
     {

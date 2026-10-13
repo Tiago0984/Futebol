@@ -100,10 +100,18 @@ class CampeonatosController extends Controller
             $request->file('banner_evento')->move(public_path('futebol/images/campeonatos'), $dados['banner_evento']);
         }
 
-        $campeonato->update($dados);
-        $campeonato->times()->sync($request->times ?? []);
+        // A categoria dos jogos acompanha a do campeonato (Campeonato::atualizarCategoriaDosJogos)
+        $jogosAtualizados = DB::transaction(function () use ($campeonato, $dados, $request) {
+            $campeonato->update($dados);
+            $campeonato->times()->sync($request->times ?? []);
 
-        return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato atualizado com sucesso.');
+            return $campeonato->wasChanged('id_categoria') ? $campeonato->atualizarCategoriaDosJogos(auth('admin')->id()) : 0;
+        });
+
+        $mensagem = 'Campeonato atualizado com sucesso.'
+            . ($jogosAtualizados ? " Categoria atualizada em {$jogosAtualizados} jogo(s)." : '');
+
+        return redirect()->route('admin.campeonatos.index')->with('sucesso', $mensagem);
     }
 
     public function toggleStatus($id)

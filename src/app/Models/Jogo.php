@@ -108,7 +108,7 @@ class Jogo extends Model
     {
         $jogos = $query
             ->whereHas('evento', fn ($q) => $q->where('status_evento_calendario', '<>', 'INATIVO'))
-            ->with(['evento' => fn ($q) => $q->comInscritosAtivos(), 'campeonato', 'timeCasa.categoria', 'timeVisitante.categoria'])
+            ->with(['evento' => fn ($q) => $q->comInscritosAtivos(), 'campeonato.categoria', 'timeCasa.categoria', 'timeVisitante.categoria'])
             ->get();
 
         $escalados = $jogos->isEmpty() ? collect() : DB::table('tbl_evento_atleta as ea')

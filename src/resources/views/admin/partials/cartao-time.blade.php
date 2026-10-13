@@ -3,7 +3,15 @@
     amistosos. $time (com categoria); $link = jogadores do time (só leitura), ignorado no externo, que fica
     bloqueado (sem elenco na associação); $contagem (opcional) = texto do número, por exemplo "3 escalado(s)";
     sem ele, o total de atletas do elenco ($time->total_atletas).
+    $categoriaDoCampeonato (opcional): quando a categoria do time é outra, o rótulo vira "Time: …" com a dica
+    de que é a do cadastro do time (o mesmo time joga campeonatos de faixas diferentes; a idade segue a do
+    campeonato).
 --}}
+@php
+  $categoriaDoCampeonato ??= null;
+  $outraCategoria = $time->categoria && $categoriaDoCampeonato
+      && (int) $time->categoria->id_categoria !== (int) $categoriaDoCampeonato->id_categoria;
+@endphp
 @if(strtoupper($time->tipo_time) === 'EXTERNO')
 <div class="escal-team-card escal-team-card-external">
   <div class="escal-team-logo">
@@ -15,9 +23,7 @@
       <span class="escal-team-name">{{ $time->nome_time }}</span>
       <span class="badge escal-badge-externo">Externo</span>
     </div>
-    @if($time->categoria)
-      <span class="escal-team-cat">{{ $time->categoria->rotulo }}</span>
-    @endif
+    @include('admin.partials._categoria-do-time')
     <span class="escal-team-unavailable">
       <i class="bi bi-lock-fill"></i> Elenco não disponível nesta associação
     </span>
@@ -32,9 +38,7 @@
   </div>
   <div class="escal-team-info">
     <span class="escal-team-name">{{ $time->nome_time }}</span>
-    @if($time->categoria)
-      <span class="escal-team-cat">{{ $time->categoria->rotulo }}</span>
-    @endif
+    @include('admin.partials._categoria-do-time')
     <span class="escal-team-count">
       <i class="bi bi-people-fill"></i>
       {{ $contagem ?? ($time->total_atletas . ' atleta' . ($time->total_atletas != 1 ? 's' : '')) }}

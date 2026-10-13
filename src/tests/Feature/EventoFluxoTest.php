@@ -391,6 +391,72 @@ class EventoFluxoTest extends TestCase
             ->assertSessionHasErrors('tipo_campeonato');
     }
 
+    public function test_trocar_a_categoria_do_campeonato_atualiza_a_dos_jogos_com_historico_e_sem_avisar(): void
+    {
+        $idSub15M = $this->idCategoria('Sub-15', 'M');
+        $futuro  = $this->jogo($this->copa);
+        $passado = $this->jogo($this->copa, data: now()->subMonth()->toDateString());
+        $oculto  = $this->jogo($this->copa, $this->verde);
+        foreach ([$futuro, $passado, $oculto] as $jogo) {
+            $jogo->evento->update(['id_categoria' => $this->idSub11M]);
+        }
+        $oculto->evento->update(['status_evento_calendario' => 'INATIVO']);
+        $amistoso = $this->jogo(null);
+        $amistoso->evento->update(['id_categoria' => $this->idSub11M]);
+        $ana = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
+        $this->colocarNaCategoria($ana, $this->idSub11M);
+        $futuro->evento->inscrever($ana, 'INDIVIDUAL', $this->admin->id_usuario);
+        $notificacoes = DB::table('tbl_notificacao')->count();
+
+        $dados = [
+            'nome_campeonato' => 'Copa Escola', 'tipo_campeonato' => 'MATA-MATA',
+            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'id_categoria' => $idSub15M,
+        ];
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), $dados)
+            ->assertSessionHas('sucesso', 'Campeonato atualizado com sucesso. Categoria atualizada em 3 jogo(s).');
+
+        // Todos os jogos do campeonato acompanham (concluído e oculto também); o amistoso não muda
+        foreach ([$futuro, $passado, $oculto] as $jogo) {
+            $this->assertSame($idSub15M, (int) $jogo->evento->fresh()->id_categoria);
+            $this->assertDatabaseHas('tbl_evento_historico', [
+                'id_evento_calendario' => $jogo->id_evento, 'campo_evento_historico' => 'id_categoria',
+                'id_usuario' => $this->admin->id_usuario,
+            ]);
+        }
+        $this->assertSame($this->idSub11M, (int) $amistoso->evento->fresh()->id_categoria);
+
+        // Só exibição: ninguém sai nem é avisado
+        $this->assertDatabaseHas('tbl_evento_atleta', ['id_evento_calendario' => $futuro->id_evento, 'id_atleta' => $ana]);
+        $this->assertSame($notificacoes, DB::table('tbl_notificacao')->count());
+
+        // Salvar de novo sem trocar a categoria não mexe nos jogos
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), $dados)
+            ->assertSessionHas('sucesso', 'Campeonato atualizado com sucesso.');
+        $this->assertSame(3, DB::table('tbl_evento_historico')->where('campo_evento_historico', 'id_categoria')->count());
+    }
+
+    public function test_cartao_do_time_avisa_quando_a_categoria_do_time_e_outra_que_a_do_campeonato(): void
+    {
+        $this->jogo($this->copa);
+
+        // Mesma categoria: só o rótulo
+        $this->comoAdmin()->get(route('admin.campeonatos.times', $this->copa))
+            ->assertSee('Sub-11 Masculino')
+            ->assertDontSee('js-categoria-do-time');
+
+        // Campeonato Sub-15, times Sub-11: "Time: …" com a dica, nos cartões e na tela do jogo
+        DB::table('tbl_campeonato')->where('id_campeonato', $this->copa)->update(['id_categoria' => $this->idCategoria('Sub-15', 'M')]);
+        $dica = 'title="Categoria do cadastro do time. O campeonato é Sub-15 Masculino."';
+        $this->comoAdmin()->get(route('admin.campeonatos.times', $this->copa))
+            ->assertSee('Time: Sub-11 Masculino')
+            ->assertSee($dica, false);
+        $this->comoAdmin()->get(route('admin.campeonatos.jogos'))->assertSee('Time: Sub-11 Masculino');
+
+        $jogo = Jogo::where('id_campeonato', $this->copa)->first();
+        $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
+            ->assertSee($dica, false);
+    }
+
     public function test_tipo_antigo_fora_da_lista_continua_aceito_na_edicao(): void
     {
         DB::table('tbl_campeonato')->where('id_campeonato', $this->copa)->update(['tipo_campeonato' => 'REGIONAL']);
