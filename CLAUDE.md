@@ -58,7 +58,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - `tbl_notificacao.id_notificacao`: `INT UNSIGNED`; nela, `id_atleta` INT com sinal, `id_evento_calendario` INT UNSIGNED (nullable) e `id_usuario` BIGINT UNSIGNED (nullable).
   - Não usar `foreignId()` sem conferir o tipo da coluna referenciada.
 - **ENUMs da Fase 8:**
-  - `tbl_notificacao.tipo_notificacao`: `INSCRICAO, REMOCAO, ALTERACAO, CANCELAMENTO, REATIVACAO, AGENDA` (rótulos em `Notificacao::TIPOS`).
+  - `tbl_notificacao.tipo_notificacao`: `INSCRICAO, REMOCAO, ALTERACAO, CANCELAMENTO, REATIVACAO, AGENDA, AVISO` (rótulos em `Notificacao::TIPOS`; `AVISO` acrescentado no fim, batch 28).
   - `tbl_evento_atleta.origem_evento_atleta`: `CATEGORIA, INDIVIDUAL, ELENCO` (rótulos em `EventoAtleta::ORIGENS`; `ELENCO` acrescentado no fim, batch 23).
 - **Coluna JSON:** `tbl_notificacao.dados_notificacao` é a primeira do projeto. JSON não tem collation (o MySQL guarda em binário próprio), então não fura a regra do `general_ci`. Na inserção em massa (`insert`), o JSON vai codificado à mão (`json_encode`), porque o cast do model não atua.
 - **Fase 9 (login do app):**
@@ -68,6 +68,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - `tbl_notificacao_leitura` (leitura dos avisos pelos responsáveis; a do atleta continua em `tbl_notificacao.data_leitura_notificacao`): `id_notificacao_leitura` INT UNSIGNED AI; `id_notificacao` INT UNSIGNED (FK `fk_notificacao_leitura_notificacao`); `id_responsavel` INT com sinal (FK `fk_notificacao_leitura_responsavel`); `data_notificacao_leitura` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP; único `notificacao_leitura_unique` (id_notificacao, id_responsavel). FKs NO ACTION.
   - `personal_access_tokens` (Sanctum) guarda tokens dos dois perfis: `tokenable_type` = `App\Models\Atleta` ou `App\Models\Responsavel`. Não tem FK: quem apaga atleta/responsável apaga os tokens.
 - **Rascunho do evento (Fase 10, Etapa 4):** `tbl_evento_calendario.data_publicacao_evento_calendario` DATETIME nullable, `DEFAULT CURRENT_TIMESTAMP` (batch 26). NULL = rascunho; preenchida = publicado. O default é de propósito: quem grava sem pensar no rascunho cria evento publicado; o rascunho grava NULL explicitamente. Fora do `$fillable`; o `EventoCalendario::booted()` preenche na criação (o model não relê o default do banco) e só o `publicar()` muda depois.
+- **Período escolar (Fase A, 13/10/2026, batch 27):** `tbl_atletas.periodo_escolar_atleta` ENUM `MANHA, TARDE, NOITE, INTEGRAL` nullable (antes VARCHAR livre, com "Manhã"/"MANHÃ"; a migration normalizou e para com a lista se achar valor desconhecido); `tbl_atletas.turno_treino_atleta` ENUM `MANHA, TARDE, AMBOS` nullable, só para quem estuda à noite (o `Atleta::booted()` limpa nos outros). Rótulos em `Atleta::PERIODOS` e `TURNOS_TREINO`.
 - **Tabela própria em vez da `notifications` do Laravel** (Fase 8): a padrão é polimórfica (`notifiable_id` BIGINT UNSIGNED, sem FK possível para `id_atleta` INT), grava nome de classe PHP e guarda os dados num JSON opaco.
 - Todas as FKs existentes estão em `NO ACTION`; não usar `ON DELETE CASCADE` sem discutir.
 - O banco nasceu de script SQL; as migrations `create_*` e `add_foreign_keys_*` estão com batch [0] (marcadas, nunca executadas).
@@ -83,6 +84,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Fonte oficial da categoria do atleta: **`tbl_categoria_atleta`** (com início, fim e status `ATIVO`/`ENCERRADO`). `tbl_inscricao` foi **descontinuada** (Fase 3).
 - Troca de categoria: **fechar a linha antiga** (data_fim + status) e **criar uma nova**, nunca só dar UPDATE.
 - **Atleta ATIVO sempre com categoria** (linha ATIVO em `tbl_categoria_atleta`): obrigatória no cadastro pelo admin e na edição de quem fica ATIVO (o campo vazio encerraria a linha); o botão de status não ativa quem está sem categoria; na edição, a categoria atual inativa aparece como "(inativa)" (manter é aceito, trocar exige categoria ativa). Inativo pode ficar sem; pendente e rejeitado recebem a categoria na aprovação.
+- **Período escolar obrigatório e treino no turno oposto** (professor, 13/10/2026; `e0061f4`): quem estuda de manhã treina à tarde, à tarde treina de manhã, **integral treina à tarde**; **à noite escolhe** (manhã, tarde ou os dois, `turno_treino_atleta`). Regra em `Atleta::turnosDeTreino()` e validação única em `Atleta::regrasPeriodo()` (site, admin e API; Noite exige o turno). Atleta sem período: selo amarelo "Sem período escolar" na lista e a edição não salva até preencher. Treinar no turno da escola é exceção: **aviso, sem bloquear** (Fase A, Etapa 3).
 
 ### Usuários (dashboard)
 - PK de `tbl_usuarios` é **`id_usuario`** (feito na Fase 2).
@@ -117,6 +119,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Placar nullable:** NULL = ainda não jogado (os dois ou nenhum). A classificação conta só jogos com placar e evento não cancelado nem oculto.
 - **Título do evento** gerado como "Casa x Visitante", na criação e quando os times mudam.
 - **Categoria do evento:** a do campeonato; no **amistoso** (sem campeonato, opção explícita "Amistoso" no formulário), o admin escolhe (sugestão: categoria do time mandante) ou deixa sem. **Desde a Fase 8, a categoria do jogo é só exibição** (site, lista, aviso de fora da categoria): mudá-la não mexe nas inscrições.
+  - **Trocar a categoria do campeonato atualiza a de todos os jogos dele** (13/10/2026, `aac0c46`; `Campeonato::atualizarCategoriaDosJogos()`): inclusive concluídos, cancelados e ocultos, com histórico, sem avisar e sem tirar ninguém (quem passa da idade nova fica com o aviso vermelho). Mensagem "Categoria atualizada em N jogo(s)". **Planejado:** alerta ao salvar, listando os jogos com atletas acima da idade nova, com "Salvar e remover" ou "Salvar e manter".
+  - **Cartão do time** (telas de jogos do campeonato e bloco do externo na tela do jogo): a categoria mostrada é a **do cadastro do time**; diferente da do campeonato, vira "Time: Sub-11 Masculino ⓘ" com a dica.
 - **Jogo inscreve o elenco, não a categoria** (Fase 8, `2cd6ee1`). Motivo: a escolinha às vezes forma dois times no mesmo campeonato, e o atleta de um time era inscrito e avisado dos jogos do outro.
   - **Criar:** inscreve o elenco ativo (`tbl_atleta_time`) dos times **INTERNOS** que jogam, com origem **`ELENCO`** e **já escalado** no time; quem está nos dois elencos entra **sem time** (`Jogo::inscreverElenco()`). Conflito conferido pelo elenco.
   - **Time interno sem elenco ativo:** o jogo fica sem inscritos daquele lado e a lista de jogos mostra um **aviso amarelo** ("Sem elenco cadastrado: …").
@@ -136,7 +140,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Idade no campeonato** (professor, 09/10/2026): campeonato é por faixa de idade; o **mais novo pode jogar acima** (Sub-13 no Sub-15, normalmente como reserva) e o **mais velho nunca joga abaixo**. Limite = `idade_max_categoria` da categoria do **campeonato**, com a idade pelo **ano do jogo** (`Categoria::idadeNoAno`). Regra em `Jogo::acimaDaIdade()` (com `limiteDeIdade()`, `erroDeIdade()`, `textoAcimaDaIdade()`).
   - **Bloqueia:** inscrição individual e escalação de quem passa da idade (tirar do time pode); o select da tela do jogo mostra o atleta desabilitado ("· acima da idade").
   - **Fica de fora, com os nomes na mensagem:** criar o jogo, "Preencher pelo elenco", troca de time e "Adicionar todos de uma categoria" (o contador de faltantes do elenco não conta quem não pode entrar).
-  - **Inscrito que já passa da idade** (de antes da regra, ou o campeonato do jogo mudou): aviso vermelho e selo na tela do jogo; o rascunho **não é publicado** até remover.
+  - **Inscrito que já passa da idade** (de antes da regra, ou o campeonato do jogo mudou): aviso vermelho e selo na tela do jogo; o rascunho **não é publicado** até remover (o servidor recusa e, desde `de4974d`, o botão "Publicar" já aparece desabilitado com "Para publicar, remova antes…").
   - **Mais novo do mesmo sexo** no jogo de campeonato **não gera** o aviso de fora da categoria. Sexo diferente continua só avisando.
   - **Amistoso e campeonato sem categoria:** sem limite de idade (aviso de fora da categoria como antes; seção 8, pergunta 20). O elenco do time não é conferido (o time pode jogar campeonatos de faixas diferentes).
 - **API:** continua devolvendo `data_jogo` no JSON (calculado do evento), para não quebrar o app.
@@ -175,10 +179,12 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - **ALTERACAO:** a edição mudou **data, horário ou local** (calendário e jogos). Uma por inscrito, listando só os campos alterados ("Mudanças: data 05/05 → 06/05; local Campo A → Campo B"). Título, tipo, descrição, categoria e placar **não avisam**. Uma por edição (não substitui a não lida).
   - **CANCELAMENTO / REATIVACAO:** no `mudarStatus()`. Sair de ATIVO avisa CANCELAMENTO (cancelar, ou **ocultar** um evento ativo); voltar a ATIVO avisa REATIVACAO (reativar, ou **mostrar** de volta como ativo). Entre cancelado e oculto não avisa.
   - **AGENDA** (sem evento): **geração do mês** = uma por atleta do lote, com a quantidade de treinos dele, em inserção em massa ("Agenda de dezembro disponível" / "Seus 18 treinos de dezembro de 2026 já estão na agenda."); **"Mover inscrições"** do atleta = um resumo só ("Sua categoria agora é …: você saiu de N atividades da … e entrou em M"), sem INSCRICAO/REMOCAO por evento.
+  - **AVISO** (sem evento; 13/10/2026, `d9dab6e`): botão **"Novo aviso"** na página de Notificações; o admin escreve **só a mensagem** (até 497 caracteres, `Notificacao::MENSAGEM_MAX`; o título é sempre "Aviso da escolinha", `TITULO_AVISO`) e escolhe os atletas na caixa por categoria (partial `admin.partials.escolher-atletas`, a mesma do evento individual; `Atleta::ativosPorCategoria()`). Só ATIVO recebe; os responsáveis veem como as outras.
 - **Sem duplicar:** na edição que muda categoria (ou times) e data juntas, quem entra recebe só INSCRICAO (já com os dados novos), quem sai só REMOCAO, quem fica só ALTERACAO (`salvarEdicaoDoEvento` no trait `ConfirmaConflitos`: histórico → jogo/times → categoria → ALTERACAO, numa transação).
 - **Não avisam:** jogo em rascunho (seção "Jogos"; o aviso sai ao publicar); inscrição em evento cancelado, oculto ou concluído; escalação (trocar o time do inscrito); edição sem mudança real.
 - **Mensagens do admin:** toda ação que inscreve, remove ou muda o status informa "N atleta(s) notificado(s)." (inclusive 0, para conferir).
 - **Tela do evento no admin:** seção **"Notificações (N)"** com quando, tipo, atleta, título e mensagem, quem fez a ação e se foi lida, da mais nova para a mais antiga. Só no admin (dados de menores). As AGENDA não têm evento: ficam para a página geral da Fase 10.
+- **Página geral de Notificações: uma linha por envio** (13/10/2026, `d9dab6e`): as notificações gravadas juntas (mesmo tipo, evento, título, mensagem, quem e quando: `Notificacao::COLUNAS_DO_ENVIO`) viram uma linha, **sem a coluna Atleta**; a coluna "Atletas" ("7 atleta(s) · 2 leu(ram)") abre os nomes com a leitura de cada um, e "Responsáveis" soma o envio. Mensagem que muda por atleta (o time de cada um) fica em envios separados. Os filtros valem por atleta, antes de juntar. Contador "N envio(s), M notificação(ões)".
 - **Provisórios** (seção 8, pergunta 16): remoção avisa, reativar avisa, ocultar avisa como cancelamento e mostrar como reativação, inscrição em evento cancelado não avisa, escalação não avisa, sem e-mail.
 
 ### App: perfis, senhas, agenda e avisos (Fase 9)
@@ -208,7 +214,9 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Mapeamento:** título "Treino {rótulo}" (rótulo que já começa com "Treino" fica como está); `LIVRE` vira `TREINO` com subtipo "Livre"; horários, local e categoria vêm direto da linha.
 - **Não gera:** tipo `JOGO`, linha inativa, categoria inativa e linha sem horário de início (`GradeTreino::motivoQueNaoGera()`).
 - **Linha que já gerou eventos não é excluída**, só inativada.
-- **Linhas sem categoria** (Integrado, Treino Livre): inscrevem **todos os atletas ATIVO**, origem `INDIVIDUAL` (provisório, seção 8, pergunta 15). Quem entra depois é adicionado pelo admin.
+- **Linhas sem categoria** (Integrado, Treino Livre): inscrevem **todos os atletas ATIVO**, origem `INDIVIDUAL` (provisório, seção 8, pergunta 15). Quem entra depois é adicionado pelo admin. **Meninas treinam junto** (dono do projeto, 13/10/2026): os treinos reais são sem categoria, meninos e meninas juntos.
+- **Por turno (Fase A, Etapa 2, a fazer):** a geração inscreve cada atleta só nos treinos do turno dele (`Atleta::turnosDeTreino()`; turno do treino pelo horário de início: antes das 12:00 = manhã); a prévia mostra quem ficou de fora por falta de período.
+- **Escolher as datas na prévia** (13/10/2026, `9164889`): cada data nova é uma caixa marcada (desmarcada = não é gerada) e a faixa "Dias com treino novo" desmarca o dia em todas as linhas (feriado, dia sem aula). "Atualizar prévia" recalcula totais e conflitos só com as marcadas; o "Gerar" gera só elas (`GradeTreino::previaDoMes($mes, $marcadas)`, chave `chaveDaData` = "idGrade|AAAA-MM-DD"). A data desmarcada **não grava nada**: gerando o mês de novo, volta marcada.
 - **Geração:** botão **"Gerar agenda do mês"** na aba Grade, com **prévia** (datas novas, já geradas, não gera com o motivo, atletas e inscrições). Só o **mês atual e os 2 seguintes** (`GradeTreino::MESES_A_FRENTE`), de hoje em diante; o **treino de hoje já concluído é pulado** (a prévia avisa). Categoria sem atleta ATIVO **gera o evento vazio** (a prévia destaca "0 atletas"). Lote tudo ou nada, com trava nas linhas da grade; gerar de novo não duplica.
 - **Conflito na geração:** calculado **em lote** na prévia (`EventoCalendario::conflitosEmLote`), contra os eventos existentes e entre os eventos do próprio lote, **agrupado por par de eventos** (até 5 nomes; o resto em `<details>`). Conflito real: **confirmação única** ("Confirmar mesmo assim e gerar"); sem confirmar, **nada é gravado**. Aviso fraco só informa (na prévia e, depois de gerar, no aviso azul da lista).
 - **Mudar ou inativar um horário não altera os eventos já gerados:** a tela só avisa quantos eventos futuros ativos ele tem (editar na lista de eventos, filtro Origem: Grade; cancelar à mão os que não vão acontecer).
@@ -244,7 +252,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **Mudança na grade:** atualizar os eventos futuros já gerados, perguntando a partir de qual data. Evento gerado e **editado à mão** não é sobrescrito; a tela lista os que ficaram de fora.
 - **Geração (Fase 7):**
   - Só de hoje em diante, no mês atual ou num mês futuro.
-  - Feriado: gerar normalmente e o admin cancela o evento do dia.
+  - Feriado ou dia sem aula: **desmarcar a data na prévia** (desde `9164889`); se já foi gerado, cancelar o evento do dia.
   - Evento gerado e depois cancelado ou oculto **não é recriado** (a chave grade + data continua existindo).
   - Lote **tudo ou nada** (uma transação).
   - Treinos (gerados ou à mão) ficam **fora do site público**, na lista e no Próximo Evento (seção 4, "Site público").
@@ -352,6 +360,8 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `6872693` feat: idade no campeonato, mais novo joga acima e mais velho nunca abaixo
 - `0d0929b` docs: regra de idade no campeonato e perguntas 11, 14 e 20
 - `3bf4eb2` feat: chegada 1 hora antes do jogo no aviso, no app e no admin
+- `5ea9311` docs: chegada antes do jogo, respostas do professor e fases combinadas
+- `aac0c46`, `e0061f4`, `cd612ea`, `9164889`, `d9dab6e`, `38cd0a0`, `de4974d`: ajustes de 13/10 (seção 6, "Ajustes de 13/10/2026")
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -495,11 +505,25 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Fases (letras desta conversa):**
   - **B — idade no campeonato:** ✅ feita (`6872693`; seção 4, "Idade no campeonato").
   - **C — chegada 1 hora antes:** ✅ feita (`3bf4eb2`; seção 4, "Chegada 1 hora antes"). **535 testes passando.**
-  - **A — grade real** (pelas telas do admin, sem código): 4 treinos sem categoria (ter/qui 09:00–11:00 e 14:00–17:00) e a linha de jogos de sábado 13:00–17:00 (só informação, resolve a pergunta 4); inativar as 18 linhas de teste. **Esperando o professor:** o atleta vai **num turno só ou nos dois**? (num só: usar o `periodo_escolar_atleta`, que hoje está com "MANHÃ"/"Manhã" misturados e metade vazia, ou um campo de turno de treino; nos dois: todos nos 4 treinos) e as **meninas treinam junto**? (a pergunta 9 dizia que não).
-  - **D — posições e titular/reserva no jogo** (precisa de migration): lista fixa de posições, várias por atleta, titular/reserva na escalação; pode virar a **convocação** (pergunta 17; `convocacao_atleta_time` existe e não é usada). Falta a lista de posições que ele usa.
+  - **A — grade real e treino por turno.** Respostas (dono do projeto, 13/10): treino **no turno oposto ao da escola** (integral à tarde; noite escolhe; os dois turnos só em eventualidade, com aviso) e **meninas treinam junto**.
+    - **Etapa 1 — período escolar** ✅ (`e0061f4`; seções 3 e 4, "Atletas"): migration no `db_futebol`, **batch 27**; backup `backup/db_futebol_antes_periodo_escolar_20261013_090545.sql`. Atletas ATIVO sem período no banco de teste: 5, 6, 7 e 12.
+    - **Etapa 2 — geração por turno:** a fazer (seção 4, "Grade de treino").
+    - **Etapa 3 — aviso fora do turno** na inscrição individual e no "Adicionar todos", sem bloquear; selo na tela do evento: a fazer.
+    - **Depois, pelas telas:** 4 treinos sem categoria (ter/qui 09:00–11:00 e 14:00–17:00), a linha de jogos de sábado 13:00–17:00 (só informação, resolve a pergunta 4) e inativar as 18 linhas de teste.
+  - **D — posições e titular/reserva no jogo** (precisa de migration): lista fixa de posições, várias por atleta, titular/reserva na escalação. Entra **na convocação** (Fase G). Falta a lista de posições que ele usa.
   - **E — avaliação técnica** escolhendo atletas por faixa de idade; aparece no site? (a regra atual esconde avaliações, pensada para a física).
   - **F — site público com mais eventos** (amistosos? treinos?), a confirmar.
-- **Perguntas ainda para o professor:** turno (acima); meninas no treino; idade no amistoso e dois times no mesmo campeonato (pergunta 20); sexo no jogo (pergunta 14); lista de posições; o que o observador vê no site; peneira no site.
+  - **G — convocação no lugar do elenco fixo** (dono do projeto, 13/10; depois da Fase A). O atleta é da AACJ **na sub dele** (`tbl_categoria_atleta`); os times internos de teste (Time Azul, Preto, Verde) são fictícios.
+    - **Regras:** time interno = a "camisa" da AACJ no campeonato ("AACJ Sub-15"; pode haver "AACJ Sub-15 B"), **sem elenco fixo**; jogo de campeonato é **associação contra associação**. **Convocação por campeonato**, ajustável no jogo; **camisa na convocação** (fixa no campeonato, pode mudar no seguinte); **um time por atleta em cada campeonato**. Jogo interno com coletes é **treino**, não jogo: **interno contra interno só dentro de campeonato** (AACJ A x AACJ B); no amistoso, bloqueado.
+    - **Etapas:** (1) `tbl_convocacao` (campeonato, time, atleta, camisa, quem, quando; único campeonato + atleta) e tela "Convocados" por time do campeonato, com a caixa por categoria e o bloqueio de idade; (2) jogo de campeonato inscreve os convocados ("Preencher pela convocação", "Não convocado" no lugar de "Fora do elenco"); (3) amistoso escolhe os atletas no próprio jogo, bloqueio de interno contra interno fora de campeonato; (4) sai o elenco fixo (caixas de times e camisa do cadastro do atleta, tela Elenco; site e API pela convocação; `tbl_atleta_time` fica no banco até remover com OK). Depois, a Fase D (posições, titular/reserva) entra na convocação.
+- **Perguntas ainda para o professor:** idade no amistoso (pergunta 20); sexo no jogo (pergunta 14); lista de posições; o que o observador vê no site; peneira no site; se quer **chamada (presença) no treino**.
+
+#### Ajustes de 13/10/2026
+- **Commits:** `aac0c46` (categoria dos jogos acompanha a do campeonato; cartão do time), `e0061f4` (período escolar), `cd612ea` (barra lateral do admin rola até o fim, acima do bloco do usuário), `9164889` (escolher datas na prévia da geração), `d9dab6e` (aviso livre e lista de notificações por envio), `38cd0a0` (tela do jogo legível no modo escuro: `bg-body-secondary`/`bg-body-tertiary` no lugar de `bg-light` e `#fafafa`, placar em `btn-outline-secondary`), `de4974d` (Publicar desabilitado com atleta acima da idade).
+- **Migrations no `db_futebol`:** batch 27 (`2026_10_13_000001_periodo_escolar_e_turno_de_treino`) e batch 28 (`2026_10_13_000002_add_aviso_to_tipo_notificacao`), ensaiadas antes no `db_futebol_test` com o backup. Nenhuma depende de ids: **o outro computador pode rodar só o `migrate`** (ou restaurar um dump deste).
+- **Backups** em `backup/` (só no computador onde foram feitos): `db_futebol_antes_periodo_escolar_20261013_090545.sql`, `db_futebol_antes_aviso_20261013_100334.sql`.
+- **Modo escuro:** usar classes que acompanham o tema (`bg-body-*`, `btn-outline-secondary`); `bg-light`, `bg-dark`, `btn-outline-dark` e cores fixas somem no escuro.
+- **551 testes passando.**
 
 ---
 
@@ -546,13 +570,13 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 6. Responsável e endereço de atleta excluído: apagar quando não houver outro atleta vinculado, ou anonimizar?
 7. ~~Link de definição de senha: e-mail do atleta ou do responsável?~~ ✅ **RESOLVIDA e implementada na Fase 9**: o app tem **dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha; o link vai para o e-mail que **cada um** informou no cadastro (seção 4, "App: perfis, senhas, agenda e avisos").
 8. Assinaturas antigas com valor `assinatura.png` (responsáveis 1, 2 e 3): considerar inválidas?
-9. ~~O feminino treina junto com o masculino da mesma faixa?~~ ✅ **RESOLVIDA** (professor): feminino treina **só com feminino**. A grade usa **uma coluna** `id_categoria` (sem tabela de ligação); horários femininos entram como **linhas novas** da grade.
+9. ~~O feminino treina junto com o masculino da mesma faixa?~~ ✅ **RESOLVIDA de novo** (dono do projeto, 13/10/2026): **as meninas treinam junto** (os treinos reais são sem categoria). A resposta anterior ("feminino só com feminino") fica para quando a grade voltar a ser por categoria: a grade usa **uma coluna** `id_categoria` e horários femininos entrariam como **linhas novas**.
 10. ~~Atleta pode jogar numa categoria acima da idade?~~ ✅ **RESOLVIDA** (professor): **pode, a critério do técnico** (atleta mais robusto). Escolher categoria **acima** da sugerida gera **aviso** (não bloqueia) e exige um **motivo**, gravado em `observacao_categoria_atleta`.
 11. ~~Atleta numa categoria **abaixo** da idade: há exceção?~~ ✅ **RESOLVIDA** (professor, 09/10/2026): **nunca**, "sempre de baixo para cima". Bloqueado no cadastro e no jogo de campeonato (seção 4, "Idade no campeonato").
 12. **Duração padrão dos eventos sem horário de fim** (usada no alerta de conflito), hoje provisória: JOGO 2h, TREINO 1h30, AVALIAÇÃO 1h, CAMPEONATO o dia todo, demais 2h. Confirmar os valores com o professor.
 13. **Critério de desempate da classificação** (site: home e página do campeonato), hoje provisório em `Jogo::classificacao()`: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, por fim, nome do time (sem acentos e sem maiúsculas). Confirmar com o professor (confronto direto? cartões?).
 14. **Escalar ou inscrever num jogo atleta de outra categoria ou sexo**: ✅ **idade RESOLVIDA** (professor, 09/10/2026): no jogo de campeonato, o mais novo joga acima e o mais velho é bloqueado (seção 4, "Idade no campeonato"). **Em aberto:** o **sexo** (menina num jogo masculino; hoje só avisa).
-15. **Quem participa das linhas da grade sem categoria:** o **Integrado** inclui o feminino? O **Treino Livre** vale para todos mesmo em dia de jogo? **Provisório:** todos os atletas ATIVO são inscritos (seção 4, "Grade de treino").
+15. **Quem participa das linhas da grade sem categoria:** ✅ o feminino entra (pergunta 9) e, com a Fase A, Etapa 2, só quem treina **naquele turno** (seção 4, "Atletas" e "Grade de treino"). **Em aberto:** o **Treino Livre** vale para todos mesmo em dia de jogo (a grade real não tem Treino Livre).
 16. **Notificações** (seção 4, "Notificações"). Hoje, provisório:
     - **remoção** da inscrição avisa o atleta;
     - **reativar** um evento cancelado avisa;
@@ -560,7 +584,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
     - inscrição em evento **já cancelado** não avisa;
     - **escalação** (por qual time joga) não avisa;
     - **sem e-mail**: a notificação fica só no app.
-17. **Jogo pelo elenco** (seção 4, "Jogos"). Hoje, provisório:
+17. **Jogo pelo elenco** (seção 4, "Jogos"). ✅ **Decidido** (dono do projeto, 13/10/2026): **convocação por campeonato**, ajustável no jogo, um time por atleta no campeonato (Fase G, seção 6). Até a Fase G, continua o provisório:
     - o **elenco ativo inteiro** é inscrito (titulares e reservas, sem **convocação** por jogo; `tbl_atleta_time` já tem `status_atleta_time` e `convocacao_atleta_time`);
     - o atleta pode estar em **dois times da escolinha no mesmo campeonato** (entra sem time e o admin escolhe);
     - ~~a notificação do jogo não cita o time~~ ✅ resolvido na Fase 10, Etapa 4: a inscrição escalada e a publicação do jogo citam o time.
