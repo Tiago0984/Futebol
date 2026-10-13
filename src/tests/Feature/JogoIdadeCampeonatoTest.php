@@ -162,7 +162,10 @@ class JogoIdadeCampeonatoTest extends TestCase
 
         $this->tela($jogo)
             ->assertSee('Acima da idade do campeonato (Sub-15 Masculino, até 15 anos)')
-            ->assertSee('Caio (16 anos).');
+            ->assertSee('Caio (16 anos).')
+            // O botão já mostra o bloqueio (o servidor confere de qualquer jeito, abaixo)
+            ->assertSee('Para publicar, remova antes o atleta acima da idade do campeonato.')
+            ->assertSee('id="btnPublicar" disabled', false);
 
         // Escalar não pode; tirar do time pode
         $this->actingAs($this->admin, 'admin')
@@ -177,6 +180,7 @@ class JogoIdadeCampeonatoTest extends TestCase
         $this->assertFalse($jogo->evento->fresh()->estaPublicado());
 
         $jogo->evento->removerInscricao($caio);
+        $this->tela($jogo)->assertDontSee('id="btnPublicar" disabled', false)->assertDontSee('Para publicar, remova antes');
         $this->publicar($jogo)->assertSessionHas('sucesso');
         $this->assertTrue($jogo->evento->fresh()->estaPublicado());
     }

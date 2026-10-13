@@ -131,12 +131,19 @@
                         @else
                             O {{ $rotuloEvento }} já aconteceu, está cancelado ou oculto: publicar não avisa ninguém.
                         @endif
+                        {{-- Inscrito acima da idade: o servidor recusa a publicação (JogosController::publicar); o botão já avisa --}}
+                        @if ($inscritosAcimaDaIdade)
+                            <div class="mt-1 fw-semibold js-publicar-bloqueado">
+                                <i class="bi bi-lock"></i> Para publicar, remova antes {{ count($inscritosAcimaDaIdade) === 1 ? 'o atleta' : 'os ' . count($inscritosAcimaDaIdade) . ' atletas' }} acima da idade do campeonato.
+                            </div>
+                        @endif
                     </div>
                     @if ($jogo)
                     <form action="{{ route('admin.jogos.publicar', $jogo->id_jogo) }}" method="POST" class="d-inline"
                           onsubmit="return confirm(@js($avisaAoPublicar ? 'Publicar o jogo e avisar os atletas inscritos? Depois de publicado, ele não volta a ser rascunho.' : 'Publicar o jogo sem avisar ninguém?'))">
                         @csrf @method('PATCH')
-                        <button type="submit" class="btn btn-warning btn-sm" id="btnPublicar">
+                        <button type="submit" class="btn btn-warning btn-sm" id="btnPublicar" @disabled($inscritosAcimaDaIdade)
+                                @if ($inscritosAcimaDaIdade) title="Há atletas acima da idade do campeonato" @endif>
                             <i class="bi bi-send"></i> {{ $avisaAoPublicar ? 'Publicar e avisar os atletas' : 'Publicar' }}
                         </button>
                     </form>
