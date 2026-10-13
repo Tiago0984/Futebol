@@ -95,6 +95,19 @@
                 </div>
             @endif
 
+            {{-- Treino no turno oposto ao da escola: inscrever à mão fora do turno só avisa (Fase A, Etapa 3) --}}
+            @if ($avisosTurno = session('avisos_turno'))
+                <div class="alert alert-warning alert-dismissible fade show" role="alert" id="avisoForaDoTurno">
+                    <strong><i class="bi bi-clock"></i> Fora do turno do treino</strong> (inscrito mesmo assim)
+                    <ul class="mb-0 mt-2">
+                        @foreach ($avisosTurno as $aviso)
+                        <li>{{ $aviso }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             {{-- Jogo de campeonato com inscrito que passa da idade (de antes da regra, ou o campeonato mudou):
                  o mais velho não joga abaixo da idade; o rascunho não é publicado assim --}}
             @if ($inscritosAcimaDaIdade)
@@ -282,7 +295,8 @@
                                         {{-- Jogo de campeonato: o mais velho não joga abaixo da idade --}}
                                         <option value="{{ $atleta->id_atleta }}" disabled>{{ $disponiveisAcimaDaIdade[$atleta->id_atleta] }} · acima da idade</option>
                                         @else
-                                        <option value="{{ $atleta->id_atleta }}">{{ $atleta->nome_atleta }}</option>
+                                        {{-- Treino: quem treina em outro turno (ou está sem período) pode entrar, com aviso --}}
+                                        <option value="{{ $atleta->id_atleta }}">{{ $atleta->nome_atleta }}{{ $turnoDoTreino && $atleta->foraDoTurno($turnoDoTreino) ? ' · fora do turno' : '' }}</option>
                                         @endif
                                         @endforeach
                                     </optgroup>
@@ -409,6 +423,11 @@
                                     {{ $inscricao->atleta->nome_atleta }}
                                     @if (isset($inscritosAcimaDaIdade[$inscricao->id_atleta]))
                                         <small class="d-block text-danger">Acima da idade do campeonato</small>
+                                    @endif
+                                    @if (isset($inscritosForaDoTurno[$inscricao->id_atleta]))
+                                        <small class="d-block text-warning-emphasis js-fora-do-turno">
+                                            <i class="bi bi-clock"></i> Fora do turno · {{ $inscritosForaDoTurno[$inscricao->id_atleta] }}
+                                        </small>
                                     @endif
                                 </td>
                                 <td class="text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</td>

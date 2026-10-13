@@ -308,6 +308,40 @@ class Atleta extends Authenticatable
         };
     }
 
+    // Treino que começa a partir deste horário é da tarde; antes, da manhã (grade e eventos de treino)
+    public const INICIO_DA_TARDE = '12:00';
+
+    // Turno de um treino (MANHA ou TARDE) pelo horário de início ("09:00" ou "09:00:00"); null sem horário
+    public static function turnoDoHorario(?string $inicio): ?string
+    {
+        return $inicio === null ? null : (substr($inicio, 0, 5) < self::INICIO_DA_TARDE ? 'MANHA' : 'TARDE');
+    }
+
+    /**
+     * Por que o atleta não treina neste turno, ou null se treina: "estuda de manhã" ou "está sem período
+     * escolar" (Fase A, Etapa 3: inscrever à mão fora do turno só avisa, não bloqueia).
+     */
+    public function foraDoTurno(string $turnoDoTreino): ?string
+    {
+        if (! $this->periodo_escolar_atleta) {
+            return 'está sem período escolar';
+        }
+        if (in_array($turnoDoTreino, $this->turnosDeTreino(), true)) {
+            return null;
+        }
+
+        return match ($this->periodo_escolar_atleta) {
+            'MANHA'    => 'estuda de manhã',
+            'TARDE'    => 'estuda à tarde',
+            'INTEGRAL' => 'estuda em período integral',
+            default    => match ($this->turno_treino_atleta) {
+                'MANHA' => 'estuda à noite e escolheu treinar de manhã',
+                'TARDE' => 'estuda à noite e escolheu treinar à tarde',
+                default => 'estuda à noite e não escolheu o turno do treino',
+            },
+        };
+    }
+
     // "Manhã", "Noite · treina à tarde"; null sem período
     public function getPeriodoEscolarTextoAttribute(): ?string
     {

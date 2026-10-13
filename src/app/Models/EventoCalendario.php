@@ -354,6 +354,32 @@ class EventoCalendario extends Model
      * Jogo de campeonato: o mais novo do mesmo sexo jogando acima da idade é normal (professor, 09/10/2026)
      * e não gera aviso; o mais velho nem chega a ser inscrito (Jogo::acimaDaIdade).
      */
+    // Turno do treino (MANHA ou TARDE) pelo horário de início; null se não é TREINO ou não tem horário
+    public function turnoDoTreino(): ?string
+    {
+        return $this->tipo_evento_calendario === 'TREINO' ? Atleta::turnoDoHorario($this->horario_inicio_evento_calendario) : null;
+    }
+
+    /**
+     * Treino no turno oposto ao da escola (Fase A, Etapa 3): avisos para quem foi inscrito à mão num treino fora
+     * do turno dele ("Ana estuda de manhã; o treino é de manhã."). Só avisa, não bloqueia. Vazio fora de treino.
+     */
+    public function avisosForaDoTurno(array $idsAtletas): array
+    {
+        if (! ($turno = $this->turnoDoTreino()) || ! $idsAtletas) {
+            return [];
+        }
+
+        $oTreino = $turno === 'MANHA' ? 'o treino é de manhã' : 'o treino é à tarde';
+
+        return Atleta::whereIn('id_atleta', $idsAtletas)->orderBy('nome_atleta')
+            ->get(['id_atleta', 'nome_atleta', 'periodo_escolar_atleta', 'turno_treino_atleta'])
+            ->map(fn (Atleta $atleta) => ($motivo = $atleta->foraDoTurno($turno)) ? "{$atleta->nome_atleta} {$motivo}; {$oTreino}." : null)
+            ->filter()
+            ->values()
+            ->all();
+    }
+
     public function avisosForaDaCategoria(array $idsAtletas): array
     {
         if (! $this->categoria || ! $idsAtletas) {

@@ -151,7 +151,7 @@ class EventoInscricaoTest extends TestCase
 
         // Select de inscrição: só quem ainda não está inscrito, agrupado pela categoria
         $resposta->assertSee('<optgroup label="Sub-13 Feminino">', false)
-            ->assertSee('<option value="' . $livre . '">Gabi Disponivel</option>', false)
+            ->assertSee('<option value="' . $livre . '">Gabi Disponivel', false) // treino de manhã: ganha " · fora do turno"
             ->assertDontSee('<option value="' . $ativo . '">', false);
     }
 

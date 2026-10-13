@@ -239,6 +239,12 @@ class CalendarioController extends Controller
         // Jogo de campeonato: inscritos que passam da idade (de antes da regra, ou o campeonato mudou), com
         // aviso e selo na lista, e os do select que não podem entrar ([id_atleta => "Nome (16 anos)"])
         $inscritosAcimaDaIdade = $jogo?->acimaDaIdade($inscricoes->pluck('id_atleta')->all()) ?? [];
+
+        // Treino: inscritos fora do turno deles (o oposto ao da escola), com o selo na lista ([id_atleta => motivo])
+        $turnoDoTreino = $evento->turnoDoTreino();
+        $inscritosForaDoTurno = $turnoDoTreino
+            ? $inscricoes->mapWithKeys(fn ($i) => [$i->id_atleta => $i->atleta->foraDoTurno($turnoDoTreino)])->filter()->all()
+            : [];
         $disponiveisAcimaDaIdade = $jogo?->acimaDaIdade($disponiveis->flatten()->pluck('id_atleta')->all()) ?? [];
 
         // Notificações enviadas sobre o evento, da mais nova para a mais antiga (só no admin)
@@ -269,7 +275,7 @@ class CalendarioController extends Controller
 
         return view('admin.calendario.evento', compact(
             'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos',
-            'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar', 'inscritosAcimaDaIdade', 'disponiveisAcimaDaIdade',
+            'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar', 'inscritosAcimaDaIdade', 'disponiveisAcimaDaIdade', 'inscritosForaDoTurno', 'turnoDoTreino',
         ) + [
             'campeonatosDoJogo'       => $campeonatosDoJogo ?? collect(),
             'timesDoJogo'             => $timesDoJogo ?? collect(),
@@ -383,6 +389,14 @@ class CalendarioController extends Controller
         }
     }
 
+    // Treino fora do turno do atleta (o oposto ao da escola): só avisa, na próxima tela (Fase A, Etapa 3)
+    private function avisarForaDoTurno(EventoCalendario $evento, array $idsAtletas): void
+    {
+        if ($avisos = $evento->avisosForaDoTurno($idsAtletas)) {
+            session()->flash('avisos_turno', $avisos);
+        }
+    }
+
     // "Atualizar inscritos pela categoria": só acrescenta quem falta (não remove ninguém)
     public function atualizarInscritosPelaCategoria($id)
     {
@@ -397,11 +411,13 @@ class CalendarioController extends Controller
             return back()->with('erro', 'No jogo, os inscritos vêm do elenco dos times: use "Preencher pelo elenco".');
         }
 
-        if ($confirmar = $this->confirmarConflitos(request(), $evento->conflitosPara($evento->idsFaltantesDaCategoria()))) {
+        $faltantes = $evento->idsFaltantesDaCategoria();
+        if ($confirmar = $this->confirmarConflitos(request(), $evento->conflitosPara($faltantes))) {
             return $confirmar;
         }
 
         $novos = $evento->inscreverCategoria($evento->id_categoria, 'CATEGORIA', auth('admin')->id());
+        $this->avisarForaDoTurno($evento, $faltantes);
 
         return back()->with('sucesso', "{$novos} atleta(s) da categoria inscrito(s)."
             . ($novos ? Notificacao::textoNotificados($evento->atletasNotificados) : ''));
@@ -446,6 +462,9 @@ class CalendarioController extends Controller
         if ($inscreveu && $evento->tipo_evento_calendario === 'JOGO') {
             $this->avisarForaDaCategoria($evento, [(int) $request->id_atleta]);
         }
+        if ($inscreveu) {
+            $this->avisarForaDoTurno($evento, [(int) $request->id_atleta]);
+        }
 
         return back()->with('sucesso', match (true) {
             ! $inscreveu      => 'O atleta já estava inscrito.',
@@ -487,6 +506,7 @@ class CalendarioController extends Controller
         }
 
         $novos = $evento->inscreverCategoria($categoria->id_categoria, 'INDIVIDUAL', auth('admin')->id(), array_keys($acima));
+        $this->avisarForaDoTurno($evento, $entrariam);
 
         return back()->with('sucesso', "{$categoria->rotulo}: {$novos} atleta(s) inscrito(s)"
             . ($novos === 0 ? ' (todos já estavam inscritos ou não há atletas ativos).' : '.' . Notificacao::textoNotificados($evento->atletasNotificados))

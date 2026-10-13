@@ -126,15 +126,10 @@ class GradeTreino extends Model
         return $this->motivoQueNaoGera() === null;
     }
 
-    // Treino que começa a partir deste horário é da tarde; antes, da manhã
-    public const INICIO_DA_TARDE = '12:00';
-
     // Turno do treino desta linha (MANHA ou TARDE), pelo horário de início; null sem horário
     public function turno(): ?string
     {
-        $inicio = $this->horario_inicio_grade_treino;
-
-        return $inicio === null ? null : (substr($inicio, 0, 5) < self::INICIO_DA_TARDE ? 'MANHA' : 'TARDE');
+        return Atleta::turnoDoHorario($this->horario_inicio_grade_treino);
     }
 
     /**
