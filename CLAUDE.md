@@ -84,7 +84,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Fonte oficial da categoria do atleta: **`tbl_categoria_atleta`** (com início, fim e status `ATIVO`/`ENCERRADO`). `tbl_inscricao` foi **descontinuada** (Fase 3).
 - Troca de categoria: **fechar a linha antiga** (data_fim + status) e **criar uma nova**, nunca só dar UPDATE.
 - **Atleta ATIVO sempre com categoria** (linha ATIVO em `tbl_categoria_atleta`): obrigatória no cadastro pelo admin e na edição de quem fica ATIVO (o campo vazio encerraria a linha); o botão de status não ativa quem está sem categoria; na edição, a categoria atual inativa aparece como "(inativa)" (manter é aceito, trocar exige categoria ativa). Inativo pode ficar sem; pendente e rejeitado recebem a categoria na aprovação.
-- **Período escolar obrigatório e treino no turno oposto** (professor, 13/10/2026; `e0061f4`): quem estuda de manhã treina à tarde, à tarde treina de manhã, **integral treina à tarde**; **à noite escolhe** (manhã, tarde ou os dois, `turno_treino_atleta`). Regra em `Atleta::turnosDeTreino()` e validação única em `Atleta::regrasPeriodo()` (site, admin e API; Noite exige o turno). Atleta sem período: selo amarelo "Sem período escolar" na lista e a edição não salva até preencher. Treinar no turno da escola é exceção: **aviso, sem bloquear** (Fase A, Etapa 3).
+- **Período escolar obrigatório e treino no turno oposto** (professor, 13/10/2026; `e0061f4`): quem estuda de manhã treina à tarde, à tarde treina de manhã, **integral treina à tarde**; **à noite escolhe** (manhã, tarde ou os dois, `turno_treino_atleta`). Regra em `Atleta::turnosDeTreino()` e validação única em `Atleta::regrasPeriodo()` (site, admin e API; Noite exige o turno). Atleta sem período: selo amarelo "Sem período escolar" na lista e a edição não salva até preencher. Treinar no turno da escola é exceção: **aviso, sem bloquear** (Fase A, Etapa 3, `00ce96d`): `Atleta::foraDoTurno()` dá o motivo ("estuda de manhã", "está sem período escolar"); só em evento TREINO com horário (`EventoCalendario::turnoDoTreino()`, regra das 12:00 em `Atleta::turnoDoHorario()`); o select de inscrição mostra "· fora do turno", a inscrição individual, o "Adicionar todos" e o "Atualizar inscritos" avisam (`avisos_turno`) e a lista de inscritos mostra o selo "Fora do turno · motivo".
 
 ### Usuários (dashboard)
 - PK de `tbl_usuarios` é **`id_usuario`** (feito na Fase 2).
@@ -215,7 +215,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Não gera:** tipo `JOGO`, linha inativa, categoria inativa e linha sem horário de início (`GradeTreino::motivoQueNaoGera()`).
 - **Linha que já gerou eventos não é excluída**, só inativada.
 - **Linhas sem categoria** (Integrado, Treino Livre): inscrevem **todos os atletas ATIVO**, origem `INDIVIDUAL` (provisório, seção 8, pergunta 15). Quem entra depois é adicionado pelo admin. **Meninas treinam junto** (dono do projeto, 13/10/2026): os treinos reais são sem categoria, meninos e meninas juntos.
-- **Por turno (Fase A, Etapa 2, a fazer):** a geração inscreve cada atleta só nos treinos do turno dele (`Atleta::turnosDeTreino()`; turno do treino pelo horário de início: antes das 12:00 = manhã); a prévia mostra quem ficou de fora por falta de período.
+- **Por turno (Fase A, Etapa 2, `b748df3`):** a geração inscreve cada atleta (da categoria da linha ou, sem categoria, todos os ATIVO) só nos treinos do turno dele (`Atleta::turnosDeTreino()`; turno da linha pelo horário de início, `GradeTreino::turno()`: antes das 12:00 = manhã, a partir das 12:00 = tarde, inclusive 18:00). **Sem período escolar não entra em nenhum treino:** a prévia mostra "N sem período escolar" na linha e um alerta no topo com os nomes (`totais.sem_periodo`).
 - **Escolher as datas na prévia** (13/10/2026, `9164889`): cada data nova é uma caixa marcada (desmarcada = não é gerada) e a faixa "Dias com treino novo" desmarca o dia em todas as linhas (feriado, dia sem aula). "Atualizar prévia" recalcula totais e conflitos só com as marcadas; o "Gerar" gera só elas (`GradeTreino::previaDoMes($mes, $marcadas)`, chave `chaveDaData` = "idGrade|AAAA-MM-DD"). A data desmarcada **não grava nada**: gerando o mês de novo, volta marcada.
 - **Geração:** botão **"Gerar agenda do mês"** na aba Grade, com **prévia** (datas novas, já geradas, não gera com o motivo, atletas e inscrições). Só o **mês atual e os 2 seguintes** (`GradeTreino::MESES_A_FRENTE`), de hoje em diante; o **treino de hoje já concluído é pulado** (a prévia avisa). Categoria sem atleta ATIVO **gera o evento vazio** (a prévia destaca "0 atletas"). Lote tudo ou nada, com trava nas linhas da grade; gerar de novo não duplica.
 - **Conflito na geração:** calculado **em lote** na prévia (`EventoCalendario::conflitosEmLote`), contra os eventos existentes e entre os eventos do próprio lote, **agrupado por par de eventos** (até 5 nomes; o resto em `<details>`). Conflito real: **confirmação única** ("Confirmar mesmo assim e gerar"); sem confirmar, **nada é gravado**. Aviso fraco só informa (na prévia e, depois de gerar, no aviso azul da lista).
@@ -361,7 +361,8 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `0d0929b` docs: regra de idade no campeonato e perguntas 11, 14 e 20
 - `3bf4eb2` feat: chegada 1 hora antes do jogo no aviso, no app e no admin
 - `5ea9311` docs: chegada antes do jogo, respostas do professor e fases combinadas
-- `aac0c46`, `e0061f4`, `cd612ea`, `9164889`, `d9dab6e`, `38cd0a0`, `de4974d`: ajustes de 13/10 (seção 6, "Ajustes de 13/10/2026")
+- `ebf7a38` docs: ajustes de 13/10, período escolar, aviso livre e plano da convocação
+- `aac0c46`, `e0061f4`, `cd612ea`, `9164889`, `d9dab6e`, `38cd0a0`, `de4974d`, `b748df3`, `00ce96d`: ajustes de 13/10 (seção 6, "Ajustes de 13/10/2026")
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -507,8 +508,8 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - **C — chegada 1 hora antes:** ✅ feita (`3bf4eb2`; seção 4, "Chegada 1 hora antes"). **535 testes passando.**
   - **A — grade real e treino por turno.** Respostas (dono do projeto, 13/10): treino **no turno oposto ao da escola** (integral à tarde; noite escolhe; os dois turnos só em eventualidade, com aviso) e **meninas treinam junto**.
     - **Etapa 1 — período escolar** ✅ (`e0061f4`; seções 3 e 4, "Atletas"): migration no `db_futebol`, **batch 27**; backup `backup/db_futebol_antes_periodo_escolar_20261013_090545.sql`. Atletas ATIVO sem período no banco de teste: 5, 6, 7 e 12.
-    - **Etapa 2 — geração por turno:** a fazer (seção 4, "Grade de treino").
-    - **Etapa 3 — aviso fora do turno** na inscrição individual e no "Adicionar todos", sem bloquear; selo na tela do evento: a fazer.
+    - **Etapa 2 — geração por turno** ✅ (`b748df3`; seção 4, "Grade de treino").
+    - **Etapa 3 — aviso fora do turno** ✅ (`00ce96d`; seção 4, "Atletas"). **Fase A completa no código**; falta só cadastrar a grade real pelas telas (abaixo).
     - **Depois, pelas telas:** 4 treinos sem categoria (ter/qui 09:00–11:00 e 14:00–17:00), a linha de jogos de sábado 13:00–17:00 (só informação, resolve a pergunta 4) e inativar as 18 linhas de teste.
   - **D — posições e titular/reserva no jogo** (precisa de migration): lista fixa de posições, várias por atleta, titular/reserva na escalação. Entra **na convocação** (Fase G). Falta a lista de posições que ele usa.
   - **E — avaliação técnica** escolhendo atletas por faixa de idade; aparece no site? (a regra atual esconde avaliações, pensada para a física).
@@ -518,12 +519,14 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
     - **Etapas:** (1) `tbl_convocacao` (campeonato, time, atleta, camisa, quem, quando; único campeonato + atleta) e tela "Convocados" por time do campeonato, com a caixa por categoria e o bloqueio de idade; (2) jogo de campeonato inscreve os convocados ("Preencher pela convocação", "Não convocado" no lugar de "Fora do elenco"); (3) amistoso escolhe os atletas no próprio jogo, bloqueio de interno contra interno fora de campeonato; (4) sai o elenco fixo (caixas de times e camisa do cadastro do atleta, tela Elenco; site e API pela convocação; `tbl_atleta_time` fica no banco até remover com OK). Depois, a Fase D (posições, titular/reserva) entra na convocação.
 - **Perguntas ainda para o professor:** idade no amistoso (pergunta 20); sexo no jogo (pergunta 14); lista de posições; o que o observador vê no site; peneira no site; se quer **chamada (presença) no treino**.
 
-#### Ajustes de 13/10/2026
-- **Commits:** `aac0c46` (categoria dos jogos acompanha a do campeonato; cartão do time), `e0061f4` (período escolar), `cd612ea` (barra lateral do admin rola até o fim, acima do bloco do usuário), `9164889` (escolher datas na prévia da geração), `d9dab6e` (aviso livre e lista de notificações por envio), `38cd0a0` (tela do jogo legível no modo escuro: `bg-body-secondary`/`bg-body-tertiary` no lugar de `bg-light` e `#fafafa`, placar em `btn-outline-secondary`), `de4974d` (Publicar desabilitado com atleta acima da idade).
-- **Migrations no `db_futebol`:** batch 27 (`2026_10_13_000001_periodo_escolar_e_turno_de_treino`) e batch 28 (`2026_10_13_000002_add_aviso_to_tipo_notificacao`), ensaiadas antes no `db_futebol_test` com o backup. Nenhuma depende de ids: **o outro computador pode rodar só o `migrate`** (ou restaurar um dump deste).
-- **Backups** em `backup/` (só no computador onde foram feitos): `db_futebol_antes_periodo_escolar_20261013_090545.sql`, `db_futebol_antes_aviso_20261013_100334.sql`.
+#### Ajustes de 13/10/2026 (computador do Senac)
+- **Commits:** `aac0c46` (categoria dos jogos acompanha a do campeonato; cartão do time), `e0061f4` (período escolar), `cd612ea` (barra lateral do admin rola até o fim, acima do bloco do usuário), `9164889` (escolher datas na prévia da geração), `d9dab6e` (aviso livre e lista de notificações por envio), `38cd0a0` (tela do jogo legível no modo escuro: `bg-body-secondary`/`bg-body-tertiary` no lugar de `bg-light` e `#fafafa`, placar em `btn-outline-secondary`), `de4974d` (Publicar desabilitado com atleta acima da idade), `b748df3` (geração por turno), `00ce96d` (aviso fora do turno).
+- **Migrations no `db_futebol` do Senac:** batch 27 (`2026_10_13_000001_periodo_escolar_e_turno_de_treino`) e batch 28 (`2026_10_13_000002_add_aviso_to_tipo_notificacao`), ensaiadas antes no `db_futebol_test` com o backup. Nenhuma depende de ids.
+- **Backups** em `backup/` (só no computador do Senac): `db_futebol_antes_periodo_escolar_20261013_090545.sql`, `db_futebol_antes_aviso_20261013_100334.sql`.
+- **Dump para casa:** `backup/db_futebol_para_casa_20261013.sql` (feito no Senac depois do batch 28, já com as duas migrations). **Em casa:** fazer backup do banco de casa (ex.: `backup/db_futebol_casa_antes_restaurar_20261013.sql`), restaurar este dump (não rodar o `migrate` de 27/28 sobre o banco antigo de casa, para os dados ficarem iguais aos do Senac), `php artisan view:clear` e `config:clear`, e rodar a suíte (o `db_futebol_test` é recriado por ela).
 - **Modo escuro:** usar classes que acompanham o tema (`bg-body-*`, `btn-outline-secondary`); `bg-light`, `bg-dark`, `btn-outline-dark` e cores fixas somem no escuro.
-- **551 testes passando.**
+- **557 testes passando.**
+- **Próximo passo (em casa): Fase G, Etapa 1** (convocação: migration da `tbl_convocacao` e tela "Convocados"). Antes, se quiser, cadastrar a grade real pelas telas (Fase A).
 
 ---
 
