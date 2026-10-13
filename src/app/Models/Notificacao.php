@@ -21,7 +21,8 @@ class Notificacao extends Model
     public    $timestamps = false;
 
     // Valores do ENUM tipo_notificacao (sem acento) => rótulo. AGENDA = resumo de várias atividades
-    // (agenda do mês, mover inscrições), sem evento (id_evento_calendario NULL).
+    // (agenda do mês, mover inscrições), sem evento (id_evento_calendario NULL). AVISO = recado escrito
+    // livremente pelo admin para os atletas que ele escolheu, também sem evento.
     public const TIPOS = [
         'INSCRICAO'    => 'Inscrição',
         'REMOCAO'      => 'Remoção',
@@ -29,7 +30,32 @@ class Notificacao extends Model
         'CANCELAMENTO' => 'Cancelamento',
         'REATIVACAO'   => 'Reativação',
         'AGENDA'       => 'Agenda',
+        'AVISO'        => 'Aviso',
     ];
+
+    // Aviso escrito pelo admin: só a mensagem (até o corte de linha(): a coluna tem 500 e linha() corta em
+    // 497 + "...", então o texto validado chega inteiro); o título é sempre este
+    public const TITULO_AVISO = 'Aviso da escolinha';
+    public const MENSAGEM_MAX = 497;
+
+    /**
+     * Um envio = as notificações gravadas juntas, numa ação (gravarParaAtivos grava o lote com o mesmo
+     * horário): mesmo tipo, evento, título, mensagem, quem fez e quando. A página geral mostra uma linha por
+     * envio, com os atletas dentro (mensagem que muda por atleta, como "Você joga pelo Time Azul", fica em
+     * envios separados).
+     */
+    public const COLUNAS_DO_ENVIO = [
+        'tipo_notificacao', 'id_evento_calendario', 'titulo_notificacao', 'mensagem_notificacao', 'id_usuario', 'data_notificacao',
+    ];
+
+    // Chave do envio de uma notificação (as COLUNAS_DO_ENVIO juntas), para juntar os atletas de cada envio
+    public static function chaveDoEnvio(self $notificacao): string
+    {
+        return implode("\x1F", [
+            $notificacao->tipo_notificacao, $notificacao->id_evento_calendario, $notificacao->id_usuario,
+            $notificacao->data_notificacao?->format('Y-m-d H:i:s'), $notificacao->titulo_notificacao, $notificacao->mensagem_notificacao,
+        ]);
+    }
 
     // Tamanho máximo da descrição do evento na mensagem de inscrição (o texto inteiro fica na agenda)
     public const RECADO_MAX = 120;
@@ -256,6 +282,12 @@ class Notificacao extends Model
                 ['mes' => $mes->format('Y-m'), 'eventos' => $quantos],
             );
         });
+    }
+
+    // Aviso livre do admin (página de Notificações): a mesma mensagem para cada atleta ATIVO escolhido
+    public static function aviso(array $idsAtletas, string $mensagem, ?int $idUsuario): int
+    {
+        return self::gravarParaAtivos($idsAtletas, $idUsuario, fn () => self::linha('AVISO', null, self::TITULO_AVISO, trim($mensagem)));
     }
 
     // "Mover inscrições" do atleta: uma AGENDA com o resumo, no lugar de uma INSCRICAO/REMOCAO por evento

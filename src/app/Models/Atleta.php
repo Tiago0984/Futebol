@@ -258,6 +258,15 @@ class Atleta extends Authenticatable
         ];
     }
 
+    // Atletas ATIVO agrupados pela categoria atual ("Sub-13 Masculino" => atletas, por nome), para a caixa de
+    // escolher atletas (admin.partials.escolher-atletas); sem categoria, no grupo "Sem categoria"
+    public static function ativosPorCategoria(): \Illuminate\Support\Collection
+    {
+        return self::with('categoriasAtivas')->where('status_atleta', 'ATIVO')->orderBy('nome_atleta')->get()
+            ->groupBy(fn (self $atleta) => $atleta->categoriasAtivas->first()?->rotulo ?? 'Sem categoria')
+            ->sortKeys();
+    }
+
     /**
      * Regras do período escolar e do turno do treino, com as mensagens, para o site, o admin e o app.
      * O período é obrigatório (decide os treinos do atleta); "Noite" exige o turno do treino.

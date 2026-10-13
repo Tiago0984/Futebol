@@ -9,9 +9,19 @@
         <div class="admin-page-header">
             <div>
                 <h1 class="page-title">Notificações</h1>
-                <p class="page-subtitle">Tudo o que foi enviado aos atletas pelo app, inclusive a agenda do mês (só leitura)</p>
+                <p class="page-subtitle">Tudo o que foi enviado aos atletas pelo app, inclusive a agenda do mês e os avisos escritos aqui</p>
             </div>
+            <button type="button" class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalNovoAviso">
+                <i class="bi bi-megaphone"></i> Novo aviso
+            </button>
         </div>
+
+        @if(session('sucesso'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle"></i> {{ session('sucesso') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
 
         {{-- Filtros na URL (convivem com o mês e com a paginação); mudar um select recarrega a lista --}}
         @php
@@ -80,7 +90,7 @@
                 {{-- Mês do envio: setas e select (como no Calendário); trocar de mês mantém os filtros. Com o
                      filtro de evento, o mês não vale: some, e a contagem é do evento --}}
                 @if($eventoFiltrado)
-                <span class="tbl-count">{{ $notificacoes->total() }} notificação(ões) deste evento</span>
+                <span class="tbl-count">{{ $notificacoes->total() }} envio(s), {{ $totalNotificacoes }} notificação(ões) deste evento</span>
                 @else
                 @php
                     $mesAnterior = $mes->copy()->subMonthNoOverflow()->format('Y-m');
@@ -100,7 +110,7 @@
                     <a href="{{ route('admin.notificacoes.index', ['mes' => $mesSeguinte, ...$filtrosAtivos]) }}" class="btn btn-sm btn-outline-secondary"
                        title="Próximo mês" aria-label="Próximo mês"><i class="bi bi-chevron-right"></i></a>
                 </form>
-                <span class="tbl-count">{{ $notificacoes->total() }} notificação(ões) em {{ \App\Models\EventoCalendario::rotuloDoMes($mes) }}</span>
+                <span class="tbl-count">{{ $notificacoes->total() }} envio(s), {{ $totalNotificacoes }} notificação(ões) em {{ \App\Models\EventoCalendario::rotuloDoMes($mes) }}</span>
                 @endif
             </div>
             <div class="table-responsive">
@@ -109,25 +119,24 @@
                         <tr>
                             <th>Quando</th>
                             <th>Tipo</th>
-                            <th>Atleta</th>
                             <th>Título e mensagem</th>
                             <th>Evento</th>
                             <th>Por</th>
-                            <th>Lida pelo atleta</th>
+                            <th>Atletas</th>
                             <th>Responsáveis</th>
                         </tr>
                     </thead>
                     <tbody>
+                        {{-- Uma linha por envio; os atletas que receberam (e quem leu) abrem na coluna Atletas --}}
                         @forelse($notificacoes as $notificacao)
                         <tr class="linha-notificacao">
                             <td class="text-muted text-nowrap" style="font-size:0.82rem;">{{ $notificacao->data_notificacao->format('d/m/Y H:i') }}</td>
                             <td><span class="badge-cat">{{ $notificacao->tipo_label }}</span></td>
-                            <td>{{ $notificacao->atleta?->nome_atleta ?? '—' }}</td>
                             <td class="small">
                                 <strong>{{ $notificacao->titulo_notificacao }}</strong><br>
                                 {{ $notificacao->mensagem_notificacao }}
                             </td>
-                            {{-- AGENDA (resumo do mês, mover inscrições) não tem evento --}}
+                            {{-- AGENDA (resumo do mês, mover inscrições) e AVISO não têm evento --}}
                             <td class="small">
                                 @if($notificacao->evento)
                                 <a href="{{ route('admin.calendario.eventos.show', $notificacao->id_evento_calendario) }}">{{ $notificacao->evento->titulo_evento_calendario }}</a>
@@ -136,13 +145,25 @@
                                 @endif
                             </td>
                             <td class="text-muted small">{{ $notificacao->usuario?->nome_usuario ?? '—' }}</td>
-                            <td class="small text-nowrap">
-                                {{ $notificacao->estaLida() ? $notificacao->data_leitura_notificacao->format('d/m/Y H:i') : 'Não lida' }}
+                            <td class="small" style="min-width:170px;">
+                                <details class="js-atletas-do-envio">
+                                    <summary class="text-nowrap">
+                                        {{ $notificacao->total_atletas }} atleta(s) · {{ $notificacao->total_lidas }} leu(ram)
+                                    </summary>
+                                    <ul class="list-unstyled mb-0 mt-1">
+                                        @foreach($notificacao->destinatarios as $destinatario)
+                                        <li class="text-nowrap">
+                                            {{ $destinatario->atleta?->nome_atleta ?? '—' }}
+                                            <span class="text-muted">· {{ $destinatario->estaLida() ? 'leu em ' . $destinatario->data_leitura_notificacao->format('d/m H:i') : 'não leu' }}</span>
+                                        </li>
+                                        @endforeach
+                                    </ul>
+                                </details>
                             </td>
-                            {{-- Cada responsável tem a própria leitura no app (tbl_notificacao_leitura) --}}
+                            {{-- Cada responsável tem a própria leitura no app (tbl_notificacao_leitura): somadas no envio --}}
                             <td class="small text-nowrap">
-                                @if($notificacao->atleta?->responsaveis_count)
-                                    {{ $notificacao->leituras_dos_responsaveis_count }} de {{ $notificacao->atleta->responsaveis_count }} leram
+                                @if($notificacao->total_responsaveis > 0)
+                                    {{ (int) $notificacao->leituras_responsaveis }} de {{ (int) $notificacao->total_responsaveis }} leram
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif
@@ -150,7 +171,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="8" class="text-center text-muted py-4">
+                            <td colspan="7" class="text-center text-muted py-4">
                                 {{ $eventoFiltrado ? 'Nenhuma notificação enviada sobre este evento.' : ($filtrosAtivos ? 'Nenhuma notificação com estes filtros neste mês.' : 'Nenhuma notificação enviada neste mês.') }}
                             </td>
                         </tr>
@@ -168,9 +189,58 @@
     </div>
 </main>
 
+{{-- Novo aviso: recado escrito livremente para os atletas escolhidos (tipo AVISO, sem evento) --}}
+<div class="modal fade" id="modalNovoAviso" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content text-start modal-admin">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-megaphone"></i> Novo aviso</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('admin.notificacoes.store') }}" method="POST" id="formNovoAviso">
+                @csrf
+                <div class="modal-body">
+                    @if($errors->any())
+                    <div class="alert alert-danger py-2">
+                        <ul class="mb-0 ps-3">@foreach($errors->all() as $erro)<li>{{ $erro }}</li>@endforeach</ul>
+                    </div>
+                    @endif
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label" for="aviso_mensagem">Mensagem <span class="text-danger">*</span></label>
+                            <textarea name="mensagem_notificacao" id="aviso_mensagem" class="form-control" rows="4" required
+                                maxlength="{{ \App\Models\Notificacao::MENSAGEM_MAX }}"
+                                placeholder="Ex: Na terça, traga um documento com foto para a carteirinha do campeonato.">{{ old('mensagem_notificacao') }}</textarea>
+                            <small class="text-muted">Até {{ \App\Models\Notificacao::MENSAGEM_MAX }} caracteres. Chega no app do atleta e dos responsáveis
+                                como "{{ \App\Models\Notificacao::TITULO_AVISO }}".</small>
+                        </div>
+                        <div class="col-12">
+                            @include('admin.partials.escolher-atletas', [
+                                'prefixo'    => 'aviso',
+                                'grupos'     => $atletasParaAviso,
+                                'escolhidos' => array_map('strval', (array) old('atletas', [])),
+                                'ajuda'      => 'Tique quem recebe o aviso. Só atletas ativos aparecem.',
+                            ])
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-modal-submit"><i class="bi bi-send"></i> Enviar aviso</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.js-filtro-url').forEach(sel => sel.addEventListener('change', () => sel.form.submit()));
+
+    // Voltou com erro de validação: reabre o aviso com o que foi preenchido
+    @if($errors->any())
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalNovoAviso')).show();
+    @endif
 });
 </script>
 @endsection

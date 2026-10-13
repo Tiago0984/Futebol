@@ -129,6 +129,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
 
     // Notificações enviadas aos atletas, todas (inclusive AGENDA, sem evento): só leitura
     Route::get('notificacoes', [NotificacoesController::class, 'index'])->name('notificacoes.index');
+    Route::post('notificacoes', [NotificacoesController::class, 'store'])->name('notificacoes.store');
 
     // Calendário (Eventos + Grade de Treinos)
     Route::prefix('calendario')->name('calendario.')->group(function () {

@@ -421,7 +421,7 @@ Content-Type: application/json
     "paginacao": { "pagina_atual": 1, "ultima_pagina": 1, "por_pagina": 20, "total": 1 }
   }
 }</pre>
-        <p>Tipos: <code>INSCRICAO</code>, <code>REMOCAO</code>, <code>ALTERACAO</code>, <code>CANCELAMENTO</code>, <code>REATIVACAO</code> (com <code>id_evento</code>) e <code>AGENDA</code> (resumo, como "Agenda de dezembro disponível", com <code>id_evento</code> <code>null</code>). Título e mensagem ficam como foram enviados.</p>
+        <p>Tipos: <code>INSCRICAO</code>, <code>REMOCAO</code>, <code>ALTERACAO</code>, <code>CANCELAMENTO</code>, <code>REATIVACAO</code> (com <code>id_evento</code>), <code>AGENDA</code> (resumo, como "Agenda de dezembro disponível", com <code>id_evento</code> <code>null</code>) e <code>AVISO</code> (recado escrito pelo admin, também com <code>id_evento</code> <code>null</code>). Título e mensagem ficam como foram enviados.</p>
     </div>
 
     <div class="card">

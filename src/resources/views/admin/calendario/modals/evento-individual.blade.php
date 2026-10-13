@@ -60,39 +60,12 @@
                         </div>
                         {{-- Atletas: caixa com a lista para ticar, por categoria, com busca e "marcar todos" da categoria --}}
                         <div class="col-12">
-                            <div class="d-flex flex-wrap align-items-end gap-2 mb-1">
-                                <label class="form-label mb-0 me-auto" for="ind_busca">Atletas <span class="text-danger">*</span>
-                                    <span class="badge bg-secondary ms-1" id="ind_contador">0 escolhido(s)</span>
-                                </label>
-                                <input type="search" id="ind_busca" class="form-control form-control-sm" style="max-width:240px"
-                                    placeholder="Buscar atleta..." autocomplete="off">
-                            </div>
-                            <div class="border rounded p-2" id="ind_atletas" style="max-height:260px;overflow-y:auto;">
-                                @forelse($atletasParaIndividual as $rotuloCategoria => $grupo)
-                                <div class="js-grupo-atletas mb-2">
-                                    <div class="d-flex align-items-center gap-2 border-bottom pb-1 mb-1">
-                                        <strong class="small">{{ $rotuloCategoria }}</strong>
-                                        <button type="button" class="btn btn-link btn-sm p-0 ms-auto js-marcar-grupo">Marcar todos</button>
-                                    </div>
-                                    <div class="row g-1">
-                                        @foreach($grupo as $atleta)
-                                        <div class="col-md-6 js-item-atleta" data-nome="{{ mb_strtolower($atleta->nome_atleta) }}">
-                                            <div class="form-check mb-0">
-                                                <input class="form-check-input js-check-atleta" type="checkbox" name="atletas[]"
-                                                    value="{{ $atleta->id_atleta }}" id="ind_atleta_{{ $atleta->id_atleta }}"
-                                                    @checked(in_array((string) $atleta->id_atleta, $atletasEscolhidos, true))>
-                                                <label class="form-check-label" for="ind_atleta_{{ $atleta->id_atleta }}">{{ $atleta->nome_atleta }}</label>
-                                            </div>
-                                        </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                                @empty
-                                <p class="text-muted small mb-0">Nenhum atleta ativo.</p>
-                                @endforelse
-                            </div>
-                            <small class="text-muted">Tique quem vai fazer. Só os escolhidos veem o evento na agenda.</small>
-                            <div class="text-danger small d-none" id="ind_aviso_atletas">Escolha pelo menos um atleta.</div>
+                            @include('admin.partials.escolher-atletas', [
+                                'prefixo'    => 'ind',
+                                'grupos'     => $atletasParaIndividual,
+                                'escolhidos' => $atletasEscolhidos,
+                                'ajuda'      => 'Tique quem vai fazer. Só os escolhidos veem o evento na agenda.',
+                            ])
                         </div>
                     </div>
                 </div>
@@ -104,56 +77,6 @@
         </div>
     </div>
 </div>
-
-<script>
-// Caixa de atletas: contador, busca por nome, "marcar todos" da categoria (só os visíveis) e pelo menos um
-document.addEventListener('DOMContentLoaded', function () {
-    const form = document.getElementById('formEventoIndividual');
-    if (!form) return;
-    const checks = () => [...form.querySelectorAll('.js-check-atleta')];
-    const contador = document.getElementById('ind_contador');
-    const aviso = document.getElementById('ind_aviso_atletas');
-
-    function contar() {
-        const n = checks().filter(c => c.checked).length;
-        contador.textContent = `${n} escolhido(s)`;
-        if (n) aviso.classList.add('d-none');
-    }
-
-    form.addEventListener('change', e => { if (e.target.classList.contains('js-check-atleta')) contar(); });
-
-    document.getElementById('ind_busca').addEventListener('input', function () {
-        const busca = this.value.toLowerCase().trim();
-        form.querySelectorAll('.js-grupo-atletas').forEach(grupo => {
-            let algum = false;
-            grupo.querySelectorAll('.js-item-atleta').forEach(item => {
-                const ok = !busca || item.dataset.nome.includes(busca);
-                item.classList.toggle('d-none', !ok);
-                algum = algum || ok;
-            });
-            grupo.classList.toggle('d-none', !algum);
-        });
-    });
-
-    form.querySelectorAll('.js-marcar-grupo').forEach(botao => botao.addEventListener('click', function () {
-        const visiveis = [...this.closest('.js-grupo-atletas').querySelectorAll('.js-item-atleta:not(.d-none) .js-check-atleta')];
-        const marcar = visiveis.some(c => !c.checked);
-        visiveis.forEach(c => c.checked = marcar);
-        this.textContent = marcar ? 'Desmarcar todos' : 'Marcar todos';
-        contar();
-    }));
-
-    form.addEventListener('submit', e => {
-        if (!checks().some(c => c.checked)) {
-            e.preventDefault();
-            aviso.classList.remove('d-none');
-            document.getElementById('ind_atletas').scrollIntoView({ block: 'nearest' });
-        }
-    });
-
-    contar();
-});
-</script>
 
 {{-- Voltou com erro de validação: reabre o formulário com o que foi preenchido --}}
 @if($errors->any() && old('_formulario') === 'individual')

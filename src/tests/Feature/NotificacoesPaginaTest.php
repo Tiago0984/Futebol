@@ -82,7 +82,7 @@ class NotificacoesPaginaTest extends TestCase
     {
         $anaInscricao = $this->notificar($this->ana);
         $anaAgenda    = $this->notificar($this->ana, ['tipo_notificacao' => 'AGENDA']);
-        $biaInscricao = $this->notificar($this->bia);
+        $biaInscricao = $this->notificar($this->bia, ['mensagem_notificacao' => 'Outro treino']); // outro envio
         DB::table('tbl_notificacao')->where('id_notificacao', $anaAgenda->id_notificacao)->update(['data_leitura_notificacao' => '2026-10-15 13:30:00']);
 
         $this->assertEqualsCanonicalizing([$anaInscricao->id_notificacao, $anaAgenda->id_notificacao], $this->ids($this->lista(['atleta' => $this->ana])));
@@ -109,22 +109,53 @@ class NotificacoesPaginaTest extends TestCase
         $lida = $this->notificar($this->ana);
         DB::table('tbl_notificacao')->where('id_notificacao', $lida->id_notificacao)->update(['data_leitura_notificacao' => '2026-10-15 13:30:00']);
         DB::table('tbl_notificacao_leitura')->insert(['id_notificacao' => $lida->id_notificacao, 'id_responsavel' => $r1]);
-        $this->notificar($this->bia); // sem responsável: "—"
+        $this->notificar($this->bia, ['mensagem_notificacao' => 'Outro treino']); // outro envio, sem responsável: "—"
 
         $this->comoAdmin()->get(route('admin.notificacoes.index'))
-            ->assertSee('15/10/2026 13:30')
-            ->assertSee('Não lida')
+            ->assertSee('Ana Teste')->assertSee('leu em 15/10 13:30')
+            ->assertSee('não leu')
             ->assertSee('1 de 2 leram');
 
         DB::table('tbl_notificacao_leitura')->insert(['id_notificacao' => $lida->id_notificacao, 'id_responsavel' => $r2]);
         $this->comoAdmin()->get(route('admin.notificacoes.index'))->assertSee('2 de 2 leram');
     }
 
+    public function test_uma_linha_por_envio_com_os_atletas_e_a_leitura_dentro(): void
+    {
+        $r1 = $this->criarResponsavel($this->ana);
+        $doEvento = ['id_evento_calendario' => $this->treino->id_evento_calendario, 'id_usuario' => $this->admin->id_usuario];
+
+        // Mesmo envio (mesmo conteúdo, quem e quando) para Ana e Bia; a Ana leu, e um responsável dela também
+        $ana = $this->notificar($this->ana, $doEvento);
+        $bia = $this->notificar($this->bia, $doEvento);
+        DB::table('tbl_notificacao')->where('id_notificacao', $ana->id_notificacao)->update(['data_leitura_notificacao' => '2026-10-15 13:30:00']);
+        DB::table('tbl_notificacao_leitura')->insert(['id_notificacao' => $ana->id_notificacao, 'id_responsavel' => $r1]);
+        // Mensagem diferente (ex.: o time de cada um): outro envio
+        $outro = $this->notificar($this->bia, [...$doEvento, 'mensagem_notificacao' => 'Treino · Você joga pelo Time Azul.']);
+
+        $resposta = $this->lista([]);
+        $this->assertSame([$outro->id_notificacao, $bia->id_notificacao], $this->ids($resposta));
+        $envio = collect($resposta->viewData('notificacoes')->items())->firstWhere('id_notificacao', $bia->id_notificacao);
+        $this->assertSame(2, (int) $envio->total_atletas);
+        $this->assertSame(1, (int) $envio->total_lidas);
+        $this->assertSame(['Ana Teste', 'Bia Teste'], $envio->destinatarios->map(fn ($n) => $n->atleta->nome_atleta)->all());
+
+        $resposta->assertSee('2 envio(s), 3 notificação(ões) em Outubro de 2026')
+            ->assertSee('2 atleta(s) · 1 leu(ram)')
+            ->assertSeeInOrder(['Ana Teste', 'leu em 15/10 13:30', 'Bia Teste', 'não leu'])
+            ->assertSee('1 de 1 leram')
+            ->assertDontSee('<th>Atleta</th>', false);
+
+        // Filtro de atleta: o envio aparece só com ele
+        $soBia = collect($this->lista(['atleta' => $this->bia])->viewData('notificacoes')->items());
+        $this->assertSame([1, 1], $soBia->map(fn ($e) => (int) $e->total_atletas)->all());
+    }
+
     public function test_ordem_da_mais_nova_e_no_empate_pelo_id(): void
     {
         $antiga   = $this->notificar($this->ana, ['data_notificacao' => '2026-10-10 08:00:00']);
         $empate1  = $this->notificar($this->ana, ['data_notificacao' => '2026-10-12 08:00:00']);
-        $empate2  = $this->notificar($this->bia, ['data_notificacao' => '2026-10-12 08:00:00']);
+        $empate2  = $this->notificar($this->bia, ['data_notificacao' => '2026-10-12 08:00:00', 'tipo_notificacao' => 'AGENDA']); // outro envio
         $nova     = $this->notificar($this->bia, ['data_notificacao' => '2026-10-14 08:00:00']);
 
         $this->assertSame(
@@ -149,7 +180,7 @@ class NotificacoesPaginaTest extends TestCase
         $filtros  = ['mes' => '2026-10', 'atleta' => $this->ana, 'tipo' => 'AGENDA'];
         $primeira = $this->lista($filtros);
         $this->assertCount(50, $this->ids($primeira));
-        $primeira->assertSee('55 notificação(ões) em Outubro de 2026')
+        $primeira->assertSee('55 envio(s), 55 notificação(ões) em Outubro de 2026')
             ->assertSee(e(route('admin.notificacoes.index', [...$filtros, 'page' => 2])), false);
 
         $segunda = $this->lista([...$filtros, 'page' => 2]);
@@ -219,7 +250,7 @@ class NotificacoesPaginaTest extends TestCase
             ->assertSee('<a href="' . route('admin.calendario.eventos.show', $this->treino->id_evento_calendario) . '" class="fw-semibold">Treino Sub-13</a>', false)
             ->assertSee('Limpar filtro do evento')
             ->assertSee('href="' . route('admin.notificacoes.index', ['mes' => '2026-10']) . '"', false)
-            ->assertSee('3 notificação(ões) deste evento')
+            ->assertSee('3 envio(s), 3 notificação(ões) deste evento')
             ->assertDontSee('id="formMesLista"', false)
             ->assertSee('<input type="hidden" name="evento" value="' . $this->treino->id_evento_calendario . '">', false);
 
@@ -233,6 +264,60 @@ class NotificacoesPaginaTest extends TestCase
     }
 
     // ---------- apoio ----------
+
+    // ---------- aviso livre (tipo AVISO) ----------
+
+    public function test_novo_aviso_vai_para_os_atletas_escolhidos_e_aparece_na_lista(): void
+    {
+        $inativo = $this->atletaComNome('Caio Inativo');
+        DB::table('tbl_atletas')->where('id_atleta', $inativo)->update(['status_atleta' => 'INATIVO']);
+        $this->colocarNaCategoria($this->ana, $this->idCategoria('Sub-13', 'M'));
+
+        // A caixa de escolher atletas lista só os ativos, pela categoria atual
+        $this->comoAdmin()->get(route('admin.notificacoes.index'))
+            ->assertSee('id="modalNovoAviso"', false)
+            ->assertSeeInOrder(['Sub-13 Masculino', 'Ana Teste'])
+            ->assertSee('id="aviso_atleta_' . $this->bia . '"', false)
+            ->assertDontSee('id="aviso_atleta_' . $inativo . '"', false);
+
+        $this->comoAdmin()->post(route('admin.notificacoes.store'), [
+            'mensagem_notificacao' => '  Na terça, traga um documento com foto.  ',
+            'atletas' => [$this->ana, $this->bia],
+        ])->assertRedirect(route('admin.notificacoes.index', ['mes' => '2026-10']))
+            ->assertSessionHas('sucesso', 'Aviso enviado. 2 atleta(s) notificado(s).');
+
+        foreach ([$this->ana, $this->bia] as $idAtleta) {
+            $this->assertDatabaseHas('tbl_notificacao', [
+                'id_atleta' => $idAtleta, 'tipo_notificacao' => 'AVISO', 'id_evento_calendario' => null,
+                'titulo_notificacao' => 'Aviso da escolinha', 'mensagem_notificacao' => 'Na terça, traga um documento com foto.',
+                'id_usuario' => $this->admin->id_usuario, 'data_leitura_notificacao' => null,
+            ]);
+        }
+
+        $this->lista(['tipo' => 'AVISO'])->assertSee('Aviso da escolinha')->assertSee('2 atleta(s) · 0 leu(ram)');
+    }
+
+    public function test_novo_aviso_exige_mensagem_e_atleta_ativo(): void
+    {
+        $inativo = $this->atletaComNome('Caio Inativo');
+        DB::table('tbl_atletas')->where('id_atleta', $inativo)->update(['status_atleta' => 'INATIVO']);
+
+        $this->comoAdmin()->post(route('admin.notificacoes.store'), [])
+            ->assertSessionHasErrors(['mensagem_notificacao', 'atletas' => 'Escolha pelo menos um atleta.']);
+
+        $this->comoAdmin()->post(route('admin.notificacoes.store'), [
+            'mensagem_notificacao' => str_repeat('a', Notificacao::MENSAGEM_MAX + 1),
+            'atletas' => [$inativo],
+        ])->assertSessionHasErrors(['mensagem_notificacao', 'atletas.0']);
+
+        $this->assertSame(0, Notificacao::where('tipo_notificacao', 'AVISO')->count());
+
+        // Mensagem no tamanho máximo chega inteira (sem o corte de "...")
+        $this->comoAdmin()->post(route('admin.notificacoes.store'), [
+            'mensagem_notificacao' => str_repeat('b', Notificacao::MENSAGEM_MAX), 'atletas' => [$this->ana],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame(str_repeat('b', Notificacao::MENSAGEM_MAX), Notificacao::where('tipo_notificacao', 'AVISO')->value('mensagem_notificacao'));
+    }
 
     private function comoAdmin(): static
     {

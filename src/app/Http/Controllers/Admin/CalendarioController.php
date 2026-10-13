@@ -61,10 +61,7 @@ class CalendarioController extends Controller
         $mesesGeracao = GradeTreino::mesesPermitidos();
 
         // Formulário "Novo evento individual" (só na lista de Individuais): atletas ativos pela categoria atual
-        $atletasParaIndividual = $filtros['ramo'] === 'individuais'
-            ? Atleta::with('categoriasAtivas')->where('status_atleta', 'ATIVO')->orderBy('nome_atleta')->get()
-                ->groupBy(fn ($atleta) => $atleta->categoriasAtivas->first()?->rotulo ?? 'Sem categoria')->sortKeys()
-            : collect();
+        $atletasParaIndividual = $filtros['ramo'] === 'individuais' ? Atleta::ativosPorCategoria() : collect();
 
         return view('admin.calendario.index', compact(
             'eventos', 'grades', 'categorias', 'categoriasInativasEmUso', 'mes', 'mesesLista', 'mesesGeracao',
