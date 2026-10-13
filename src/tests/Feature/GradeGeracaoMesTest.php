@@ -219,6 +219,60 @@ class GradeGeracaoMesTest extends TestCase
         $this->assertSame('Seu treino de dezembro de 2026 já está na agenda.', DB::table('tbl_notificacao')->value('mensagem_notificacao'));
     }
 
+    // ---------- datas desmarcadas (feriado, dia sem aula) ----------
+
+    public function test_previa_mostra_as_datas_em_caixas_e_o_dia_inteiro(): void
+    {
+        [, $integrado] = $this->cenario();
+
+        $this->comoAdminFixo()->get(route('admin.calendario.grade.previa', ['mes' => '2026-11']))
+            ->assertSee('name="marcadas[]" form="formGerarAgenda"', false)
+            ->assertSee('value="' . $integrado . '|2026-11-20"', false)
+            ->assertSee('class="form-check-input js-dia" value="2026-11-20"', false)
+            ->assertSee('name="escolha" value="1"', false);
+    }
+
+    public function test_data_desmarcada_fica_fora_da_previa_e_da_geracao_e_volta_depois(): void
+    {
+        [$sub13, $integrado, $sub9f] = $this->cenario();
+
+        // Tudo marcado, menos o Integrado de sex 20/11 (feriado) e o Sub-9 F de ter 17/11
+        $todas = [
+            ...array_map(fn ($d) => "{$sub13['segunda']}|2026-11-{$d}", ['23', '30']),
+            ...array_map(fn ($d) => "{$sub13['quarta']}|2026-11-{$d}", ['18', '25']),
+            "{$integrado}|2026-11-27",
+            ...array_map(fn ($d) => "{$sub9f['terca']}|2026-11-{$d}", ['24']),
+            ...array_map(fn ($d) => "{$sub9f['quinta']}|2026-11-{$d}", ['19', '26']),
+            'lixo', // fora do formato: ignorado
+        ];
+        $escolha = ['mes' => '2026-11', 'escolha' => 1, 'marcadas' => $todas];
+
+        $previa = $this->comoAdminFixo()->get(route('admin.calendario.grade.previa', $escolha))->viewData('previa');
+        $this->assertSame(8, $previa['totais']['eventos']);
+        $this->assertSame(11, $previa['totais']['inscricoes']); // 14 menos os 3 do Integrado
+        $this->assertSame(2, $previa['totais']['desmarcadas']);
+
+        $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), $escolha)
+            ->assertSessionHas('sucesso', fn ($msg) => str_contains($msg, '8 evento(s) gerado(s), 11 inscrição(ões).')
+                && str_contains($msg, '2 data(s) desmarcada(s) não foi(ram) gerada(s).'));
+
+        $this->assertFalse(EventoCalendario::where('id_grade_treino', $integrado)->where('data_grade_evento_calendario', '2026-11-20')->exists());
+        $this->assertFalse(EventoCalendario::where('id_grade_treino', $sub9f['terca'])->where('data_grade_evento_calendario', '2026-11-17')->exists());
+        $this->assertSame(8, EventoCalendario::whereNotNull('id_grade_treino')->count());
+
+        // Nada foi gravado sobre as desmarcadas: numa nova prévia, voltam como novas (marcadas)
+        $this->assertSame(2, $this->comoAdminFixo()->get(route('admin.calendario.grade.previa', ['mes' => '2026-11']))->viewData('previa')['totais']['eventos']);
+    }
+
+    public function test_tudo_desmarcado_nao_gera_nada(): void
+    {
+        $this->cenario();
+
+        $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-11', 'escolha' => 1])
+            ->assertSessionHas('sucesso', fn ($msg) => str_starts_with($msg, 'Nenhuma data marcada: nada foi gerado.'));
+        $this->assertSame(0, EventoCalendario::whereNotNull('id_grade_treino')->count());
+    }
+
     public function test_mes_futuro_gera_todas_as_datas(): void
     {
         [$sub13] = $this->cenario();

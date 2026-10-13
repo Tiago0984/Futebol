@@ -47,11 +47,38 @@
                 @if ($totais['puladas'] > 0)
                     · {{ $totais['puladas'] }} de hoje já passou(aram)
                 @endif
+                @if ($totais['desmarcadas'] > 0)
+                    · {{ $totais['desmarcadas'] }} data(s) desmarcada(s)
+                @endif
                 <div class="text-muted mt-1" style="font-size:0.85rem;">
                     Só de hoje em diante. Evento já gerado não é recriado, mesmo que tenha sido cancelado, ocultado ou mudado de dia.
-                    Feriado: gere normalmente e cancele o evento do dia.
+                    Feriado ou dia sem aula: desmarque a data (ou o dia inteiro, abaixo). Ela não é gerada e, se o mês for
+                    gerado de novo, volta a aparecer marcada.
                 </div>
             </div>
+
+            {{-- Dia sem treino: desmarca a data em todas as linhas (feriado, dia sem aula) --}}
+            @php
+                $diasDoLote = $previa['linhas']
+                    ->flatMap(fn ($l) => $l['novas']->map(fn ($d) => [$d, true])->concat($l['desmarcadas']->map(fn ($d) => [$d, false])))
+                    ->groupBy(fn ($par) => $par[0]->toDateString())
+                    ->sortKeys();
+            @endphp
+            @if ($diasDoLote->isNotEmpty())
+            <div class="card mb-3" id="diasSemTreino">
+                <div class="card-body py-2">
+                    <div class="small fw-semibold mb-1"><i class="bi bi-calendar-x"></i> Dias com treino novo
+                        <span class="fw-normal text-muted">· desmarque um dia para não gerar nenhum treino nele</span></div>
+                    @foreach ($diasDoLote as $dia => $pares)
+                        @php $data = $pares->first()[0]; @endphp
+                        <label class="form-check form-check-inline mb-0 me-3 small">
+                            <input type="checkbox" class="form-check-input js-dia" value="{{ $dia }}" @checked($pares->contains(fn ($p) => $p[1]))>
+                            <span class="js-rotulo-data">{{ $data->locale('pt_BR')->isoFormat('ddd DD/MM') }}</span>
+                        </label>
+                    @endforeach
+                </div>
+            </div>
+            @endif
 
             {{-- Conflitos de horário do lote (Etapa 3): real pede confirmação; mesmo dia só informa --}}
             @php
@@ -103,7 +130,22 @@
                                     <td colspan="4"><i class="bi bi-slash-circle"></i> Não gera: {{ $linha['motivo'] }}</td>
                                 @else
                                     <td style="font-size:0.85rem;">
-                                        {{ $linha['novas']->map->format('d/m')->implode(', ') ?: '—' }}
+                                        {{-- Cada data nova é uma caixa: desmarcada, não é gerada (feriado, dia sem aula) --}}
+                                        @php
+                                            $datasDaLinha = $linha['novas']->map(fn ($d) => [$d, true])
+                                                ->concat($linha['desmarcadas']->map(fn ($d) => [$d, false]))
+                                                ->sortBy(fn ($par) => $par[0]->timestamp);
+                                        @endphp
+                                        @forelse ($datasDaLinha as [$data, $marcada])
+                                            <label class="form-check form-check-inline mb-0 me-2">
+                                                <input type="checkbox" class="form-check-input js-data" name="marcadas[]" form="formGerarAgenda"
+                                                       value="{{ \App\Models\GradeTreino::chaveDaData($grade->id_grade_treino, $data) }}"
+                                                       data-dia="{{ $data->toDateString() }}" @checked($marcada)>
+                                                <span class="js-rotulo-data">{{ $data->format('d/m') }}</span>
+                                            </label>
+                                        @empty
+                                            —
+                                        @endforelse
                                         @foreach ($linha['puladas'] as $data)
                                             <div class="text-warning-emphasis"><i class="bi bi-clock"></i> {{ $data->format('d/m') }}: hoje, já passou; não será gerado</div>
                                         @endforeach
@@ -136,23 +178,33 @@
 
             @php
                 $temConflito = $totais['conflitos_reais'] > 0;
-                $pergunta = 'Gerar ' . $totais['eventos'] . ' evento(s) e ' . $totais['inscricoes'] . ' inscrição(ões) em '
-                    . \App\Models\EventoCalendario::rotuloDoMes($previa['mes'])
-                    . ($temConflito ? ', com ' . $totais['conflitos_reais'] . ' conflito(s) de horário' : '')
-                    . '? Não dá para desfazer pela tela.';
+                $rotuloMes = \App\Models\EventoCalendario::rotuloDoMes($previa['mes']);
+                $temDatas = $diasDoLote->isNotEmpty();
             @endphp
+            {{-- As caixas das datas (form="formGerarAgenda") vão junto: só as marcadas são geradas --}}
             <form method="POST" action="{{ route('admin.calendario.grade.gerar') }}" id="formGerarAgenda"
-                  onsubmit="return confirm(@js($pergunta))">
+                  class="d-flex flex-wrap align-items-center gap-2"
+                  data-mes="{{ $rotuloMes }}" data-conflitos="{{ $totais['conflitos_reais'] }}">
                 @csrf
                 <input type="hidden" name="mes" value="{{ $mes }}">
+                <input type="hidden" name="escolha" value="1">
                 @if ($temConflito)
                     <input type="hidden" name="confirmar_conflito" value="1">
                 @endif
                 <button type="submit" class="btn {{ $temConflito ? 'btn-warning' : 'btn-primary' }}" @disabled($totais['eventos'] === 0)>
                     <i class="bi bi-calendar-plus"></i>
-                    {{ $temConflito ? 'Confirmar mesmo assim e gerar' : 'Gerar' }} {{ $totais['eventos'] }} evento(s)
+                    {{ $temConflito ? 'Confirmar mesmo assim e gerar' : 'Gerar' }} <span class="js-total-eventos">{{ $totais['eventos'] }}</span> evento(s)
                 </button>
-                @if ($totais['eventos'] === 0)
+                @if ($temDatas)
+                    <a href="#" class="btn btn-outline-secondary" id="atualizarPrevia"
+                       data-url="{{ route('admin.calendario.grade.previa') }}" data-valor-mes="{{ $mes }}">
+                        <i class="bi bi-arrow-repeat"></i> Atualizar prévia
+                    </a>
+                    <span class="text-warning-emphasis small d-none" id="previaDesatualizada">
+                        <i class="bi bi-exclamation-circle"></i> Você mudou as datas: os totais e os conflitos acima são da prévia anterior.
+                        Use "Atualizar prévia" para conferir (o "Gerar" confere de novo de qualquer jeito).
+                    </span>
+                @else
                     <span class="text-muted ms-2">Nada novo para gerar neste mês.</span>
                 @endif
             </form>
@@ -162,13 +214,54 @@
 @endsection
 
 @push('scripts')
+<style>
+    /* Data desmarcada: riscada, não será gerada */
+    .js-data:not(:checked) + .js-rotulo-data, .js-dia:not(:checked) + .js-rotulo-data { text-decoration: line-through; color: #9ca3af; }
+</style>
 <script>
-    // Clique duplo: depois de confirmar, o botão fica desabilitado (o servidor também não duplica)
-    document.getElementById('formGerarAgenda')?.addEventListener('submit', function (e) {
-        if (!e.defaultPrevented) {
-            const botao = this.querySelector('button[type="submit"]');
-            setTimeout(() => { botao.disabled = true; botao.textContent = 'Gerando...'; }, 0);
+    (function () {
+        const form = document.getElementById('formGerarAgenda');
+        if (!form) return;
+        const datas  = () => Array.from(document.querySelectorAll('.js-data'));
+        const botao  = form.querySelector('button[type="submit"]');
+        const total  = form.querySelector('.js-total-eventos');
+        const aviso  = document.getElementById('previaDesatualizada');
+        const contar = () => datas().filter(c => c.checked).length;
+
+        function atualizar() {
+            const n = contar();
+            if (total) total.textContent = n;
+            botao.disabled = n === 0;
+            aviso?.classList.remove('d-none');
+            // O dia fica marcado se alguma linha ainda tem treino nele
+            document.querySelectorAll('.js-dia').forEach(dia => {
+                dia.checked = datas().some(c => c.dataset.dia === dia.value && c.checked);
+            });
         }
-    });
+
+        datas().forEach(c => c.addEventListener('change', atualizar));
+        document.querySelectorAll('.js-dia').forEach(dia => dia.addEventListener('change', function () {
+            datas().filter(c => c.dataset.dia === this.value).forEach(c => { c.checked = this.checked; });
+            atualizar();
+        }));
+
+        // Atualizar prévia: recarrega com as datas marcadas (totais e conflitos recalculados no servidor)
+        document.getElementById('atualizarPrevia')?.addEventListener('click', function (e) {
+            e.preventDefault();
+            const params = new URLSearchParams({ mes: this.dataset.valorMes, escolha: '1' });
+            datas().filter(c => c.checked).forEach(c => params.append('marcadas[]', c.value));
+            window.location.href = this.dataset.url + '?' + params.toString();
+        });
+
+        // Confirmação com o número de agora; clique duplo: depois de confirmar, o botão fica desabilitado
+        form.addEventListener('submit', function (e) {
+            const conflitos = Number(form.dataset.conflitos);
+            const pergunta = 'Gerar ' + contar() + ' evento(s) em ' + form.dataset.mes
+                + (conflitos > 0 ? ', com até ' + conflitos + ' conflito(s) de horário' : '')
+                + '? Não dá para desfazer pela tela.';
+            if (!confirm(pergunta)) { e.preventDefault(); return; }
+            setTimeout(() => { botao.disabled = true; botao.textContent = 'Gerando...'; }, 0);
+        });
+    })();
 </script>
 @endpush

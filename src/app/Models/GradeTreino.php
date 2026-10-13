@@ -165,10 +165,17 @@ class GradeTreino extends Model
         return $meses;
     }
 
+    // Chave de uma data de uma linha na prévia ("12|2026-11-02"): valor da caixa de marcar data
+    public static function chaveDaData(int $idGrade, \Carbon\CarbonInterface $data): string
+    {
+        return $idGrade . '|' . $data->toDateString();
+    }
+
     /**
      * Prévia da geração de um mês, por linha da grade (na ordem da grade):
      *  - motivo: por que a linha não gera (ou null);
      *  - novas: datas que serão geradas;
+     *  - desmarcadas: datas novas que o admin desmarcou (feriado, dia sem aula): não são geradas;
      *  - existentes: datas que já têm evento desta linha (com o status; cancelado e oculto não voltam);
      *  - puladas: hoje, com o treino já concluído (não é gerado);
      *  - atletas: ids que serão inscritos em cada evento (ATIVO da categoria; sem categoria, todos os ATIVO);
@@ -176,8 +183,12 @@ class GradeTreino extends Model
      *  - lote: os eventos novos ainda não salvos, com os atletas (para o conflito).
      * Mais os conflitos de horário do lote (EventoCalendario::conflitosEmLote) e os totais.
      * gerarMes() usa esta mesma prévia, recalculada na hora de gravar.
+     *
+     * $marcadas: as datas que o admin deixou marcadas na prévia, como chaves "idGrade|AAAA-MM-DD" (chaveDaData);
+     * null = todas. Data nova fora da lista vai para desmarcadas e fica fora do lote, do conflito e dos totais.
+     * Ela não grava nada: numa nova geração do mês, volta como nova (marcada).
      */
-    public static function previaDoMes(string $mes): array
+    public static function previaDoMes(string $mes, ?array $marcadas = null): array
     {
         $inicio = Carbon::createFromFormat('!Y-m', $mes)->startOfMonth();
         $hoje   = now()->startOfDay();
@@ -196,10 +207,12 @@ class GradeTreino extends Model
         $porCategoria = [];
         $todosAtivos  = null;
 
-        $linhas = $grades->map(function (self $grade) use ($inicio, $minimo, $existentes, &$porCategoria, &$todosAtivos) {
+        $marcadas = $marcadas === null ? null : array_flip($marcadas);
+
+        $linhas = $grades->map(function (self $grade) use ($inicio, $minimo, $existentes, $marcadas, &$porCategoria, &$todosAtivos) {
             $linha = [
                 'grade' => $grade, 'motivo' => $grade->motivoQueNaoGera(),
-                'novas' => collect(), 'existentes' => collect(), 'puladas' => collect(),
+                'novas' => collect(), 'desmarcadas' => collect(), 'existentes' => collect(), 'puladas' => collect(),
                 'atletas' => [], 'origem' => $grade->id_categoria ? 'CATEGORIA' : 'INDIVIDUAL', 'lote' => [],
             ];
 
@@ -222,6 +235,8 @@ class GradeTreino extends Model
                     $linha['existentes']->push(['data' => $data, 'status' => $existente->status_evento_calendario]);
                 } elseif ($evento->estaConcluido()) {
                     $linha['puladas']->push($data); // hoje, com o horário já passado (regra de Concluído)
+                } elseif ($marcadas !== null && ! isset($marcadas[self::chaveDaData($grade->id_grade_treino, $data)])) {
+                    $linha['desmarcadas']->push($data); // o admin desmarcou (feriado, dia sem aula)
                 } else {
                     $linha['novas']->push($data);
                     $linha['lote'][] = ['evento' => $evento, 'atletas' => $linha['atletas']];
@@ -243,6 +258,7 @@ class GradeTreino extends Model
                 'inscricoes'   => $linhas->sum(fn ($l) => $l['novas']->count() * count($l['atletas'])),
                 'existentes'   => $linhas->sum(fn ($l) => $l['existentes']->count()),
                 'puladas'      => $linhas->sum(fn ($l) => $l['puladas']->count()),
+                'desmarcadas'  => $linhas->sum(fn ($l) => $l['desmarcadas']->count()),
                 'nao_geram'    => $linhas->whereNotNull('motivo')->count(),
                 'conflitos_reais'  => $conflitos['totais']['reais'],
                 'conflitos_fracos' => $conflitos['totais']['fracos'],
@@ -262,13 +278,15 @@ class GradeTreino extends Model
      *
      * Conflito de horário (Etapa 3), recalculado aqui: com conflito real e sem $confirmarConflitos,
      * nada é gravado e a prévia volta (com 'gerado' => false). Aviso fraco não bloqueia.
+     *
+     * $marcadas: só as datas marcadas na prévia (previaDoMes); null = todas.
      */
-    public static function gerarMes(string $mes, ?int $idUsuario, bool $confirmarConflitos = false): array
+    public static function gerarMes(string $mes, ?int $idUsuario, bool $confirmarConflitos = false, ?array $marcadas = null): array
     {
-        return DB::transaction(function () use ($mes, $idUsuario, $confirmarConflitos) {
+        return DB::transaction(function () use ($mes, $idUsuario, $confirmarConflitos, $marcadas) {
             self::query()->lockForUpdate()->get(['id_grade_treino']);
 
-            $previa = self::previaDoMes($mes);
+            $previa = self::previaDoMes($mes, $marcadas);
 
             if ($previa['totais']['conflitos_reais'] > 0 && ! $confirmarConflitos) {
                 return ['gerado' => false, 'previa' => $previa, 'notificados' => 0];

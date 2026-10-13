@@ -643,7 +643,7 @@ class CalendarioController extends Controller
             return $this->mesNaoPermitido();
         }
 
-        $previa = GradeTreino::previaDoMes($mes);
+        $previa = GradeTreino::previaDoMes($mes, $this->datasMarcadas($request));
         $mesesGeracao = GradeTreino::mesesPermitidos();
 
         return view('admin.calendario.gerar', compact('previa', 'mes', 'mesesGeracao'));
@@ -660,8 +660,12 @@ class CalendarioController extends Controller
             return $this->mesNaoPermitido();
         }
 
+        $marcadas = $this->datasMarcadas($request);
+        // Volta para a prévia com as mesmas datas marcadas
+        $previaComEscolha = ['mes' => $mes] + ($marcadas === null ? [] : ['escolha' => 1, 'marcadas' => $marcadas]);
+
         try {
-            $resultado = GradeTreino::gerarMes($mes, auth('admin')->id(), $request->boolean('confirmar_conflito'));
+            $resultado = GradeTreino::gerarMes($mes, auth('admin')->id(), $request->boolean('confirmar_conflito'), $marcadas);
         } catch (UniqueConstraintViolationException $e) {
             // Outro admin gerou o mesmo mês ao mesmo tempo: nada foi gravado (o lote foi desfeito)
             return redirect()->route('admin.calendario.grade.previa', ['mes' => $mes])
@@ -671,12 +675,12 @@ class CalendarioController extends Controller
         $totais = $resultado['previa']['totais'];
 
         if (! $resultado['gerado']) {
-            return redirect()->route('admin.calendario.grade.previa', ['mes' => $mes])
+            return redirect()->route('admin.calendario.grade.previa', $previaComEscolha)
                 ->with('erro', "Nada foi gerado: o lote tem {$totais['conflitos_reais']} conflito(s) de horário. Confira e use \"Confirmar mesmo assim e gerar\".");
         }
 
         $mensagem = $totais['eventos'] === 0
-            ? 'Nada novo para gerar neste mês.'
+            ? ($totais['desmarcadas'] > 0 ? 'Nenhuma data marcada: nada foi gerado.' : 'Nada novo para gerar neste mês.')
             : "{$totais['eventos']} evento(s) gerado(s), {$totais['inscricoes']} inscrição(ões)."
                 . Notificacao::textoNotificados($resultado['notificados']);
         if ($totais['conflitos_reais'] > 0) {
@@ -687,6 +691,9 @@ class CalendarioController extends Controller
         }
         if ($totais['puladas'] > 0) {
             $mensagem .= " {$totais['puladas']} de hoje já tinha(m) passado e não foi(ram) gerado(s).";
+        }
+        if ($totais['desmarcadas'] > 0 && $totais['eventos'] > 0) {
+            $mensagem .=" {$totais['desmarcadas']} data(s) desmarcada(s) não foi(ram) gerada(s).";
         }
 
         // Aviso fraco (mesmo dia, sem horário de início): só informa, no aviso azul da lista
@@ -704,6 +711,21 @@ class CalendarioController extends Controller
         $mes = (string) $request->input('mes');
 
         return array_key_exists($mes, GradeTreino::mesesPermitidos()) ? $mes : null;
+    }
+
+    /**
+     * Datas marcadas na prévia ("idGrade|AAAA-MM-DD", GradeTreino::chaveDaData), ou null = todas.
+     * escolha=1 diz que houve escolha (com todas desmarcadas, nenhum "marcadas[]" chega); valor fora do
+     * formato é ignorado.
+     */
+    private function datasMarcadas(Request $request): ?array
+    {
+        if (! $request->boolean('escolha')) {
+            return null;
+        }
+
+        return array_values(array_filter((array) $request->input('marcadas', []),
+            fn ($chave) => is_string($chave) && preg_match('/^\d+\|\d{4}-\d{2}-\d{2}$/', $chave)));
     }
 
     private function mesNaoPermitido()

@@ -70,7 +70,7 @@ class GradeGeracaoConflitoTest extends TestCase
         $resposta->assertSee('Conflito de horário')
             ->assertSee('2 conflito(s) em 1 dia(s), 2 atleta(s).')
             ->assertSee('JOGO "Casa x Visitante" (10:00 às 12:00)', false)
-            ->assertSee('Confirmar mesmo assim e gerar 10 evento(s)')
+            ->assertSee('Confirmar mesmo assim e gerar <span class="js-total-eventos">10</span> evento(s)', false)
             ->assertSee('name="confirmar_conflito" value="1"', false);
     }
 
@@ -84,7 +84,7 @@ class GradeGeracaoConflitoTest extends TestCase
         $this->assertCount(0, $conflitos['REAL']);
         $this->assertCount(1, $conflitos['FRACO']);
         $resposta->assertSee('Mesmo dia — confira o horário')
-            ->assertSee('Gerar 10 evento(s)')
+            ->assertSee('Gerar <span class="js-total-eventos">10</span> evento(s)', false)
             ->assertDontSee('name="confirmar_conflito"', false);
 
         // Gera sem confirmar e mostra o aviso azul na lista
