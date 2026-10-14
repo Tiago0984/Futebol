@@ -6,7 +6,14 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 
 ## 1. Projeto e ambiente
 
-- **Stack:** Laravel + MySQL 8, em Docker (WSL/Ubuntu). Produção futura em Plesk. **O site ainda não está no ar**: não há banco de produção com dados reais.
+- **Stack:** Laravel + MySQL 8, em Docker (WSL/Ubuntu). Produção em Plesk (seção "Produção", abaixo). Os dados de atletas e da agenda continuam sendo **de teste**, também no servidor.
+- **Produção (Plesk, no ar desde 14/10/2026):**
+  - Site em `https://coderatech.tipi5.smpsistema.com.br/AACJ` (admin em `/AACJ/admin`; documentação da API em `/AACJ/api/documentacao`, entregue ao professor como atividade).
+  - Código em `~/coderatech.tipi5.smpsistema.com.br/futebol` (clone do GitHub, branch **`main`**); a pasta `AACJ` da raiz do documento aponta para `futebol/src/public`. Sem repositório configurado no Git do Plesk: atualizar pelo Terminal SSH.
+  - PHP pelo caminho completo: `/opt/plesk/php/8.4/bin/php artisan ...`. Composer pelo **PHP Composer** do painel (pasta `/coderatech.tipi5.smpsistema.com.br/futebol/src`, botão Instalar), só quando o `composer.lock` muda.
+  - Banco **`db_futebol` em MariaDB 10.11** (não MySQL 8): conferir SQL cru novo (só funções que os dois aceitam). Collation do banco `utf8mb4_general_ci`.
+  - **Para publicar:** `git push origin feature/agenda-eventos:main` (fast-forward, com OK do dono do projeto); no servidor, `git pull --ff-only origin main`, `artisan migrate --pretend` e `migrate --force` (com backup pelo phpMyAdmin antes), `artisan optimize:clear`.
+  - **Conteúdo do site cadastrado lá** (notícias, galeria, vídeos, banners, usuários do admin) e **fotos enviadas** (`public/futebol/images/...`, fora do Git) existem só no servidor. Nunca trocar o banco do servidor por um dump local sem guardar esse conteúdo antes.
 - **Pastas:** repositório em `~/dev/senac/Futebol`; código Laravel em `src/`; `.gitignore` na raiz; backups em `backup/` (ignorado pelo Git).
 - **Serviços Docker:** `php` (futebol_php), `mysql` (futebol_mysql), `nginx` (futebol_nginx).
 - **URLs locais:** site e admin em `http://localhost:8080` (admin em `/admin`); MySQL no host pela porta `3308` (Workbench).
@@ -377,6 +384,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `aac0c46`, `e0061f4`, `cd612ea`, `9164889`, `d9dab6e`, `38cd0a0`, `de4974d`, `b748df3`, `00ce96d`: ajustes de 13/10 (seção 6, "Ajustes de 13/10/2026")
 - `4299c1d` docs: Fase A concluída no código e passagem para casa
 - `2339592` feat: convocação por campeonato com camisa e tela Convocados (Fase G, Etapa 1)
+- `3261b9b` fix: endereço do estilo.css com a data do arquivo, para o navegador não usar a versão antiga
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -550,6 +558,15 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Falta:** roteiro no navegador (convocar com camisa, camisa repetida, acima da idade, mesmo atleta em dois times, trocar camisa, remover, tirar time com convocados dos participantes).
 - **Dump para casa:** `backup/db_futebol_para_casa_20261014.sql` (depois do batch 29). **Em casa:** backup do banco de casa (ex.: `backup/db_futebol_casa_antes_restaurar_20261014.sql`), restaurar este dump (não rodar o `migrate` de 27, 28 e 29 sobre o banco antigo), `php artisan view:clear` e `config:clear`, e rodar a suíte.
 - **Próximo passo: roteiro da Etapa 1 e depois Fase G, Etapa 2** (jogo de campeonato inscreve os convocados: "Preencher pela convocação", "Não convocado" no lugar de "Fora do elenco").
+
+#### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
+- **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
+- **Atualização:** `main` avançada até `2c03342` (fast-forward); `git pull` no servidor; Sanctum pelo PHP Composer; `.env` sem as chaves repetidas (cópia em `src/.env.backup` no servidor).
+- **Banco do servidor trocado**, em vez de rodar as 29 migrations sobre o banco antigo: backup pelo phpMyAdmin (`backup/db_futebol_servidor_20261014.sql`, só em casa), `ALTER DATABASE ... utf8mb4_general_ci`, todas as tabelas eliminadas, importado `backup/db_futebol_para_casa.sql` (dump do Senac de 14/10, batch 29) e depois `backup/restaura_conteudo_do_servidor_20261014.sql`, que devolve as notícias (5), a galeria (10), os vídeos (2), os banners (7) e os usuários do admin (3, todos ADMIN; o Tiago continua id 1, criador dos eventos). Ensaiado antes no `db_futebol_test`.
+- **Conferido no servidor:** `migrate:status` até [29], `--pretend` "Nothing to migrate", 31 rotas `api/v1`, status, documentação, campeonatos e home respondendo.
+- **Depois:** `3261b9b` publicado no servidor (botão "Jogos" da lista de Campeonatos aparecia estreito pelo `estilo.css` antigo no cache do navegador).
+- **Banco de casa:** backup em `backup/db_futebol_casa_antes_restaurar_20261014.sql`, restaurado o dump de 14/10 **e o mesmo conteúdo do servidor**: o local ficou igual ao servidor (login do admin com a senha do servidor; as fotos enviadas pelo servidor ficam quebradas no local). **O banco do Senac ainda não tem esse conteúdo:** para igualar, rodar lá o `restaura_conteudo_do_servidor_20261014.sql` (levar o arquivo, que fica em `backup/`, fora do Git) ou restaurar um dump de casa.
+- **Atenção:** o pull apagou do disco do servidor 4 assinaturas antigas que estavam no Git (saíram dele em `5b28bc7`); as outras assinaturas continuam em `public/` e acessíveis por URL (débito "Assinaturas", seção 7).
 
 ---
 
