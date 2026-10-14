@@ -304,6 +304,12 @@ class ConvocacaoTest extends TestCase
             ->assertSessionHasErrors(['times' => 'Não é possível tirar do campeonato time com atletas convocados: AACJ Sub-15 (1 convocado(s)). Remova a convocação do time antes.']);
         $this->assertDatabaseHas('tbl_campeonato_time', ['id_campeonato' => $this->liga, 'id_time' => $this->azul]);
 
+        // A mensagem aparece na lista de Campeonatos (de onde o modal de edição é enviado)
+        $this->comoAdminLogado()->from(route('admin.campeonatos.index'))->followingRedirects()
+            ->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'times' => [$this->verde, $this->visitante]])
+            ->assertOk()
+            ->assertSee('Não é possível tirar do campeonato time com atletas convocados: AACJ Sub-15 (1 convocado(s)).');
+
         // Tirar o time sem convocados continua valendo
         $this->comoAdminLogado()->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'times' => [$this->azul, $this->visitante]])
             ->assertSessionHasNoErrors();

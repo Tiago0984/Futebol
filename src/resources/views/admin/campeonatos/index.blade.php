@@ -78,6 +78,17 @@
         </div>
         @endif
 
+        {{-- Validação do modal de criar/editar (ex.: time com convocados não sai dos participantes) --}}
+        @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+            <strong>Erro!</strong>
+            <ul class="mb-0 mt-1">
+                @foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+        @endif
+
         {{-- Filtrada pelo nome do campeonato no menu (?campeonato=ID): mostra qual e como voltar a ver todos --}}
         @if($campeonatoFiltrado)
         <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 mb-3" role="status" id="filtroCampeonato">
