@@ -385,6 +385,9 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `4299c1d` docs: Fase A concluída no código e passagem para casa
 - `2339592` feat: convocação por campeonato com camisa e tela Convocados (Fase G, Etapa 1)
 - `3261b9b` fix: endereço do estilo.css com a data do arquivo, para o navegador não usar a versão antiga
+- `e9cb20f` docs: deploy no Plesk e banco de casa igual ao servidor
+- `5015999` feat: documentação da API com identificação, versão e parâmetros de cada rota
+- `bb2ab95` fix: lista de Campeonatos mostra os erros de validação do modal (ex.: time com convocados)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -555,7 +558,8 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Backup** em `backup/` (só no computador do Senac): `db_futebol_antes_convocacao_20261014_114419.sql`.
 - **Testes:** `ConvocacaoTest` (16) e a rota nova no `MenuAdminTest`. **573 testes passando.**
 - **Docker no Senac:** o projeto `tipi05-davilla` usa a mesma porta do MySQL (3308); para subir o Futebol, parar o outro antes.
-- **Falta:** roteiro no navegador (convocar com camisa, camisa repetida, acima da idade, mesmo atleta em dois times, trocar camisa, remover, tirar time com convocados dos participantes).
+- **Roteiro no navegador feito em casa (14/10, 13 passos, Liga das comunidades e Copa Escola):** convocar em lote com camisa, camisa repetida recusada (tudo ou nada), acima da idade desabilitado, mais novo aceito, aviso de sexo diferente, atleta de outro time do mesmo campeonato desabilitado ("· convocado pelo Time Azul"), mesma camisa em outro time, trocar camisa, remover, um time por campeonato (o mesmo atleta em outro campeonato). **Bug achado e corrigido** (`bb2ab95`): a lista de Campeonatos não mostrava `$errors`, então o bloqueio de tirar time com convocados (e qualquer validação do modal de criar/editar) fechava o modal sem mensagem; o `ConvocacaoTest` agora confere a mensagem na tela. **573 testes passando**.
+  - Dados de teste que ficaram no `db_futebol` de casa: Liga das comunidades com Time Azul (Tiago Silva 7, Atleta Teste API 8, João 9, Lucas 10, TESTE Etapa 3 12; os dois primeiros convocados à mão depois do roteiro) e Time Preto (Tiago 10); Copa Escola com Time Azul (Tiago 5). O nome "Liga das comunidades" foi corrigido em casa (no servidor, corrigir pelo admin de lá).
 - **Dump para casa:** `backup/db_futebol_para_casa_20261014.sql` (depois do batch 29). **Em casa:** backup do banco de casa (ex.: `backup/db_futebol_casa_antes_restaurar_20261014.sql`), restaurar este dump (não rodar o `migrate` de 27, 28 e 29 sobre o banco antigo), `php artisan view:clear` e `config:clear`, e rodar a suíte.
 - **Próximo passo: roteiro da Etapa 1 e depois Fase G, Etapa 2** (jogo de campeonato inscreve os convocados: "Preencher pela convocação", "Não convocado" no lugar de "Fora do elenco").
 
