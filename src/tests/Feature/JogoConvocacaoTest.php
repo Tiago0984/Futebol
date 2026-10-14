@@ -178,6 +178,21 @@ class JogoConvocacaoTest extends TestCase
             ->assertDontSee('Status no elenco');
     }
 
+    public function test_inscritos_do_time_ficam_na_ordem_da_camisa(): void
+    {
+        $ana = $this->atleta('Ana Teste');
+        $bia = $this->atleta('Bia Teste');
+        $rui = $this->atleta('Rui Teste');
+        $this->convocar($this->azul, [$ana => 10, $bia => 7]);
+        $jogo = $this->criarJogo();
+        $this->inscreverEscalado($jogo, $rui, $this->azul); // sem camisa: no fim
+
+        // Pelo nome seria Ana, Bia, Rui; pela camisa, Bia (7), Ana (10) e Rui (sem camisa)
+        $this->tela($jogo)->assertSeeInOrder(['Bia Teste', 'Ana Teste', 'Rui Teste']);
+        $this->actingAs($this->admin, 'admin')->get(route('admin.jogos.times.show', [$jogo->id_jogo, $this->azul]))
+            ->assertSeeInOrder(['Bia Teste', 'Ana Teste', 'Rui Teste']);
+    }
+
     // ---------- convocação mexida depois ----------
 
     public function test_remover_da_convocacao_mantem_a_inscricao_e_avisa_os_jogos_futuros(): void

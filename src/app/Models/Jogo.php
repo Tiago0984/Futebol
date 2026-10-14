@@ -133,7 +133,8 @@ class Jogo extends Model
     }
 
     /**
-     * Atletas ativos escalados por um time neste jogo (tela "jogadores do time no jogo"), por nome, com os
+     * Atletas ativos escalados por um time neste jogo (tela "jogadores do time no jogo"), pela camisa da
+     * convocação e pelo nome (amistoso: pelo nome), com os
      * dados do elenco desse time quando o atleta está nele (camisa, posição, titular/reserva; null fora do
      * elenco) e, no jogo de campeonato, a convocação por esse time (id e camisa; null = não convocado).
      * Uma consulta.
@@ -149,6 +150,9 @@ class Jogo extends Model
             ->where('ea.id_evento_calendario', $this->id_evento)
             ->where('ea.id_time', $idTime)
             ->where('a.status_atleta', 'ATIVO')
+            // Pela camisa da convocação (sem camisa no fim) e pelo nome; no amistoso, ninguém tem: pelo nome
+            ->orderByRaw('cv.camisa_convocacao IS NULL')
+            ->orderBy('cv.camisa_convocacao')
             ->orderBy('a.nome_atleta')
             ->get([
                 'a.id_atleta', 'a.nome_atleta', 'ea.origem_evento_atleta', 'at.id_atleta_time',

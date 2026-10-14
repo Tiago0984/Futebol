@@ -234,6 +234,10 @@
             @php
               $porBlocos = $jogo && isset($escalaveis) && $escalaveis->isNotEmpty();
               $idsEscalaveis = $porBlocos ? $escalaveis->pluck('id_time')->map(fn ($id) => (int) $id) : collect();
+              // Jogo de campeonato: cada time pela camisa da convocação (como na tela Convocados); sem camisa no
+              // fim, pelo nome. Amistoso (sem camisas): continua pelo nome
+              $pelaCamisa = fn ($i) => (isset($camisas[$i->id_atleta]) ? '0' . str_pad($camisas[$i->id_atleta], 3, '0', STR_PAD_LEFT) : '1')
+                  . mb_strtolower($i->atleta->nome_atleta);
               // Mandante e visitante nos seus lados; o time externo aparece travado (só para ver: sem elenco na
               // associação, ninguém é escalado nele)
               $blocosDosTimes = $porBlocos
@@ -248,7 +252,7 @@
                         'categoria'  => $par[0]->categoria?->rotulo,
                         'outra_categoria' => $par[0]->categoria && $jogo->campeonato?->categoria
                             && (int) $par[0]->id_categoria !== (int) $jogo->campeonato->id_categoria,
-                        'inscricoes' => $inscricoes->filter(fn ($i) => (int) $i->id_time === (int) $par[0]->id_time),
+                        'inscricoes' => $inscricoes->filter(fn ($i) => (int) $i->id_time === (int) $par[0]->id_time)->sortBy($pelaCamisa),
                     ])->values()
                   : collect();
               $semTime = $porBlocos ? $inscricoes->reject(fn ($i) => $idsEscalaveis->contains((int) $i->id_time)) : collect();
