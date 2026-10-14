@@ -71,7 +71,7 @@
     <link rel="stylesheet" href="{{asset('dash/css/darkmode.css')}}" />
 
     <!--begin::Tema AACJ-->
-    <link rel="stylesheet" href="{{asset('coderatech/css/estilo.css')}}" />
+    <link rel="stylesheet" href="{{ asset('coderatech/css/estilo.css') }}?v={{ filemtime(public_path('coderatech/css/estilo.css')) }}" />
     <!--end::Tema AACJ-->
 
     <!-- apexcharts -->

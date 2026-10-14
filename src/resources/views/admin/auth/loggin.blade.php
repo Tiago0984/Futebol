@@ -3,7 +3,7 @@
 <head>
     @include('admin.partials.head')
     {{-- Estilo do projeto (seção 68 — Login Admin) --}}
-    <link rel="stylesheet" href="{{ asset('coderatech/css/estilo.css') }}">
+    <link rel="stylesheet" href="{{ asset('coderatech/css/estilo.css') }}?v={{ filemtime(public_path('coderatech/css/estilo.css')) }}">
 </head>
 
 <body class="lp-body">

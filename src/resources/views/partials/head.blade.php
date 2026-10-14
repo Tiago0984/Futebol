@@ -29,7 +29,7 @@
       <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;600;700&display=swap" rel="stylesheet">
 
       <link rel="stylesheet" type="text/css" href="{{ asset('futebol/css/style.css') }}" />
-      <link href="{{ asset('coderatech/css/estilo.css') }}" rel="stylesheet">
+      <link href="{{ asset('coderatech/css/estilo.css') }}?v={{ filemtime(public_path('coderatech/css/estilo.css')) }}" rel="stylesheet">
 
       <script type="text/javascript" src="{{ asset('futebol/js/modernizr.min.js') }}"></script>
 </head>

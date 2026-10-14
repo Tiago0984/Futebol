@@ -5,7 +5,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Senha do App — Escolinha de Futebol AACJ</title>
-    <link rel="stylesheet" href="{{ asset('coderatech/css/estilo.css') }}">
+    <link rel="stylesheet" href="{{ asset('coderatech/css/estilo.css') }}?v={{ filemtime(public_path('coderatech/css/estilo.css')) }}">
     <style>
         .campo-senha { margin-bottom: 14px; }
         .campo-senha label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; }
