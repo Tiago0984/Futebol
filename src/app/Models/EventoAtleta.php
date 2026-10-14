@@ -17,6 +17,7 @@ class EventoAtleta extends Model
         'CATEGORIA'  => 'Pela categoria',
         'INDIVIDUAL' => 'Individual',
         'ELENCO'     => 'Pelo elenco',
+        'CONVOCACAO' => 'Pela convocação',
     ];
 
     // Explicação curta de cada origem (dica ao passar o mouse no selo, no admin)
@@ -24,6 +25,7 @@ class EventoAtleta extends Model
         'CATEGORIA'  => 'Entrou automaticamente por ser da categoria do evento. Sai se o evento mudar de categoria.',
         'INDIVIDUAL' => 'Escolhido à mão pelo admin. Nenhuma troca de categoria ou de time tira o atleta; só a remoção.',
         'ELENCO'     => 'Entrou automaticamente pelo elenco do time. Sai do jogo se o time dele sair do jogo.',
+        'CONVOCACAO' => 'Entrou automaticamente por estar convocado pelo time neste campeonato. Sai do jogo se o time dele sair do jogo.',
     ];
 
     protected $fillable = [
