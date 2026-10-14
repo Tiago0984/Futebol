@@ -253,29 +253,15 @@ class Jogo extends Model
      */
     public function acimaDaIdade(array $idsAtletas): array
     {
-        $categoria = $this->campeonato?->categoria;
-        if (! $categoria || ! $idsAtletas) {
-            return [];
-        }
-
         $ano = (int) ($this->evento?->data_evento_calendario ?? now())->format('Y');
 
-        return Atleta::whereIn('id_atleta', $idsAtletas)
-            ->whereNotNull('data_nasc_atleta')
-            ->orderBy('nome_atleta')
-            ->get(['id_atleta', 'nome_atleta', 'data_nasc_atleta'])
-            ->map(fn ($atleta) => [$atleta, Categoria::idadeNoAno($atleta->data_nasc_atleta, $ano)])
-            ->filter(fn ($par) => $par[1] > $categoria->idade_max_categoria)
-            ->mapWithKeys(fn ($par) => [(int) $par[0]->id_atleta => "{$par[0]->nome_atleta} ({$par[1]} anos)"])
-            ->all();
+        return $this->campeonato?->categoria?->atletasAcimaDaIdade($idsAtletas, $ano) ?? [];
     }
 
     // Faixa do campeonato para as mensagens: "Sub-15 Masculino, até 15 anos" (null sem limite de idade)
     public function limiteDeIdade(): ?string
     {
-        $categoria = $this->campeonato?->categoria;
-
-        return $categoria ? "{$categoria->rotulo}, até {$categoria->idade_max_categoria} anos" : null;
+        return $this->campeonato?->categoria?->limite_de_idade;
     }
 
     // Motivo para o atleta não jogar este jogo por passar da idade do campeonato, ou null se pode

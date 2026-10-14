@@ -34,6 +34,7 @@ use App\Http\Controllers\Admin\ElencoController;
 use App\Http\Controllers\Admin\ConfiguracoesController;
 use App\Http\Controllers\Admin\NotificacoesController;
 use App\Http\Controllers\Admin\TimesDoCampeonatoController;
+use App\Http\Controllers\Admin\ConvocacaoController;
 use App\Http\Controllers\Admin\AmistososController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
@@ -109,6 +110,11 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::get('campeonatos/jogos',               [TimesDoCampeonatoController::class, 'todos'])->name('campeonatos.jogos');
     Route::get('campeonatos/{id}/times',          [TimesDoCampeonatoController::class, 'index'])->name('campeonatos.times');
     Route::get('campeonatos/{id}/times/{timeId}', [TimesDoCampeonatoController::class, 'show'])->name('campeonatos.times.show');
+    // Convocados de um time interno no campeonato (Fase G): convocar com a camisa, trocar a camisa, remover
+    Route::get('campeonatos/{id}/times/{timeId}/convocados',               [ConvocacaoController::class, 'show'])->name('campeonatos.convocados');
+    Route::post('campeonatos/{id}/times/{timeId}/convocados',              [ConvocacaoController::class, 'convocar'])->name('campeonatos.convocados.convocar');
+    Route::patch('campeonatos/{id}/times/{timeId}/convocados/{atletaId}',  [ConvocacaoController::class, 'camisa'])->name('campeonatos.convocados.camisa');
+    Route::delete('campeonatos/{id}/times/{timeId}/convocados/{atletaId}', [ConvocacaoController::class, 'remover'])->name('campeonatos.convocados.remover');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
     // Elenco do time interno (antiga Escalação), aberto pela linha do time em Times

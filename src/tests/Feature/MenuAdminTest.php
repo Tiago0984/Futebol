@@ -845,6 +845,7 @@ class MenuAdminTest extends TestCase
             'admin.campeonatos.edit'        => $this->emAndamento,
             'admin.campeonatos.times'       => $this->emAndamento,
             'admin.campeonatos.times.show'  => [$this->emAndamento, $this->azul],
+            'admin.campeonatos.convocados'  => [$this->emAndamento, $this->azul],
             'admin.jogos.times.show'        => [$jogoDaCopa->id_jogo, $this->azul],
             'admin.times.elenco'            => $this->azul,
             'admin.matriculas.show'         => $atleta,

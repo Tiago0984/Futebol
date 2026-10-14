@@ -36,10 +36,16 @@ class TimesDoCampeonatoController extends Controller
             ->orderBy('nome_time')
             ->get();
 
+        // Convocação (Fase G): os participantes internos, cada um com quantos atletas ativos convocou
+        $convocacao = $campeonato->timesConvocaveis()
+            ->withCount(['convocacoes as total_convocados' => fn ($q) => $q->where('id_campeonato', $campeonato->id_campeonato)->deAtivos()])
+            ->orderBy('nome_time')
+            ->get();
+
         $caminho = $this->caminho($campeonato);
 
         return view('admin.campeonatos.times', [
-            ...compact('campeonato', 'proximos', 'realizados', 'semJogo', 'caminho'),
+            ...compact('campeonato', 'proximos', 'realizados', 'semJogo', 'convocacao', 'caminho'),
             ...$this->dadosDaTela(),
         ]);
     }
@@ -52,6 +58,7 @@ class TimesDoCampeonatoController extends Controller
 
         $campeonato = null;
         $semJogo    = collect();
+        $convocacao = collect();
         $caminho    = [
             ['Eventos', route('admin.calendario.index')],
             ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
@@ -59,7 +66,7 @@ class TimesDoCampeonatoController extends Controller
         ];
 
         return view('admin.campeonatos.times', [
-            ...compact('campeonato', 'proximos', 'realizados', 'semJogo', 'caminho'),
+            ...compact('campeonato', 'proximos', 'realizados', 'semJogo', 'convocacao', 'caminho'),
             ...$this->dadosDaTela(),
         ]);
     }

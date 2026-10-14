@@ -100,6 +100,45 @@ class Categoria extends Model
         return ($ano ?? (int) now()->format('Y')) - Carbon::parse($nascimento)->year;
     }
 
+    /**
+     * Atletas informados que passam da idade máxima desta categoria no ano: [id_atleta => "Nome (16 anos)"],
+     * em ordem de nome. Regra do campeonato (professor, 09/10/2026): o mais novo pode jogar acima, o mais velho
+     * nunca joga abaixo. O jogo usa o ano do jogo (Jogo::acimaDaIdade); a convocação, o ano de início do
+     * campeonato (Campeonato::acimaDaIdade).
+     */
+    public function atletasAcimaDaIdade(array $idsAtletas, int $ano): array
+    {
+        return array_map(fn ($par) => "{$par[0]} ({$par[1]} anos)", $this->acimaDoLimite($idsAtletas, $ano));
+    }
+
+    // Os mesmos atletas, só com a idade: [id_atleta => 16] (selos das telas)
+    public function idadesAcimaDoLimite(array $idsAtletas, int $ano): array
+    {
+        return array_map(fn ($par) => $par[1], $this->acimaDoLimite($idsAtletas, $ano));
+    }
+
+    // [id_atleta => [nome, idade no ano]] de quem passa da idade máxima, em ordem de nome
+    private function acimaDoLimite(array $idsAtletas, int $ano): array
+    {
+        if (! $idsAtletas) {
+            return [];
+        }
+
+        return Atleta::whereIn('id_atleta', $idsAtletas)
+            ->whereNotNull('data_nasc_atleta')
+            ->orderBy('nome_atleta')
+            ->get(['id_atleta', 'nome_atleta', 'data_nasc_atleta'])
+            ->mapWithKeys(fn ($atleta) => [(int) $atleta->id_atleta => [$atleta->nome_atleta, self::idadeNoAno($atleta->data_nasc_atleta, $ano)]])
+            ->filter(fn ($par) => $par[1] > $this->idade_max_categoria)
+            ->all();
+    }
+
+    // Faixa para as mensagens de idade: "Sub-15 Masculino, até 15 anos"
+    public function getLimiteDeIdadeAttribute(): string
+    {
+        return "{$this->rotulo}, até {$this->idade_max_categoria} anos";
+    }
+
     // Categoria ativa do mesmo sexo cuja faixa contém a idade no ano; null se nenhuma servir
     public static function sugeridaPara($nascimento, ?string $sexo, ?int $ano = null): ?self
     {

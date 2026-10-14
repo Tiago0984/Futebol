@@ -48,6 +48,27 @@
 
     @include('admin.jogos._mensagens')
 
+    {{-- Convocação (Fase G): um time interno participante por linha, com os convocados ativos e o botão da tela --}}
+    @if ($convocacao->isNotEmpty())
+    <div class="card shadow-sm mb-4" id="blocoConvocacao">
+      <div class="card-body py-2">
+        <h2 class="h6 text-uppercase text-muted fw-bold mb-2">Convocação</h2>
+        @foreach ($convocacao as $timeConvocador)
+        <div class="d-flex align-items-center gap-2 py-1 border-top" data-id-time="{{ $timeConvocador->id_time }}">
+          <span class="fw-semibold">{{ $timeConvocador->nome_time }}</span>
+          <span @class(['badge', 'bg-secondary' => $timeConvocador->total_convocados, 'bg-warning text-dark' => ! $timeConvocador->total_convocados])>
+            {{ $timeConvocador->total_convocados ? $timeConvocador->total_convocados . ' convocado(s)' : 'Sem convocados' }}
+          </span>
+          <a href="{{ route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $timeConvocador->id_time]) }}"
+             class="btn btn-sm btn-outline-primary ms-auto">
+            <i class="bi bi-person-lines-fill"></i> Convocados
+          </a>
+        </div>
+        @endforeach
+      </div>
+    </div>
+    @endif
+
     @include('admin.partials.blocos-de-jogos', ['rotulo' => 'jogo'])
 
     {{-- Participantes que não aparecem em nenhum jogo acima (ainda sem jogo marcado, ou só em jogos mais

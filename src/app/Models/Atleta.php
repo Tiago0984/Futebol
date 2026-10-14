@@ -388,6 +388,12 @@ class Atleta extends Authenticatable
         return $this->hasMany(EventoAtleta::class, 'id_atleta', 'id_atleta');
     }
 
+    // Convocações do atleta nos campeonatos (Fase G): um time por campeonato
+    public function convocacoes()
+    {
+        return $this->hasMany(Convocacao::class, 'id_atleta', 'id_atleta');
+    }
+
     // Notificações do atleta (Fase 8), da mais nova para a mais antiga
     public function notificacoes()
     {
@@ -602,6 +608,7 @@ class Atleta extends Authenticatable
             $this->times()->detach();
             $this->autorizacoes()->delete();
             $this->inscricoesEmEventos()->delete(); // tbl_evento_atleta (FK sem cascade)
+            $this->convocacoes()->delete();         // tbl_convocacao (FK sem cascade)
             // tbl_notificacao_leitura e tbl_notificacao (FKs sem cascade): primeiro as leituras dos responsáveis
             NotificacaoLeitura::whereIn('id_notificacao', Notificacao::where('id_atleta', $this->id_atleta)->select('id_notificacao'))->delete();
             $this->notificacoes()->delete();

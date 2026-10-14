@@ -113,6 +113,17 @@ class Time extends Model
             return "O time {$this->nome_time} tem {$elenco} atleta(s) no elenco. Tire-os do time na edição de cada atleta antes de excluir.";
         }
 
+        $convocados = $this->convocacoes()->count();
+        if ($convocados) {
+            return "O time {$this->nome_time} tem {$convocados} atleta(s) convocado(s) em campeonatos. Remova a convocação antes de excluir.";
+        }
+
         return null;
+    }
+
+    // Convocações do time nos campeonatos (Fase G)
+    public function convocacoes()
+    {
+        return $this->hasMany(Convocacao::class, 'id_time', 'id_time');
     }
 }

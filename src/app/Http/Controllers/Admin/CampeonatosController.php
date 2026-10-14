@@ -84,6 +84,12 @@ class CampeonatosController extends Controller
 
         $this->validar($request, $campeonato);
 
+        // Time com convocados não sai dos participantes (a convocação ficaria apontando para quem não joga)
+        if ($saem = $campeonato->timesQueSaemComConvocados($request->times ?? [])) {
+            return back()->withInput()->withErrors(['times' => 'Não é possível tirar do campeonato time com atletas convocados: '
+                . implode(', ', $saem) . '. Remova a convocação do time antes.']);
+        }
+
         $dados = $request->only([
             'nome_campeonato', 'tipo_campeonato', 'data_inicio_campeonato',
             'data_fim_campeonato', 'local_evento', 'organizador_campeonato',
