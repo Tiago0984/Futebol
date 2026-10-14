@@ -577,7 +577,9 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Migration no `db_futebol` de casa:** batch 30 (`2026_10_14_000002_add_convocacao_to_origem_evento_atleta`, só amplia o ENUM; não depende de ids). **Servidor e Senac:** rodar o `migrate` normal (backup antes).
 - **Backup** em `backup/` (só em casa): `db_futebol_antes_convocacao_origem_20261014_153436.sql`.
 - **Testes:** `JogoConvocacaoTest` (10); `JogoEventoTest`, `JogoIdadeCampeonatoTest` e `EventoFluxoTest` passaram a convocar nos jogos de campeonato; `JogoElencoTest` continua cobrindo o amistoso. **583 testes passando.**
-- **Falta:** roteiro no navegador (jogo de 10/10 da Liga com "Não convocado" e "Preencher pela convocação"; jogo novo; troca de time para o Verde; jogadores do time no jogo) e publicar no servidor.
+- **Roteiro no navegador feito em casa (14/10, 10 passos, todos OK):** jogo antigo de 10/10 (evento 209, oculto) com camisas, "Convocado: Time Azul", "Não convocado" e "Preencher pela convocação"; jogadores do time no jogo com a coluna Convocação; jogo novo de 24/10 (evento 213) nascendo com os 5 convocados; troca para o Verde ("Sem convocados") e para o Preto; remover e convocar de novo com os avisos dos jogos futuros; amistoso (evento 205) continua pelo elenco. A lista do jogo segue ordenada por nome.
+  - Dados de teste que ficaram no `db_futebol` de casa: Atleta Teste API inscrito (CONVOCACAO) no jogo 11; o jogo do evento 213 (Time Preto x Time Visitante, com o Tiago) **oculto**; o Tiago reconvocado no Time Preto da Liga (camisa 10).
+- **Falta:** publicar no servidor (avançar a `main`; lá, backup, `git pull`, `migrate --force` do batch 30 e `optimize:clear`).
 - **Manual do painel** para quem administra: `docs/manual/Manual_do_Painel_AACJ.pdf` (fonte `.html`; PDF gerado pelo Edge em modo headless). Atualizar junto quando um fluxo do admin mudar.
 - **Próximo passo:** roteiro da Etapa 2; candidatos: atleta aprovado no meio do mês entrar nos treinos já gerados (débito 7b) e Fase G, Etapa 3 (amistoso escolhe os atletas no jogo).
 
