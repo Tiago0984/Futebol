@@ -32,6 +32,9 @@
         nav ul { margin: 0; padding-left: 20px; columns: 2; }
         @media (max-width: 600px) { nav ul { columns: 1; } }
         .nota { font-size: .9rem; color: #495057; }
+        .ficha th { width: 160px; white-space: nowrap; }
+        .ficha th, .ficha td { border-bottom: 1px solid #eef1ef; }
+        .param { font-size: .85rem; color: #495057; }
     </style>
 </head>
 
@@ -46,6 +49,18 @@
 </header>
 
 <main>
+
+    <div class="card">
+        <h3>Identificação da API</h3>
+        <table class="ficha">
+            <tr><th>Nome</th><td>API da Escolinha de Futebol AACJ (Associação Atlética Cohab Jucelino e Adjacência)</td></tr>
+            <tr><th>Uso</th><td>Aplicativo do atleta e do responsável: dados, agenda de treinos e jogos, avisos; dados públicos do site</td></tr>
+            <tr><th>Versão</th><td><strong>v1</strong> (todas as rotas começam com <code>/api/v1</code>)</td></tr>
+            <tr><th>URL base</th><td><code>{{ url('/api/v1') }}</code></td></tr>
+            <tr><th>Formato</th><td>JSON (envie <code>Accept: application/json</code>; corpo das requisições em <code>application/json</code>)</td></tr>
+            <tr><th>Autenticação</th><td>Token Bearer (Laravel Sanctum), obtido em <code>POST /api/v1/auth/login</code> e enviado em <code>Authorization: Bearer SEU_TOKEN</code>; vale 30 dias. Rotas marcadas como <strong>Público</strong> não pedem token.</td></tr>
+        </table>
+    </div>
 
     <nav class="card">
         <h3>Conteúdo</h3>
@@ -106,18 +121,18 @@
 
     @php
         $publicas = [
-            ['GET', '/status', 'Verifica se a API está online'],
-            ['GET', '/banners', 'Banners ativos da home, na ordem de exibição'],
-            ['GET', '/categorias', 'Categorias ativas (Sub-9 a Sub-17, masculino e feminino)'],
-            ['GET', '/categorias/{id}/times', 'Times ativos de uma categoria'],
-            ['GET', '/noticias', 'Notícias ativas. Filtro opcional: ?categoria=Campeonatos'],
-            ['GET', '/noticias/{id}', 'Notícia completa'],
-            ['GET', '/campeonatos', 'Campeonatos ativos'],
-            ['GET', '/campeonatos/{id}', 'Detalhes do campeonato com times e jogos (data_jogo com fuso)'],
+            ['GET', '/status', 'Verifica se a API está online', '—'],
+            ['GET', '/banners', 'Banners ativos da home, na ordem de exibição', '—'],
+            ['GET', '/categorias', 'Categorias ativas (Sub-9 a Sub-17, masculino e feminino)', '—'],
+            ['GET', '/categorias/{id}/times', 'Times ativos de uma categoria', '{id}: id da categoria'],
+            ['GET', '/noticias', 'Notícias ativas. Filtro opcional: ?categoria=Campeonatos', 'categoria? (filtro pela categoria da notícia)'],
+            ['GET', '/noticias/{id}', 'Notícia completa', '{id}: id da notícia'],
+            ['GET', '/campeonatos', 'Campeonatos ativos', '—'],
+            ['GET', '/campeonatos/{id}', 'Detalhes do campeonato com times e jogos (data_jogo com fuso)', '{id}: id do campeonato'],
         ];
     @endphp
 
-    @foreach ($publicas as [$metodo, $rota, $descricao])
+    @foreach ($publicas as [$metodo, $rota, $descricao, $parametros])
         <div class="card">
             <div class="rota">
                 <span class="metodo {{ $metodo }}">{{ $metodo }}</span>
@@ -125,6 +140,7 @@
                 <span class="acesso">Público</span>
             </div>
             <div>{{ $descricao }}</div>
+            <div class="param">Parâmetros: <code>{{ $parametros }}</code></div>
         </div>
     @endforeach
 
@@ -472,40 +488,46 @@ Content-Type: application/json
 
     @php
         $todas = [
-            ['POST',  '/auth/login', 'Público'],
-            ['POST',  '/auth/esqueci-senha', 'Público'],
-            ['POST',  '/auth/logout', 'Qualquer perfil'],
-            ['GET',   '/atleta', 'Atleta'],
-            ['PUT',   '/atleta', 'Atleta'],
-            ['PATCH', '/atleta', 'Atleta'],
-            ['PUT',   '/atleta/senha', 'Atleta'],
-            ['GET',   '/agenda', 'Atleta'],
-            ['GET',   '/notificacoes', 'Atleta'],
-            ['GET',   '/notificacoes/nao-lidas', 'Atleta'],
-            ['PATCH', '/notificacoes/{idNotificacao}/lida', 'Atleta'],
-            ['PATCH', '/notificacoes/lidas', 'Atleta'],
-            ['GET',   '/responsavel', 'Responsável'],
-            ['PUT',   '/responsavel', 'Responsável'],
-            ['PATCH', '/responsavel', 'Responsável'],
-            ['PUT',   '/responsavel/senha', 'Responsável'],
-            ['GET',   '/responsavel/atletas', 'Responsável'],
-            ['GET',   '/responsavel/atletas/{idAtleta}', 'Responsável'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes', 'Responsável'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes/nao-lidas', 'Responsável'],
-            ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/{idNotificacao}/lida', 'Responsável'],
-            ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/lidas', 'Responsável'],
+            ['POST',  '/auth/login', 'Público', 'email, senha, perfil?, device_name?'],
+            ['POST',  '/auth/esqueci-senha', 'Público', 'email, perfil?'],
+            ['POST',  '/auth/logout', 'Qualquer perfil', '—'],
+            ['GET',   '/atleta', 'Atleta', '—'],
+            ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
+            ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],
+            ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
+            ['GET',   '/agenda', 'Atleta', 'page?'],
+            ['GET',   '/notificacoes', 'Atleta', 'page?'],
+            ['GET',   '/notificacoes/nao-lidas', 'Atleta', '—'],
+            ['PATCH', '/notificacoes/{idNotificacao}/lida', 'Atleta', '{idNotificacao}'],
+            ['PATCH', '/notificacoes/lidas', 'Atleta', '—'],
+            ['GET',   '/responsavel', 'Responsável', '—'],
+            ['PUT',   '/responsavel', 'Responsável', $camposDoResponsavel = 'email_responsavel?, telefone_responsavel?, whatsapp_responsavel?'],
+            ['PATCH', '/responsavel', 'Responsável', $camposDoResponsavel],
+            ['PUT',   '/responsavel/senha', 'Responsável', $camposDaSenha],
+            ['GET',   '/responsavel/atletas', 'Responsável', '—'],
+            ['GET',   '/responsavel/atletas/{idAtleta}', 'Responsável', '{idAtleta}'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes', 'Responsável', '{idAtleta}, page?'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes/nao-lidas', 'Responsável', '{idAtleta}'],
+            ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/{idNotificacao}/lida', 'Responsável', '{idAtleta}, {idNotificacao}'],
+            ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/lidas', 'Responsável', '{idAtleta}'],
         ];
     @endphp
 
+    <p class="nota">
+        <strong>Parâmetros:</strong> <code>{nome}</code> vai no caminho da URL; <code>?</code> no fim do nome = opcional (os outros são obrigatórios);
+        nas rotas <code>GET</code> os parâmetros vão na query string (ex.: <code>?page=2</code>) e nas demais no corpo JSON; <code>—</code> = sem parâmetros.
+        <strong>Acesso:</strong> as rotas que não são <strong>Público</strong> exigem <code>Authorization: Bearer SEU_TOKEN</code> do perfil indicado.
+    </p>
+
     <div class="tabela">
     <table>
-        <tr><th>Método</th><th>Rota</th><th>Acesso</th></tr>
-        @foreach ($publicas as [$metodo, $rota])
-            <tr><td><span class="metodo {{ $metodo }}">{{ $metodo }}</span></td><td><code>/api/v1{{ $rota }}</code></td><td>Público</td></tr>
+        <tr><th>Método</th><th>Rota</th><th>Acesso</th><th>Parâmetros</th></tr>
+        @foreach ($publicas as [$metodo, $rota, $descricao, $parametros])
+            <tr><td><span class="metodo {{ $metodo }}">{{ $metodo }}</span></td><td><code>/api/v1{{ $rota }}</code></td><td>Público</td><td class="param"><code>{{ $parametros }}</code></td></tr>
         @endforeach
-        @foreach ($todas as [$metodo, $rota, $acesso])
-            <tr><td><span class="metodo {{ $metodo }}">{{ $metodo }}</span></td><td><code>/api/v1{{ $rota }}</code></td><td>{{ $acesso }}</td></tr>
+        @foreach ($todas as [$metodo, $rota, $acesso, $parametros])
+            <tr><td><span class="metodo {{ $metodo }}">{{ $metodo }}</span></td><td><code>/api/v1{{ $rota }}</code></td><td>{{ $acesso }}</td><td class="param"><code>{{ $parametros }}</code></td></tr>
         @endforeach
     </table>
     </div>
