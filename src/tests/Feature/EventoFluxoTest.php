@@ -253,11 +253,11 @@ class EventoFluxoTest extends TestCase
 
     public function test_criar_jogo_avisa_atleta_fora_da_categoria(): void
     {
-        // Da idade da Copa (Sub-11), mas do feminino: entra e gera o aviso (quem passa da idade nem entra)
+        // Da idade da Copa (Sub-11), mas do feminino: convocada, entra e gera o aviso (quem passa da idade nem entra)
         $idSub11F = $this->idCategoria('Sub-11', 'F');
         $ana = $this->criarAtleta($this->nascidoComIdade(11), 'F', 'ATIVO');
         $this->colocarNaCategoria($ana, $idSub11F);
-        DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $ana, 'camisa_atleta_time' => 7, 'posicao_atleta_time' => '']);
+        DB::table('tbl_convocacao')->insert(['id_campeonato' => $this->copa, 'id_time' => $this->azul, 'id_atleta' => $ana, 'camisa_convocacao' => 7]);
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
             ->assertSessionHas('avisos_categoria');
@@ -356,12 +356,13 @@ class EventoFluxoTest extends TestCase
             $jogo->evento->inscrever($rui, 'INDIVIDUAL', null, notificar: false);
         }
 
+        // O elenco só vale no amistoso (Fase G, Etapa 2): conta só o futuro2; no campeonato vale a convocação
         $this->comoAdmin()->delete(route('admin.times.elenco.remover', [$this->azul, $rui]))
-            ->assertSessionHas('aviso', "{$this->nomeAtleta($rui)} saiu do elenco do Time Azul. Continua inscrito em 2 jogo(s) futuro(s) do time "
+            ->assertSessionHas('aviso', "{$this->nomeAtleta($rui)} saiu do elenco do Time Azul. Continua inscrito em 1 amistoso(s) futuro(s) do time "
                 . '(marcado como "Fora do elenco" na tela do jogo); remova a inscrição na tela de cada jogo, se for o caso.');
 
         $this->assertSame(4, DB::table('tbl_evento_atleta')->where('id_atleta', $rui)->count());
-        $this->comoAdmin()->get(route('admin.times.elenco', $this->azul))->assertSee('Continua inscrito em 2 jogo(s)');
+        $this->comoAdmin()->get(route('admin.times.elenco', $this->azul))->assertSee('Continua inscrito em 1 amistoso(s)');
     }
 
     // ---------- 11: tipo e categoria no formulário do campeonato ----------

@@ -42,11 +42,11 @@ class JogoEventoTest extends TestCase
     public function test_jogo_de_campeonato_cria_o_evento_com_titulo_categoria_local_e_inscritos(): void
     {
         $idAtleta = $this->atletaSub11();
-        $this->atletaSub11([]); // da categoria do campeonato, mas fora do elenco: não entra
+        $this->atletaSub11([]); // da categoria do campeonato, mas não convocado: não entra
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
             ->assertRedirect(route('admin.calendario.eventos.show', Jogo::sole()->id_evento)) // abre a tela do jogo (Fase 10)
-            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.')
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) da convocação inscrito(s). Os atletas serão avisados ao publicar.')
             ->assertSessionMissing('aviso');
 
         $jogo   = Jogo::with('evento')->sole();
@@ -58,7 +58,7 @@ class JogoEventoTest extends TestCase
         $this->assertSame('Quadra A', $evento->local_evento_calendario); // vazio = local do campeonato
         $this->assertSame('ATIVO', $evento->status_evento_calendario);
         $this->assertNotNull($evento->id_usuario);                       // responsável = admin logado
-        $this->assertSame([$idAtleta => ['ELENCO', $this->azul]], $this->inscricoesDo($jogo)); // já escalado no Azul
+        $this->assertSame([$idAtleta => ['CONVOCACAO', $this->azul]], $this->inscricoesDo($jogo)); // convocado, já escalado no Azul
 
         // Nasce rascunho (Fase 10, Etapa 4): ninguém avisado; ao publicar, o inscrito recebe a INSCRICAO com o time
         $this->assertFalse($evento->estaPublicado());
@@ -153,9 +153,9 @@ class JogoEventoTest extends TestCase
             'local_evento_calendario'          => 'Campo C',
             'placar_time_casa_jogos'           => 3,
             'placar_time_visitante_jogos'      => 1,
-        ]))->assertSessionHas('sucesso', 'Jogo atualizado. Inscrições pelo elenco: 0 atleta(s) inscrito(s), 0 removido(s).'
+        ]))->assertSessionHas('sucesso', 'Jogo atualizado. Inscrições pela convocação: 0 atleta(s) inscrito(s), 0 removido(s).'
             . ' As inscrições individuais foram mantidas. 0 atleta(s) notificado(s).')
-            ->assertSessionHas('aviso', fn ($aviso) => str_starts_with($aviso, 'Sem elenco cadastrado: Time Verde.'));
+            ->assertSessionHas('aviso', fn ($aviso) => str_starts_with($aviso, 'Sem convocados: Time Verde.'));
 
         $jogo->refresh();
         $evento = $jogo->evento;
@@ -201,7 +201,7 @@ class JogoEventoTest extends TestCase
         $jogo = $this->criarJogo();
         $this->assertSame(1, $jogo->evento->inscricoes()->count());
 
-        // Virar amistoso sem categoria: a categoria é só exibição no jogo; quem joga é o elenco
+        // Virar amistoso sem categoria: a categoria é só exibição no jogo; quem joga é a convocação (ou o elenco)
         // (o local fica o mesmo: vazio no amistoso seria uma mudança de local, que avisa)
         $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo(['id_campeonato' => 'AMISTOSO', 'local_evento_calendario' => 'Quadra A']))
             ->assertSessionHas('sucesso', 'Jogo atualizado.');
@@ -362,14 +362,26 @@ class JogoEventoTest extends TestCase
     }
 
     // Atleta ativo da Sub-11 M no elenco (tbl_atleta_time) dos times indicados; padrão: o Time Azul (mandante)
+    /**
+     * Atleta Sub-11 no elenco dos times (amistoso) e, pelo primeiro deles, convocado na Copa Escola (jogo de
+     * campeonato, Fase G, Etapa 2; camisa sem repetir). [] = nem elenco nem convocação.
+     */
     private function atletaSub11(?array $elencos = null): int
     {
         $id = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         $this->colocarNaCategoria($id, $this->idSub11M);
+        $elencos ??= [$this->azul];
 
-        foreach ($elencos ?? [$this->azul] as $idTime) {
+        foreach ($elencos as $idTime) {
             DB::table('tbl_atleta_time')->insert([
                 'id_time' => $idTime, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '',
+            ]);
+        }
+
+        if ($elencos) {
+            DB::table('tbl_convocacao')->insert([
+                'id_campeonato' => $this->idCampeonato, 'id_time' => $elencos[0], 'id_atleta' => $id,
+                'camisa_convocacao' => DB::table('tbl_convocacao')->count() + 1,
             ]);
         }
 

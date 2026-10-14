@@ -115,14 +115,16 @@ class JogosController extends Controller
             $dadosEvento['local_evento_calendario'] = Campeonato::find($dadosJogo['id_campeonato'])?->local_evento;
         }
 
-        // O elenco ativo dos times internos será inscrito: confere conflito antes de criar
+        // Os convocados do campeonato (ou o elenco, no amistoso) ativos dos times internos serão inscritos:
+        // confere conflito antes de criar
         $times = [$dadosJogo['id_time_casa'], $dadosJogo['id_time_visitante']];
-        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaCriacaoDoJogo($dadosEvento, $times))) {
+        if ($confirmar = $this->confirmarConflitos($request, $this->conflitosDaCriacaoDoJogo($dadosEvento, $times, $dadosJogo['id_campeonato']))) {
             return $confirmar;
         }
 
         [$evento, $jogo, $elenco] = DB::transaction(function () use ($dadosJogo, $dadosEvento) {
-            // Responsável = admin logado. A categoria fica no evento só para exibição: quem joga é o elenco.
+            // Responsável = admin logado. A categoria fica no evento só para exibição: quem joga são os
+            // convocados (ou o elenco, no amistoso).
             // Nasce rascunho (Fase 10, Etapa 4): inscritos e escalados, ninguém avisado até publicar
             $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento, inscreverCategoria: false, rascunho: true);
 
@@ -135,12 +137,12 @@ class JogosController extends Controller
 
         $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
         $mensagem  = 'Jogo registrado como rascunho.'
-            . ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) do elenco inscrito(s)." : '')
+            . ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) {$jogo->daLista()} inscrito(s)." : '')
             . ($elenco['nos_dois'] ? " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times: escolha o time de cada um na tela do jogo." : '')
-            . $jogo->textoAcimaDaIdade($elenco['acima_da_idade'])
+            . $jogo->textoAcimaDaIdade($elenco['acima_da_idade'], $jogo->daLista())
             . ' Os atletas serão avisados ao publicar.';
 
-        // Elenco de outra categoria/sexo: só avisa, como na tela do jogo (CLAUDE.md, seção 8, pergunta 14)
+        // Inscrito de outra categoria/sexo: só avisa, como na tela do jogo (CLAUDE.md, seção 8, pergunta 14)
         if ($avisos = $evento->avisosForaDaCategoria($elenco['ids_mexidos'])) {
             session()->flash('avisos_categoria', $avisos);
         }
@@ -257,7 +259,8 @@ class JogosController extends Controller
         }
 
         // Evento e jogo juntos: o que mudar em título, categoria, data, horário ou local vai para o histórico
-        // do evento; times trocados, as inscrições acompanham o elenco; os atletas são avisados
+        // do evento; times trocados, as inscrições acompanham a convocação (ou o elenco, no amistoso); os
+        // atletas são avisados
         $mensagem = 'Jogo atualizado.' . $this->salvarEdicaoDoEvento($evento, $dadosEvento,
             fn () => $this->gravarJogoETrocarTimes($jogo, $dadosJogo, $timesAntes));
 
@@ -273,9 +276,10 @@ class JogosController extends Controller
     }
 
     /**
-     * Grava o jogo (dentro da transação da edição). Times trocados: sai quem veio pelo elenco do time que
-     * saiu, entra o elenco do time novo e as INDIVIDUAL ficam (sem time, se estavam no que saiu). Jogo
-     * concluído não muda as inscrições: só tira da escalação quem estava num time que saiu.
+     * Grava o jogo (dentro da transação da edição). Times trocados: sai quem veio pela convocação (ou pelo
+     * elenco, no amistoso) do time que saiu, entra a do time novo e as INDIVIDUAL ficam (sem time, se
+     * estavam no que saiu). Jogo concluído não muda as inscrições: só tira da escalação quem estava num time
+     * que saiu.
      * Devolve o trecho da mensagem e quem entrou (para salvarEdicaoDoEvento), ou null se os times não mudaram.
      */
     private function gravarJogoETrocarTimes(Jogo $jogo, array $dadosJogo, array $timesAntes): ?array
@@ -298,23 +302,32 @@ class JogosController extends Controller
         $entraram = $troca['inscritos_com_time'] + $troca['inscritos_sem_time'];
 
         return [
-            'mensagem'     => " Inscrições pelo elenco: {$entraram} atleta(s) inscrito(s), {$troca['sairam']} removido(s)."
+            'mensagem'     => ' Inscrições ' . ($jogo->pelaConvocacao() ? 'pela convocação' : 'pelo elenco')
+                . ": {$entraram} atleta(s) inscrito(s), {$troca['sairam']} removido(s)."
                 . ' As inscrições individuais foram mantidas.' . $foraDaEscalacao($troca['sem_time'])
-                . $jogo->textoAcimaDaIdade($troca['acima_da_idade']),
+                . $jogo->textoAcimaDaIdade($troca['acima_da_idade'], $jogo->daLista()),
             'ids_entraram' => $troca['ids_entraram'],
             'mexeu'        => $entraram + $troca['sairam'] > 0,
         ];
     }
 
-    // Time interno sem atleta ativo no elenco: o jogo fica sem inscritos daquele lado; avisa o admin
+    // Time interno sem atleta ativo convocado (ou no elenco, no amistoso): o jogo fica sem inscritos daquele
+    // lado; avisa o admin
     private function comAvisoSemElenco($resposta, Jogo $jogo)
     {
         $semElenco = $jogo->timesSemElenco();
 
-        return $semElenco->isEmpty() ? $resposta : $resposta->with('aviso', 'Sem elenco cadastrado: '
-            . $semElenco->pluck('nome_time')->implode(', ') . '. Nenhum atleta foi inscrito por '
-            . ($semElenco->count() === 1 ? 'esse time' : 'esses times')
-            . '; cadastre o elenco e use "Preencher pelo elenco" na tela do jogo, ou inscreva à mão.');
+        if ($semElenco->isEmpty()) {
+            return $resposta;
+        }
+
+        $nomes  = $semElenco->pluck('nome_time')->implode(', ');
+        $porQue = '. Nenhum atleta foi inscrito por ' . ($semElenco->count() === 1 ? 'esse time' : 'esses times');
+
+        return $resposta->with('aviso', $jogo->pelaConvocacao()
+            ? "Sem convocados: {$nomes}{$porQue}; convoque os atletas (Jogos do campeonato › Convocação) e use "
+                . '"Preencher pela convocação" na tela do jogo, ou inscreva à mão.'
+            : "Sem elenco cadastrado: {$nomes}{$porQue}; cadastre o elenco e use \"Preencher pelo elenco\" na tela do jogo, ou inscreva à mão.");
     }
 
     // Campos do jogo: campeonato (vazio = amistoso), times e placar (os dois ou nenhum)

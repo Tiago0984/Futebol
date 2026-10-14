@@ -41,7 +41,8 @@ class ElencoController extends Controller
 
     /**
      * Adiciona um atleta ativo ao elenco (como o modal do atleta faz: titular, camisa opcional). Não inscreve
-     * em jogos já criados: use "Preencher pelo elenco" na tela de cada jogo (CLAUDE.md, seção 4, "Jogos").
+     * em amistosos já criados: use "Preencher pelo elenco" na tela de cada jogo (CLAUDE.md, seção 4, "Jogos"; o
+     * jogo de campeonato usa a convocação, Fase G, Etapa 2).
      */
     public function adicionar(Request $request, $timeId)
     {
@@ -70,11 +71,11 @@ class ElencoController extends Controller
         ]);
 
         return redirect()->route('admin.times.elenco', $time->id_time)
-            ->with('sucesso', "{$atleta->nome_atleta} entrou no elenco. Para os jogos já criados, use \"Preencher pelo elenco\" na tela de cada jogo.");
+            ->with('sucesso', "{$atleta->nome_atleta} entrou no elenco. Para os amistosos já criados, use \"Preencher pelo elenco\" na tela de cada jogo (jogo de campeonato usa a convocação).");
     }
 
     /**
-     * Tira o atleta do elenco. As inscrições em jogos ficam (a tela do jogo marca "Fora do elenco"); a
+     * Tira o atleta do elenco. As inscrições em amistosos ficam (a tela do jogo marca "Fora do elenco"); a
      * mensagem diz em quantos jogos futuros do time ele continua inscrito. Contadores do elenco saem juntos.
      */
     public function remover($timeId, $atletaId)
@@ -89,10 +90,10 @@ class ElencoController extends Controller
             return back()->with('erro', "{$atleta->nome_atleta} não está no elenco.");
         }
 
-        $jogos    = $time->jogosFuturosComAtleta($atleta->id_atleta);
+        $jogos    = $time->jogosFuturosComAtleta($atleta->id_atleta, soAmistosos: true); // no campeonato vale a convocação
         $mensagem = "{$atleta->nome_atleta} saiu do elenco do {$time->nome_time}.";
         if ($jogos) {
-            $mensagem .= " Continua inscrito em {$jogos} jogo(s) futuro(s) do time (marcado como \"Fora do elenco\" na tela do jogo); "
+            $mensagem .= " Continua inscrito em {$jogos} amistoso(s) futuro(s) do time (marcado como \"Fora do elenco\" na tela do jogo); "
                 . 'remova a inscrição na tela de cada jogo, se for o caso.';
         }
 

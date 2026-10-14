@@ -50,7 +50,8 @@ trait ConfirmaConflitos
      * Conflitos que a edição criaria: só quando muda data, horário ou categoria. Confere os atletas que
      * ficarão inscritos (com troca de categoria: individuais atuais + atletas ativos da categoria nova).
      * Jogo ($timesDoJogo = mandante e visitante novos): a categoria não muda quem joga; a troca de time,
-     * sim (sai o elenco do time que saiu, entra o do novo; Jogo::idsInscritosDepoisDaTroca).
+     * sim (sai a convocação, ou o elenco no amistoso, do time que saiu, entra a do novo;
+     * Jogo::idsInscritosDepoisDaTroca).
      */
     private function conflitosDaEdicao(EventoCalendario $evento, array $dados, ?array $timesDoJogo = null): Collection
     {
@@ -108,10 +109,11 @@ trait ConfirmaConflitos
         return (new EventoCalendario($dados))->conflitosPara(Atleta::idsAtivosNaCategoria((int) $dados['id_categoria']));
     }
 
-    // Jogo novo: o elenco ativo dos times internos será inscrito; confere conflito antes de criar
-    private function conflitosDaCriacaoDoJogo(array $dados, array $idsTimes): Collection
+    // Jogo novo: os convocados do campeonato (ou o elenco, no amistoso = $idCampeonato null) ativos dos times
+    // internos serão inscritos; confere conflito antes de criar
+    private function conflitosDaCriacaoDoJogo(array $dados, array $idsTimes, $idCampeonato): Collection
     {
-        return (new EventoCalendario($dados))->conflitosPara(array_keys(Jogo::elencoDosTimes(Jogo::idsInternos($idsTimes))));
+        return (new EventoCalendario($dados))->conflitosPara(array_keys(Jogo::atletasDosTimes(Jogo::idsInternos($idsTimes), $idCampeonato)));
     }
 
     // Mandante e visitante mudaram (em qualquer ordem: inverter o mando não troca ninguém)

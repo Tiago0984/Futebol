@@ -229,11 +229,13 @@ class CalendarioController extends Controller
         // Atletas da categoria do evento que entraram depois e ainda não estão inscritos (no jogo, nenhum)
         $faltantesDaCategoria = count($evento->idsFaltantesDaCategoria());
 
-        // Evento de jogo: escalação por time (mandante/visitante internos), elenco de cada atleta e quantos
-        // do elenco ainda não estão inscritos (ao lado do "Preencher pelo elenco")
+        // Evento de jogo: escalação por time (mandante/visitante internos), por qual time cada atleta joga
+        // (convocação no campeonato, elenco no amistoso), a camisa da convocação e quantos ainda não estão
+        // inscritos (ao lado do "Preencher pela convocação/pelo elenco")
         $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato.categoria'])->first();
         $jogo?->setRelation('evento', $evento);
-        $elencos = $jogo?->elencosDoJogo() ?? [];
+        $elencos = $jogo?->atletasPorTime() ?? [];
+        $camisas = $jogo?->camisas() ?? [];
         $faltantesDoElenco = $jogo ? count($jogo->idsFaltantesDoElenco()) : 0;
 
         // Jogo de campeonato: inscritos que passam da idade (de antes da regra, ou o campeonato mudou), com
@@ -274,7 +276,7 @@ class CalendarioController extends Controller
         }
 
         return view('admin.calendario.evento', compact(
-            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos',
+            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos', 'camisas',
             'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar', 'inscritosAcimaDaIdade', 'disponiveisAcimaDaIdade', 'inscritosForaDoTurno', 'turnoDoTreino',
         ) + [
             'campeonatosDoJogo'       => $campeonatosDoJogo ?? collect(),
@@ -341,11 +343,13 @@ class CalendarioController extends Controller
     }
 
     /**
-     * "Preencher pelo elenco" (Jogo::inscreverElenco): inscreve quem falta do elenco (tbl_atleta_time) dos
-     * times internos do jogo (origem ELENCO, com alerta de conflito) e escala quem está inscrito sem time.
-     * Quem é de um time só entra escalado nele; quem está nos dois elencos entra SEM time, para o admin
-     * escolher na lista. Quem já tem time não muda; ninguém sai. Atleta fora da categoria do jogo gera aviso;
-     * quem passa da idade do campeonato fica de fora (a mensagem diz quem).
+     * "Preencher pela convocação" no jogo de campeonato, "Preencher pelo elenco" no amistoso
+     * (Jogo::inscreverElenco): inscreve quem falta dos convocados do campeonato (origem CONVOCACAO) ou do
+     * elenco (tbl_atleta_time, origem ELENCO) dos times internos do jogo, com alerta de conflito, e escala
+     * quem está inscrito sem time. Quem é de um time só entra escalado nele; quem está nos dois elencos (só
+     * no amistoso) entra SEM time, para o admin escolher na lista. Quem já tem time não muda; ninguém sai.
+     * Atleta fora da categoria do jogo gera aviso; quem passa da idade do campeonato fica de fora (a
+     * mensagem diz quem).
      */
     public function preencherPeloElenco(Request $request, $id)
     {
@@ -365,7 +369,8 @@ class CalendarioController extends Controller
         $elenco    = $jogo->inscreverElenco(auth('admin')->id());
         $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
 
-        $mensagem = "Escalação pelo elenco: {$elenco['escalados']} inscrito(s) escalado(s), {$elenco['inscritos_com_time']} atleta(s) inscrito(s) e escalado(s).";
+        $mensagem = 'Escalação ' . ($jogo->pelaConvocacao() ? 'pela convocação' : 'pelo elenco')
+            . ": {$elenco['escalados']} inscrito(s) escalado(s), {$elenco['inscritos_com_time']} atleta(s) inscrito(s) e escalado(s).";
         if ($elenco['nos_dois']) {
             $mensagem .= " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times"
                 . ($elenco['inscritos_sem_time'] ? " ({$elenco['inscritos_sem_time']} inscrito(s) agora, sem time)" : '')
@@ -374,7 +379,7 @@ class CalendarioController extends Controller
         if ($inscritos > 0) {
             $mensagem .= Notificacao::textoNotificados($evento->atletasNotificados);
         }
-        $mensagem .= $jogo->textoAcimaDaIdade($elenco['acima_da_idade']);
+        $mensagem .= $jogo->textoAcimaDaIdade($elenco['acima_da_idade'], $jogo->daLista());
 
         $this->avisarForaDaCategoria($evento, $elenco['ids_mexidos']);
 
@@ -406,9 +411,11 @@ class CalendarioController extends Controller
             return back()->with('erro', 'Este evento não tem categoria.');
         }
 
-        // No jogo, quem joga é o elenco dos times, não a categoria
+        // No jogo, quem joga são os convocados do campeonato (ou o elenco dos times, no amistoso), não a categoria
         if ($evento->ehJogo()) {
-            return back()->with('erro', 'No jogo, os inscritos vêm do elenco dos times: use "Preencher pelo elenco".');
+            return back()->with('erro', $evento->jogo->pelaConvocacao()
+                ? 'No jogo de campeonato, os inscritos vêm da convocação: use "Preencher pela convocação".'
+                : 'No jogo, os inscritos vêm do elenco dos times: use "Preencher pelo elenco".');
         }
 
         $faltantes = $evento->idsFaltantesDaCategoria();

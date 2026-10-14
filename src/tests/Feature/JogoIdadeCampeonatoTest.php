@@ -18,7 +18,7 @@ class JogoIdadeCampeonatoTest extends TestCase
 {
     use RefreshBancoDeTestes, CriaDadosDeAtleta;
 
-    private const FORA_DA_LIGA = ' 1 atleta(s) do elenco ficaram de fora por passar da idade do campeonato'
+    private const FORA_DA_LIGA = ' 1 atleta(s) da convocação ficaram de fora por passar da idade do campeonato'
         . ' (Sub-15 Masculino, até 15 anos): Caio (16 anos).';
 
     private User $admin;
@@ -51,7 +51,7 @@ class JogoIdadeCampeonatoTest extends TestCase
         $this->visitante = $this->time('Time Visitante', 'EXTERNO');
     }
 
-    // ---------- criar e preencher pelo elenco ----------
+    // ---------- criar e preencher pela convocação ----------
 
     public function test_criar_jogo_do_campeonato_deixa_de_fora_quem_passa_da_idade_e_nao_avisa_o_mais_novo(): void
     {
@@ -60,7 +60,7 @@ class JogoIdadeCampeonatoTest extends TestCase
         $this->atleta('Caio', 16, $this->idSub17M, [$this->azul]);        // mais velho: fica de fora
 
         $this->postJogo()
-            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 2 atleta(s) do elenco inscrito(s).'
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 2 atleta(s) da convocação inscrito(s).'
                 . self::FORA_DA_LIGA . ' Os atletas serão avisados ao publicar.')
             ->assertSessionMissing('avisos_categoria');
 
@@ -94,18 +94,18 @@ class JogoIdadeCampeonatoTest extends TestCase
     public function test_preencher_pelo_elenco_nao_inscreve_quem_passa_da_idade(): void
     {
         $jogo = $this->criarJogo();
-        $ana  = $this->atleta('Ana', 13, $this->idSub13M, [$this->azul]); // entraram no elenco depois
+        $ana  = $this->atleta('Ana', 13, $this->idSub13M, [$this->azul]); // convocados depois
         $this->atleta('Caio', 16, $this->idSub17M, [$this->azul]);
 
         // O contador do lado do botão não conta quem não pode entrar
-        $this->tela($jogo)->assertSee('1</strong> atleta(s) do elenco ainda não está inscrito', false);
+        $this->tela($jogo)->assertSee('1</strong> convocado(s) ainda não está inscrito', false);
 
         $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
             ->assertSessionHas('sucesso', fn ($msg) => str_ends_with($msg, self::FORA_DA_LIGA))
             ->assertSessionMissing('avisos_categoria');
 
         $this->assertSame([$ana => $this->azul], $this->inscritos($jogo));
-        $this->tela($jogo)->assertSee('Todo o elenco ativo está inscrito');
+        $this->tela($jogo)->assertSee('Todos os convocados estão inscritos');
     }
 
     public function test_trocar_time_nao_inscreve_quem_passa_da_idade(): void
@@ -198,6 +198,15 @@ class JogoIdadeCampeonatoTest extends TestCase
         foreach ($elencos as $idTime) {
             DB::table('tbl_atleta_time')->insert([
                 'id_time' => $idTime, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '',
+            ]);
+        }
+
+        // Jogo da Liga usa a convocação (Fase G, Etapa 2): convocado pelo primeiro time, gravado direto (o
+        // jogo confere a idade pelo ano do jogo; a tela de Convocados, pelo de início do campeonato)
+        if ($elencos) {
+            DB::table('tbl_convocacao')->insert([
+                'id_campeonato' => $this->liga, 'id_time' => $elencos[0], 'id_atleta' => $id,
+                'camisa_convocacao' => DB::table('tbl_convocacao')->count() + 1,
             ]);
         }
 

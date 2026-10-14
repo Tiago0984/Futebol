@@ -72,7 +72,7 @@
                 </div>
             @endif
 
-            {{-- Time interno sem elenco ao criar ou trocar times (vem da tela de Jogos) --}}
+            {{-- Time interno sem convocados (ou sem elenco, no amistoso) ao criar ou trocar times (vem da tela de Jogos) --}}
             @if (session('aviso'))
                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                     <strong>Atenção!</strong> {{ session('aviso') }}
@@ -205,18 +205,22 @@
                         <div class="text-muted">Os dois times são externos: não há atletas da escolinha para escalar.</div>
                     @endforelse
                     @if ($escalaveis->isNotEmpty())
+                        {{-- Jogo de campeonato: pela convocação do campeonato; amistoso: pelo elenco dos times --}}
+                        @php $pelaConvocacao = $jogo->pelaConvocacao(); @endphp
                         <div><span class="text-muted small d-block">Sem time</span><strong>{{ $porTime[0] ?? 0 }}</strong> inscrito(s)</div>
                         <form action="{{ route('admin.calendario.eventos.escalacao.elenco', $evento->id_evento_calendario) }}" method="POST" class="ms-auto d-flex align-items-center gap-2"
-                              onsubmit="return confirm('Escalar pelo elenco dos times? Quem já tem time não muda; quem está no elenco e não está inscrito será inscrito.')">
+                              onsubmit="return confirm(@js($pelaConvocacao
+                                  ? 'Escalar pela convocação do campeonato? Quem já tem time não muda; quem está convocado e não está inscrito será inscrito.'
+                                  : 'Escalar pelo elenco dos times? Quem já tem time não muda; quem está no elenco e não está inscrito será inscrito.'))">
                             @csrf
                             <span class="text-muted small">
                                 @if ($faltantesDoElenco > 0)
-                                    <strong>{{ $faltantesDoElenco }}</strong> atleta(s) do elenco ainda não {{ $faltantesDoElenco === 1 ? 'está inscrito' : 'estão inscritos' }}
+                                    <strong>{{ $faltantesDoElenco }}</strong> {{ $pelaConvocacao ? 'convocado(s)' : 'atleta(s) do elenco' }} ainda não {{ $faltantesDoElenco === 1 ? 'está inscrito' : 'estão inscritos' }}
                                 @else
-                                    Todo o elenco ativo está inscrito
+                                    {{ $pelaConvocacao ? 'Todos os convocados estão inscritos' : 'Todo o elenco ativo está inscrito' }}
                                 @endif
                             </span>
-                            <button type="submit" class="btn btn-success"><i class="bi bi-people"></i> Preencher pelo elenco</button>
+                            <button type="submit" class="btn btn-success"><i class="bi bi-people"></i> {{ $pelaConvocacao ? 'Preencher pela convocação' : 'Preencher pelo elenco' }}</button>
                         </form>
                     @endif
                 </div>
@@ -250,7 +254,8 @@
               $semTime = $porBlocos ? $inscricoes->reject(fn ($i) => $idsEscalaveis->contains((int) $i->id_time)) : collect();
             @endphp
             {{-- Adicionar: entre a escalação e os inscritos, nos jogos e nos outros eventos ("Pela categoria" só no
-                 evento com categoria que não é jogo; no jogo, os inscritos vêm do elenco: "Preencher pelo elenco") --}}
+                 evento com categoria que não é jogo; no jogo, os inscritos vêm da convocação ou, no amistoso, do
+                 elenco: "Preencher pela convocação/pelo elenco") --}}
             <div class="row g-4 mb-4">
                 @if ($evento->categoria && ! $jogo)
                 <div class="col-12">

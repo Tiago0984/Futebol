@@ -4,11 +4,12 @@
 
 {{--
     Jogadores de um time num jogo (cartão do time nas telas de times por jogo), só leitura: os atletas ativos
-    inscritos e escalados por aquele time naquele jogo, com os dados do elenco quando o atleta está nele.
-    A escalação é feita na tela do jogo (link "Abrir o jogo").
+    inscritos e escalados por aquele time naquele jogo. Jogo de campeonato: camisa da convocação e "Não
+    convocado"; amistoso: os dados do elenco quando o atleta está nele. A escalação é feita na tela do jogo
+    (link "Abrir o jogo").
 --}}
 @section('content')
-@php $ev = $jogo->evento; @endphp
+@php $ev = $jogo->evento; $pelaConvocacao = $jogo->pelaConvocacao(); @endphp
 <main class="app-main">
   <div class="container-fluid py-4">
 
@@ -57,14 +58,29 @@
             <tr>
               <th>Atleta</th>
               <th class="text-center">Camisa</th>
+              @if ($pelaConvocacao)
+              <th class="text-center">Convocação</th>
+              @else
               <th class="text-center">Posição</th>
               <th class="text-center">Status no elenco</th>
+              @endif
             </tr>
           </thead>
           <tbody>
             @forelse ($escalados as $atleta)
             <tr class="linha-escalado" data-id-atleta="{{ $atleta->id_atleta }}">
               <td class="fw-semibold">{{ $atleta->nome_atleta }}</td>
+              @if ($pelaConvocacao)
+              {{-- Campeonato: a camisa é a da convocação por este time --}}
+              <td class="text-center">{{ $atleta->camisa_convocacao ?: '—' }}</td>
+              <td class="text-center">
+                @if ($atleta->id_convocacao)
+                  <span class="badge escal-badge-titular">Convocado</span>
+                @else
+                  <span class="badge text-bg-warning">Não convocado</span>
+                @endif
+              </td>
+              @else
               <td class="text-center">{{ $atleta->camisa_atleta_time ?: '—' }}</td>
               <td class="text-center">{{ $atleta->posicao_atleta_time ?: '—' }}</td>
               <td class="text-center">
@@ -76,11 +92,13 @@
                   <span class="badge escal-badge-titular">Titular</span>
                 @endif
               </td>
+              @endif
             </tr>
             @empty
             <tr>
-              <td colspan="4" class="text-center text-muted py-4">
-                Nenhum atleta escalado pelo {{ $time->nome_time }} neste jogo. Escale na tela do jogo ("Preencher pelo elenco").
+              <td colspan="{{ $pelaConvocacao ? 3 : 4 }}" class="text-center text-muted py-4">
+                Nenhum atleta escalado pelo {{ $time->nome_time }} neste jogo. Escale na tela do jogo
+                ("{{ $pelaConvocacao ? 'Preencher pela convocação' : 'Preencher pelo elenco' }}").
               </td>
             </tr>
             @endforelse

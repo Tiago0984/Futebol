@@ -1,14 +1,18 @@
 {{--
     Inscritos de um bloco da escalação lado a lado (um time do jogo, ou "Sem time"): nome com a categoria
     embaixo, time (select e aviso do elenco), origem e remover. "Inscrito por" fica de fora para caber.
-    $lista (inscrições), $vazio (texto quando não há ninguém), $evento, $escalaveis, $elencos,
-    $inscritosAcimaDaIdade (selo de quem passa da idade do campeonato).
+    $lista (inscrições), $vazio (texto quando não há ninguém), $evento, $escalaveis, $elencos, $camisas
+    (camisa da convocação no jogo de campeonato: "10 · Nome"), $inscritosAcimaDaIdade (selo de quem passa
+    da idade do campeonato).
 --}}
 <table class="table table-sm table-hover align-middle mb-0">
     <tbody>
         @forelse ($lista as $inscricao)
         <tr>
             <td class="ps-3">
+                @if (isset($camisas[$inscricao->id_atleta]))
+                    <span class="badge text-bg-secondary me-1" title="Camisa na convocação do campeonato">{{ $camisas[$inscricao->id_atleta] }}</span>
+                @endif
                 <span class="fw-semibold">{{ $inscricao->atleta->nome_atleta }}</span>
                 <small class="d-block text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</small>
                 @if (isset($inscritosAcimaDaIdade[$inscricao->id_atleta]))

@@ -135,13 +135,17 @@ class Jogo extends Model
     /**
      * Atletas ativos escalados por um time neste jogo (tela "jogadores do time no jogo"), por nome, com os
      * dados do elenco desse time quando o atleta está nele (camisa, posição, titular/reserva; null fora do
-     * elenco). Uma consulta.
+     * elenco) e, no jogo de campeonato, a convocação por esse time (id e camisa; null = não convocado).
+     * Uma consulta.
      */
     public function escaladosDoTime(int $idTime): Collection
     {
         return DB::table('tbl_evento_atleta as ea')
             ->join('tbl_atletas as a', 'a.id_atleta', '=', 'ea.id_atleta')
             ->leftJoin('tbl_atleta_time as at', fn ($j) => $j->on('at.id_atleta', '=', 'ea.id_atleta')->where('at.id_time', $idTime))
+            // Jogo de campeonato: a convocação do atleta por este time (camisa e "Não convocado"); amistoso: nenhuma
+            ->leftJoin('tbl_convocacao as cv', fn ($j) => $j->on('cv.id_atleta', '=', 'ea.id_atleta')
+                ->where('cv.id_time', $idTime)->where('cv.id_campeonato', (int) $this->id_campeonato))
             ->where('ea.id_evento_calendario', $this->id_evento)
             ->where('ea.id_time', $idTime)
             ->where('a.status_atleta', 'ATIVO')
@@ -149,6 +153,7 @@ class Jogo extends Model
             ->get([
                 'a.id_atleta', 'a.nome_atleta', 'ea.origem_evento_atleta', 'at.id_atleta_time',
                 'at.camisa_atleta_time', 'at.posicao_atleta_time', 'at.status_atleta_time',
+                'cv.id_convocacao', 'cv.camisa_convocacao',
             ]);
     }
 
@@ -280,13 +285,78 @@ class Jogo extends Model
             . " ({$this->limiteDeIdade()}): " . implode(', ', $acima) . '.' : '';
     }
 
+    // ── Quem joga por qual time (convocação no campeonato, elenco no amistoso) ──
+
     /**
-     * Atletas do elenco (tbl_atleta_time) dos times escaláveis deste jogo, só atletas ATIVO:
-     * [id_atleta => [id_time, ...]]. Quem está nos dois elencos aparece com os dois times.
+     * Fase G, Etapa 2: o jogo de campeonato tira os atletas da convocação daquele campeonato
+     * (tbl_convocacao); o amistoso continua pelo elenco fixo (tbl_atleta_time) até a Etapa 3.
      */
-    public function elencosDoJogo(): array
+    public function pelaConvocacao(): bool
     {
-        return self::elencoDosTimes($this->timesEscalaveis()->pluck('id_time')->all());
+        return ! $this->ehAmistoso();
+    }
+
+    // Origem gravada na inscrição automática: CONVOCACAO no campeonato, ELENCO no amistoso
+    public function origemAutomatica(): string
+    {
+        return $this->pelaConvocacao() ? 'CONVOCACAO' : 'ELENCO';
+    }
+
+    // Nome da lista nas mensagens: "da convocação" / "do elenco"
+    public function daLista(): string
+    {
+        return $this->pelaConvocacao() ? 'da convocação' : 'do elenco';
+    }
+
+    /**
+     * Atletas que jogam pelos times escaláveis deste jogo, só ATIVO: [id_atleta => [id_time, ...]].
+     * No campeonato, os convocados (um time por atleta); no amistoso, o elenco (quem está nos dois elencos
+     * aparece com os dois times).
+     */
+    public function atletasPorTime(): array
+    {
+        return self::atletasDosTimes($this->timesEscalaveis()->pluck('id_time')->all(), $this->id_campeonato);
+    }
+
+    /**
+     * Regra única da fonte, usada também antes de o jogo existir (conflito na criação e na troca de time):
+     * com campeonato, a convocação dele; sem campeonato (amistoso), o elenco.
+     */
+    public static function atletasDosTimes(array $idsTimes, $idCampeonato, bool $soAtivos = true): array
+    {
+        return $idCampeonato
+            ? self::convocadosDosTimes((int) $idCampeonato, $idsTimes, $soAtivos)
+            : self::elencoDosTimes($idsTimes, $soAtivos);
+    }
+
+    /**
+     * Convocados (tbl_convocacao) do campeonato pelos times informados: [id_atleta => [id_time]]. Só atletas
+     * ATIVO, salvo $soAtivos = false. A convocação já garante um time por atleta em cada campeonato.
+     */
+    public static function convocadosDosTimes(int $idCampeonato, array $idsTimes, bool $soAtivos = true): array
+    {
+        if (! $idsTimes) {
+            return [];
+        }
+
+        return DB::table('tbl_convocacao as cv')
+            ->join('tbl_atletas as a', 'a.id_atleta', '=', 'cv.id_atleta')
+            ->when($soAtivos, fn ($q) => $q->where('a.status_atleta', 'ATIVO'))
+            ->where('cv.id_campeonato', $idCampeonato)
+            ->whereIn('cv.id_time', $idsTimes)
+            ->orderBy('cv.id_atleta')
+            ->get(['cv.id_atleta', 'cv.id_time'])
+            ->mapWithKeys(fn ($linha) => [(int) $linha->id_atleta => [(int) $linha->id_time]])
+            ->all();
+    }
+
+    // Camisa da convocação de cada atleta neste campeonato: [id_atleta => 10] (amistoso: [])
+    public function camisas(): array
+    {
+        return ! $this->pelaConvocacao() ? [] : Convocacao::where('id_campeonato', $this->id_campeonato)
+            ->pluck('camisa_convocacao', 'id_atleta')
+            ->mapWithKeys(fn ($camisa, $idAtleta) => [(int) $idAtleta => (int) $camisa])
+            ->all();
     }
 
     /**
@@ -317,19 +387,21 @@ class Jogo extends Model
     }
 
     /**
-     * Inscreve o elenco ativo dos times internos do jogo (origem ELENCO, com INSCRICAO para cada um, pelo
-     * inscrever()): quem é de um time só entra escalado nele; quem está nos dois elencos entra sem time, para
-     * o admin escolher. Quem já está inscrito sem time e é de um time só é escalado. Ninguém sai.
+     * Inscreve quem joga pelos times internos do jogo (atletasPorTime: convocados no campeonato, origem
+     * CONVOCACAO; elenco no amistoso, origem ELENCO; INSCRICAO para cada um, pelo inscrever()): quem é de um
+     * time só entra escalado nele; quem está nos dois elencos (só no amistoso) entra sem time, para o admin
+     * escolher. Quem já está inscrito sem time e é de um time só é escalado. Ninguém sai.
      * Quem passa da idade do campeonato fica de fora (nem inscrito nem escalado; 'acima_da_idade', com os
      * nomes de quem não estava inscrito).
-     * Usado ao criar o jogo, no "Preencher pelo elenco" e na troca de time. Devolve os números para a
-     * mensagem e quem entrou (para não receber também a ALTERACAO da mesma edição).
+     * Usado ao criar o jogo, no "Preencher pela convocação/pelo elenco" e na troca de time. Devolve os
+     * números para a mensagem e quem entrou (para não receber também a ALTERACAO da mesma edição).
      */
     public function inscreverElenco(?int $idUsuario): array
     {
         return DB::transaction(function () use ($idUsuario) {
             $evento     = $this->evento;
-            $elencos    = $this->elencosDoJogo();
+            $elencos    = $this->atletasPorTime();
+            $origem     = $this->origemAutomatica();
             $inscricoes = $evento->inscricoes()->get(['id_atleta', 'id_time'])->keyBy('id_atleta');
             $acima      = $this->acimaDaIdade(array_keys($elencos));
 
@@ -347,7 +419,7 @@ class Jogo extends Model
                 $inscricao = $inscricoes->get($idAtleta);
 
                 if (! $inscricao) {
-                    if ($evento->inscrever($idAtleta, 'ELENCO', $idUsuario, $idTime)) {
+                    if ($evento->inscrever($idAtleta, $origem, $idUsuario, $idTime)) {
                         $resultado[$idTime === null ? 'inscritos_sem_time' : 'inscritos_com_time']++;
                         $resultado['ids_entraram'][] = $idAtleta;
                         $resultado['ids_mexidos'][]  = $idAtleta;
@@ -362,29 +434,31 @@ class Jogo extends Model
         });
     }
 
-    // Atletas ativos do elenco dos times do jogo que ainda não estão inscritos (para a tela do jogo), sem
-    // quem passa da idade do campeonato (não entra pelo elenco)
+    // Atletas ativos da convocação (ou do elenco, no amistoso) dos times do jogo que ainda não estão inscritos
+    // (para a tela do jogo), sem quem passa da idade do campeonato (não entra automaticamente)
     public function idsFaltantesDoElenco(): array
     {
         $inscritos = $this->evento->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
-        $faltantes = array_values(array_diff(array_keys($this->elencosDoJogo()), $inscritos));
+        $faltantes = array_values(array_diff(array_keys($this->atletasPorTime()), $inscritos));
 
         return array_values(array_diff($faltantes, array_keys($this->acimaDaIdade($faltantes))));
     }
 
-    // Times internos do jogo sem nenhum atleta ativo no elenco (o jogo fica sem inscritos daquele lado)
+    // Times internos do jogo sem nenhum atleta ativo convocado (ou no elenco, no amistoso): o jogo fica sem
+    // inscritos daquele lado
     public function timesSemElenco(): Collection
     {
-        $comElenco = collect($this->elencosDoJogo())->flatten()->unique();
+        $comElenco = collect($this->atletasPorTime())->flatten()->unique();
 
         return $this->timesEscalaveis()->reject(fn ($time) => $comElenco->contains($time->id_time))->values();
     }
 
     /**
-     * Troca de time (jogo ainda não concluído; quem chama confere): sai quem veio pelo elenco (origem ELENCO)
-     * de um time que saiu do jogo, a não ser que também seja do elenco de um time que ficou; as INDIVIDUAL
-     * ficam (se estavam num time que saiu, ficam sem time); entra o elenco do time novo. Quem sai recebe a
-     * REMOCAO; quem entra, a INSCRICAO. Devolve inscreverElenco() + 'sairam' e 'sem_time'.
+     * Troca de time (jogo ainda não concluído; quem chama confere): sai quem entrou automaticamente (origem
+     * CONVOCACAO ou ELENCO) por um time que saiu do jogo, a não ser que também jogue por um time que ficou;
+     * as INDIVIDUAL ficam (se estavam num time que saiu, ficam sem time); entra a convocação (ou o elenco)
+     * do time novo. Quem sai recebe a REMOCAO; quem entra, a INSCRICAO. Devolve inscreverElenco() + 'sairam'
+     * e 'sem_time'.
      */
     public function sincronizarPeloElenco(array $idsTimesQueSairam, ?int $idUsuario): array
     {
@@ -409,17 +483,19 @@ class Jogo extends Model
     }
 
     /**
-     * Inscritos que saem na troca de time: origem ELENCO, do elenco de um time que saiu e de nenhum time que
-     * fica (qualquer status do atleta, como na sincronização pela categoria). Regra única, usada pela
-     * sincronização e pelo alerta de conflito antes de salvar.
+     * Inscritos que saem na troca de time: entraram automaticamente (CONVOCACAO ou ELENCO), jogam por um time
+     * que saiu e por nenhum time que fica (convocação do campeonato do jogo, ou elenco no amistoso; qualquer
+     * status do atleta, como na sincronização pela categoria). Regra única, usada pela sincronização e pelo
+     * alerta de conflito antes de salvar. Inscrição ELENCO antiga num jogo de campeonato só sai se o atleta
+     * for convocado pelo time que saiu (as demais ficam, como as individuais).
      */
     public function idsQueSaemNaTroca(array $idsTimesQueSairam, array $idsTimesQueFicam): array
     {
-        $doQueSaiu  = array_keys(self::elencoDosTimes(self::idsInternos($idsTimesQueSairam), soAtivos: false));
-        $candidatos = array_values(array_diff($doQueSaiu, array_keys(self::elencoDosTimes(self::idsInternos($idsTimesQueFicam), soAtivos: false))));
+        $jogam      = fn (array $idsTimes) => array_keys(self::atletasDosTimes(self::idsInternos($idsTimes), $this->id_campeonato, soAtivos: false));
+        $candidatos = array_values(array_diff($jogam($idsTimesQueSairam), $jogam($idsTimesQueFicam)));
 
         return ! $candidatos ? [] : $this->evento->inscricoes()
-            ->where('origem_evento_atleta', 'ELENCO')
+            ->whereIn('origem_evento_atleta', ['CONVOCACAO', 'ELENCO'])
             ->whereIn('id_atleta', $candidatos)
             ->pluck('id_atleta')
             ->map(fn ($id) => (int) $id)
@@ -428,7 +504,8 @@ class Jogo extends Model
 
     /**
      * Quem ficará inscrito se o jogo passar a ser entre $idsTimesNovos (para o alerta de conflito antes de
-     * salvar a troca): os inscritos de hoje, menos quem sai, mais o elenco ativo dos times internos novos.
+     * salvar a troca): os inscritos de hoje, menos quem sai, mais os convocados (ou o elenco, no amistoso)
+     * ativos dos times internos novos.
      */
     public function idsInscritosDepoisDaTroca(array $idsTimesNovos): array
     {
@@ -438,7 +515,7 @@ class Jogo extends Model
 
         $ficam = array_diff($hoje, $this->idsQueSaemNaTroca($sairam, $idsTimesNovos));
 
-        return array_values(array_unique([...$ficam, ...array_keys(self::elencoDosTimes(self::idsInternos($idsTimesNovos)))]));
+        return array_values(array_unique([...$ficam, ...array_keys(self::atletasDosTimes(self::idsInternos($idsTimesNovos), $this->id_campeonato))]));
     }
 
     // Depois de trocar os times: quem estava escalado num time que não está mais no jogo (ou não é

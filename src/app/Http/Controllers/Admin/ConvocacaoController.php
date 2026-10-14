@@ -93,8 +93,12 @@ class ConvocacaoController extends Controller
             return back()->withInput()->withErrors(['convocacao' => 'A convocação mudou enquanto você escolhia: confira a lista e tente de novo.']);
         }
 
+        // Jogos do time já criados não recebem os novos sozinhos (Fase G, Etapa 2): lembra o "Preencher pela convocação"
+        $jogos = $time->jogosFuturosNoCampeonato($campeonato->id_campeonato);
         $redirecionar = redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time])
-            ->with('sucesso', "{$total} atleta(s) convocado(s) pelo {$time->nome_time}.");
+            ->with('sucesso', "{$total} atleta(s) convocado(s) pelo {$time->nome_time}."
+                . ($jogos ? " O {$time->nome_time} já tem {$jogos} jogo(s) futuro(s) neste campeonato: para inscrever os novos,"
+                    . ' use "Preencher pela convocação" na tela de cada jogo.' : ''));
 
         // Sexo diferente do campeonato: só aviso (CLAUDE.md, seção 8, pergunta 14)
         $avisos = $campeonato->avisosDeSexo($ids);
@@ -125,7 +129,7 @@ class ConvocacaoController extends Controller
             ->with('sucesso', "Camisa de {$convocacao->atleta->nome_atleta} atualizada para {$camisa}.");
     }
 
-    // Tira o atleta da convocação do time (nesta etapa, os jogos não mudam)
+    // Tira o atleta da convocação do time; as inscrições nos jogos ficam (marcadas "Não convocado")
     public function remover($id, $timeId, $atletaId)
     {
         [$campeonato, $time] = $this->campeonatoETime($id, $timeId);
@@ -133,8 +137,16 @@ class ConvocacaoController extends Controller
         $nome = $convocacao->atleta->nome_atleta;
         $convocacao->delete();
 
+        // As inscrições nos jogos ficam (a tela do jogo marca "Não convocado"); avisa em quantos jogos futuros
+        $jogos    = $time->jogosFuturosComAtleta($convocacao->id_atleta, $campeonato->id_campeonato);
+        $mensagem = "{$nome} saiu da convocação do {$time->nome_time}.";
+        if ($jogos) {
+            $mensagem .= " Continua inscrito em {$jogos} jogo(s) futuro(s) do time neste campeonato (marcado como \"Não convocado\""
+                . ' na tela do jogo); remova a inscrição na tela de cada jogo, se for o caso.';
+        }
+
         return redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time])
-            ->with('sucesso', "{$nome} saiu da convocação do {$time->nome_time}.");
+            ->with($jogos ? 'aviso' : 'sucesso', $mensagem);
     }
 
     private function campeonatoETime($id, $timeId): array
