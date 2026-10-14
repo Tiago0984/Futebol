@@ -69,6 +69,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - `personal_access_tokens` (Sanctum) guarda tokens dos dois perfis: `tokenable_type` = `App\Models\Atleta` ou `App\Models\Responsavel`. Não tem FK: quem apaga atleta/responsável apaga os tokens.
 - **Rascunho do evento (Fase 10, Etapa 4):** `tbl_evento_calendario.data_publicacao_evento_calendario` DATETIME nullable, `DEFAULT CURRENT_TIMESTAMP` (batch 26). NULL = rascunho; preenchida = publicado. O default é de propósito: quem grava sem pensar no rascunho cria evento publicado; o rascunho grava NULL explicitamente. Fora do `$fillable`; o `EventoCalendario::booted()` preenche na criação (o model não relê o default do banco) e só o `publicar()` muda depois.
 - **Período escolar (Fase A, 13/10/2026, batch 27):** `tbl_atletas.periodo_escolar_atleta` ENUM `MANHA, TARDE, NOITE, INTEGRAL` nullable (antes VARCHAR livre, com "Manhã"/"MANHÃ"; a migration normalizou e para com a lista se achar valor desconhecido); `tbl_atletas.turno_treino_atleta` ENUM `MANHA, TARDE, AMBOS` nullable, só para quem estuda à noite (o `Atleta::booted()` limpa nos outros). Rótulos em `Atleta::PERIODOS` e `TURNOS_TREINO`.
+- **Convocação (Fase G, Etapa 1, batch 29):** `tbl_convocacao`: `id_convocacao` INT UNSIGNED AI; `id_campeonato`, `id_time` e `id_atleta` INT com sinal (FKs `fk_convocacao_campeonato`, `fk_convocacao_time`, `fk_convocacao_atleta`); `camisa_convocacao` TINYINT UNSIGNED **NOT NULL** (1 a 99, `Convocacao::CAMISA_MIN/MAX`); `id_usuario` BIGINT UNSIGNED nullable (FK `fk_convocacao_usuario`, quem convocou; fora do `$fillable`); `data_convocacao` DATETIME DEFAULT CURRENT_TIMESTAMP. Únicos `convocacao_campeonato_atleta_unique` (um time por atleta no campeonato) e `convocacao_camisa_unique` (campeonato, time, camisa). FKs NO ACTION.
+- **`tbl_campeonato.id_categoria` é NOT NULL** (todo campeonato tem categoria; o código trata o nulo só por segurança).
 - **Tabela própria em vez da `notifications` do Laravel** (Fase 8): a padrão é polimórfica (`notifiable_id` BIGINT UNSIGNED, sem FK possível para `id_atleta` INT), grava nome de classe PHP e guarda os dados num JSON opaco.
 - Todas as FKs existentes estão em `NO ACTION`; não usar `ON DELETE CASCADE` sem discutir.
 - O banco nasceu de script SQL; as migrations `create_*` e `add_foreign_keys_*` estão com batch [0] (marcadas, nunca executadas).
@@ -203,6 +205,16 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Token de 30 dias** (`Atleta::VALIDADE_TOKEN_DIAS`, vale para os dois perfis). Limites: login 5/min por IP e 5/min por e-mail **e perfil**; esqueci-senha 5/min por IP e 3 a cada 10 min por e-mail e perfil.
 - **Responsável único pelo CPF e e-mail único:** cadastro do site e do admin reaproveitam o responsável do mesmo CPF (só dígitos, `Responsavel::porCpf`); o site recusa CPF já cadastrado com outro e-mail; e-mail do responsável único entre responsáveis (normalizado). Os repetidos antigos foram fundidos pela migration 000005 (seção 6).
 - **Selo "Sem acesso ao app"** na lista de atletas quando nem o atleta nem algum responsável tem e-mail.
+
+### Convocação (Fase G, Etapa 1; dono do projeto, 13 e 14/10/2026)
+- **Por campeonato:** o time **INTERNO participante** (`tbl_campeonato_time`) convoca os atletas; **um time por atleta em cada campeonato** (o mesmo atleta pode ser convocado em outro campeonato). Externo e time fora dos participantes não convocam.
+- **Camisa definida na convocação, obrigatória** (1 a 99), sem repetir no mesmo time do campeonato (o convocado inativo guarda o número); a mesma camisa pode existir em outro time. Vale para aquele campeonato (pode mudar no seguinte).
+- **Idade pelo ano de início do campeonato** (`Campeonato::anoDaIdade()`): quando o campeonato começa, o atleta precisa caber na faixa que ele exige. Mais velho **bloqueado** (mensagem e desabilitado na caixa, "· acima da idade (16 anos)"); mais novo pode subir. Mesma regra do jogo, num lugar só: `Categoria::atletasAcimaDaIdade()`/`idadesAcimaDoLimite()` (o jogo passa o ano do jogo; a convocação, o de início). Sexo diferente: **só aviso** (pergunta 14).
+- **Tudo ou nada:** `Campeonato::errosDaConvocacao()` confere tudo antes; `convocar()` grava numa transação (o único do banco segura a concorrência, com mensagem).
+- **Só atleta ATIVO é convocado;** convocado inativado fica na lista com o selo "Inativo" e **não conta** (`Convocacao::deAtivos()`). A exclusão definitiva do atleta apaga as convocações.
+- **Bloqueios:** time ou campeonato com convocados não é excluído; time com convocados **não sai dos participantes** na edição do campeonato (`Campeonato::timesQueSaemComConvocados()`).
+- **Telas:** bloco **"Convocação"** no topo de "Jogos · Campeonato" (um time interno participante por linha, "N convocado(s)" ou "Sem convocados") → tela **"Convocados · Time"** (`/admin/campeonatos/{id}/times/{timeId}/convocados`, `ConvocacaoController`): lista pela camisa (editável na linha), remover (com confirmação) e "Convocar atletas" com a caixa `admin.partials.escolher-atletas` (agora com `$bloqueados` e `$comCamisa`). O item "Jogos" do menu fica ativo nela.
+- **Ainda não mexe nos jogos nem avisa ninguém** (Etapa 2: o jogo de campeonato inscreve os convocados).
 
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
@@ -363,6 +375,8 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `5ea9311` docs: chegada antes do jogo, respostas do professor e fases combinadas
 - `ebf7a38` docs: ajustes de 13/10, período escolar, aviso livre e plano da convocação
 - `aac0c46`, `e0061f4`, `cd612ea`, `9164889`, `d9dab6e`, `38cd0a0`, `de4974d`, `b748df3`, `00ce96d`: ajustes de 13/10 (seção 6, "Ajustes de 13/10/2026")
+- `4299c1d` docs: Fase A concluída no código e passagem para casa
+- `2339592` feat: convocação por campeonato com camisa e tela Convocados (Fase G, Etapa 1)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -526,7 +540,16 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Dump para casa:** `backup/db_futebol_para_casa_20261013.sql` (feito no Senac depois do batch 28, já com as duas migrations). **Em casa:** fazer backup do banco de casa (ex.: `backup/db_futebol_casa_antes_restaurar_20261013.sql`), restaurar este dump (não rodar o `migrate` de 27/28 sobre o banco antigo de casa, para os dados ficarem iguais aos do Senac), `php artisan view:clear` e `config:clear`, e rodar a suíte (o `db_futebol_test` é recriado por ela).
 - **Modo escuro:** usar classes que acompanham o tema (`bg-body-*`, `btn-outline-secondary`); `bg-light`, `bg-dark`, `btn-outline-dark` e cores fixas somem no escuro.
 - **557 testes passando.**
-- **Próximo passo (em casa): Fase G, Etapa 1** (convocação: migration da `tbl_convocacao` e tela "Convocados"). Antes, se quiser, cadastrar a grade real pelas telas (Fase A).
+
+#### Fase G, Etapa 1 — convocação (computador do Senac, 14/10/2026; regras na seção 4, "Convocação"; tabela na seção 3)
+- **Commit:** `2339592`.
+- **Migration no `db_futebol` do Senac:** batch 29 (`2026_10_14_000001_create_tbl_convocacao_table`, só cria a tabela; não depende de ids).
+- **Backup** em `backup/` (só no computador do Senac): `db_futebol_antes_convocacao_20261014_114419.sql`.
+- **Testes:** `ConvocacaoTest` (16) e a rota nova no `MenuAdminTest`. **573 testes passando.**
+- **Docker no Senac:** o projeto `tipi05-davilla` usa a mesma porta do MySQL (3308); para subir o Futebol, parar o outro antes.
+- **Falta:** roteiro no navegador (convocar com camisa, camisa repetida, acima da idade, mesmo atleta em dois times, trocar camisa, remover, tirar time com convocados dos participantes).
+- **Dump para casa:** `backup/db_futebol_para_casa_20261014.sql` (depois do batch 29). **Em casa:** backup do banco de casa (ex.: `backup/db_futebol_casa_antes_restaurar_20261014.sql`), restaurar este dump (não rodar o `migrate` de 27, 28 e 29 sobre o banco antigo), `php artisan view:clear` e `config:clear`, e rodar a suíte.
+- **Próximo passo: roteiro da Etapa 1 e depois Fase G, Etapa 2** (jogo de campeonato inscreve os convocados: "Preencher pela convocação", "Não convocado" no lugar de "Fora do elenco").
 
 ---
 
