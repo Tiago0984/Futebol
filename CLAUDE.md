@@ -6,14 +6,15 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 
 ## 1. Projeto e ambiente
 
-- **Stack:** Laravel + MySQL 8, em Docker (WSL/Ubuntu). Produção em Plesk (seção "Produção", abaixo). Os dados de atletas e da agenda continuam sendo **de teste**, também no servidor.
+- **Stack:** Laravel + MySQL 8, em Docker (WSL/Ubuntu). Produção em Plesk (seção "Produção", abaixo).
+- **Todos os dados são fictícios, no local e no servidor** (dono do projeto, 14/10/2026): atletas, responsáveis, times (Azul, Verde, Preto, Visitante), campeonatos (inclusive Liga das comunidades e Copa Escola), jogos, eventos, grade, notificações, notícias, banners, galeria, vídeos e usuários do admin. **Na entrega ao professor, o sistema começa do zero** (plano em "Entrega: começar do zero", seção 7).
 - **Produção (Plesk, no ar desde 14/10/2026):**
   - Site em `https://coderatech.tipi5.smpsistema.com.br/AACJ` (admin em `/AACJ/admin`; documentação da API em `/AACJ/api/documentacao`, entregue ao professor como atividade).
   - Código em `~/coderatech.tipi5.smpsistema.com.br/futebol` (clone do GitHub, branch **`main`**); a pasta `AACJ` da raiz do documento aponta para `futebol/src/public`. Sem repositório configurado no Git do Plesk: atualizar pelo Terminal SSH.
   - PHP pelo caminho completo: `/opt/plesk/php/8.4/bin/php artisan ...`. Composer pelo **PHP Composer** do painel (pasta `/coderatech.tipi5.smpsistema.com.br/futebol/src`, botão Instalar), só quando o `composer.lock` muda.
   - Banco **`db_futebol` em MariaDB 10.11** (não MySQL 8): conferir SQL cru novo (só funções que os dois aceitam). Collation do banco `utf8mb4_general_ci`.
   - **Para publicar:** `git push origin feature/agenda-eventos:main` (fast-forward, com OK do dono do projeto); no servidor, `git pull --ff-only origin main`, `artisan migrate --pretend` e `migrate --force` (com backup pelo phpMyAdmin antes), `artisan optimize:clear`.
-  - **Conteúdo do site cadastrado lá** (notícias, galeria, vídeos, banners, usuários do admin) e **fotos enviadas** (`public/futebol/images/...`, fora do Git) existem só no servidor. Nunca trocar o banco do servidor por um dump local sem guardar esse conteúdo antes.
+  - **Conteúdo do site cadastrado lá** (notícias, galeria, vídeos, banners, usuários do admin) e **fotos enviadas** (`public/futebol/images/...`, fora do Git) existem só no servidor. São fictícios (sai tudo na entrega), mas, enquanto o desenvolvimento continua, guardar antes de trocar o banco do servidor por um dump local (como em 14/10).
 - **Pastas:** repositório em `~/dev/senac/Futebol`; código Laravel em `src/`; `.gitignore` na raiz; backups em `backup/` (ignorado pelo Git).
 - **Serviços Docker:** `php` (futebol_php), `mysql` (futebol_mysql), `nginx` (futebol_nginx).
 - **URLs locais:** site e admin em `http://localhost:8080` (admin em `/admin`); MySQL no host pela porta `3308` (Workbench).
@@ -66,7 +67,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - Não usar `foreignId()` sem conferir o tipo da coluna referenciada.
 - **ENUMs da Fase 8:**
   - `tbl_notificacao.tipo_notificacao`: `INSCRICAO, REMOCAO, ALTERACAO, CANCELAMENTO, REATIVACAO, AGENDA, AVISO` (rótulos em `Notificacao::TIPOS`; `AVISO` acrescentado no fim, batch 28).
-  - `tbl_evento_atleta.origem_evento_atleta`: `CATEGORIA, INDIVIDUAL, ELENCO` (rótulos em `EventoAtleta::ORIGENS`; `ELENCO` acrescentado no fim, batch 23).
+  - `tbl_evento_atleta.origem_evento_atleta`: `CATEGORIA, INDIVIDUAL, ELENCO, CONVOCACAO` (rótulos em `EventoAtleta::ORIGENS`; `ELENCO` acrescentado no fim, batch 23; `CONVOCACAO`, Fase G, Etapa 2, batch 30).
 - **Coluna JSON:** `tbl_notificacao.dados_notificacao` é a primeira do projeto. JSON não tem collation (o MySQL guarda em binário próprio), então não fura a regra do `general_ci`. Na inserção em massa (`insert`), o JSON vai codificado à mão (`json_encode`), porque o cast do model não atua.
 - **Fase 9 (login do app):**
   - `tbl_responsavel.senha_responsavel`: VARCHAR(255) nullable (hash; fora do `$fillable` e do JSON). NULL = ainda sem senha.
@@ -221,7 +222,16 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Só atleta ATIVO é convocado;** convocado inativado fica na lista com o selo "Inativo" e **não conta** (`Convocacao::deAtivos()`). A exclusão definitiva do atleta apaga as convocações.
 - **Bloqueios:** time ou campeonato com convocados não é excluído; time com convocados **não sai dos participantes** na edição do campeonato (`Campeonato::timesQueSaemComConvocados()`).
 - **Telas:** bloco **"Convocação"** no topo de "Jogos · Campeonato" (um time interno participante por linha, "N convocado(s)" ou "Sem convocados") → tela **"Convocados · Time"** (`/admin/campeonatos/{id}/times/{timeId}/convocados`, `ConvocacaoController`): lista pela camisa (editável na linha), remover (com confirmação) e "Convocar atletas" com a caixa `admin.partials.escolher-atletas` (agora com `$bloqueados` e `$comCamisa`). O item "Jogos" do menu fica ativo nela.
-- **Ainda não mexe nos jogos nem avisa ninguém** (Etapa 2: o jogo de campeonato inscreve os convocados).
+- **Jogo de campeonato inscreve os convocados** (Etapa 2, 14/10/2026; decisões do dono do projeto): a lista "quem joga por qual time" vem da convocação do campeonato do jogo (`Jogo::atletasPorTime()`/`atletasDosTimes()`, regra única; `convocadosDosTimes()`); o **amistoso continua pelo elenco** até a Etapa 3 (`Jogo::pelaConvocacao()`, `origemAutomatica()`).
+  - **Origem nova `CONVOCACAO`** ("Pela convocação"). Criar o jogo inscreve os convocados ativos dos times internos **já escalados** (um time por atleta no campeonato: some o caso "nos dois times"); conflito na criação pelos convocados.
+  - **"Preencher pela convocação"** no lugar do "Preencher pelo elenco" (mesma rota `eventos.escalacao.elenco`): inscreve quem falta e escala quem está sem time; ninguém sai. Contador "N convocado(s) ainda não…"/"Todos os convocados estão inscritos".
+  - **Troca de time:** sai quem entrou automaticamente (`CONVOCACAO` ou `ELENCO`) e joga por um time que saiu e por nenhum que fica, pela convocação do campeonato; inscrição `ELENCO` antiga só sai se o atleta for convocado pelo time que saiu.
+  - **"Não convocado"** no lugar de "Fora do elenco" no jogo de campeonato (tela do jogo: "Convocado: Time X" / "Não convocado · convocado pelo Time Y"; jogadores do time no jogo: coluna "Convocação" e camisa da convocação). Só aviso.
+  - **Camisa da convocação ao lado do nome** na escalação do jogo (`Jogo::camisas()`).
+  - **"Sem convocados: Time X"** no aviso ao criar/trocar time; "Atualizar inscritos pela categoria" no jogo de campeonato aponta o "Preencher pela convocação".
+  - **Convocação mexida depois:** convocar quando o time já tem jogos futuros no campeonato lembra o "Preencher pela convocação" (`Time::jogosFuturosNoCampeonato()`); remover da convocação mantém a inscrição e avisa em quantos jogos futuros do campeonato (`Time::jogosFuturosComAtleta(..., $idCampeonato)`). O aviso de sair do **elenco** passa a contar **só amistosos**.
+  - **Jogos anteriores à regra ficam como estão** (sem migração de dados): quem não é convocado aparece "Não convocado"; "Preencher pela convocação" acrescenta quem falta.
+  - **Limitação:** mudar só o campeonato de um jogo (mesmos times) não refaz as inscrições; usar "Preencher pela convocação".
 
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
@@ -561,7 +571,15 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Roteiro no navegador feito em casa (14/10, 13 passos, Liga das comunidades e Copa Escola):** convocar em lote com camisa, camisa repetida recusada (tudo ou nada), acima da idade desabilitado, mais novo aceito, aviso de sexo diferente, atleta de outro time do mesmo campeonato desabilitado ("· convocado pelo Time Azul"), mesma camisa em outro time, trocar camisa, remover, um time por campeonato (o mesmo atleta em outro campeonato). **Bug achado e corrigido** (`bb2ab95`): a lista de Campeonatos não mostrava `$errors`, então o bloqueio de tirar time com convocados (e qualquer validação do modal de criar/editar) fechava o modal sem mensagem; o `ConvocacaoTest` agora confere a mensagem na tela. **573 testes passando**.
   - Dados de teste que ficaram no `db_futebol` de casa: Liga das comunidades com Time Azul (Tiago Silva 7, Atleta Teste API 8, João 9, Lucas 10, TESTE Etapa 3 12; os dois primeiros convocados à mão depois do roteiro) e Time Preto (Tiago 10); Copa Escola com Time Azul (Tiago 5). O nome "Liga das comunidades" foi corrigido em casa (no servidor, corrigir pelo admin de lá).
 - **Dump para casa:** `backup/db_futebol_para_casa_20261014.sql` (depois do batch 29). **Em casa:** backup do banco de casa (ex.: `backup/db_futebol_casa_antes_restaurar_20261014.sql`), restaurar este dump (não rodar o `migrate` de 27, 28 e 29 sobre o banco antigo), `php artisan view:clear` e `config:clear`, e rodar a suíte.
-- **Próximo passo: roteiro da Etapa 1 e depois Fase G, Etapa 2** (jogo de campeonato inscreve os convocados: "Preencher pela convocação", "Não convocado" no lugar de "Fora do elenco").
+- **Etapa 1 aprovada** (roteiro abaixo).
+
+#### Fase G, Etapa 2 — jogo de campeonato pela convocação (computador de casa, 14/10/2026; regras na seção 4, "Convocação")
+- **Migration no `db_futebol` de casa:** batch 30 (`2026_10_14_000002_add_convocacao_to_origem_evento_atleta`, só amplia o ENUM; não depende de ids). **Servidor e Senac:** rodar o `migrate` normal (backup antes).
+- **Backup** em `backup/` (só em casa): `db_futebol_antes_convocacao_origem_20261014_153436.sql`.
+- **Testes:** `JogoConvocacaoTest` (10); `JogoEventoTest`, `JogoIdadeCampeonatoTest` e `EventoFluxoTest` passaram a convocar nos jogos de campeonato; `JogoElencoTest` continua cobrindo o amistoso. **583 testes passando.**
+- **Falta:** roteiro no navegador (jogo de 10/10 da Liga com "Não convocado" e "Preencher pela convocação"; jogo novo; troca de time para o Verde; jogadores do time no jogo) e publicar no servidor.
+- **Manual do painel** para quem administra: `docs/manual/Manual_do_Painel_AACJ.pdf` (fonte `.html`; PDF gerado pelo Edge em modo headless). Atualizar junto quando um fluxo do admin mudar.
+- **Próximo passo:** roteiro da Etapa 2; candidatos: atleta aprovado no meio do mês entrar nos treinos já gerados (débito 7b) e Fase G, Etapa 3 (amistoso escolhe os atletas no jogo).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
@@ -575,6 +593,13 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 ---
 
 ## 7. Débitos técnicos conhecidos (planejar, não implementar sem OK)
+
+- **Entrega: começar do zero** (dono do projeto, 14/10/2026: tudo o que existe é fictício). Fazer só na hora da entrega, com OK e backup:
+  - **Banco:** montar o banco do zero pelas migrations (elas criam toda a estrutura e as 10 categorias oficiais; conferido na Fase 9) num banco vazio, ou apagar todas as tabelas e rodar o `migrate --force`. Nada do banco atual é aproveitado.
+  - **Usuário do admin:** criar só o(s) do professor/associação, com senha definida por ele (sem os usuários de teste).
+  - **Arquivos enviados** (fora do Git, só no servidor): fotos de atletas (`storage/app/public/atletas`, `public/futebol/images/our-teams` menos o `default-player.jpg`), assinaturas (`public/futebol/images/Assinaturas`, menos o `.gitkeep`) e imagens enviadas de notícias, banners, galeria e campeonatos. As imagens que estão no Git (logos e banners do layout) ficam.
+  - **Conferir antes:** o site e o painel funcionando **vazios** (sem banner, notícia, foto, vídeo, campeonato, jogo ou grade), o e-mail de verdade configurado (SMTP; hoje `MAIL_MAILER=log`) e o `storage:link`.
+  - **Depois:** quem administra segue o roteiro R1 do manual (`docs/manual/`): times reais, campeonatos, grade real e matrículas pelo site.
 
 - **CPF único:** hoje não há índice único em `cpf_atleta`. O índice `cpf_atleta_UNIQUE` **existia** no dump de estrutura gerado pelo dono do projeto por volta de 24/09 (esse dump não ficou salvo em `backup/`); os dumps de `backup/` e a migration de criação não o têm, então ele se perdeu em algum momento. A **edição de atleta no admin** não valida CPF único (`AtletasController.php:149`). Duplicado de teste: atletas 7 e 10 (`000.000.000-00`). Plano: limpar duplicados, normalizar para só dígitos, validar CPF no cadastro (site e admin), recriar o índice.
 - **Assinaturas:** gravadas em `public/` (acessíveis por URL), nome previsível, caminho salvo no **responsável** (sobrescreve quando ele tem dois atletas), sem validar se é PNG, e o arquivo não é apagado na exclusão. Plano: coluna `tbl_autorizacoes.arquivo_assinatura`, `Storage::disk('local')` com UUID, rota protegida no admin, comando para migrar os arquivos, apagar após o commit da transação.
