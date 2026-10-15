@@ -364,21 +364,23 @@ class EventoFluxoTest extends TestCase
 
     public function test_editar_campeonato_abre_com_o_tipo_e_a_categoria_atuais(): void
     {
+        $this->participantes($this->copa, []); // a categoria na lista do campeonato
+
         // Modal da lista: o valor gravado (maiúsculas) existe como opção e vai no botão
         $this->comoAdmin()->get(route('admin.campeonatos.index'))
             ->assertSee('<option value="MATA-MATA">Mata-mata</option>', false)
             ->assertSee('data-tipo="MATA-MATA"', false)
-            ->assertSee('<option value="' . $this->idSub11M . '">Sub-11 Masculino</option>', false);
+            ->assertSee('data-categorias="' . e(json_encode([$this->idSub11M])) . '"', false);
 
         // Página de edição: já selecionados
         $this->comoAdmin()->get(route('admin.campeonatos.edit', $this->copa))
             ->assertSee('<option value="MATA-MATA" selected>Mata-mata</option>', false)
-            ->assertSeeInOrder(['<option value="' . $this->idSub11M . '"', 'selected', 'Sub-11 Masculino'], false);
+            ->assertSee('id="p_cat_' . $this->idSub11M . '" checked', false);
 
         // Gravar: o tipo vai em maiúsculas; fora da lista é recusado
         $dados = [
             'nome_campeonato' => 'Copa Escola', 'tipo_campeonato' => 'Pontos Corridos',
-            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'id_categoria' => $this->idSub11M,
+            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'categorias' => [$this->idSub11M],
         ];
         $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), $dados)->assertSessionHasNoErrors();
         $this->assertSame('PONTOS CORRIDOS', DB::table('tbl_campeonato')->where('id_campeonato', $this->copa)->value('tipo_campeonato'));
@@ -406,8 +408,9 @@ class EventoFluxoTest extends TestCase
 
         $dados = [
             'nome_campeonato' => 'Copa Escola', 'tipo_campeonato' => 'MATA-MATA',
-            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'id_categoria' => $idSub15M,
+            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'categorias' => [$idSub15M],
         ];
+        // Trocar a categoria (o Sub-11 sai, fica o Sub-15) troca a de referência
         $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), $dados)
             ->assertSessionHas('sucesso', 'Campeonato atualizado com sucesso. Categoria atualizada em 3 jogo(s).');
 
@@ -461,7 +464,7 @@ class EventoFluxoTest extends TestCase
             ->assertSee('<option value="REGIONAL" selected>REGIONAL</option>', false);
         $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), [
             'nome_campeonato' => 'Copa Escola', 'tipo_campeonato' => 'REGIONAL',
-            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'id_categoria' => $this->idSub11M,
+            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'categorias' => [$this->idSub11M],
         ])->assertSessionHasNoErrors();
     }
 

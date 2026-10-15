@@ -71,14 +71,32 @@ class Campeonato extends Model
     // ── Categorias e participantes por categoria (Fase H, Etapa H1) ─────────
 
     /**
-     * Categorias do campeonato (tbl_campeonato_categoria), na ordem dos formulários. A principal
-     * (tbl_campeonato.id_categoria) está sempre entre elas e é a que vale para a idade, a convocação e os
-     * jogos até a Etapa H3, quando o jogo ganha a categoria dele.
+     * Categorias do campeonato (tbl_campeonato_categoria), na ordem dos formulários. Na tela todas valem igual
+     * (sem "principal"); a de referência (tbl_campeonato.id_categoria, categoriaDeReferencia) está sempre entre
+     * elas e é a que vale para a idade, a convocação e os jogos até a Etapa H3, quando o jogo ganha a categoria dele.
      */
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class, 'tbl_campeonato_categoria', 'id_campeonato', 'id_categoria')
             ->orderBy('sexo_categoria', 'desc')->orderBy('idade_min_categoria');
+    }
+
+    /**
+     * Categoria de referência (tbl_campeonato.id_categoria) entre as marcadas, escolhida pelo sistema até a
+     * Etapa H3: a atual, se continua marcada (acrescentar categoria não regrava os jogos); senão, a mais velha
+     * (maior idade máxima; no empate, a masculina), para a idade não barrar quem joga numa categoria acima.
+     */
+    public static function categoriaDeReferencia(array $idsCategorias, ?int $atual = null): ?int
+    {
+        $idsCategorias = array_map('intval', $idsCategorias);
+        if ($atual !== null && in_array($atual, $idsCategorias, true)) {
+            return $atual;
+        }
+
+        $id = Categoria::whereIn('id_categoria', $idsCategorias)
+            ->orderByDesc('idade_max_categoria')->orderByDesc('sexo_categoria')->value('id_categoria');
+
+        return $id === null ? null : (int) $id;
     }
 
     // "Sub-11 Masculino, Sub-15 Masculino" (a lista de Campeonatos)
@@ -98,7 +116,7 @@ class Campeonato extends Model
     }
 
     /**
-     * Grava as categorias ($idsCategorias, já com a principal) e os participantes de cada uma
+     * Grava as categorias ($idsCategorias, já com a de referência) e os participantes de cada uma
      * ($participantes: [id_categoria => [id_time, ...]]; categoria fora da lista é ignorada), numa transação.
      * Os participantes são regravados; a FK composta só aceita participante numa categoria do campeonato.
      */

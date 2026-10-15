@@ -296,7 +296,7 @@ class ConvocacaoTest extends TestCase
         $this->convocar($this->azul, [$ana => 10]);
 
         $dados = [
-            'nome_campeonato' => 'Liga', 'tipo_campeonato' => 'MATA-MATA', 'id_categoria' => $this->idSub15M,
+            'nome_campeonato' => 'Liga', 'tipo_campeonato' => 'MATA-MATA', 'categorias' => [$this->idSub15M],
             'data_inicio_campeonato' => now()->toDateString(), 'data_fim_campeonato' => now()->addMonth()->toDateString(),
         ];
 

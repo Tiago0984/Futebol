@@ -105,7 +105,7 @@
                 <div class="p-4">
                     <div class="row">
                         @include('admin.campeonatos._categorias_e_participantes', [
-                            'prefixo' => 'p', 'principal' => old('id_categoria'),
+                            'prefixo' => 'p',
                             'selecionadas' => old('categorias', []), 'participantes' => old('participantes', []),
                         ])
                     </div>

@@ -31,7 +31,7 @@ class Categoria extends Model
         'status_categoria',
     ];
 
-    // Campeonatos que têm esta categoria (Fase H: um campeonato pode ter várias; a principal está na lista)
+    // Campeonatos que têm esta categoria (Fase H: um campeonato pode ter várias; a de referência está na lista)
     public function campeonatos()
     {
         return $this->belongsToMany(Campeonato::class, 'tbl_campeonato_categoria', 'id_categoria', 'id_campeonato');

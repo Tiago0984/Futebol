@@ -122,7 +122,7 @@
                 <div class="p-4">
                     <div class="row">
                         @include('admin.campeonatos._categorias_e_participantes', [
-                            'prefixo' => 'p', 'principal' => old('id_categoria', $campeonato->id_categoria),
+                            'prefixo' => 'p',
                             'selecionadas' => old('categorias', $campeonato->categorias->pluck('id_categoria')->all()),
                             'participantes' => old('participantes', $campeonato->participantesPorCategoria()),
                         ])

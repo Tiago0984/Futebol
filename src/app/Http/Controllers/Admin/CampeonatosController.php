@@ -49,7 +49,7 @@ class CampeonatosController extends Controller
         $dados = $request->only([
             'nome_campeonato', 'tipo_campeonato', 'data_inicio_campeonato',
             'data_fim_campeonato', 'local_evento', 'organizador_campeonato',
-            'descricao_campeonato', 'id_categoria',
+            'descricao_campeonato',
         ]);
 
         if ($request->hasFile('logo_evento')) {
@@ -64,6 +64,7 @@ class CampeonatosController extends Controller
 
         $dados['status_campeonato'] = 'ATIVO';
         $idsCategorias = $this->categoriasDoPedido($request);
+        $dados['id_categoria'] = Campeonato::categoriaDeReferencia($idsCategorias);
 
         DB::transaction(function () use ($dados, $request, $idsCategorias) {
             $campeonato = Campeonato::create($dados);
@@ -100,7 +101,7 @@ class CampeonatosController extends Controller
         $dados = $request->only([
             'nome_campeonato', 'tipo_campeonato', 'data_inicio_campeonato',
             'data_fim_campeonato', 'local_evento', 'organizador_campeonato',
-            'descricao_campeonato', 'id_categoria',
+            'descricao_campeonato',
         ]);
 
         if ($request->hasFile('logo_evento')) {
@@ -113,7 +114,9 @@ class CampeonatosController extends Controller
             $request->file('banner_evento')->move(public_path('futebol/images/campeonatos'), $dados['banner_evento']);
         }
 
-        // A categoria dos jogos acompanha a do campeonato (Campeonato::atualizarCategoriaDosJogos)
+        $dados['id_categoria'] = Campeonato::categoriaDeReferencia($idsCategorias, (int) $campeonato->id_categoria);
+
+        // A categoria dos jogos acompanha a de referência do campeonato (Campeonato::atualizarCategoriaDosJogos)
         $jogosAtualizados = DB::transaction(function () use ($campeonato, $dados, $idsCategorias, $participantes) {
             $campeonato->update($dados);
             $campeonato->gravarCategoriasEParticipantes($idsCategorias, $participantes);
@@ -173,8 +176,7 @@ class CampeonatosController extends Controller
             'local_evento'           => 'nullable|string|max:255',
             'organizador_campeonato' => 'nullable|string|max:255',
             'descricao_campeonato'   => 'nullable|string',
-            'id_categoria'           => 'required|integer|exists:tbl_categoria,id_categoria',
-            'categorias'             => 'nullable|array',
+            'categorias'             => 'required|array|min:1',
             'categorias.*'           => 'integer|exists:tbl_categoria,id_categoria',
             'logo_evento'            => 'nullable|image|max:2048',
             'banner_evento'          => 'nullable|image|max:4096',
@@ -182,14 +184,15 @@ class CampeonatosController extends Controller
             'participantes.*'        => 'array',
             'participantes.*.*'      => 'integer|exists:tbl_time,id_time',
         ], [
-            'id_categoria.required' => 'Escolha a categoria principal do campeonato.',
+            'categorias.required' => 'Marque ao menos uma categoria do campeonato.',
+            'categorias.min'      => 'Marque ao menos uma categoria do campeonato.',
         ]);
     }
 
-    // Categorias marcadas, sempre com a principal (ela vale para a idade, a convocação e os jogos até a Fase H, Etapa H3)
+    // Categorias marcadas (todas valem igual na tela; a de referência sai delas: Campeonato::categoriaDeReferencia)
     private function categoriasDoPedido(Request $request): array
     {
-        return array_values(array_unique(array_map('intval', [$request->input('id_categoria'), ...(array) $request->input('categorias', [])])));
+        return array_values(array_unique(array_map('intval', (array) $request->input('categorias', []))));
     }
 
     // Participantes de cada categoria marcada: [id_categoria => [id_time]]; o bloco de categoria desmarcada é ignorado

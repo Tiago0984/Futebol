@@ -148,7 +148,7 @@
                             <td class="text-muted">{{ $camp->local_evento ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;">
                                 @forelse($camp->categorias as $catDoCamp)
-                                    <div>{{ $catDoCamp->rotulo }}@if((int) $catDoCamp->id_categoria === (int) $camp->id_categoria && $camp->categorias->count() > 1) <span class="badge bg-secondary" title="Categoria principal: vale para a idade, a convocação e os jogos">principal</span>@endif</div>
+                                    <div>{{ $catDoCamp->rotulo }}</div>
                                 @empty
                                     —
                                 @endforelse
@@ -175,7 +175,6 @@
                                         data-id="{{ $camp->id_campeonato }}"
                                         data-nome="{{ $camp->nome_campeonato }}"
                                         data-tipo="{{ $camp->tipo_campeonato }}"
-                                        data-categoria="{{ $camp->id_categoria }}"
                                         data-inicio="{{ $camp->data_inicio_campeonato?->format('Y-m-d') }}"
                                         data-fim="{{ $camp->data_fim_campeonato?->format('Y-m-d') }}"
                                         data-local="{{ $camp->local_evento }}"
@@ -291,7 +290,7 @@
                         <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-tags"></i> Categorias e Times Participantes</p></div>
 
                         @include('admin.campeonatos._categorias_e_participantes', [
-                            'prefixo' => 'c', 'principal' => null, 'selecionadas' => [], 'participantes' => [],
+                            'prefixo' => 'c', 'selecionadas' => [], 'participantes' => [],
                         ])
 
                     </div>
@@ -379,7 +378,7 @@
                         <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-tags"></i> Categorias e Times Participantes</p></div>
 
                         @include('admin.campeonatos._categorias_e_participantes', [
-                            'prefixo' => 'e', 'principal' => null, 'selecionadas' => [], 'participantes' => [],
+                            'prefixo' => 'e', 'selecionadas' => [], 'participantes' => [],
                         ])
 
                     </div>
@@ -462,7 +461,6 @@ document.addEventListener('DOMContentLoaded', function () {
             // Categorias e participantes por categoria (partial _categorias_e_participantes)
             window.preencherCategoriasDoCampeonato(
                 document.querySelector('#formEditarCampeonato .js-cat-part'),
-                this.dataset.categoria,
                 JSON.parse(this.dataset.categorias || '[]'),
                 JSON.parse(this.dataset.participantes || '{}'));
         });

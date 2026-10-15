@@ -15,8 +15,9 @@ use Tests\TestCase;
 
 /**
  * Fase H, Etapa H1: campeonato com várias categorias (tbl_campeonato_categoria) e participantes por categoria
- * (tbl_campeonato_time.id_categoria). O mesmo time pode entrar em várias categorias; a categoria principal
- * (tbl_campeonato.id_categoria) está sempre na lista e continua valendo para a idade, a convocação e os jogos.
+ * (tbl_campeonato_time.id_categoria). O mesmo time pode entrar em várias categorias. Na tela todas valem igual;
+ * a de referência (tbl_campeonato.id_categoria, escolhida pelo sistema) está sempre na lista e continua valendo
+ * para a idade, a convocação e os jogos até a Etapa H3.
  */
 class CampeonatoCategoriasTest extends TestCase
 {
@@ -120,37 +121,67 @@ class CampeonatoCategoriasTest extends TestCase
     {
         $this->comoAdmin()->post(route('admin.campeonatos.store'), [
             ...$this->dados('Copa São Carlos', true),
-            'id_categoria'  => $this->idSub15M,
-            'categorias'    => [$this->idSub17M, $this->idSub11M],
+            'categorias'    => [$this->idSub15M, $this->idSub17M, $this->idSub11M],
             'participantes' => [
                 $this->idSub15M => [$this->botafogo, $this->aacj15],
                 $this->idSub17M => [$this->botafogo, $this->aacj17],
             ],
         ])->assertSessionHasNoErrors()->assertSessionHas('sucesso');
 
+        // Referência (até a H3): a mais velha das marcadas
         $copa = Campeonato::where('nome_campeonato', 'Copa São Carlos')->sole();
-        $this->assertSame($this->idSub15M, (int) $copa->id_categoria);
+        $this->assertSame($this->idSub17M, (int) $copa->id_categoria);
         $this->assertSame(3, $copa->categorias()->count());
         $this->assertEquals([
             $this->idSub15M => [$this->botafogo, $this->aacj15],
             $this->idSub17M => [$this->botafogo, $this->aacj17],
         ], $copa->participantesPorCategoria());
 
-        // A lista mostra todas as categorias, com a principal marcada
+        // A lista mostra todas as categorias, sem nenhuma "principal"
         $this->comoAdmin()->get(route('admin.campeonatos.index'))->assertOk()
-            ->assertSeeInOrder(['Sub-11 Masculino', 'Sub-15 Masculino', 'principal', 'Sub-17 Masculino'])
+            ->assertSeeInOrder(['Sub-11 Masculino', 'Sub-15 Masculino', 'Sub-17 Masculino'])
+            ->assertDontSee('>principal<', false)
             ->assertSee('data-participantes="' . e(json_encode([$this->idSub15M => [$this->botafogo, $this->aacj15], $this->idSub17M => [$this->botafogo, $this->aacj17]])) . '"', false);
     }
 
-    public function test_principal_entra_na_lista_mesmo_sem_marcar_e_e_obrigatoria(): void
+    public function test_ao_menos_uma_categoria_e_obrigatoria(): void
     {
-        $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$this->dados('Liga', true), 'id_categoria' => $this->idSub15M])
+        $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$this->dados('Liga', true), 'categorias' => [$this->idSub15M]])
             ->assertSessionHasNoErrors();
         $liga = Campeonato::where('nome_campeonato', 'Liga')->sole();
+        $this->assertSame($this->idSub15M, (int) $liga->id_categoria);
         $this->assertSame([$this->idSub15M], $liga->categorias->pluck('id_categoria')->map(fn ($id) => (int) $id)->all());
 
         $this->comoAdmin()->post(route('admin.campeonatos.store'), $this->dados('Sem categoria', true))
-            ->assertSessionHasErrors(['id_categoria' => 'Escolha a categoria principal do campeonato.']);
+            ->assertSessionHasErrors(['categorias' => 'Marque ao menos uma categoria do campeonato.']);
+        $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$this->dados('Vazia', true), 'categorias' => []])
+            ->assertSessionHasErrors(['categorias' => 'Marque ao menos uma categoria do campeonato.']);
+    }
+
+    public function test_referencia_fica_a_atual_enquanto_marcada_e_senao_a_mais_velha(): void
+    {
+        $idSub17F = $this->idCategoria('Sub-17', 'F');
+
+        // Sem atual: a mais velha; no empate de idade, a masculina
+        $this->assertSame($this->idSub17M, Campeonato::categoriaDeReferencia([$this->idSub11M, $this->idSub17M, $this->idSub15M]));
+        $this->assertSame($this->idSub17M, Campeonato::categoriaDeReferencia([$idSub17F, $this->idSub17M]));
+        $this->assertNull(Campeonato::categoriaDeReferencia([]));
+
+        // Acrescentar uma categoria mais velha não troca a atual (os jogos não são regravados)
+        $copa = $this->campeonato('Copa', $this->idSub15M);
+        $this->participantes($copa, [$this->aacj15]);
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa), [
+            ...$this->dados('Copa'), 'categorias' => [$this->idSub15M, $this->idSub17M],
+            'participantes' => [$this->idSub15M => [$this->aacj15], $this->idSub17M => [$this->aacj17]],
+        ])->assertSessionHas('sucesso', 'Campeonato atualizado com sucesso.');
+        $this->assertSame($this->idSub15M, (int) Campeonato::find($copa)->id_categoria);
+
+        // Tirar a atual: passa para a mais velha das que ficam
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa), [
+            ...$this->dados('Copa'), 'categorias' => [$this->idSub11M, $this->idSub17M],
+            'participantes' => [$this->idSub17M => [$this->aacj17]],
+        ])->assertSessionHasNoErrors();
+        $this->assertSame($this->idSub17M, (int) Campeonato::find($copa)->id_categoria);
     }
 
     public function test_editar_trocando_categorias_regrava_os_participantes(): void
@@ -160,8 +191,7 @@ class CampeonatoCategoriasTest extends TestCase
 
         $this->comoAdmin()->put(route('admin.campeonatos.update', $copa), [
             ...$this->dados('Copa'),
-            'id_categoria'  => $this->idSub15M,
-            'categorias'    => [$this->idSub17M],
+            'categorias'    => [$this->idSub15M, $this->idSub17M],
             'participantes' => [
                 $this->idSub15M => [$this->aacj15],
                 $this->idSub17M => [$this->botafogo, $this->aacj17],
@@ -185,7 +215,7 @@ class CampeonatoCategoriasTest extends TestCase
         $ana = $this->criarAtleta($this->nascidoComIdade(15), 'M', 'ATIVO');
         DB::table('tbl_convocacao')->insert(['id_campeonato' => $copa->id_campeonato, 'id_time' => $this->aacj15, 'id_atleta' => $ana, 'camisa_convocacao' => 10]);
 
-        $dados = [...$this->dados('Copa'), 'id_categoria' => $this->idSub15M, 'categorias' => [$this->idSub17M]];
+        $dados = [...$this->dados('Copa'), 'categorias' => [$this->idSub15M, $this->idSub17M]];
 
         // Sai do Sub-17 e fica no Sub-15: pode
         $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), [...$dados, 'participantes' => [$this->idSub15M => [$this->aacj15]]])
@@ -215,7 +245,8 @@ class CampeonatoCategoriasTest extends TestCase
         $copa->gravarCategoriasEParticipantes([$this->idSub15M, $this->idSub17M], [$this->idSub17M => [$this->botafogo]]);
 
         $this->comoAdmin()->get(route('admin.campeonatos.create'))->assertOk()
-            ->assertSee('Categoria principal')->assertSee('Times participantes por categoria');
+            ->assertSee('Categorias do campeonato')->assertSee('Times participantes por categoria')
+            ->assertDontSee('Categoria principal');
         $this->comoAdmin()->get(route('admin.campeonatos.edit', $copa->id_campeonato))->assertOk()
             ->assertSee('id="p_cat_' . $this->idSub17M . '" checked', false)
             ->assertSee('name="participantes[' . $this->idSub17M . '][]"', false)
