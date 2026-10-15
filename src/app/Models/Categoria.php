@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class Categoria extends Model
 {
@@ -30,9 +31,10 @@ class Categoria extends Model
         'status_categoria',
     ];
 
+    // Campeonatos que têm esta categoria (Fase H: um campeonato pode ter várias; a principal está na lista)
     public function campeonatos()
     {
-        return $this->hasMany(Campeonato::class, 'id_categoria', 'id_categoria');
+        return $this->belongsToMany(Campeonato::class, 'tbl_campeonato_categoria', 'id_categoria', 'id_campeonato');
     }
 
     public function times()
@@ -61,7 +63,9 @@ class Categoria extends Model
         $usos = array_filter([
             'atleta(s)'           => $this->atletas()->count(),
             'time(s)'             => $this->times()->count(),
-            'campeonato(s)'       => $this->campeonatos()->count(),
+            'campeonato(s)'       => Campeonato::where('id_categoria', $this->id_categoria)
+                ->orWhereIn('id_campeonato', DB::table('tbl_campeonato_categoria')->where('id_categoria', $this->id_categoria)->select('id_campeonato'))
+                ->count(),
             'evento(s)'           => EventoCalendario::where('id_categoria', $this->id_categoria)->count(),
             'horário(s) da grade' => GradeTreino::where('id_categoria', $this->id_categoria)->count(),
         ]);

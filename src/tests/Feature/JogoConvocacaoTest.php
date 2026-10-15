@@ -44,7 +44,7 @@ class JogoConvocacaoTest extends TestCase
         $this->visitante = $this->time('Time Visitante', 'EXTERNO');
 
         foreach ([$this->azul, $this->verde, $this->visitante] as $idTime) {
-            DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $this->liga, 'id_time' => $idTime]);
+            $this->participantes($this->liga, [$idTime]);
         }
     }
 

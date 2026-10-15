@@ -217,10 +217,7 @@ class EventoFluxoTest extends TestCase
 
     public function test_jogo_de_campeonato_aceita_so_os_participantes(): void
     {
-        DB::table('tbl_campeonato_time')->insert([
-            ['id_campeonato' => $this->copa, 'id_time' => $this->azul],
-            ['id_campeonato' => $this->copa, 'id_time' => $this->visitante],
-        ]);
+        $this->participantes($this->copa, [$this->azul, $this->visitante]);
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_time_casa' => $this->verde]))
             ->assertSessionHasErrors(['id_time_casa' => 'O mandante não participa do campeonato Copa Escola. Inclua o time nos participantes do campeonato, ou escolha outro.']);
@@ -245,7 +242,7 @@ class EventoFluxoTest extends TestCase
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_time_casa' => $this->verde]))->assertSessionHasNoErrors();
 
         // Participantes cadastrados depois: o jogo antigo com o Verde continua editável
-        DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $this->copa, 'id_time' => $this->azul]);
+        $this->participantes($this->copa, [$this->azul]);
         $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo(['id_time_casa' => $this->verde, 'local_evento_calendario' => 'Campo C']))
             ->assertSessionHasNoErrors();
         $this->assertSame('Campo C', $jogo->evento->fresh()->local_evento_calendario);
@@ -381,7 +378,7 @@ class EventoFluxoTest extends TestCase
         // Gravar: o tipo vai em maiúsculas; fora da lista é recusado
         $dados = [
             'nome_campeonato' => 'Copa Escola', 'tipo_campeonato' => 'Pontos Corridos',
-            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01',
+            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'id_categoria' => $this->idSub11M,
         ];
         $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), $dados)->assertSessionHasNoErrors();
         $this->assertSame('PONTOS CORRIDOS', DB::table('tbl_campeonato')->where('id_campeonato', $this->copa)->value('tipo_campeonato'));
@@ -464,7 +461,7 @@ class EventoFluxoTest extends TestCase
             ->assertSee('<option value="REGIONAL" selected>REGIONAL</option>', false);
         $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), [
             'nome_campeonato' => 'Copa Escola', 'tipo_campeonato' => 'REGIONAL',
-            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01',
+            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'id_categoria' => $this->idSub11M,
         ])->assertSessionHasNoErrors();
     }
 

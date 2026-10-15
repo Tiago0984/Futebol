@@ -124,7 +124,7 @@
                         <tr class="linha-camp"
                             data-nome="{{ strtolower($camp->nome_campeonato) }}"
                             data-tipo="{{ $camp->tipo_campeonato }}"
-                            data-categoria="{{ $camp->id_categoria }}"
+                            data-categorias=" {{ $camp->categorias->pluck('id_categoria')->implode(' ') }} "
                             data-status="{{ strtoupper($camp->status_campeonato) }}">
                             <td>
                                 @if($camp->logo_evento)
@@ -146,7 +146,13 @@
                                 @endif
                             </td>
                             <td class="text-muted">{{ $camp->local_evento ?? '—' }}</td>
-                            <td class="text-muted">{{ $camp->categoria?->rotulo ?? '—' }}</td>
+                            <td class="text-muted" style="font-size:0.82rem;">
+                                @forelse($camp->categorias as $catDoCamp)
+                                    <div>{{ $catDoCamp->rotulo }}@if((int) $catDoCamp->id_categoria === (int) $camp->id_categoria && $camp->categorias->count() > 1) <span class="badge bg-secondary" title="Categoria principal: vale para a idade, a convocação e os jogos">principal</span>@endif</div>
+                                @empty
+                                    —
+                                @endforelse
+                            </td>
                             <td class="text-center">
                                 <span class="badge bg-secondary">{{ $camp->times->count() }}</span>
                             </td>
@@ -177,7 +183,8 @@
                                         data-descricao="{{ $camp->descricao_campeonato }}"
                                         data-logo="{{ $camp->logo_evento }}"
                                         data-banner="{{ $camp->banner_evento }}"
-                                        data-times="{{ json_encode($camp->times->pluck('id_time')->toArray()) }}">
+                                        data-categorias="{{ json_encode($camp->categorias->pluck('id_categoria')->map(fn ($id) => (int) $id)->all()) }}"
+                                        data-participantes="{{ json_encode((object) ($participantes[$camp->id_campeonato] ?? [])) }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form action="{{ route('admin.campeonatos.toggleStatus', $camp->id_campeonato) }}" method="POST" style="display:inline">
@@ -247,15 +254,6 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Categoria</label>
-                            <select name="id_categoria" class="form-select">
-                                <option value="">— Nenhuma —</option>
-                                @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
                             <label class="form-label">Data de Início <span class="text-danger">*</span></label>
                             <input type="date" name="data_inicio_campeonato" class="form-control" required>
                         </div>
@@ -290,36 +288,11 @@
                             <span class="form-text">JPG, PNG. Máx. 4MB.</span>
                         </div>
 
-                        <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-shield-fill"></i> Times Participantes</p></div>
+                        <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-tags"></i> Categorias e Times Participantes</p></div>
 
-                        <div class="col-12">
-                            <div class="row g-2">
-                                @foreach($times as $time)
-                                <div class="col-md-4 col-6">
-                                    <div class="d-flex align-items-center gap-2">
-                                        @if($time->logo_time)
-                                        <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}"
-                                             style="width:22px;height:22px;object-fit:contain;flex-shrink:0;">
-                                        @else
-                                        <div style="width:22px;height:22px;background:#eee;border-radius:3px;flex-shrink:0;"></div>
-                                        @endif
-                                        <div class="form-check mb-0">
-                                            <input class="form-check-input" type="checkbox" name="times[]"
-                                                value="{{ $time->id_time }}" id="c_time_{{ $time->id_time }}">
-                                            <label class="form-check-label" for="c_time_{{ $time->id_time }}">
-                                                {{ $time->nome_time }}
-                                                @if($time->tipo_time === 'INTERNO')
-                                                <span class="badge-status ativo ms-1" style="font-size:0.6rem;">INT</span>
-                                                @else
-                                                <span class="badge-status inativo ms-1" style="font-size:0.6rem;">EXT</span>
-                                                @endif
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
+                        @include('admin.campeonatos._categorias_e_participantes', [
+                            'prefixo' => 'c', 'principal' => null, 'selecionadas' => [], 'participantes' => [],
+                        ])
 
                     </div>
                 </div>
@@ -364,15 +337,6 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Categoria</label>
-                            <select id="edit_id_categoria" name="id_categoria" class="form-select">
-                                <option value="">— Nenhuma —</option>
-                                @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
                             <label class="form-label">Data de Início <span class="text-danger">*</span></label>
                             <input type="date" id="edit_data_inicio" name="data_inicio_campeonato"
                                 class="form-control" required>
@@ -412,37 +376,11 @@
                             <span class="form-text">Deixe em branco para manter o atual.</span>
                         </div>
 
-                        <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-shield-fill"></i> Times Participantes</p></div>
+                        <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-tags"></i> Categorias e Times Participantes</p></div>
 
-                        <div class="col-12">
-                            <div class="row g-2">
-                                @foreach($times as $time)
-                                <div class="col-md-4 col-6">
-                                    <div class="d-flex align-items-center gap-2">
-                                        @if($time->logo_time)
-                                        <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}"
-                                             style="width:22px;height:22px;object-fit:contain;flex-shrink:0;">
-                                        @else
-                                        <div style="width:22px;height:22px;background:#eee;border-radius:3px;flex-shrink:0;"></div>
-                                        @endif
-                                        <div class="form-check mb-0">
-                                            <input class="form-check-input edit-time-check" type="checkbox"
-                                                name="times[]" value="{{ $time->id_time }}"
-                                                id="e_time_{{ $time->id_time }}">
-                                            <label class="form-check-label" for="e_time_{{ $time->id_time }}">
-                                                {{ $time->nome_time }}
-                                                @if($time->tipo_time === 'INTERNO')
-                                                <span class="badge-status ativo ms-1" style="font-size:0.6rem;">INT</span>
-                                                @else
-                                                <span class="badge-status inativo ms-1" style="font-size:0.6rem;">EXT</span>
-                                                @endif
-                                            </label>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </div>
-                        </div>
+                        @include('admin.campeonatos._categorias_e_participantes', [
+                            'prefixo' => 'e', 'principal' => null, 'selecionadas' => [], 'participantes' => [],
+                        ])
 
                     </div>
                 </div>
@@ -469,7 +407,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.linha-camp').forEach(row => {
             const ok = (!nome      || row.dataset.nome.includes(nome))
                     && (!tipo      || row.dataset.tipo === tipo)
-                    && (!categoria || row.dataset.categoria === categoria)
+                    && (!categoria || row.dataset.categorias.includes(` ${categoria} `))
                     && (!status    || row.dataset.status === status);
             row.style.display = ok ? '' : 'none';
             if (ok) visiveis++;
@@ -521,13 +459,12 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             selTipo.value = tipo;
 
-            const selCat = document.getElementById('edit_id_categoria');
-            for (let opt of selCat.options) opt.selected = opt.value === this.dataset.categoria;
-
-            const timesVinculados = JSON.parse(this.dataset.times || '[]');
-            document.querySelectorAll('.edit-time-check').forEach(chk => {
-                chk.checked = timesVinculados.includes(parseInt(chk.value));
-            });
+            // Categorias e participantes por categoria (partial _categorias_e_participantes)
+            window.preencherCategoriasDoCampeonato(
+                document.querySelector('#formEditarCampeonato .js-cat-part'),
+                this.dataset.categoria,
+                JSON.parse(this.dataset.categorias || '[]'),
+                JSON.parse(this.dataset.participantes || '{}'));
         });
     });
 });

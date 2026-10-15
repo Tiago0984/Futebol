@@ -49,17 +49,6 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-2">
-                            <label class="form-label">Categoria</label>
-                            <select name="id_categoria" class="form-select">
-                                <option value="">— Nenhuma —</option>
-                                @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}" {{ old('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
-                                    {{ $cat->rotulo }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
                         <div class="col-md-4">
                             <label class="form-label">Data de Início <span class="text-danger">*</span></label>
                             <input type="date" name="data_inicio_campeonato" class="form-control"
@@ -111,25 +100,14 @@
 
             <div class="table-card mb-4">
                 <div class="table-card-toolbar" style="padding:20px 24px 0">
-                    <p class="modal-section-label mb-0"><i class="bi bi-shield-fill"></i> Times Participantes</p>
+                    <p class="modal-section-label mb-0"><i class="bi bi-tags"></i> Categorias e Times Participantes</p>
                 </div>
                 <div class="p-4">
-                    <div class="row g-2">
-                        @foreach($times as $time)
-                        <div class="col-md-4 col-6">
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" name="times[]"
-                                    value="{{ $time->id_time }}" id="time_{{ $time->id_time }}"
-                                    {{ in_array($time->id_time, old('times', [])) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="time_{{ $time->id_time }}">
-                                    {{ $time->nome_time }}
-                                    @if($time->tipo_time === 'INTERNO')
-                                        <span class="badge-status ativo ms-1" style="font-size:0.6rem;">INT</span>
-                                    @endif
-                                </label>
-                            </div>
-                        </div>
-                        @endforeach
+                    <div class="row">
+                        @include('admin.campeonatos._categorias_e_participantes', [
+                            'prefixo' => 'p', 'principal' => old('id_categoria'),
+                            'selecionadas' => old('categorias', []), 'participantes' => old('participantes', []),
+                        ])
                     </div>
                 </div>
             </div>

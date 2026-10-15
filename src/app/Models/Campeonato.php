@@ -62,9 +62,74 @@ class Campeonato extends Model
         return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
     }
 
+    // Participantes, cada time uma vez (o mesmo time pode estar em várias categorias: Fase H, Etapa H1)
     public function times()
     {
-        return $this->belongsToMany(Time::class, 'tbl_campeonato_time', 'id_campeonato', 'id_time');
+        return $this->belongsToMany(Time::class, 'tbl_campeonato_time', 'id_campeonato', 'id_time')->distinct();
+    }
+
+    // ── Categorias e participantes por categoria (Fase H, Etapa H1) ─────────
+
+    /**
+     * Categorias do campeonato (tbl_campeonato_categoria), na ordem dos formulários. A principal
+     * (tbl_campeonato.id_categoria) está sempre entre elas e é a que vale para a idade, a convocação e os
+     * jogos até a Etapa H3, quando o jogo ganha a categoria dele.
+     */
+    public function categorias()
+    {
+        return $this->belongsToMany(Categoria::class, 'tbl_campeonato_categoria', 'id_campeonato', 'id_categoria')
+            ->orderBy('sexo_categoria', 'desc')->orderBy('idade_min_categoria');
+    }
+
+    // "Sub-11 Masculino, Sub-15 Masculino" (a lista de Campeonatos)
+    public function getRotuloDasCategoriasAttribute(): string
+    {
+        return $this->categorias->pluck('rotulo')->implode(', ');
+    }
+
+    // Participantes de cada categoria: [id_categoria => [id_time, ...]]
+    public function participantesPorCategoria(): array
+    {
+        return DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)
+            ->orderBy('id_categoria')->orderBy('id_time')->get(['id_categoria', 'id_time'])
+            ->groupBy('id_categoria')
+            ->map(fn ($linhas) => $linhas->pluck('id_time')->map(fn ($id) => (int) $id)->all())
+            ->all();
+    }
+
+    /**
+     * Grava as categorias ($idsCategorias, já com a principal) e os participantes de cada uma
+     * ($participantes: [id_categoria => [id_time, ...]]; categoria fora da lista é ignorada), numa transação.
+     * Os participantes são regravados; a FK composta só aceita participante numa categoria do campeonato.
+     */
+    public function gravarCategoriasEParticipantes(array $idsCategorias, array $participantes): void
+    {
+        $idsCategorias = array_values(array_unique(array_map('intval', $idsCategorias)));
+
+        DB::transaction(function () use ($idsCategorias, $participantes) {
+            DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)->delete();
+            DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->id_campeonato)
+                ->whereNotIn('id_categoria', $idsCategorias)->delete();
+            DB::table('tbl_campeonato_categoria')->insertOrIgnore(array_map(
+                fn ($idCategoria) => ['id_campeonato' => $this->id_campeonato, 'id_categoria' => $idCategoria], $idsCategorias));
+
+            $linhas = [];
+            foreach ($idsCategorias as $idCategoria) {
+                foreach (array_unique(array_map('intval', $participantes[$idCategoria] ?? [])) as $idTime) {
+                    $linhas[] = ['id_campeonato' => $this->id_campeonato, 'id_categoria' => $idCategoria, 'id_time' => $idTime];
+                }
+            }
+            DB::table('tbl_campeonato_time')->insert($linhas);
+        });
+
+        $this->unsetRelation('categorias')->unsetRelation('times');
+    }
+
+    // Tira participantes e categorias (exclusão do campeonato; as FKs são NO ACTION)
+    public function apagarCategoriasEParticipantes(): void
+    {
+        DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)->delete();
+        DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->id_campeonato)->delete();
     }
 
     public function jogos()

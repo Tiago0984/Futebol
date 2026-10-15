@@ -288,10 +288,7 @@ class MenuAdminTest extends TestCase
     public function test_times_do_campeonato_em_cartoes_e_jogadores_so_leitura(): void
     {
         $verde = $this->time('Time Verde');
-        DB::table('tbl_campeonato_time')->insert([
-            ['id_campeonato' => $this->emAndamento, 'id_time' => $this->azul],
-            ['id_campeonato' => $this->emAndamento, 'id_time' => $this->visitante],
-        ]);
+        $this->participantes($this->emAndamento, [$this->azul, $this->visitante]);
         $rui = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         DB::table('tbl_atletas')->where('id_atleta', $rui)->update(['nome_atleta' => 'Rui Elenco']);
         DB::table('tbl_atleta_time')->insert([
@@ -386,11 +383,7 @@ class MenuAdminTest extends TestCase
     {
         $verde = $this->time('Time Verde');
         $preto = $this->time('Time Preto');
-        DB::table('tbl_campeonato_time')->insert([
-            ['id_campeonato' => $this->emAndamento, 'id_time' => $this->azul],
-            ['id_campeonato' => $this->emAndamento, 'id_time' => $verde],
-            ['id_campeonato' => $this->emAndamento, 'id_time' => $preto],   // sem jogo: vai para o fim
-        ]);
+        $this->participantes($this->emAndamento, [$this->azul, $verde, $preto]);   // o Preto sem jogo: vai para o fim
         $proximo = $this->jogoNoDia($this->emAndamento, $verde, $this->azul, 4);
         $passado = $this->jogoNoDia($this->emAndamento, $this->azul, $this->visitante, -2);
         $this->jogoNoDia(null, $this->azul, $verde, 1);                          // amistoso: fora
@@ -924,7 +917,7 @@ class MenuAdminTest extends TestCase
         $this->assertDatabaseHas('tbl_time', ['id_time' => $this->azul]);
 
         // Sem jogo nem elenco: sai, junto com a participação nos campeonatos
-        DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $this->emAndamento, 'id_time' => $this->visitante]);
+        $this->participantes($this->emAndamento, [$this->visitante]);
         $this->comoAdmin()->delete(route('admin.times.destroy', $this->visitante))->assertSessionHas('sucesso');
         $this->assertDatabaseMissing('tbl_time', ['id_time' => $this->visitante]);
         $this->assertDatabaseMissing('tbl_campeonato_time', ['id_time' => $this->visitante]);
@@ -943,7 +936,7 @@ class MenuAdminTest extends TestCase
             ->assertSee('tem 1 jogo(s) e não pode ser excluído');
 
         // Sem jogos: sai, junto com os times dele
-        DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $this->encerrado, 'id_time' => $this->azul]);
+        $this->participantes($this->encerrado, [$this->azul]);
         $this->comoAdmin()->delete(route('admin.campeonatos.destroy', $this->encerrado))->assertSessionHas('sucesso');
         $this->assertDatabaseMissing('tbl_campeonato', ['id_campeonato' => $this->encerrado]);
     }

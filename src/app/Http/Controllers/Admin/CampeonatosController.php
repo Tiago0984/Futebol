@@ -21,14 +21,17 @@ class CampeonatosController extends Controller
         $idFiltro = (string) $request->query('campeonato', '');
         $campeonatoFiltrado = ctype_digit($idFiltro) ? Campeonato::find((int) $idFiltro, ['id_campeonato', 'nome_campeonato']) : null;
 
-        $campeonatos = Campeonato::with(['categoria', 'times'])
+        $campeonatos = Campeonato::with(['categoria', 'categorias', 'times'])
             ->when($campeonatoFiltrado, fn ($q) => $q->whereKey($campeonatoFiltrado->id_campeonato))
             ->orderBy('data_inicio_campeonato', 'desc')
             ->get();
         $categorias  = $this->categorias();
         $times       = Time::orderBy('nome_time')->get();
 
-        return view('admin.campeonatos.index', compact('campeonatos', 'categorias', 'times', 'campeonatoFiltrado'));
+        // Participantes de cada categoria, para o modal de edição
+        $participantes = $campeonatos->mapWithKeys(fn ($camp) => [$camp->id_campeonato => $camp->participantesPorCategoria()]);
+
+        return view('admin.campeonatos.index', compact('campeonatos', 'categorias', 'times', 'campeonatoFiltrado', 'participantes'));
     }
 
     public function create()
@@ -60,18 +63,19 @@ class CampeonatosController extends Controller
         }
 
         $dados['status_campeonato'] = 'ATIVO';
-        $campeonato = Campeonato::create($dados);
+        $idsCategorias = $this->categoriasDoPedido($request);
 
-        if ($request->filled('times')) {
-            $campeonato->times()->sync($request->times);
-        }
+        DB::transaction(function () use ($dados, $request, $idsCategorias) {
+            $campeonato = Campeonato::create($dados);
+            $campeonato->gravarCategoriasEParticipantes($idsCategorias, $this->participantesDoPedido($request, $idsCategorias));
+        });
 
         return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato criado com sucesso.');
     }
 
     public function edit($id)
     {
-        $campeonato = Campeonato::with('times')->findOrFail($id);
+        $campeonato = Campeonato::with('categorias')->findOrFail($id);
         $categorias = $this->categorias();
         $times      = Time::orderBy('nome_time')->get();
 
@@ -84,9 +88,12 @@ class CampeonatosController extends Controller
 
         $this->validar($request, $campeonato);
 
-        // Time com convocados não sai dos participantes (a convocação ficaria apontando para quem não joga)
-        if ($saem = $campeonato->timesQueSaemComConvocados($request->times ?? [])) {
-            return back()->withInput()->withErrors(['times' => 'Não é possível tirar do campeonato time com atletas convocados: '
+        $idsCategorias = $this->categoriasDoPedido($request);
+        $participantes = $this->participantesDoPedido($request, $idsCategorias);
+
+        // Time com convocados não sai de todas as categorias (a convocação ficaria apontando para quem não joga)
+        if ($saem = $campeonato->timesQueSaemComConvocados(array_merge([], ...array_values($participantes)))) {
+            return back()->withInput()->withErrors(['participantes' => 'Não é possível tirar do campeonato time com atletas convocados: '
                 . implode(', ', $saem) . '. Remova a convocação do time antes.']);
         }
 
@@ -107,9 +114,9 @@ class CampeonatosController extends Controller
         }
 
         // A categoria dos jogos acompanha a do campeonato (Campeonato::atualizarCategoriaDosJogos)
-        $jogosAtualizados = DB::transaction(function () use ($campeonato, $dados, $request) {
+        $jogosAtualizados = DB::transaction(function () use ($campeonato, $dados, $idsCategorias, $participantes) {
             $campeonato->update($dados);
-            $campeonato->times()->sync($request->times ?? []);
+            $campeonato->gravarCategoriasEParticipantes($idsCategorias, $participantes);
 
             return $campeonato->wasChanged('id_categoria') ? $campeonato->atualizarCategoriaDosJogos(auth('admin')->id()) : 0;
         });
@@ -139,7 +146,7 @@ class CampeonatosController extends Controller
         }
 
         DB::transaction(function () use ($campeonato) {
-            $campeonato->times()->detach();
+            $campeonato->apagarCategoriasEParticipantes();
             $campeonato->delete();
         });
 
@@ -166,12 +173,33 @@ class CampeonatosController extends Controller
             'local_evento'           => 'nullable|string|max:255',
             'organizador_campeonato' => 'nullable|string|max:255',
             'descricao_campeonato'   => 'nullable|string',
-            'id_categoria'           => 'nullable|integer|exists:tbl_categoria,id_categoria',
+            'id_categoria'           => 'required|integer|exists:tbl_categoria,id_categoria',
+            'categorias'             => 'nullable|array',
+            'categorias.*'           => 'integer|exists:tbl_categoria,id_categoria',
             'logo_evento'            => 'nullable|image|max:2048',
             'banner_evento'          => 'nullable|image|max:4096',
-            'times'                  => 'nullable|array',
-            'times.*'                => 'integer|exists:tbl_time,id_time',
+            'participantes'          => 'nullable|array',
+            'participantes.*'        => 'array',
+            'participantes.*.*'      => 'integer|exists:tbl_time,id_time',
+        ], [
+            'id_categoria.required' => 'Escolha a categoria principal do campeonato.',
         ]);
+    }
+
+    // Categorias marcadas, sempre com a principal (ela vale para a idade, a convocação e os jogos até a Fase H, Etapa H3)
+    private function categoriasDoPedido(Request $request): array
+    {
+        return array_values(array_unique(array_map('intval', [$request->input('id_categoria'), ...(array) $request->input('categorias', [])])));
+    }
+
+    // Participantes de cada categoria marcada: [id_categoria => [id_time]]; o bloco de categoria desmarcada é ignorado
+    private function participantesDoPedido(Request $request, array $idsCategorias): array
+    {
+        $pedido = (array) $request->input('participantes', []);
+
+        return collect($idsCategorias)
+            ->mapWithKeys(fn ($idCategoria) => [$idCategoria => array_values(array_unique(array_map('intval', (array) ($pedido[$idCategoria] ?? []))))])
+            ->all();
     }
 
     // Categorias dos selects (com o sexo no rótulo), na ordem dos outros formulários; inclui as inativas,

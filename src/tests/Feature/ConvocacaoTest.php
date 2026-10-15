@@ -300,18 +300,18 @@ class ConvocacaoTest extends TestCase
             'data_inicio_campeonato' => now()->toDateString(), 'data_fim_campeonato' => now()->addMonth()->toDateString(),
         ];
 
-        $this->comoAdminLogado()->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'times' => [$this->verde, $this->visitante]])
-            ->assertSessionHasErrors(['times' => 'Não é possível tirar do campeonato time com atletas convocados: AACJ Sub-15 (1 convocado(s)). Remova a convocação do time antes.']);
+        $this->comoAdminLogado()->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'participantes' => [$this->idSub15M => [$this->verde, $this->visitante]]])
+            ->assertSessionHasErrors(['participantes' => 'Não é possível tirar do campeonato time com atletas convocados: AACJ Sub-15 (1 convocado(s)). Remova a convocação do time antes.']);
         $this->assertDatabaseHas('tbl_campeonato_time', ['id_campeonato' => $this->liga, 'id_time' => $this->azul]);
 
         // A mensagem aparece na lista de Campeonatos (de onde o modal de edição é enviado)
         $this->comoAdminLogado()->from(route('admin.campeonatos.index'))->followingRedirects()
-            ->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'times' => [$this->verde, $this->visitante]])
+            ->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'participantes' => [$this->idSub15M => [$this->verde, $this->visitante]]])
             ->assertOk()
             ->assertSee('Não é possível tirar do campeonato time com atletas convocados: AACJ Sub-15 (1 convocado(s)).');
 
         // Tirar o time sem convocados continua valendo
-        $this->comoAdminLogado()->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'times' => [$this->azul, $this->visitante]])
+        $this->comoAdminLogado()->put(route('admin.campeonatos.update', $this->liga), [...$dados, 'participantes' => [$this->idSub15M => [$this->azul, $this->visitante]]])
             ->assertSessionHasNoErrors();
         $this->assertDatabaseMissing('tbl_campeonato_time', ['id_campeonato' => $this->liga, 'id_time' => $this->verde]);
     }
@@ -363,13 +363,6 @@ class ConvocacaoTest extends TestCase
             'data_inicio_campeonato' => $inicio, 'data_fim_campeonato' => now()->parse($inicio)->addMonth()->toDateString(),
             'local_evento' => 'Campo A',
         ]);
-    }
-
-    private function participantes(int $idCampeonato, array $idsTimes): void
-    {
-        foreach ($idsTimes as $idTime) {
-            DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $idCampeonato, 'id_time' => $idTime]);
-        }
     }
 
     private function time(string $nome, string $tipo): int

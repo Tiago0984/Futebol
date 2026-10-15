@@ -50,7 +50,7 @@ class JogoElencoTest extends TestCase
             'local_evento' => 'Campo A',
         ]);
         foreach ([$this->azul, $this->verde, $this->preto, $this->visitante] as $idTime) {
-            DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $this->copa, 'id_time' => $idTime]);
+            $this->participantes($this->copa, [$idTime]);
         }
     }
 
