@@ -13,7 +13,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - Código em `~/coderatech.tipi5.smpsistema.com.br/futebol` (clone do GitHub, branch **`main`**); a pasta `AACJ` da raiz do documento aponta para `futebol/src/public`. Sem repositório configurado no Git do Plesk: atualizar pelo Terminal SSH.
   - PHP pelo caminho completo: `/opt/plesk/php/8.4/bin/php artisan ...`. Composer pelo **PHP Composer** do painel (pasta `/coderatech.tipi5.smpsistema.com.br/futebol/src`, botão Instalar), só quando o `composer.lock` muda.
   - Banco **`db_futebol` em MariaDB 10.11** (não MySQL 8): conferir SQL cru novo (só funções que os dois aceitam). Collation do banco `utf8mb4_general_ci`.
-  - **Para publicar:** `git push origin feature/agenda-eventos:main` (fast-forward, com OK do dono do projeto); no servidor, `git pull --ff-only origin main`, `artisan migrate --pretend` e `migrate --force` (com backup pelo phpMyAdmin antes), `artisan optimize:clear`.
+  - **Para publicar:** `git push origin feature/agenda-eventos:main` (fast-forward, com OK do dono do projeto); no servidor, `git pull --ff-only origin main`, `artisan migrate --pretend --force` e `migrate --force` (com backup pelo phpMyAdmin antes; em produção, o `--pretend` sem `--force` para numa confirmação "APPLICATION IN PRODUCTION"), `artisan optimize:clear`. Página pública de campeonatos: `/AACJ/campeonato` (singular).
   - **Conteúdo do site cadastrado lá** (notícias, galeria, vídeos, banners, usuários do admin) e **fotos enviadas** (`public/futebol/images/...`, fora do Git) existem só no servidor. São fictícios (sai tudo na entrega), mas, enquanto o desenvolvimento continua, guardar antes de trocar o banco do servidor por um dump local (como em 14/10).
 - **Pastas:** repositório em `~/dev/senac/Futebol`; código Laravel em `src/`; `.gitignore` na raiz; backups em `backup/` (ignorado pelo Git).
 - **Serviços Docker:** `php` (futebol_php), `mysql` (futebol_mysql), `nginx` (futebol_nginx).
@@ -690,8 +690,8 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Roteiro no navegador feito em casa (15/10, 7 passos, todos OK, pelo Claude no navegador):** Copa Escola sem abas, com a final (evento 217) mostrada com o selo "Final" e o Grupo A com 2 classificados destacados; Liga com Sub-13 (Time Visitante) e Sub-15 em abas; prévia da home e selos da lista; JSON da API e a documentação. Desfeito no fim (Liga só Sub-15, final oculta, classificados sem definição).
   - **Dados de teste no `db_futebol` de casa:** a Copa Escola tem o **"Grupo A"** com os três times (criado fora dos roteiros, depois do ajuste da H4; ficou como estava).
 - **Etapa H5 aprovada. Fase H concluída.**
+- **Publicado no servidor (15/10/2026):** `main` avançada até `f0b5ece` (fast-forward, 27 commits); backup pelo phpMyAdmin no computador de casa (`backup/db_futebol_servidor_20261015.sql`, batch 29, com a `tbl_convocacao` vazia); as 5 migrations (`2026_10_14_000002` e `2026_10_15_000001` a `000004`) rodaram sem erro no MariaDB 10.11, **todas no batch 30 do servidor** (em casa ficaram nos batches 30 a 34); `optimize:clear`. Conferido pelo Claude no navegador: lista e página dos campeonatos, home, API e documentação, bloco Convocação com a categoria, tela de grupos e formulário do jogo com categoria e fase.
 - **Próximo passo:**
-  - **Publicar no servidor** (com OK; backup pelo phpMyAdmin antes): migrations dos batches 30 a 34 (convocação na origem da inscrição, H1, H2, H4 e o ajuste da H4); conferir o SQL cru no MariaDB 10.11 (as FKs compostas e o `MODIFY` dos ENUMs).
   - **Fase G, Etapa 4:** retirar o elenco fixo.
   - **Fase D:** posições e titular/reserva na convocação.
 
