@@ -596,7 +596,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Manual** atualizado (R6, tela do jogo, Times, selos e "em construção").
 - **Roteiro no navegador feito em casa (14/10, 9 passos, todos OK):** AACJ x AACJ recusado; amistoso de 31/10 (evento 214, jogo 16) nascendo vazio; "Escolher atletas" com João, Lucas e Pedro (16 anos, entra); troca do mandante para o Verde ("3 atleta(s) passaram para o Time Verde."); jogadores do time só com os nomes; aviso na tela do Elenco. O jogo do evento 214 ficou **oculto**.
   - Notas: a categoria do amistoso vem sugerida pelo mandante (Time Azul = Sub-11), daí o aviso "Fora da categoria" para os mais velhos; o elenco do Time Azul lista o atleta 11 (Tiago Silva, **REJEITADO**) junto do atleta 4 (homônimo, ativo): a tela de Elenco mostra quem não está ativo (sai na Etapa 4).
-- **Falta:** publicar no servidor (junto com a Etapa 2); copiar o PDF regenerado do manual para `docs/manual/` (o arquivo estava aberto no Windows).
+- **Falta:** publicar no servidor (junto com a Etapa 2).
 - **Etapa 4 (retirar o elenco fixo) adiada para depois da Fase H**, que muda a convocação de novo.
 
 #### Fase H (planejada) — campeonato com várias categorias (dono do projeto, 14/10/2026)
