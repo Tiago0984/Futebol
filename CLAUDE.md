@@ -187,6 +187,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Sem nenhum evento público**, a página funciona: sem o bloco "Próximo Evento" e com "Nenhum evento agendado no momento." na lista. O filtro "Treinos Especiais" saiu (ficaram Todos, Jogos e Campeonatos).
 - **Destaque "Próximo jogo" da home segue a mesma regra da agenda:** só jogo de campeonato (amistoso não aparece), ativo, de hoje em diante; sem jogo futuro de campeonato, o último jogo de campeonato visível; sem nenhum, a seção mostra o rótulo padrão "LIGA PREMIERE". A regra fica num lugar só: `Jogo::daAgendaPublica()` delega ao escopo do evento.
 - **O resto da home e a página do campeonato não mudaram:** listam os jogos de cada campeonato (o amistoso não tem campeonato, então já não entrava).
+- **Página do campeonato com várias categorias** (Fase H, Etapa H5, 15/10/2026): selos das categorias no topo e **uma aba por categoria** (só com mais de uma; JS próprio, como as abas da home: o site usa Bootstrap 3), cada uma com os **times** da categoria, os **jogos** dela (selo da fase quando não é a de grupos: "Final", "Repescagem") e a **classificação de cada grupo (chave)**, com os **classificados destacados** ("Classificado", fundo verde) e a legenda "Passam os N primeiros de cada grupo (chave)." Rascunho e oculto fora; cancelado com o selo. Estilos no `estilo.css`, seção 70.
+- **Home:** a prévia da classificação é a primeira tabela com times da primeira categoria, com o título ("Sub-11 Masculino · Grupo A") e os classificados; "Ver classificação completa" quando há mais times, categorias ou grupos. **Lista de campeonatos:** os selos são as categorias do campeonato (antes, as do cadastro dos times).
 - Pode mudar se o professor pedir.
 
 ### Notificações (Fase 8)
@@ -231,7 +233,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Fase do jogo de campeonato** em lista fixa (`Jogo::FASES`: fase de grupos, repescagem, 16 avos, oitavas, quartas, semifinal, disputa de 3º, final), obrigatória e começando em "Fase de grupos"; repescagem e mata-mata são opcionais e não contam na classificação. Amistoso: sem fase.
 - **Classificação** (`Campeonato::classificacoes()`, linhas de `Jogo::classificacao()`): **por categoria e grupo, só a fase de grupos**, com placar, publicada e ATIVO. Cada grupo lista **todos os times dele** (os sem jogo com zeros; grupo vazio = tabela vazia); categoria sem grupo = uma tabela com todos os participantes; com grupos, quem ficou sem grupo vai para "Sem grupo". Jogo entre times de grupos diferentes conta para cada um no grupo dele. Desempate provisório (seção 8, pergunta 13).
 - **Tela "Grupos e classificação"** (`/admin/campeonatos/{id}/grupos`, `GruposController`, botão no topo de "Jogos · Campeonato"): um bloco por categoria com os grupos (criar, renomear, remover o vazio), o grupo de cada time (select) e a classificação de cada grupo. A fase aparece na tela do jogo ("Fase"), no bloco de cada jogo ("Sub-15 Masculino · Final") e na lista de Jogos (fora a fase de grupos).
-- **Site:** a classificação (página do campeonato e prévia da home) já conta só a fase de grupos; as abas por categoria e grupo vêm na H5.
+- **Site e API:** a classificação conta só a fase de grupos; a página do campeonato tem uma aba por categoria com a classificação de cada grupo (H5; seção 4, "Site público"). A API de campeonatos traz `categorias`, `fase_jogo`/`fase`/`id_categoria` em cada jogo e a `classificacao` por categoria e grupo (`/api/documentacao`, seção "Campeonatos"); `categoria` (a de referência) continua, para não quebrar o app.
 
 ### Convocação (Fase G, Etapa 1; dono do projeto, 13 e 14/10/2026; por categoria desde a Fase H, Etapa H2, 15/10)
 - **Como a AACJ funciona** (dono do projeto, 15/10/2026): os alunos treinam na rotina da semana; quando há um campeonato, são **selecionados** e a AACJ forma **um time por categoria** (um Sub-11, um Sub-13, um Sub-15…). A convocação é essa seleção.
@@ -680,7 +682,18 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - **Dados de teste que ficaram no `db_futebol` de casa:** o jogo do evento 217 (Copa Escola, final, Time Verde 5 × 0 Time Visitante, 01/10/2026) **oculto**. A Copa Escola voltou a não ter grupos.
 - **Etapa H4 aprovada** (`afaa259`).
 - **Ajuste da H4 depois dos áudios do dono da AACJ (15/10):** classificados por grupo (chave) com destaque, fase `REPESCAGEM` e o rótulo "Grupo (chave)" nas telas. Migration `2026_10_15_000004_classificados_por_grupo_e_repescagem` no `db_futebol` de casa, **batch 34** (ensaiada antes no `db_futebol_test` com o backup; não depende de ids; o `down()` para se houver jogo na repescagem). Backup: `backup/db_futebol_antes_classificados_repescagem_20261015_150044.sql`. Testes em `GruposClassificacaoTest` (9). **626 testes passando.** Roteiro no navegador (6 passos, todos OK) na Copa Escola: Chave A com os três times, 2 e depois 1 classificado destacados, repescagem na lista de fases; desfeito no fim.
-- **Próximo passo:** H5 (site e API: página do campeonato com abas por categoria e a classificação de cada grupo).
+
+#### Fase H, Etapa H5 — site e API (computador de casa, 15/10/2026; regras na seção 4, "Site público" e "Grupos, fase e classificação")
+- **Sem migration.**
+- **Código:** `Site\CampeonatoController::show()` monta as abas (times, jogos e tabelas por categoria; campeonato sem a lista de categorias: uma aba só, por segurança); `HomeController` com a prévia (primeira tabela com times); `gallery` com os selos das categorias; view `site/campeonatos/show` com as abas e as tabelas por grupo; `estilo.css` seção 70; `Jogo::$appends` com `fase` e `id_categoria`; `Api\V1\CampeonatoController` com `categorias` e `classificacao`; `/api/documentacao` com a seção "Campeonatos".
+- **Testes:** `SiteCampeonatoCategoriasTest` (4). **630 testes passando.**
+- **Roteiro no navegador feito em casa (15/10, 7 passos, todos OK, pelo Claude no navegador):** Copa Escola sem abas, com a final (evento 217) mostrada com o selo "Final" e o Grupo A com 2 classificados destacados; Liga com Sub-13 (Time Visitante) e Sub-15 em abas; prévia da home e selos da lista; JSON da API e a documentação. Desfeito no fim (Liga só Sub-15, final oculta, classificados sem definição).
+  - **Dados de teste no `db_futebol` de casa:** a Copa Escola tem o **"Grupo A"** com os três times (criado fora dos roteiros, depois do ajuste da H4; ficou como estava).
+- **Etapa H5 aprovada. Fase H concluída.**
+- **Próximo passo:**
+  - **Publicar no servidor** (com OK; backup pelo phpMyAdmin antes): migrations dos batches 30 a 34 (convocação na origem da inscrição, H1, H2, H4 e o ajuste da H4); conferir o SQL cru no MariaDB 10.11 (as FKs compostas e o `MODIFY` dos ENUMs).
+  - **Fase G, Etapa 4:** retirar o elenco fixo.
+  - **Fase D:** posições e titular/reserva na convocação.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
