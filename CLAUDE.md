@@ -726,8 +726,11 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Manual** atualizado (Times, site público, "em construção") e PDF gerado de novo. **O manual ainda não cobre a Fase H** (categorias do campeonato, grupos, fase do jogo).
 - **Roteiro no navegador feito em casa (15/10, 10 passos, pelo Claude no navegador):** atletas sem camisa e sem times (lista, editar, novo); Times sem o botão Elenco e `/admin/times/1/elenco` com 404; participantes sem jogo da Liga abrindo os convocados; Jogadores com "AACJ · categoria", filtro e modal com "Campeonatos"; home com "Nossas categorias" abrindo o filtro; campeonato só com escudos; documentação da API. Sem erro de JavaScript. Duas divergências eram do roteiro, não do sistema: a lixeira de times só aparece para time inativo; a Liga não tem jogo visível.
 - **Etapa 4 aprovada. Fase G concluída.**
+- **Publicado no servidor (15/10/2026):**
+  - `main` avançada até `169e13b`: `git pull` fast-forward a partir de `f0b5ece`, 41 arquivos;
+  - sem migration (servidor continua no batch 30) e `optimize:clear`;
+  - conferido pelo Claude no navegador: home ("Nossas categorias" com filtro), Jogadores, campeonato só com escudos, atleta sem camisa e sem times, Times sem Elenco e documentação da API, sem erro de JavaScript.
 - **Próximo passo:**
-  - **publicar no servidor** (com OK; sem migration: `git pull` e `optimize:clear`);
   - **Fase D:** posições e titular/reserva na convocação;
   - manual com a Fase H;
   - migration para apagar a `tbl_atleta_time` (com OK).
