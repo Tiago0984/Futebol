@@ -405,6 +405,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - `e9cb20f` docs: deploy no Plesk e banco de casa igual ao servidor
 - `5015999` feat: documentação da API com identificação, versão e parâmetros de cada rota
 - `bb2ab95` fix: lista de Campeonatos mostra os erros de validação do modal (ex.: time com convocados)
+- `224ed7e` feat: campeonato com várias categorias e participantes por categoria (Fase H, Etapa H1)
 
 ### Fase 1 encerrada
 - 1.1 collation, 1.2 tipos sem acento (`5094b36`) e 1.3 exclusão de atleta concluídas.
@@ -616,18 +617,21 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - **H4. Grupos, fase e classificação:** grupos por categoria com seus times; fase do jogo (lista fixa); classificação por categoria e grupo, só fase de grupos; mata-mata opcional.
   - **H5. Site e API:** página do campeonato com abas por categoria (classificação de cada grupo e jogos); API acompanha.
   - Depois: Fase G, Etapa 4 (retirar o elenco fixo).
-- **Decisão para a H1 (dono do projeto, 14/10/2026):** `tbl_campeonato.id_categoria` fica até a H3 como **categoria principal** (obrigatória e sempre na lista): é ela que vale para a idade, a convocação e a categoria dos jogos. **Não publicar no servidor entre a H1 e a H3.**
+- **Decisão para a H1 (dono do projeto, 14/10/2026; revista em 15/10):** **sem categoria principal na tela**: todas as categorias do campeonato valem igual (o formulário só tem as caixas, ao menos uma; a lista mostra todas, sem selo). `tbl_campeonato.id_categoria` fica até a H3 como **categoria de referência**, escolhida pelo sistema (`Campeonato::categoriaDeReferencia()`): a atual, se continua marcada (acrescentar categoria não regrava os jogos); senão, a **mais velha** das marcadas (maior idade máxima; no empate, a masculina), para a idade não barrar quem sobe. É ela que vale para a idade, a convocação e a categoria dos jogos até a H3. **Não publicar no servidor entre a H1 e a H3.**
 
-#### Fase H, Etapa H1 — categorias e participantes por categoria (computador de casa, 14/10/2026; **sem commit ainda**)
+#### Fase H, Etapa H1 — categorias e participantes por categoria (computador de casa, 14 e 15/10/2026; `224ed7e` e o commit sem a principal)
 - **Migration no `db_futebol` de casa:** batch 31 (`2026_10_15_000001_categorias_do_campeonato_e_participantes_por_categoria`; não depende de ids). Ensaiada antes no `db_futebol_test` com o backup (resultado igual: Copa Escola com a categoria 5 e 3 participantes, Liga com a 2 e 4).
   - `tbl_campeonato_categoria`: `id_campeonato_categoria` INT UNSIGNED AI; `id_campeonato` e `id_categoria` INT com sinal (FKs `fk_cc_campeonato`, `fk_cc_categoria`, NO ACTION); único `campeonato_categoria_unique`.
   - `tbl_campeonato_time.id_categoria` INT NOT NULL; único `campeonato_time_categoria_unique` (campeonato, categoria, time); FK composta `fk_ct_campeonato_categoria` (campeonato, categoria) → `tbl_campeonato_categoria` (só aceita categoria do campeonato). O `down()` para se houver campeonato com várias categorias ou time em duas.
 - **Backup** em `backup/` (só em casa): `db_futebol_antes_categorias_campeonato_20261014_231932.sql`.
-- **Código:** `Campeonato::categorias()`, `rotulo_das_categorias`, `participantesPorCategoria()`, `gravarCategoriasEParticipantes()`, `apagarCategoriasEParticipantes()`; `times()` com `distinct` (cada time uma vez); `Categoria::campeonatos()` pela lista e a exclusão da categoria conta principal ou lista. Formulário (modais e páginas create/edit, partial `admin/campeonatos/_categorias_e_participantes`): "Categoria principal" obrigatória, "Outras categorias", um bloco de times por categoria marcada (`participantes[id_categoria][]`; bloco de categoria desmarcada é ignorado); trocar a principal num campeonato de uma categoria leva os times junto. Time com convocados pode sair de uma categoria, não de todas. Lista mostra as categorias (selo "principal" quando há mais de uma) e o filtro acha por qualquer uma.
-- **Testes:** `CampeonatoCategoriasTest` (10), `CampeonatoCategoriasMigrationTest` (2, sem transação); helper `participantes()` no `Tests\TestCase` (põe a categoria na lista antes). **605 testes passando.**
+- **Código:** `Campeonato::categorias()`, `rotulo_das_categorias`, `participantesPorCategoria()`, `gravarCategoriasEParticipantes()`, `apagarCategoriasEParticipantes()`; `times()` com `distinct` (cada time uma vez); `Categoria::campeonatos()` pela lista e a exclusão da categoria conta a de referência ou a lista. Formulário (modais e páginas create/edit, partial `admin/campeonatos/_categorias_e_participantes`): "Categorias do campeonato" (caixas, ao menos uma: "Marque ao menos uma categoria do campeonato."), um bloco de times por categoria marcada (`participantes[id_categoria][]`; bloco de categoria desmarcada é ignorado). Time com convocados pode sair de uma categoria, não de todas. Lista mostra as categorias e o filtro acha por qualquer uma.
+- **Testes:** `CampeonatoCategoriasTest` (11), `CampeonatoCategoriasMigrationTest` (2, sem transação); helper `participantes()` no `Tests\TestCase` (põe a categoria na lista antes). **606 testes passando.**
 - **Débito achado (anterior à Fase H):** criar campeonato sem logo, banner, organizador ou local dá erro 500 (colunas NOT NULL, campos opcionais no formulário).
-- **Falta:** roteiro no navegador (criar campeonato com Sub-15 e Sub-17, o mesmo externo nas duas, editar, trocar a principal, tirar time com convocados) e o commit (com OK).
-- **Próximo passo depois:** H2 (convocação por categoria).
+- **Roteiro no navegador feito em casa (15/10, 11 passos, todos OK, pelo Claude no navegador):** criar a "Copa Teste H1" com Sub-15 (principal) e Sub-17 e o Time Visitante nas duas; filtro por categoria; reabrir o Editar; tirar uma categoria; trocar a principal num campeonato de uma categoria (os times vão junto); trocar a principal com outra categoria marcada; time com convocados recusado ao sair de todas as categorias ("Não é possível tirar do campeonato time com atletas convocados: Time Azul (5 convocado(s)). Remova a convocação do time antes.") e aceito ao sair de uma só; convocação da Liga intacta; inativar e excluir a Copa Teste H1 (sem sobrar linha em `tbl_campeonato_categoria` nem em `tbl_campeonato_time`). A Liga voltou ao estado de antes.
+  - O passo 7 achou um bug no JS da troca da principal (escolher como principal uma categoria já marcada tirava a antiga). Depois do roteiro, a principal **saiu da tela** (decisão revista, acima), e com ela esse JS.
+  - A lixeira de um campeonato só aparece depois de inativar.
+- **Etapa H1 aprovada.** **606 testes passando.**
+- **Próximo passo:** H2 (convocação por categoria).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
