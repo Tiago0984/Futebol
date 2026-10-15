@@ -157,7 +157,6 @@
                     </div>
                     <span class="qt-label">Calendário</span>
                   </a>
-                  {{-- Escalação virou o Elenco, aberto pela linha de cada time em Times (Fase 10) --}}
                   <a href="{{ route('admin.calendario.index', ['tab' => 'grade']) }}" class="quick-tile">
                     <div class="qt-icon" style="background:#0891b2;">
                       <i class="bi bi-clock"></i>

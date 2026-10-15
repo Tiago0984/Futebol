@@ -183,9 +183,8 @@
                             $nomeResponsavel = $responsavel->nome_responsavel ?? null;
                             // Normalizado para a opção do select ("PAI" -> "Pai", "MAE" -> "Mãe")
                             $grauParentesco = \App\Models\Responsavel::normalizarGrau($responsavel?->pivot->grau_parentesco_responsavel);
-                            $time = $atleta->times->first();
-                            $posicao = $time?->pivot->posicao_atleta_time ?: ($atleta->posicao_atleta ?: null);
-                            $camisa = ($time?->pivot->camisa_atleta_time > 0) ? $time->pivot->camisa_atleta_time : null;
+                            // Posição do cadastro do atleta (sem elenco fixo, Fase G, Etapa 4: a camisa é da convocação)
+                            $posicao = $atleta->posicao_atleta ?: null;
                         @endphp
                         <tr class="linha-atleta"
                             data-nome="{{ strtolower($atleta->nome_atleta) }}"
@@ -218,11 +217,6 @@
                             </td>
                             <td>
                                 <strong>{{ $atleta->nome_atleta }}</strong>
-                                @foreach($atleta->times->unique('id_time') as $t)
-                                    @if((int)$t->pivot->camisa_atleta_time > 0)
-                                        <div class="text-muted" style="font-size:0.78rem;">Camisa Nº {{ $t->pivot->camisa_atleta_time }}</div>
-                                    @endif
-                                @endforeach
                                 @if($atleta->semAcessoAoApp())
                                     <div><span class="badge bg-secondary-subtle text-secondary-emphasis" style="font-size:0.7rem;"
                                                title="Nem o atleta nem o responsável têm e-mail: ninguém consegue entrar no app">
@@ -273,9 +267,7 @@
                                             data-bs-target="#modalEditarAtleta"
                                             data-id="{{ $atleta->id_atleta }}"
                                             data-nome="{{ $atleta->nome_atleta }}"
-                                            data-numero="{{ $camisa > 0 ? $camisa : '' }}"
-                                            data-times="{{ $atleta->times->unique('id_time')->pluck('id_time')->values()->toJson() }}"
-                                            data-posicao-atleta="{{ $time?->pivot->posicao_atleta_time ?: $atleta->posicao_atleta }}"
+                                            data-posicao-atleta="{{ $atleta->posicao_atleta }}"
                                             data-data-nasc="{{ $atleta->data_nasc_atleta?->format('Y-m-d') }}"
                                             data-cpf="{{ $atleta->cpf_atleta }}"
                                             data-email="{{ $atleta->email_atleta }}"
@@ -404,7 +396,6 @@ document.addEventListener('DOMContentLoaded', function () {
             formEditar.action = `{{ url('admin/atletas') }}/${g('data-id')}`;
 
             document.getElementById('edit_nome').value      = g('data-nome');
-            document.getElementById('edit_numero').value    = g('data-numero');
             document.getElementById('edit_data_nasc').value = g('data-data-nasc');
             document.getElementById('edit_cpf').value       = g('data-cpf');
             document.getElementById('edit_email').value     = g('data-email');
@@ -453,11 +444,6 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_complemento_endereco').value = g('data-complemento');
             document.getElementById('edit_cidade_endereco').value      = g('data-cidade');
             document.getElementById('edit_estado_endereco').value      = g('data-estado');
-
-            const atletaTimes = JSON.parse(g('data-times') || '[]');
-            document.querySelectorAll('.time-checkbox').forEach(cb => {
-                cb.checked = atletaTimes.includes(parseInt(cb.value));
-            });
 
             sugestaoEdicao.atualizar(false); // mantém a categoria atual; só mostra a dica
         });

@@ -256,7 +256,7 @@ Content-Type: application/json
 
     <div class="card">
         <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Dados do atleta logado, com o endereço, a categoria atual e os times.</p>
+        <p>Dados do atleta logado, com o endereço e a categoria atual. O atleta é da AACJ, na categoria dele: <code>times</code> vem sempre vazio (mantido para não quebrar o app); o time de cada jogo vem na agenda, em <code>time_do_atleta</code>.</p>
 <pre>200 {
   "success": true,
   "data": {
@@ -272,7 +272,7 @@ Content-Type: application/json
                    "data_atualizacao_categoria_atleta": "2026-02-01T09:30:00-03:00",
                    "status_categoria_atleta": "ATIVO", "observacao_categoria_atleta": null } }
     ],
-    "times": [ { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "...", "pivot": { ... } } ]
+    "times": []
   }
 }</pre>
     </div>

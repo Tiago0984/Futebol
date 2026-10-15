@@ -37,15 +37,16 @@ class AppDoAtleta
 
     // ── Dados ───────────────────────────────────────────────────────────────
 
-    // GET /atleta (e o mesmo para o responsável): só a categoria atual; as chaves do JSON não mudam
+    // GET /atleta (e o mesmo para o responsável): só a categoria atual; as chaves do JSON não mudam.
+    // "times" fica sempre vazio (Fase G, Etapa 4: sem elenco fixo; o time de cada jogo vem na agenda, em
+    // time_do_atleta), para não quebrar o app
     public function dados(): Atleta
     {
         return $this->atleta->load([
             'endereco',
             'categorias' => fn ($q) => $q->select('tbl_categoria.id_categoria', 'nome_categoria')
                 ->wherePivot('status_categoria_atleta', Atleta::CATEGORIA_ATIVA),
-            'times:tbl_time.id_time,nome_time,logo_time',
-        ]);
+        ])->setRelation('times', collect());
     }
 
     // ── Agenda ──────────────────────────────────────────────────────────────

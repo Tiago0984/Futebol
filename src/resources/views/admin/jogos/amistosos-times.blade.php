@@ -5,7 +5,7 @@
 {{--
     Jogos dos amistosos (o item Amistosos do menu), só para ver: um bloco por jogo (data, horário, local,
     situação e o link para o jogo) com o cartão do mandante e o do visitante. Próximos primeiro, depois os
-    últimos realizados. O time interno abre os jogadores do elenco (sem edição).
+    últimos realizados. O cartão do time abre os jogadores escalados por ele naquele jogo.
 --}}
 @section('content')
 <main class="app-main">

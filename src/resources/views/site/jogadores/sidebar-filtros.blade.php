@@ -24,12 +24,12 @@
         </div>
 
         <div class="filter-group">
-            <label class="filter-field-label" for="filter-time">Clube / Vínculo</label>
-            <select id="filter-time" class="form-control-scout select-scout">
-                <option value="">Todos os Times</option>
-                {{-- Exibe apenas times internos, pois são os vínculos relevantes para atletas da academia --}}
-                @foreach($times->filter(fn($t) => strtolower($t->tipo_time) === 'interno') as $time)
-                <option value="{{ $time->id_time }}">{{ $time->nome_time }}</option>
+            <label class="filter-field-label" for="filter-categoria">Categoria</label>
+            <select id="filter-categoria" class="form-control-scout select-scout">
+                <option value="">Todas as Categorias</option>
+                {{-- O atleta é da AACJ, na categoria dele (sem time fixo); ?categoria=ID chega já selecionado --}}
+                @foreach($categorias as $categoria)
+                <option value="{{ $categoria->id_categoria }}" @selected((string) request('categoria') === (string) $categoria->id_categoria)>{{ $categoria->rotulo }}</option>
                 @endforeach
             </select>
         </div>

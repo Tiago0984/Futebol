@@ -462,7 +462,7 @@
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_evento_calendario" class="form-select js-tipo-evento" required>
                                 <option value="">— Selecionar —</option>
-                                {{-- Sem JOGO: jogos nascem pela tela de Jogos (com times, campeonato e elenco) --}}
+                                {{-- Sem JOGO: jogos nascem pela tela de Jogos (com times, campeonato e convocação) --}}
                                 @foreach(\App\Models\EventoCalendario::TIPOS as $tipo => $rotulo)
                                 @continue($tipo === 'JOGO')
                                 <option value="{{ $tipo }}">{{ $rotulo }}</option>

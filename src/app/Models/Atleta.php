@@ -127,20 +127,8 @@ class Atleta extends Authenticatable
             ->withPivot('grau_parentesco_responsavel');
     }
 
-    // Define que um Atleta pertence a muitos Times
-    public function times()
-    {
-        return $this->belongsToMany(Time::class, 'tbl_atleta_time', 'id_atleta', 'id_time')
-            ->withPivot([
-                'status_atleta_time',
-                'posicao_atleta_time',
-                'camisa_atleta_time',
-                'gols_atleta_time',
-                'defesas_atleta_time',
-                'jogos_atleta_time',
-                'convocacao_atleta_time'
-            ]);
-    }
+    // Sem times() (Fase G, Etapa 4): o atleta é da AACJ, na categoria dele; o time e a camisa são da
+    // convocação de cada campeonato (convocacoes()). tbl_atleta_time ficou no banco, sem uso
 
     /**
      * Próximo número de matrícula (A001, A002...). Leitura com lockForUpdate: dentro de uma transação,
@@ -605,7 +593,7 @@ class Atleta extends Authenticatable
         DB::transaction(function () {
             $this->responsaveis()->detach();
             $this->categorias()->detach();
-            $this->times()->detach();
+            DB::table('tbl_atleta_time')->where('id_atleta', $this->id_atleta)->delete(); // elenco antigo, sem uso (FK)
             $this->autorizacoes()->delete();
             $this->inscricoesEmEventos()->delete(); // tbl_evento_atleta (FK sem cascade)
             $this->convocacoes()->delete();         // tbl_convocacao (FK sem cascade)

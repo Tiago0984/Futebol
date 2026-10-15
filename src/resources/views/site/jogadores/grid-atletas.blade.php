@@ -9,7 +9,7 @@
         'meia'         => ['sigla' => 'MEI', 'nome' => 'MEIA'],
         'atacante'     => ['sigla' => 'ATA', 'nome' => 'ATACANTE'],
         'centroavante' => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
-        // Aliases internacionais vindos do banco (posicao_atleta_time)
+        // Aliases internacionais
         'gr'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
         'gk'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
         'cb'  => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
@@ -27,15 +27,16 @@
     <div class="player-grid-container">
         @forelse($atletas as $atleta)
         @php
-            // Prioriza a posição do time (mantida na tela de Escalação, editada com mais frequência)
-            // e só cai para a posição geral do perfil se o atleta não estiver em nenhum time.
-            $posicaoBruta = $atleta->times->first()?->pivot->posicao_atleta_time
-                ?: ($atleta->posicao_atleta ?? '');
+            // Posição do cadastro do atleta; o atleta é da AACJ, na categoria dele (sem time fixo, Fase G, Etapa 4)
+            $posicaoBruta = $atleta->posicao_atleta ?? '';
             $posKey  = strtolower(trim($posicaoBruta));
             $posData = $posicaoInfo[$posKey] ?? [
                 'sigla' => $posicaoBruta ? strtoupper(substr(trim($posicaoBruta), 0, 3)) : 'ATL',
                 'nome'  => $posicaoBruta ? ucfirst(strtolower(trim($posicaoBruta))) : 'Atleta',
             ];
+            $categoriaDoAtleta = $atleta->categoriasAtivas->first();
+            // Campeonatos em que foi convocado (um por campeonato, mesmo se convocado em duas categorias)
+            $campeonatosConvocado = $atleta->convocacoes->pluck('id_campeonato')->unique()->count();
         @endphp
 
         <article class="player-sticker-card"
@@ -44,7 +45,7 @@
             data-atleta-id="{{ $atleta->id_atleta }}"
             data-nome="{{ strtolower($atleta->nome_atleta) }}"
             data-posicao="{{ strtolower($posicaoBruta) }}"
-            data-times="{{ $atleta->times->pluck('id_time')->implode(',') }}"
+            data-categoria="{{ $categoriaDoAtleta?->id_categoria }}"
             role="button" tabindex="0">
             <div class="sticker-inner-frame">
                 <figure class="sticker-photo-box">
@@ -58,16 +59,12 @@
                 <footer class="sticker-meta-data">
                     <h3 class="sticker-player-name">{{ $atleta->nome_atleta }}</h3>
                     <span class="sticker-player-age">{{ \Carbon\Carbon::parse($atleta->data_nasc_atleta)->age }} anos</span>
-                    @if($atleta->times->isNotEmpty())
                     <div class="sticker-teams-strip">
-                        @foreach($atleta->times as $time)
                         <div class="sticker-team-item">
-                            <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}" class="sticker-team-crest" alt="{{ $time->nome_time }}">
-                            <span class="sticker-team-name">{{ $time->nome_time }}</span>
+                            <img src="{{ asset('futebol/images/logo2.png') }}" class="sticker-team-crest" alt="AACJ">
+                            <span class="sticker-team-name">AACJ{{ $categoriaDoAtleta ? ' · ' . $categoriaDoAtleta->rotulo : '' }}</span>
                         </div>
-                        @endforeach
                     </div>
-                    @endif
                 </footer>
             </div>
         </article>
@@ -98,26 +95,14 @@
                                 @endif
 
                                 <h4 class="scout-block-title"><i class="fa fa-bar-chart"></i> Desempenho Geral Acumulado</h4>
+                                {{-- Sem gols, partidas e defesas (eram digitados no elenco fixo, que saiu na Fase G,
+                                     Etapa 4); voltam com a súmula do jogo. Convocações = campeonatos convocado --}}
                                 <section class="performance-stats-row">
                                     <div class="perf-stat-box highlight-stat">
-                                        <span class="perf-value">{{ $atleta->times->sum('pivot.gols_atleta_time') }}</span>
-                                        <span class="perf-label">Gols Totais</span>
-                                    </div>
-                                    <div class="perf-stat-box">
-                                        <span class="perf-value">{{ $atleta->times->sum('pivot.jogos_atleta_time') }}</span>
-                                        <span class="perf-label">Partidas</span>
-                                    </div>
-                                    <div class="perf-stat-box">
-                                        <span class="perf-value">{{ $atleta->times->sum('pivot.convocacao_atleta_time') }}</span>
+                                        <span class="perf-value">{{ $campeonatosConvocado }}</span>
                                         <span class="perf-label">Convocações</span>
                                     </div>
-                                    @if(in_array($posKey, ['goleiro', 'gk', 'gl']))
-                                    <div class="perf-stat-box defensive-stat">
-                                        <span class="perf-value">{{ $atleta->times->sum('pivot.defesas_atleta_time') }}</span>
-                                        <span class="perf-label">Defesas</span>
-                                    </div>
-                                    @endif
-                                    {{-- Total de cartões independente de time, somados de tbl_cartoes --}}
+                                    {{-- Total de cartões, somados de tbl_cartoes --}}
                                     <div class="perf-stat-box cartao-amarelo-perf">
                                         <span class="perf-value">{{ $atleta->cartoes->where('tipo_cartao', 'AMARELO')->count() }}</span>
                                         <span class="perf-label">C. Amarelos</span>
@@ -152,24 +137,21 @@
                                     </div>
                                 </section>
 
+                                {{-- Campeonatos em que foi convocado: campeonato, categoria e camisa, sem o nome do
+                                     time (o atleta é da AACJ) --}}
                                 <footer class="profile-linked-teams">
-                                    <h4 class="linked-teams-title"><i class="fa fa-shield"></i> Clubes e Vínculos Atuais</h4>
+                                    <h4 class="linked-teams-title"><i class="fa fa-trophy"></i> Campeonatos</h4>
                                     <div class="team-badges-flex">
-                                        @forelse($atleta->times as $time)
-                                        <button type="button"
-                                            class="badge-team-action-btn js-open-team-from-player"
-                                            data-time-id="{{ $time->id_time }}"
-                                            data-atleta-id="{{ $atleta->id_atleta }}"
-                                            data-atleta-nome="{{ $atleta->nome_atleta }}">
-                                            <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}" class="team-crest-mini" alt="Escudo">
+                                        @forelse($atleta->convocacoes as $convocacao)
+                                        <div class="badge-team-action-btn">
+                                            <img src="{{ asset('futebol/images/logo2.png') }}" class="team-crest-mini" alt="AACJ">
                                             <div class="team-meta-inline">
-                                                <span class="team-name-span">{{ $time->nome_time }}</span>
-                                                <small class="team-pivot-status">{{ $time->pivot->status_atleta_time }} | nº {{ $time->pivot->camisa_atleta_time }}{{ $time->categoria ? ' | ' . $time->categoria->nome_categoria : '' }}</small>
+                                                <span class="team-name-span">{{ $convocacao->campeonato?->nome_campeonato }}</span>
+                                                <small class="team-pivot-status">{{ $convocacao->categoria?->rotulo }} | nº {{ $convocacao->camisa_convocacao }}</small>
                                             </div>
-                                            <i class="fa fa-angle-right badge-team-arrow"></i>
-                                        </button>
+                                        </div>
                                         @empty
-                                        <p class="no-records-text">Nenhum vínculo ativo registrado.</p>
+                                        <p class="no-records-text">Ainda sem convocação em campeonatos.</p>
                                         @endforelse
                                     </div>
                                 </footer>

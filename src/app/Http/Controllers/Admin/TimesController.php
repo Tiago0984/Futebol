@@ -84,6 +84,7 @@ class TimesController extends Controller
 
         DB::transaction(function () use ($time) {
             $time->campeonatos()->detach();
+            DB::table('tbl_atleta_time')->where('id_time', $time->id_time)->delete(); // elenco antigo, sem uso (FK)
             $time->delete();
         });
 

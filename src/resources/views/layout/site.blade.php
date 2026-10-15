@@ -15,7 +15,7 @@
 
     @include('partials.footer')
 
-    <script src="{{ asset('coderatech/js/script.js') }}"></script>
+    <script src="{{ asset('coderatech/js/script.js') }}?v={{ filemtime(public_path('coderatech/js/script.js')) }}"></script>
 
 </body>
 

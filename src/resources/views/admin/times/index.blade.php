@@ -139,12 +139,7 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
-                                    {{-- Elenco (camisa, posição, titular/reserva, contadores): só time interno --}}
-                                    @if(strtoupper($time->tipo_time) === 'INTERNO')
-                                    <a href="{{ route('admin.times.elenco', $time->id_time) }}" class="btn-tbl view" title="Elenco">
-                                        <i class="bi bi-people-fill"></i>
-                                    </a>
-                                    @endif
+                                    {{-- Sem Elenco (Fase G, Etapa 4): quem joga pelo time é a convocação de cada campeonato --}}
                                     <button type="button" class="btn-tbl edit btn-editar-time"
                                         data-bs-toggle="modal" data-bs-target="#modalEditarTime"
                                         data-id="{{ $time->id_time }}"

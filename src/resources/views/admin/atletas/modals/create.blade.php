@@ -33,22 +33,18 @@
                             @error('data_nasc_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
-                        <div class="col-md-5">
+                        {{-- Sem camisa (Fase G, Etapa 4): a camisa é da convocação de cada campeonato --}}
+                        <div class="col-md-6">
                             <label class="form-label">CPF <span class="text-danger">*</span></label>
                             <input type="text" name="cpf_atleta" class="form-control @error('cpf_atleta') is-invalid @enderror"
                                 placeholder="000.000.000-00" maxlength="14" required value="{{ old('cpf_atleta') }}">
                             @error('cpf_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">RG <span class="text-danger">*</span></label>
                             <input type="text" name="rg_atleta" class="form-control @error('rg_atleta') is-invalid @enderror"
                                 placeholder="00.000.000-0" maxlength="12" required value="{{ old('rg_atleta') }}">
                             @error('rg_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Nº Camisa</label>
-                            <input type="text" name="camisa_atleta_time" class="form-control text-center" placeholder="Ex: 10" maxlength="10"
-                                value="{{ old('camisa_atleta_time') }}">
                         </div>
 
                         <div class="col-md-8">

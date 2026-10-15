@@ -45,6 +45,12 @@ class Convocacao extends Model
         return $this->belongsTo(Time::class, 'id_time', 'id_time');
     }
 
+    // Categoria em que o time joga no campeonato (Fase H, Etapa H2)
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
+    }
+
     public function atleta()
     {
         return $this->belongsTo(Atleta::class, 'id_atleta', 'id_atleta');

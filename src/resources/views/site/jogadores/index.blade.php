@@ -19,8 +19,6 @@
     </div>
 </div>
 
-@include('partials.modal-times')
-
 <script>
     // Lê o parâmetro ?open=ID ANTES do jQuery carregar (JS puro é suficiente aqui)
     // e expõe em variável global para o coderatech/js/script.js consumir após o Bootstrap estar pronto.

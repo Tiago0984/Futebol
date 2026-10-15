@@ -94,35 +94,16 @@
         @else
         <div class="camp-teams-grid">
             @foreach ($aba['times'] as $time)
-            @if(strtolower($time->tipo_time) === 'interno')
-            {{-- Time interno: abre modal completo com elenco --}}
-            <div class="camp-team-card camp-team-clickable"
-                 data-toggle="modal"
-                 data-target="#modalTime{{ $time->id_time }}"
-                 title="Ver elenco de {{ $time->nome_time }}">
+            {{-- Só o escudo, o nome e o selo, sem lista de jogadores (Fase G, Etapa 4): o atleta é da AACJ,
+                 não de um time; os jogadores ficam na página Jogadores --}}
+            @php $daAcj = strtolower($time->tipo_time) === 'interno'; @endphp
+            <div class="camp-team-card" title="{{ $time->nome_time }}">
                 <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}"
                      alt="{{ $time->nome_time }}"
-                     class="camp-team-logo">
+                     class="camp-team-logo {{ $daAcj ? '' : 'camp-team-logo-externo' }}">
                 <p class="camp-team-name">{{ $time->nome_time }}</p>
-                <span class="camp-team-type-tag tag-interno">VER ELENCO</span>
+                <span class="camp-team-type-tag {{ $daAcj ? 'tag-interno' : 'tag-externo' }}">{{ $daAcj ? 'AACJ' : 'Externo' }}</span>
             </div>
-            @else
-            {{-- Time externo: abre modal simples informativo --}}
-            <div class="camp-team-card camp-team-clickable camp-team-externo"
-                 data-toggle="modal"
-                 data-target="#modalTimeExterno"
-                 data-nome="{{ $time->nome_time }}"
-                 data-logo="{{ asset('futebol/images/team/' . $time->logo_time) }}"
-                 title="{{ $time->nome_time }} — Time externo">
-                <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}"
-                     alt="{{ $time->nome_time }}"
-                     class="camp-team-logo camp-team-logo-externo">
-                <p class="camp-team-name">{{ $time->nome_time }}</p>
-                <span class="camp-team-type-tag tag-externo">
-                    <i class="fa fa-info-circle"></i> Externo
-                </span>
-            </div>
-            @endif
             @endforeach
         </div>
         @endif
@@ -298,96 +279,5 @@ document.querySelectorAll('#abasCategorias .camp-cat-tab-btn').forEach(function 
 </script>
 @endif
 
-{{-- Modais dos times internos (reutiliza o partial global) --}}
-@php $times = $campeonato->times; @endphp
-@include('partials.modal-times')
-
-{{-- Modal informativo para times externos --}}
-<div class="modal fade" id="modalTimeExterno" tabindex="-1" role="dialog" aria-labelledby="modalTimeExternoLabel">
-    <div class="modal-dialog modal-dialog-centered" role="document" style="max-width: 420px;">
-        <div class="modal-content" style="border-radius: 14px; overflow: hidden; border: none;">
-            <div class="modal-body" style="padding: 0;">
-
-                <div class="camp-ext-modal-header">
-                    <button type="button" class="sport-close-btn" data-dismiss="modal" aria-label="Fechar">&times;</button>
-                    <img id="extModalLogo" src="" alt="" class="camp-ext-modal-logo">
-                    <h3 id="extModalNome" class="camp-ext-modal-nome"></h3>
-                    <span class="camp-ext-modal-badge">Time Externo</span>
-                </div>
-
-                <div class="camp-ext-modal-body">
-                    <div class="camp-ext-icon-block">
-                        <i class="fa fa-lock"></i>
-                    </div>
-                    <p class="camp-ext-modal-text">
-                        Este time é <strong>externo à AACJ</strong> e não possui elenco cadastrado na escolinha.
-                        Apenas times da nossa escola têm o plantel disponível para consulta.
-                    </p>
-                    <button type="button" class="camp-ext-modal-btn" data-dismiss="modal">
-                        Entendido
-                    </button>
-                </div>
-
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-document.querySelectorAll('.camp-team-externo').forEach(function(card) {
-    card.addEventListener('click', function() {
-        document.getElementById('extModalLogo').src = this.dataset.logo;
-        document.getElementById('extModalNome').textContent = this.dataset.nome;
-    });
-});
-
-// Painel de detalhes do atleta dentro dos modais de time
-$(document).on('click', '.js-atleta-btn', function () {
-    var $btn = $(this);
-    var $pane = $btn.closest('.sport-split-pane');
-
-    var nome       = $btn.data('nome')        || 'Sem nome';
-    var foto       = $btn.data('foto')        || '{{ asset("futebol/images/our-teams/default-player.jpg") }}';
-    var posicao    = $btn.data('posicao')     || '—';
-    var camisa     = $btn.data('camisa')      || '--';
-    var jogos      = $btn.data('jogos')       || 0;
-    var convocacoes = $btn.data('convocacoes') || 0;
-    var gols       = $btn.data('gols')        || 0;
-    var defesas    = $btn.data('defesas')     || 0;
-    var amarelos   = $btn.data('amarelos')    || 0;
-    var vermelhos  = $btn.data('vermelhos')   || 0;
-    var atletaId   = $btn.data('atleta-id')   || '';
-
-    $pane.find('.js-player-foto').attr('src', foto).off('error').on('error', function () {
-        $(this).attr('src', '{{ asset("futebol/images/our-teams/default-player.jpg") }}');
-    });
-    $pane.find('.js-player-camisa').text(camisa);
-    $pane.find('.js-player-nome').text(nome);
-    $pane.find('.js-player-posicao').text(posicao);
-    $pane.find('.js-player-jogos').text(jogos);
-    $pane.find('.js-player-convocacoes').text(convocacoes);
-    $pane.find('.js-player-gols').text(gols);
-    $pane.find('.js-player-defesas').text(defesas);
-    $pane.find('.js-player-amarelos').text(amarelos);
-    $pane.find('.js-player-vermelhos').text(vermelhos);
-
-    // Goleiros mostram defesas; demais jogadores mostram gols
-    var posLower = posicao.toLowerCase();
-    if (posLower === 'goleiro' || posLower === 'gr' || posLower === 'gk') {
-        $pane.find('.js-box-gols').hide();
-        $pane.find('.js-box-defesas').show();
-    } else {
-        $pane.find('.js-box-gols').show();
-        $pane.find('.js-box-defesas').hide();
-    }
-
-    // Atualiza o link "ver perfil completo"
-    $pane.find('.js-ver-atleta-completo').attr('data-atleta-id', atletaId);
-
-    // Destaca o atleta selecionado
-    $btn.closest('.sport-athletes-sidebar').find('.js-atleta-btn').removeClass('active');
-    $btn.addClass('active');
-});
-</script>
 
 @endsection

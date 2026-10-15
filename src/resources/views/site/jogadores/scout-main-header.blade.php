@@ -11,15 +11,13 @@
                 <span class="counter-label">Atletas</span>
             </div>
             <div class="stat-counter-pill">
-                <span class="counter-number">
-                    {{ $times->where('tipo_time', 'INTERNO')->count() ?? $times->count() }}
-                </span>
-                <span class="counter-label">Times Internos</span>
+                <span class="counter-number">{{ $categorias->count() }}</span>
+                <span class="counter-label">Categorias</span>
             </div>
         </div>
     </div>
 
-    @if(request('nome') || request('posicao') || request('time'))
+    @if(request('nome') || request('posicao'))
     <div class="active-filters-wrapper">
         <span class="active-filters-label">Filtros ativos:</span>
         <div class="active-filters-tags">
@@ -34,13 +32,6 @@
             <span class="filter-tag">
                 Posição: {{ request('posicao') }}
                 <a href="{{ route('jogadores.vitrine', request()->except('posicao')) }}" class="remove-filter-btn">&times;</a>
-            </span>
-            @endif
-
-            @if(request('time'))
-            <span class="filter-tag">
-                Time: {{ $times->where('id_time', request('time'))->first()->nome_time ?? 'Selecionado' }}
-                <a href="{{ route('jogadores.vitrine', request()->except('time')) }}" class="remove-filter-btn">&times;</a>
             </span>
             @endif
             <a href="{{ route('jogadores.vitrine') }}" class="clear-all-tag-btn">Limpar Tudo</a>

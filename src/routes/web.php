@@ -30,7 +30,6 @@ use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController;
 use App\Http\Controllers\Admin\VideosController;
-use App\Http\Controllers\Admin\ElencoController;
 use App\Http\Controllers\Admin\ConfiguracoesController;
 use App\Http\Controllers\Admin\NotificacoesController;
 use App\Http\Controllers\Admin\TimesDoCampeonatoController;
@@ -107,10 +106,9 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Esporte
     Route::resource('campeonatos', CampeonatosController::class)->except(['show']);
     Route::patch('campeonatos/{id}/toggle-status', [CampeonatosController::class, 'toggleStatus'])->name('campeonatos.toggleStatus');
-    // Times do campeonato (cartões) e jogadores de um time: só leitura, pelo subitem "Times" do menu
+    // Jogos do campeonato (blocos dos jogos, convocação e participantes sem jogo): só leitura, pelo "Jogos" do menu
     Route::get('campeonatos/jogos',               [TimesDoCampeonatoController::class, 'todos'])->name('campeonatos.jogos');
     Route::get('campeonatos/{id}/times',          [TimesDoCampeonatoController::class, 'index'])->name('campeonatos.times');
-    Route::get('campeonatos/{id}/times/{timeId}', [TimesDoCampeonatoController::class, 'show'])->name('campeonatos.times.show');
     // Convocados de um time interno no campeonato (Fase G): convocar com a camisa, trocar a camisa, remover
     Route::get('campeonatos/{id}/times/{timeId}/convocados',               [ConvocacaoController::class, 'show'])->name('campeonatos.convocados');
     Route::post('campeonatos/{id}/times/{timeId}/convocados',              [ConvocacaoController::class, 'convocar'])->name('campeonatos.convocados.convocar');
@@ -125,11 +123,6 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}/classificados', [GruposController::class, 'classificados'])->name('campeonatos.grupos.classificados');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
-    // Elenco do time interno (antiga Escalação), aberto pela linha do time em Times
-    Route::get('times/{timeId}/elenco',              [ElencoController::class, 'show'])->name('times.elenco');
-    Route::patch('times/{timeId}/elenco/{atletaId}', [ElencoController::class, 'update'])->name('times.elenco.update');
-    Route::post('times/{timeId}/elenco',             [ElencoController::class, 'adicionar'])->name('times.elenco.adicionar');
-    Route::delete('times/{timeId}/elenco/{atletaId}', [ElencoController::class, 'remover'])->name('times.elenco.remover');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
     Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo

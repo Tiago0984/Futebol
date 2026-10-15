@@ -27,7 +27,7 @@ class CampeonatoController extends Controller
      */
     public function show($id)
     {
-        $campeonato = Campeonato::with(['categorias', 'times.atletas.cartoes.jogo', 'times.categoria'])->findOrFail($id);
+        $campeonato = Campeonato::with(['categorias', 'times.categoria'])->findOrFail($id);
 
         // Jogos visíveis (oculto e rascunho somem; cancelado aparece com o selo), pela data do evento
         $jogos = Jogo::with(['evento', 'timeCasa', 'timeVisitante'])

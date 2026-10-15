@@ -12,8 +12,8 @@ use App\Models\Time;
  * Jogos de um campeonato (o "Jogos" de cada campeonato no menu; a rota mantém o nome "times"), só para ver,
  * como nos Times dos amistosos: um bloco por jogo (próximos e últimos realizados) com o cartão do mandante e o
  * do visitante, e um filtro para trocar de campeonato (ou ver os jogos de todos, em todos());
- * no fim, os participantes que não aparecem em nenhum desses jogos. O time interno abre os jogadores do
- * elenco, sem edição (a edição continua em Times > Elenco). Externo não tem elenco na associação.
+ * no fim, os participantes que não aparecem em nenhum desses jogos. O time interno abre os convocados dele no
+ * campeonato (sem elenco fixo desde a Fase G, Etapa 4); o externo não tem atletas na associação.
  */
 class TimesDoCampeonatoController extends Controller
 {
@@ -30,7 +30,8 @@ class TimesDoCampeonatoController extends Controller
             ->unique()->all();
         $semJogo = $campeonato->times()
             ->with('categoria')
-            ->withCount(['atletas as total_atletas'])
+            // O time interno abre os convocados dele no campeonato (sem elenco fixo, Fase G, Etapa 4)
+            ->withCount(['convocacoes as total_convocados' => fn ($q) => $q->where('id_campeonato', $campeonato->id_campeonato)->deAtivos()])
             ->whereNotIn('tbl_time.id_time', $idsNosJogos)
             ->orderByRaw("FIELD(tipo_time, 'INTERNO', 'EXTERNO')")
             ->orderBy('nome_time')
@@ -89,40 +90,14 @@ class TimesDoCampeonatoController extends Controller
         ];
     }
 
-    // Jogadores do time no campeonato (o elenco), só leitura, na mesma tela do Elenco
-    public function show($id, $timeId)
-    {
-        $campeonato = Campeonato::findOrFail($id);
-        $time = Time::with('categoria')->findOrFail($timeId);
-
-        // Time do campeonato: participante ou de algum jogo dele (o jogo pode ter time fora dos participantes)
-        $doCampeonato = $campeonato->times()->where('tbl_time.id_time', $time->id_time)->exists()
-            || $campeonato->jogos()
-                ->where(fn ($q) => $q->where('id_time_casa', $time->id_time)->orWhere('id_time_visitante', $time->id_time))
-                ->exists();
-        abort_unless($doCampeonato, 404);
-
-        if ($time->tipo_time === 'EXTERNO') {
-            return redirect()->route('admin.campeonatos.times', $campeonato->id_campeonato)
-                ->with('erro', 'Times externos não possuem elenco cadastrado na associação.');
-        }
-
-        [$atletas, $cartoes] = $time->elencoParaTela();
-        $somenteLeitura = true;
-        $voltar  = route('admin.campeonatos.times', $campeonato->id_campeonato);
-        $caminho = [...$this->caminho($campeonato, comLink: true), [$time->nome_time, null]];
-
-        return view('admin.times.elenco', compact('time', 'atletas', 'cartoes', 'somenteLeitura', 'voltar', 'caminho'));
-    }
-
-    // Eventos › Campeonatos › nome do campeonato › Jogos (a última sem link, a não ser nos jogadores)
-    private function caminho(Campeonato $campeonato, bool $comLink = false): array
+    // Eventos › Campeonatos › nome do campeonato › Jogos
+    private function caminho(Campeonato $campeonato): array
     {
         return [
             ['Eventos', route('admin.calendario.index')],
             ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
             [$campeonato->nome_campeonato, route('admin.campeonatos.index', ['campeonato' => $campeonato->id_campeonato])],
-            ['Jogos', $comLink ? route('admin.campeonatos.times', $campeonato->id_campeonato) : null],
+            ['Jogos', null],
         ];
     }
 }

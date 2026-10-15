@@ -12,7 +12,7 @@ use Tests\TestCase;
 
 /**
  * Fase 10, Etapa 2: fluxo de Eventos sem ida e volta (tela do evento com caminho e ações, criar abre a
- * tela, jogo só pela tela de Jogos), times do campeonato, sugestões, elenco editável, tipo do campeonato
+ * tela, jogo só pela tela de Jogos), times do campeonato, sugestões, tipo do campeonato
  * e composers do site limitados.
  */
 class EventoFluxoTest extends TestCase
@@ -308,59 +308,6 @@ class EventoFluxoTest extends TestCase
             ->assertSee('js-subtipo', false);
     }
 
-    // ---------- 10: elenco editável ----------
-
-    public function test_adicionar_e_remover_do_elenco(): void
-    {
-        $rui = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
-        $inativo = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'INATIVO');
-        $elenco = route('admin.times.elenco', $this->azul);
-
-        $this->comoAdmin()->get($elenco)->assertOk()
-            ->assertSee('<option value="' . $rui . '"', false)
-            ->assertDontSee('<option value="' . $inativo . '"', false);
-
-        $this->comoAdmin()->post(route('admin.times.elenco.adicionar', $this->azul), ['id_atleta' => $rui, 'camisa_atleta_time' => 9])
-            ->assertRedirect($elenco)->assertSessionHas('sucesso');
-        $this->assertDatabaseHas('tbl_atleta_time', ['id_time' => $this->azul, 'id_atleta' => $rui, 'camisa_atleta_time' => 9, 'status_atleta_time' => 'TITULAR']);
-
-        $this->comoAdmin()->from($elenco)->post(route('admin.times.elenco.adicionar', $this->azul), ['id_atleta' => $rui])
-            ->assertSessionHas('erro');
-        $this->comoAdmin()->from($elenco)->post(route('admin.times.elenco.adicionar', $this->azul), ['id_atleta' => $inativo])
-            ->assertSessionHasErrors(['id_atleta' => 'Escolha um atleta ativo.']);
-        $this->assertSame(1, DB::table('tbl_atleta_time')->count());
-
-        // Externo não tem elenco
-        $this->comoAdmin()->post(route('admin.times.elenco.adicionar', $this->visitante), ['id_atleta' => $rui])
-            ->assertRedirect(route('admin.times.index'))->assertSessionHas('erro');
-
-        // Sem jogos: sai com sucesso
-        $this->comoAdmin()->get($elenco)->assertSee(route('admin.times.elenco.remover', [$this->azul, $rui]), false);
-        $this->comoAdmin()->delete(route('admin.times.elenco.remover', [$this->azul, $rui]))
-            ->assertRedirect($elenco)->assertSessionHas('sucesso', "{$this->nomeAtleta($rui)} saiu do elenco do Time Azul.");
-        $this->assertSame(0, DB::table('tbl_atleta_time')->count());
-    }
-
-    public function test_remover_do_elenco_nao_mexe_nos_jogos(): void
-    {
-        $rui = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
-        DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $rui, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '']);
-
-        $futuro1 = $this->jogo($this->copa);
-        $futuro2 = $this->jogo(null, $this->visitante, $this->azul); // o Azul como visitante
-        foreach ([$futuro1, $futuro2] as $jogo) {
-            $jogo->evento->inscrever($rui, 'INDIVIDUAL', null, notificar: false);
-        }
-
-        // O elenco não inscreve mais em jogos (Fase G: campeonato pela convocação, amistoso escolhido no jogo)
-        $this->comoAdmin()->delete(route('admin.times.elenco.remover', [$this->azul, $rui]))
-            ->assertSessionHas('sucesso', "{$this->nomeAtleta($rui)} saiu do elenco do Time Azul.");
-
-        $this->assertSame(2, DB::table('tbl_evento_atleta')->where('id_atleta', $rui)->count());
-        $this->comoAdmin()->get(route('admin.times.elenco', $this->azul))
-            ->assertSee('O elenco não inscreve em jogos');
-    }
-
     // ---------- 11: tipo e categoria no formulário do campeonato ----------
 
     public function test_editar_campeonato_abre_com_o_tipo_e_a_categoria_atuais(): void
@@ -516,10 +463,5 @@ class EventoFluxoTest extends TestCase
             'id_campeonato' => $this->copa, 'id_time_casa' => $this->azul, 'id_time_visitante' => $this->visitante,
             'data_evento_calendario' => now()->addWeek()->toDateString(), 'horario_inicio_evento_calendario' => '19:00',
         ], $extra);
-    }
-
-    private function nomeAtleta(int $id): string
-    {
-        return DB::table('tbl_atletas')->where('id_atleta', $id)->value('nome_atleta');
     }
 }

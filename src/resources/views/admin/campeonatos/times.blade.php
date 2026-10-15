@@ -6,7 +6,7 @@
     Jogos do campeonato (o "Jogos" do campeonato no menu), só para ver, como nos Times dos amistosos: um bloco
     por jogo (próximos e últimos realizados) com o cartão do mandante e o do visitante, que abre os jogadores
     escalados por aquele time naquele jogo; no fim, os participantes que não aparecem em nenhum desses jogos,
-    que abrem o elenco (sem edição). O filtro "Campeonato" troca de campeonato (cada opção é a URL da tela dele);
+    que abrem os convocados do time no campeonato. O filtro "Campeonato" troca de campeonato (cada opção é a URL da tela dele);
     "Todos" ($campeonato null, admin.campeonatos.jogos) mostra os jogos de todos os campeonatos, cada bloco com o
     nome do campeonato, sem a lista de participantes.
 --}}
@@ -81,14 +81,15 @@
     @include('admin.partials.blocos-de-jogos', ['rotulo' => 'jogo'])
 
     {{-- Participantes que não aparecem em nenhum jogo acima (ainda sem jogo marcado, ou só em jogos mais
-         antigos): o cartão abre o elenco do time --}}
+         antigos): o cartão do time da AACJ abre os convocados dele no campeonato --}}
     @if ($semJogo->isNotEmpty())
     <h2 class="h6 text-uppercase text-muted fw-bold mt-4 mb-2">Participantes sem jogo na lista</h2>
     <div class="row g-3" id="participantesSemJogo">
       @foreach ($semJogo as $time)
       <div class="col-md-4 col-lg-3" data-id-time="{{ $time->id_time }}">
         @include('admin.partials.cartao-time', [
-          'link' => route('admin.campeonatos.times.show', [$campeonato->id_campeonato, $time->id_time]),
+          'link' => route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time]),
+          'contagem' => $time->total_convocados . ' convocado(s)',
           'categoriaDoCampeonato' => $campeonato->categoriaDoTime($time), // a do time no campeonato (Fase H)
         ])
       </div>

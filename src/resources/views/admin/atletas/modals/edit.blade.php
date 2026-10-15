@@ -30,17 +30,14 @@
                             <input type="date" name="data_nasc_atleta" id="edit_data_nasc" class="form-control" required>
                         </div>
 
-                        <div class="col-md-5">
+                        {{-- Sem camisa nem times (Fase G, Etapa 4): a camisa e o time são da convocação de cada campeonato --}}
+                        <div class="col-md-6">
                             <label class="form-label">CPF <span class="text-danger">*</span></label>
                             <input type="text" name="cpf_atleta" id="edit_cpf" class="form-control" placeholder="000.000.000-00" maxlength="14" required>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">RG <span class="text-danger">*</span></label>
                             <input type="text" name="rg_atleta" id="edit_rg" class="form-control" placeholder="00.000.000-0" maxlength="12" required>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Nº Camisa</label>
-                            <input type="text" name="camisa_atleta_time" id="edit_numero" class="form-control text-center" placeholder="Ex: 10" maxlength="10">
                         </div>
 
                         <div class="col-md-8">
@@ -127,36 +124,6 @@
                             <label class="form-label">Descrição / Observações</label>
                             <input type="text" name="descricao_atleta" id="edit_descricao" class="form-control" placeholder="Observações opcionais">
                         </div>
-                    </div>
-
-                    <p class="modal-section-label">
-                        <i class="bi bi-shield-fill"></i> Times
-                    </p>
-
-                    <div class="row g-2 mb-4" id="edit-times-list">
-                        @foreach($times as $t)
-                        <div class="col-md-6">
-                            <label class="d-flex align-items-center gap-2 p-2 border rounded w-100" style="cursor:pointer;border-color:var(--aacj-border)!important;">
-                                <input type="checkbox"
-                                       name="times[]"
-                                       value="{{ $t->id_time }}"
-                                       class="form-check-input mt-0 time-checkbox"
-                                       style="width:18px;height:18px;flex-shrink:0;">
-                                @if($t->logo_time)
-                                    <img src="{{ asset('futebol/images/team/' . $t->logo_time) }}"
-                                         width="30" height="30"
-                                         class="rounded-circle object-fit-cover"
-                                         style="flex-shrink:0;">
-                                @else
-                                    <div class="d-flex align-items-center justify-content-center rounded-circle"
-                                         style="width:30px;height:30px;flex-shrink:0;background:#e5e7eb;font-size:0.75rem;color:#6b7280;">
-                                        <i class="bi bi-shield-fill"></i>
-                                    </div>
-                                @endif
-                                <span style="font-size:0.82rem;font-weight:600;color:var(--aacj-text-primary);">{{ $t->nome_time }}</span>
-                            </label>
-                        </div>
-                        @endforeach
                     </div>
 
                     <p class="modal-section-label">

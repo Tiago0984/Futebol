@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Site;
 
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Atleta;
+use App\Models\Categoria;
 use App\Models\Jogo;
-use App\Models\Time;
 use App\Models\Galeria;
 use App\Models\Banner;
 use App\Models\Noticia;
@@ -30,7 +31,15 @@ class HomeController extends Controller
             ->take(3)
             ->get();
 
-        $times = Time::with(['atletas.cartoes.jogo', 'categoria'])->get();
+        // "Nossas categorias" (Fase G, Etapa 4: o atleta é da AACJ, na categoria dele, não de um time): as
+        // categorias ativas com atletas ativos, com quantos são; o cartão abre a página Jogadores filtrada
+        $categoriasDaAcj = Categoria::ativas()
+            ->withCount(['atletas as total_atletas' => fn ($q) => $q
+                ->where('tbl_categoria_atleta.status_categoria_atleta', Atleta::CATEGORIA_ATIVA)
+                ->where('tbl_atletas.status_atleta', 'ATIVO')])
+            ->get()
+            ->where('total_atletas', '>', 0)
+            ->values();
 
         // Próximo jogo em destaque (LIGA PREMIERE): mesma regra da agenda do site (só jogo de campeonato;
         // amistoso não), ativo, de hoje em diante, como o "Próximo Evento" do calendário. Sem nenhum, mostra
@@ -74,6 +83,6 @@ class HomeController extends Controller
 
         $videoDestaque = Video::where('status_video', 'ATIVO')->orderByDesc('id_video')->first();
 
-        return view('site.home.home', compact('galerias', 'banners', 'noticias', 'times', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato', 'videoDestaque'));
+        return view('site.home.home', compact('galerias', 'banners', 'noticias', 'categoriasDaAcj', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato', 'videoDestaque'));
     }
 }

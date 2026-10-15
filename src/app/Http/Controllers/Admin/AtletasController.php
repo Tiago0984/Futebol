@@ -10,7 +10,6 @@ use App\Models\Endereco;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\Notificacao;
-use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -38,12 +37,10 @@ class AtletasController extends Controller
         $atletas = Atleta::with([
             'categoriasAtivas',
             'responsaveis',
-            'times',
             'endereco',
         ])->orderBy('nome_atleta')->get();
 
         $categorias = Categoria::ativas()->get();
-        $times      = Time::where('tipo_time', 'INTERNO')->orderBy('nome_time')->get();
 
         // Categorias inativadas em que algum atleta ainda está: aparecem no select da edição como
         // "(inativa)", para editar outro campo não tirar o atleta da categoria (como no evento)
@@ -55,7 +52,7 @@ class AtletasController extends Controller
         // Botão "Enviar convites pendentes" (Fase 9)
         $convitesPendentes = $this->pendentesDeConvite()->count();
 
-        return view('admin.atletas.index', compact('atletas', 'categorias', 'times', 'categoriasInativasEmUso', 'convitesPendentes'));
+        return view('admin.atletas.index', compact('atletas', 'categorias', 'categoriasInativasEmUso', 'convitesPendentes'));
     }
 
     public function store(Request $request)
@@ -201,7 +198,7 @@ class AtletasController extends Controller
 
     public function update(Request $request, $id)
     {
-        $atleta     = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas', 'times'])->findOrFail($id);
+        $atleta     = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas'])->findOrFail($id);
         $nascimento = Atleta::regrasNascimento();
         $periodo    = Atleta::regrasPeriodo();
 
@@ -222,7 +219,6 @@ class AtletasController extends Controller
             'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
             'motivo_categoria'            => 'nullable|string|max:500',
             'status_atleta'               => 'nullable|in:ATIVO,INATIVO',
-            'camisa_atleta_time'          => 'nullable|string|max:10',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => 'required|string|max:14',
             'email_responsavel'           => ['nullable', 'email', 'max:150', $this->emailResponsavelUnico($responsavelAtual ?? $responsavelExistente)],
@@ -349,45 +345,8 @@ class AtletasController extends Controller
                 $request->motivo_categoria,
             );
 
-            // 5. Sincroniza times — apenas INTERNOS podem ser associados
-            $internosIds     = Time::where('tipo_time', 'INTERNO')->pluck('id_time')->map(fn($v) => (int) $v);
-            $novosTimeIds    = collect($request->input('times', []))
-                                   ->map(fn($v) => (int) $v)
-                                   ->filter(fn($id) => $internosIds->contains($id))
-                                   ->values();
-            $timesExistentes = $atleta->times->unique('id_time')->pluck('id_time')->map(fn($v) => (int) $v);
-            $camisaValue     = ($request->filled('camisa_atleta_time') && (int) $request->camisa_atleta_time > 0)
-                                ? (int) $request->camisa_atleta_time
-                                : 0;
-            $posicaoValue    = $request->posicao_atleta ? strtoupper($request->posicao_atleta) : '';
-
-            // Remove times desmarcados
-            $remover = $timesExistentes->diff($novosTimeIds);
-            if ($remover->isNotEmpty()) {
-                $atleta->times()->detach($remover->toArray());
-            }
-
-            // Adiciona times novos
-            $adicionar = $novosTimeIds->diff($timesExistentes);
-            foreach ($adicionar as $timeId) {
-                $atleta->times()->attach($timeId, [
-                    'status_atleta_time'  => 'TITULAR',
-                    'camisa_atleta_time'  => $camisaValue,
-                    'posicao_atleta_time' => $posicaoValue,
-                ]);
-            }
-
-            // Atualiza posição e camisa em TODOS os times selecionados via SQL direto
-            if ($novosTimeIds->isNotEmpty()) {
-                $pivotUpdate = ['posicao_atleta_time' => $posicaoValue];
-                if ($camisaValue > 0) {
-                    $pivotUpdate['camisa_atleta_time'] = $camisaValue;
-                }
-                DB::table('tbl_atleta_time')
-                    ->where('id_atleta', $atleta->id_atleta)
-                    ->whereIn('id_time', $novosTimeIds->toArray())
-                    ->update($pivotUpdate);
-            }
+            // Sem times nem camisa (Fase G, Etapa 4): o atleta é da AACJ, na categoria; o time e a camisa
+            // são da convocação de cada campeonato
         });
 
         $resposta = redirect()->route('admin.atletas.index')->with('sucesso', 'Atleta atualizado com sucesso.');

@@ -209,7 +209,7 @@
           </a>
         </li>
 
-        {{-- Times (o elenco de cada time interno abre pela linha dele) --}}
+        {{-- Times (cadastro; quem joga por eles é a convocação de cada campeonato) --}}
         <li class="nav-item">
           <a href="{{ route('admin.times.index') }}" class="nav-link {{ $ativo('times') ? 'active' : '' }}">
             <i class="nav-icon bi bi-shield-fill"></i>

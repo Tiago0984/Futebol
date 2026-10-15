@@ -29,7 +29,7 @@ class MenuAdminComposer
 
     /**
      * Chave do item ativo: calendario, ramo:{ramo}, jogos-dos-campeonatos (o "Jogos" dentro de Campeonatos: a
-     * tela de jogos de todos os campeonatos ou de um, os jogadores de um time, e a lista de Jogos filtrada só por
+     * tela de jogos de todos os campeonatos ou de um, os convocados de um time, e a lista de Jogos filtrada só por
      * um campeonato), times-dos-amistosos (os jogos dos amistosos em cartões: o item Amistosos), campeonatos (a
      * tela de Campeonatos, com ou sem filtro), jogos, grade, categorias, times ou notificacoes; null fora deles
      * (os outros itens usam routeIs() na própria view).
@@ -79,8 +79,8 @@ class MenuAdminComposer
             return Jogo::whereKey($r->route('id'))->value('id_campeonato') ? 'jogos-dos-campeonatos' : 'times-dos-amistosos';
         }
 
-        // Jogos de todos os campeonatos ou de um (e os jogadores de um time dele): o "Jogos" de Campeonatos
-        if ($r->routeIs('admin.campeonatos.jogos', 'admin.campeonatos.times', 'admin.campeonatos.times.show', 'admin.campeonatos.convocados',
+        // Jogos de todos os campeonatos ou de um (e os convocados e os grupos dele): o "Jogos" de Campeonatos
+        if ($r->routeIs('admin.campeonatos.jogos', 'admin.campeonatos.times', 'admin.campeonatos.convocados',
             'admin.campeonatos.grupos')) {
             return 'jogos-dos-campeonatos';
         }

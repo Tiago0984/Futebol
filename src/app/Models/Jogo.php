@@ -163,16 +163,13 @@ class Jogo extends Model
 
     /**
      * Atletas ativos escalados por um time neste jogo (tela "jogadores do time no jogo"), pela camisa da
-     * convocação e pelo nome (amistoso: pelo nome), com os
-     * dados do elenco desse time quando o atleta está nele (camisa, posição, titular/reserva; null fora do
-     * elenco) e, no jogo de campeonato, a convocação por esse time (id e camisa; null = não convocado).
-     * Uma consulta.
+     * convocação e pelo nome (amistoso: pelo nome), com, no jogo de campeonato, a convocação por esse time
+     * (id e camisa; null = não convocado). Uma consulta.
      */
     public function escaladosDoTime(int $idTime): Collection
     {
         return DB::table('tbl_evento_atleta as ea')
             ->join('tbl_atletas as a', 'a.id_atleta', '=', 'ea.id_atleta')
-            ->leftJoin('tbl_atleta_time as at', fn ($j) => $j->on('at.id_atleta', '=', 'ea.id_atleta')->where('at.id_time', $idTime))
             // Jogo de campeonato: a convocação do atleta por este time (camisa e "Não convocado"); amistoso: nenhuma
             ->leftJoin('tbl_convocacao as cv', fn ($j) => $j->on('cv.id_atleta', '=', 'ea.id_atleta')
                 ->where('cv.id_time', $idTime)->where('cv.id_campeonato', (int) $this->id_campeonato))
@@ -184,8 +181,7 @@ class Jogo extends Model
             ->orderBy('cv.camisa_convocacao')
             ->orderBy('a.nome_atleta')
             ->get([
-                'a.id_atleta', 'a.nome_atleta', 'ea.origem_evento_atleta', 'at.id_atleta_time',
-                'at.camisa_atleta_time', 'at.posicao_atleta_time', 'at.status_atleta_time',
+                'a.id_atleta', 'a.nome_atleta', 'ea.origem_evento_atleta',
                 'cv.id_convocacao', 'cv.camisa_convocacao',
             ]);
     }
