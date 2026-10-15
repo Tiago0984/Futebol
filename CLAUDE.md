@@ -616,7 +616,18 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - **H4. Grupos, fase e classificação:** grupos por categoria com seus times; fase do jogo (lista fixa); classificação por categoria e grupo, só fase de grupos; mata-mata opcional.
   - **H5. Site e API:** página do campeonato com abas por categoria (classificação de cada grupo e jogos); API acompanha.
   - Depois: Fase G, Etapa 4 (retirar o elenco fixo).
-- **Próximo passo:** H1 (ler o código do campeonato, participantes, menu e telas que usam `id_categoria` do campeonato; plano detalhado da migration antes de escrever).
+- **Decisão para a H1 (dono do projeto, 14/10/2026):** `tbl_campeonato.id_categoria` fica até a H3 como **categoria principal** (obrigatória e sempre na lista): é ela que vale para a idade, a convocação e a categoria dos jogos. **Não publicar no servidor entre a H1 e a H3.**
+
+#### Fase H, Etapa H1 — categorias e participantes por categoria (computador de casa, 14/10/2026; **sem commit ainda**)
+- **Migration no `db_futebol` de casa:** batch 31 (`2026_10_15_000001_categorias_do_campeonato_e_participantes_por_categoria`; não depende de ids). Ensaiada antes no `db_futebol_test` com o backup (resultado igual: Copa Escola com a categoria 5 e 3 participantes, Liga com a 2 e 4).
+  - `tbl_campeonato_categoria`: `id_campeonato_categoria` INT UNSIGNED AI; `id_campeonato` e `id_categoria` INT com sinal (FKs `fk_cc_campeonato`, `fk_cc_categoria`, NO ACTION); único `campeonato_categoria_unique`.
+  - `tbl_campeonato_time.id_categoria` INT NOT NULL; único `campeonato_time_categoria_unique` (campeonato, categoria, time); FK composta `fk_ct_campeonato_categoria` (campeonato, categoria) → `tbl_campeonato_categoria` (só aceita categoria do campeonato). O `down()` para se houver campeonato com várias categorias ou time em duas.
+- **Backup** em `backup/` (só em casa): `db_futebol_antes_categorias_campeonato_20261014_231932.sql`.
+- **Código:** `Campeonato::categorias()`, `rotulo_das_categorias`, `participantesPorCategoria()`, `gravarCategoriasEParticipantes()`, `apagarCategoriasEParticipantes()`; `times()` com `distinct` (cada time uma vez); `Categoria::campeonatos()` pela lista e a exclusão da categoria conta principal ou lista. Formulário (modais e páginas create/edit, partial `admin/campeonatos/_categorias_e_participantes`): "Categoria principal" obrigatória, "Outras categorias", um bloco de times por categoria marcada (`participantes[id_categoria][]`; bloco de categoria desmarcada é ignorado); trocar a principal num campeonato de uma categoria leva os times junto. Time com convocados pode sair de uma categoria, não de todas. Lista mostra as categorias (selo "principal" quando há mais de uma) e o filtro acha por qualquer uma.
+- **Testes:** `CampeonatoCategoriasTest` (10), `CampeonatoCategoriasMigrationTest` (2, sem transação); helper `participantes()` no `Tests\TestCase` (põe a categoria na lista antes). **605 testes passando.**
+- **Débito achado (anterior à Fase H):** criar campeonato sem logo, banner, organizador ou local dá erro 500 (colunas NOT NULL, campos opcionais no formulário).
+- **Falta:** roteiro no navegador (criar campeonato com Sub-15 e Sub-17, o mesmo externo nas duas, editar, trocar a principal, tirar time com convocados) e o commit (com OK).
+- **Próximo passo depois:** H2 (convocação por categoria).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
