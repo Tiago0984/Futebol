@@ -382,10 +382,12 @@ class Jogo extends Model
             ->all();
     }
 
-    // Camisa da convocação de cada atleta neste campeonato: [id_atleta => 10] (amistoso: [])
+    // Camisa da convocação de cada atleta pelos times deste jogo: [id_atleta => 10] (amistoso: []). Só os times do
+    // jogo: o mesmo atleta pode ter outra camisa no time de outra categoria do campeonato (Fase H, Etapa H2)
     public function camisas(): array
     {
         return ! $this->pelaConvocacao() ? [] : Convocacao::where('id_campeonato', $this->id_campeonato)
+            ->whereIn('id_time', [$this->id_time_casa, $this->id_time_visitante])
             ->pluck('camisa_convocacao', 'id_atleta')
             ->mapWithKeys(fn ($camisa, $idAtleta) => [(int) $idAtleta => (int) $camisa])
             ->all();

@@ -29,7 +29,7 @@
   <span class="form-text">Marque uma ou mais.</span>
 
   <p class="modal-section-label mb-1 mt-3"><i class="bi bi-shield-fill"></i> Times participantes por categoria</p>
-  <p class="form-text mt-0 mb-2">O mesmo time pode jogar em mais de uma categoria (um adversário com um cadastro só).</p>
+  <p class="form-text mt-0 mb-2">O adversário (EXT) pode jogar em mais de uma categoria, com um cadastro só; cada time da AACJ (INT) joga em uma só.</p>
   @foreach($categorias as $cat)
   @php $doBloco = array_map('intval', $participantes[$cat->id_categoria] ?? []); @endphp
   <div class="border rounded p-2 mb-2 js-bloco-categoria" data-categoria="{{ $cat->id_categoria }}">

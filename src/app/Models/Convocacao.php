@@ -6,9 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * Convocação por campeonato (Fase G, Etapa 1): o atleta convocado por um time interno (a "camisa" da AACJ
- * naquele campeonato), com o número da camisa, quem convocou e quando. Um time por atleta em cada campeonato
+ * naquele campeonato), com o número da camisa, quem convocou e quando. Desde a Fase H, Etapa H2, com a
+ * categoria do time no campeonato: um time por atleta em cada categoria (o do Sub-15 pode ir também ao Sub-17)
  * e camisa sem repetir no mesmo time do campeonato (os dois únicos da tabela). Atleta inativado continua com
- * a linha, mas não conta (como nas inscrições). As regras ficam em Campeonato (convocar, trocarCamisa).
+ * a linha, mas não conta (como nas inscrições). As regras ficam em Campeonato (convocar, erroDaCamisa).
  */
 class Convocacao extends Model
 {
@@ -23,6 +24,7 @@ class Convocacao extends Model
     // id_usuario (quem convocou) fica fora: gravado só por Campeonato::convocar
     protected $fillable = [
         'id_campeonato',
+        'id_categoria',
         'id_time',
         'id_atleta',
         'camisa_convocacao',

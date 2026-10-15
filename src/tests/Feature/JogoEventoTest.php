@@ -35,6 +35,8 @@ class JogoEventoTest extends TestCase
         $this->azul         = $this->time('Time Azul', 'INTERNO');
         $this->verde        = $this->time('Time Verde', 'INTERNO');
         $this->visitante    = $this->time('Time Visitante', 'EXTERNO');
+        // Participantes da Copa (a convocação exige o time participante: Fase H, Etapa H2)
+        $this->participantes($this->idCampeonato, [$this->azul, $this->verde, $this->visitante]);
     }
 
     // ---------- criar ----------
@@ -380,10 +382,7 @@ class JogoEventoTest extends TestCase
         }
 
         if ($elencos) {
-            DB::table('tbl_convocacao')->insert([
-                'id_campeonato' => $this->idCampeonato, 'id_time' => $elencos[0], 'id_atleta' => $id,
-                'camisa_convocacao' => DB::table('tbl_convocacao')->count() + 1,
-            ]);
+            $this->convocacaoDireta($this->idCampeonato, $elencos[0], $id);
         }
 
         return $id;

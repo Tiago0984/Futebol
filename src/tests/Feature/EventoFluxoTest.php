@@ -254,7 +254,8 @@ class EventoFluxoTest extends TestCase
         $idSub11F = $this->idCategoria('Sub-11', 'F');
         $ana = $this->criarAtleta($this->nascidoComIdade(11), 'F', 'ATIVO');
         $this->colocarNaCategoria($ana, $idSub11F);
-        DB::table('tbl_convocacao')->insert(['id_campeonato' => $this->copa, 'id_time' => $this->azul, 'id_atleta' => $ana, 'camisa_convocacao' => 7]);
+        $this->participantes($this->copa, [$this->azul, $this->visitante]);
+        $this->convocacaoDireta($this->copa, $this->azul, $ana, 7);
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
             ->assertSessionHas('avisos_categoria');

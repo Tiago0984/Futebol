@@ -13,9 +13,9 @@ use Illuminate\Http\Request;
 
 /**
  * Convocados de um time interno num campeonato (Fase G, Etapa 1): a lista com a camisa de cada um (editável),
- * a caixa "Convocar atletas" por categoria (com a camisa de cada escolhido) e a remoção. Um time por atleta em
- * cada campeonato e bloqueio de quem passa da idade do campeonato (ano de início). Nesta etapa a convocação
- * ainda não inscreve nos jogos nem avisa ninguém (Etapa 2).
+ * a caixa "Convocar atletas" por categoria (com a camisa de cada escolhido) e a remoção. A convocação vale na
+ * categoria do time no campeonato (Fase H, Etapa H2): um time por atleta em cada categoria e bloqueio de quem
+ * passa da idade dela (ano de início). Os jogos usam a convocação pelo "Preencher pela convocação" (Fase G, Etapa 2).
  */
 class ConvocacaoController extends Controller
 {
@@ -32,19 +32,21 @@ class ConvocacaoController extends Controller
             ->get()
             ->sortBy(fn (Convocacao $c) => [$c->atleta->status_atleta === 'ATIVO' ? 0 : 1, $c->camisa_convocacao])
             ->values();
-        $acimaDosConvocados = $campeonato->idadesAcimaDaIdade($convocados->pluck('id_atleta')->all());
+        $categoria = $campeonato->categoriaDoTime($time);
+        $acimaDosConvocados = $campeonato->idadesAcimaDaIdade($time, $convocados->pluck('id_atleta')->all());
 
         // Caixa "Convocar atletas": ativos ainda não convocados por este time; desabilitados os convocados por
-        // outro time do campeonato e os que passam da idade
+        // outro time na mesma categoria do campeonato (em outra categoria pode: Etapa H2) e os que passam da idade
         $idsDoTime = $convocados->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
         $grupos = Atleta::ativosPorCategoria()
             ->map(fn ($grupo) => $grupo->reject(fn ($atleta) => in_array((int) $atleta->id_atleta, $idsDoTime, true))->values())
             ->filter(fn ($grupo) => $grupo->isNotEmpty());
-        $bloqueados = $campeonato->convocacoes()->where('id_time', '<>', $time->id_time)->with('time:id_time,nome_time')->get()
+        $bloqueados = $campeonato->convocacoes()->where('id_categoria', $categoria?->id_categoria)
+            ->where('id_time', '<>', $time->id_time)->with('time:id_time,nome_time')->get()
             ->mapWithKeys(fn (Convocacao $c) => [(int) $c->id_atleta => "convocado pelo {$c->time->nome_time}"])
             ->all();
         $idsDaCaixa = $grupos->flatten()->pluck('id_atleta')->all();
-        foreach ($campeonato->idadesAcimaDaIdade($idsDaCaixa) as $idAtleta => $idade) {
+        foreach ($campeonato->idadesAcimaDaIdade($time, $idsDaCaixa) as $idAtleta => $idade) {
             $bloqueados[$idAtleta] ??= "acima da idade ({$idade} anos)";
         }
 
@@ -56,7 +58,7 @@ class ConvocacaoController extends Controller
         ];
 
         return view('admin.campeonatos.convocados', compact(
-            'campeonato', 'time', 'convocados', 'acimaDosConvocados', 'grupos', 'bloqueados', 'caminho'
+            'campeonato', 'time', 'categoria', 'convocados', 'acimaDosConvocados', 'grupos', 'bloqueados', 'caminho'
         ));
     }
 
@@ -101,7 +103,7 @@ class ConvocacaoController extends Controller
                     . ' use "Preencher pela convocação" na tela de cada jogo.' : ''));
 
         // Sexo diferente do campeonato: só aviso (CLAUDE.md, seção 8, pergunta 14)
-        $avisos = $campeonato->avisosDeSexo($ids);
+        $avisos = $campeonato->avisosDeSexo($time, $ids);
 
         return $avisos ? $redirecionar->with('aviso', implode(' ', $avisos)) : $redirecionar;
     }
@@ -151,7 +153,7 @@ class ConvocacaoController extends Controller
 
     private function campeonatoETime($id, $timeId): array
     {
-        return [Campeonato::with('categoria')->findOrFail($id), Time::findOrFail($timeId)];
+        return [Campeonato::findOrFail($id), Time::findOrFail($timeId)];
     }
 
     // Convocação do atleta por este time neste campeonato (404 se não houver)

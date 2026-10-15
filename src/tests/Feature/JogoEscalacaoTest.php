@@ -409,10 +409,7 @@ class JogoEscalacaoTest extends TestCase
         $this->colocarNaCategoria($id, $idCategoria ?? $this->idSub11M);
 
         if ($idTime) {
-            DB::table('tbl_convocacao')->insert([
-                'id_campeonato' => $this->copa, 'id_time' => $idTime, 'id_atleta' => $id,
-                'camisa_convocacao' => DB::table('tbl_convocacao')->count() + 1,
-            ]);
+            $this->convocacaoDireta($this->copa, $idTime, $id);
         }
 
         return $id;

@@ -20,4 +20,25 @@ abstract class TestCase extends BaseTestCase
             DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $idCampeonato, 'id_categoria' => $idCategoria, 'id_time' => $idTime]);
         }
     }
+
+    /**
+     * Convocação gravada direto (sem a tela), na categoria do time no campeonato (Fase H, Etapa H2). O time que
+     * ainda não é participante entra na categoria de referência (a FK composta exige o participante). Sem $camisa,
+     * um número ainda não usado.
+     */
+    protected function convocacaoDireta(int $idCampeonato, int $idTime, int $idAtleta, ?int $camisa = null): void
+    {
+        $doTime = fn () => DB::table('tbl_campeonato_time')->where('id_campeonato', $idCampeonato)->where('id_time', $idTime)->value('id_categoria');
+        if ($doTime() === null) {
+            $this->participantes($idCampeonato, [$idTime]);
+        }
+
+        DB::table('tbl_convocacao')->insert([
+            'id_campeonato'     => $idCampeonato,
+            'id_categoria'      => $doTime(),
+            'id_time'           => $idTime,
+            'id_atleta'         => $idAtleta,
+            'camisa_convocacao' => $camisa ?? DB::table('tbl_convocacao')->count() + 1,
+        ]);
+    }
 }

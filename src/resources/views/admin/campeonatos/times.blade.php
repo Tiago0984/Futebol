@@ -56,6 +56,9 @@
         @foreach ($convocacao as $timeConvocador)
         <div class="d-flex align-items-center gap-2 py-1 border-top" data-id-time="{{ $timeConvocador->id_time }}">
           <span class="fw-semibold">{{ $timeConvocador->nome_time }}</span>
+          @if ($timeConvocador->categoria_no_campeonato)
+          <span class="text-muted small">· {{ $timeConvocador->categoria_no_campeonato->rotulo }}</span>
+          @endif
           <span @class(['badge', 'bg-secondary' => $timeConvocador->total_convocados, 'bg-warning text-dark' => ! $timeConvocador->total_convocados])>
             {{ $timeConvocador->total_convocados ? $timeConvocador->total_convocados . ' convocado(s)' : 'Sem convocados' }}
           </span>

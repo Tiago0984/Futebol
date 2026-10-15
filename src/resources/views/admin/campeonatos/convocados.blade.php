@@ -5,13 +5,13 @@
 {{--
     Convocados de um time interno num campeonato (Fase G, Etapa 1; ConvocacaoController): a lista com a camisa
     de cada um (editável na linha) e a remoção; embaixo, "Convocar atletas" com a caixa por categoria e a camisa
-    de cada escolhido. Desabilitados na caixa: quem foi convocado por outro time do campeonato e quem passa da
-    idade do campeonato (pelo ano de início). Atleta inativado fica na lista com o selo, sem contar.
+    de cada escolhido. Desabilitados na caixa: quem foi convocado por outro time na mesma categoria do campeonato e
+    quem passa da idade da categoria do time (pelo ano de início). Atleta inativado fica na lista com o selo, sem contar.
 --}}
 @php
   $ativos = $convocados->filter(fn ($c) => $c->atleta->status_atleta === 'ATIVO')->count();
   $inativos = $convocados->count() - $ativos;
-  $categoriaDoCampeonato = $campeonato->categoria;
+  // $categoria: a do time no campeonato (Fase H, Etapa H2; a convocação vale nela)
 @endphp
 
 @section('content')
@@ -43,8 +43,8 @@
           <h1 class="page-title mb-0">Convocados · {{ $time->nome_time }}</h1>
           <p class="page-subtitle mb-0" id="resumoConvocados">
             {{ $campeonato->nome_campeonato }}
-            @if ($categoriaDoCampeonato)
-              &bull; {{ $campeonato->limiteDeIdade() }} (idade pelo ano de {{ $campeonato->anoDaIdade() }})
+            @if ($categoria)
+              &bull; {{ $categoria->limite_de_idade }} (idade pelo ano de {{ $campeonato->anoDaIdade() }})
             @else
               &bull; sem limite de idade
             @endif
@@ -57,8 +57,9 @@
     @include('admin.jogos._mensagens')
 
     <p class="text-muted small mb-3">
-      <i class="bi bi-info-circle"></i> A camisa vale para este campeonato (pode mudar no seguinte). Por enquanto a convocação
-      não muda os jogos: a inscrição pelos convocados vem na próxima etapa.
+      <i class="bi bi-info-circle"></i> O {{ $time->nome_time }} joga no {{ $categoria?->rotulo ?? '—' }} deste campeonato: a convocação
+      e a camisa valem aqui (a camisa pode mudar no próximo campeonato). O atleta pode ser convocado também em outra categoria
+      do campeonato, por outro time da AACJ.
     </p>
 
     {{-- Lista dos convocados --}}
@@ -85,7 +86,7 @@
             @php
               $atleta = $convocacao->atleta;
               $inativo = $atleta->status_atleta !== 'ATIVO';
-              $outroSexo = $categoriaDoCampeonato && $atleta->sexo_atleta !== $categoriaDoCampeonato->sexo_categoria;
+              $outroSexo = $categoria && $atleta->sexo_atleta !== $categoria->sexo_categoria;
             @endphp
             <tr data-id-atleta="{{ $atleta->id_atleta }}" @class(['text-muted' => $inativo])>
               <td>
@@ -105,12 +106,12 @@
                   <span class="badge bg-secondary ms-1" title="Atleta inativado: a convocação fica, mas não conta">Inativo</span>
                 @endif
                 @isset ($acimaDosConvocados[$atleta->id_atleta])
-                  <span class="badge bg-danger ms-1" title="Passa da idade do campeonato ({{ $campeonato->limiteDeIdade() }}); remova da convocação">
+                  <span class="badge bg-danger ms-1" title="Passa da idade da categoria ({{ $categoria?->limite_de_idade }}); remova da convocação">
                     Acima da idade · {{ $acimaDosConvocados[$atleta->id_atleta] }} anos
                   </span>
                 @endisset
                 @if ($outroSexo)
-                  <span class="badge bg-warning text-dark ms-1" title="Só aviso: o campeonato é {{ $categoriaDoCampeonato->rotulo }}">Sexo diferente do campeonato</span>
+                  <span class="badge bg-warning text-dark ms-1" title="Só aviso: o time joga no {{ $categoria->rotulo }}">Sexo diferente da categoria</span>
                 @endif
               </td>
               <td>{{ $atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</td>
@@ -148,8 +149,8 @@
         'bloqueados' => $bloqueados,
         'comCamisa'  => true,
         'camisas'    => old('camisas', []),
-        'ajuda'      => 'Marque os atletas e informe a camisa de cada um. Um time por atleta em cada campeonato; '
-                        . 'quem passa da idade do campeonato não pode ser convocado (o mais novo pode subir).',
+        'ajuda'      => 'Marque os atletas e informe a camisa de cada um. Um time por atleta em cada categoria do campeonato; '
+                        . 'quem passa da idade da categoria não pode ser convocado (o mais novo pode subir).',
       ])
       <div class="mt-3">
         <button type="submit" class="btn btn-success btn-sm" @disabled($grupos->isEmpty())>

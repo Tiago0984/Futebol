@@ -206,25 +206,24 @@ class CampeonatoCategoriasTest extends TestCase
         $this->assertDatabaseMissing('tbl_campeonato_categoria', ['id_campeonato' => $copa, 'id_categoria' => $this->idSub11M]);
     }
 
-    public function test_time_com_convocados_pode_sair_de_uma_categoria_mas_nao_de_todas(): void
+    public function test_regravar_mantem_quem_fica_e_a_convocacao_dele(): void
     {
         $copa = Campeonato::find($this->campeonato('Copa', $this->idSub15M));
-        $copa->gravarCategoriasEParticipantes([$this->idSub15M, $this->idSub17M], [
-            $this->idSub15M => [$this->aacj15], $this->idSub17M => [$this->aacj15],
-        ]);
+        $copa->gravarCategoriasEParticipantes([$this->idSub15M], [$this->idSub15M => [$this->aacj15, $this->botafogo]]);
+        $linha = fn () => DB::table('tbl_campeonato_time')->where('id_campeonato', $copa->id_campeonato)
+            ->where('id_time', $this->aacj15)->value('id_campeonato_time');
+        $antes = $linha();
         $ana = $this->criarAtleta($this->nascidoComIdade(15), 'M', 'ATIVO');
-        DB::table('tbl_convocacao')->insert(['id_campeonato' => $copa->id_campeonato, 'id_time' => $this->aacj15, 'id_atleta' => $ana, 'camisa_convocacao' => 10]);
+        $this->convocacaoDireta($copa->id_campeonato, $this->aacj15, $ana, 10);
 
-        $dados = [...$this->dados('Copa'), 'categorias' => [$this->idSub15M, $this->idSub17M]];
+        // Acrescentar o Sub-17 (com o Botafogo nas duas) e tirar nada do AACJ Sub-15: a linha dele fica a mesma
+        $copa->gravarCategoriasEParticipantes([$this->idSub15M, $this->idSub17M], [
+            $this->idSub15M => [$this->aacj15, $this->botafogo], $this->idSub17M => [$this->botafogo, $this->aacj17],
+        ]);
 
-        // Sai do Sub-17 e fica no Sub-15: pode
-        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), [...$dados, 'participantes' => [$this->idSub15M => [$this->aacj15]]])
-            ->assertSessionHasNoErrors();
-
-        // Sai de todas: não pode
-        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), [...$dados, 'participantes' => [$this->idSub17M => [$this->botafogo]]])
-            ->assertSessionHasErrors(['participantes' => 'Não é possível tirar do campeonato time com atletas convocados: AACJ Sub-15 (1 convocado(s)). Remova a convocação do time antes.']);
-        $this->assertDatabaseHas('tbl_campeonato_time', ['id_campeonato' => $copa->id_campeonato, 'id_time' => $this->aacj15]);
+        $this->assertSame($antes, $linha());
+        $this->assertDatabaseHas('tbl_convocacao', ['id_campeonato' => $copa->id_campeonato, 'id_time' => $this->aacj15, 'id_atleta' => $ana]);
+        $this->assertSame(4, DB::table('tbl_campeonato_time')->where('id_campeonato', $copa->id_campeonato)->count());
     }
 
     public function test_excluir_campeonato_tira_categorias_e_participantes(): void

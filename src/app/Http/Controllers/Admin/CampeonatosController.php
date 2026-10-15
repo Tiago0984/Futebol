@@ -46,6 +46,12 @@ class CampeonatosController extends Controller
     {
         $this->validar($request);
 
+        $idsCategorias = $this->categoriasDoPedido($request);
+        $participantes = $this->participantesDoPedido($request, $idsCategorias);
+        if ($erro = $this->erroDosInternos($participantes)) {
+            return back()->withInput()->withErrors(['participantes' => $erro]);
+        }
+
         $dados = $request->only([
             'nome_campeonato', 'tipo_campeonato', 'data_inicio_campeonato',
             'data_fim_campeonato', 'local_evento', 'organizador_campeonato',
@@ -63,12 +69,11 @@ class CampeonatosController extends Controller
         }
 
         $dados['status_campeonato'] = 'ATIVO';
-        $idsCategorias = $this->categoriasDoPedido($request);
         $dados['id_categoria'] = Campeonato::categoriaDeReferencia($idsCategorias);
 
-        DB::transaction(function () use ($dados, $request, $idsCategorias) {
+        DB::transaction(function () use ($dados, $idsCategorias, $participantes) {
             $campeonato = Campeonato::create($dados);
-            $campeonato->gravarCategoriasEParticipantes($idsCategorias, $this->participantesDoPedido($request, $idsCategorias));
+            $campeonato->gravarCategoriasEParticipantes($idsCategorias, $participantes);
         });
 
         return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato criado com sucesso.');
@@ -92,9 +97,13 @@ class CampeonatosController extends Controller
         $idsCategorias = $this->categoriasDoPedido($request);
         $participantes = $this->participantesDoPedido($request, $idsCategorias);
 
-        // Time com convocados não sai de todas as categorias (a convocação ficaria apontando para quem não joga)
-        if ($saem = $campeonato->timesQueSaemComConvocados(array_merge([], ...array_values($participantes)))) {
-            return back()->withInput()->withErrors(['participantes' => 'Não é possível tirar do campeonato time com atletas convocados: '
+        if ($erro = $this->erroDosInternos($participantes)) {
+            return back()->withInput()->withErrors(['participantes' => $erro]);
+        }
+
+        // Time com convocados não sai da categoria em que convocou (a convocação aponta para o participante)
+        if ($saem = $campeonato->timesQueSaemComConvocados($participantes)) {
+            return back()->withInput()->withErrors(['participantes' => 'Não é possível tirar da categoria time com atletas convocados: '
                 . implode(', ', $saem) . '. Remova a convocação do time antes.']);
         }
 
@@ -193,6 +202,17 @@ class CampeonatosController extends Controller
     private function categoriasDoPedido(Request $request): array
     {
         return array_values(array_unique(array_map('intval', (array) $request->input('categorias', []))));
+    }
+
+    // Time da AACJ em mais de uma categoria (ou null): cada um joga numa categoria só do campeonato (Etapa H2)
+    private function erroDosInternos(array $participantes): ?string
+    {
+        $repetidos = Campeonato::internosEmVariasCategorias($participantes);
+
+        return $repetidos
+            ? 'Cada time da AACJ joga em uma categoria só do campeonato: ' . implode(', ', $repetidos)
+                . ' está(ão) marcado(s) em mais de uma. Para outra categoria, use outro time da AACJ (ex.: "AACJ Sub-17").'
+            : null;
     }
 
     // Participantes de cada categoria marcada: [id_categoria => [id_time]]; o bloco de categoria desmarcada é ignorado

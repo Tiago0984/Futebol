@@ -29,6 +29,8 @@ class CampeonatoCategoriasMigrationTest extends TestCase
 
     public function test_up_da_a_cada_campeonato_a_categoria_dele_e_aos_participantes_tambem(): void
     {
+        // A convocação por categoria (H2) aponta para o participante: sai antes (tabela vazia)
+        (require database_path('migrations/2026_10_15_000002_categoria_na_convocacao.php'))->down();
         $this->migration()->down();
 
         $sub11 = $this->idCategoria('Sub-11', 'M');

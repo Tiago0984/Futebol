@@ -49,6 +49,8 @@ class JogoIdadeCampeonatoTest extends TestCase
         $this->azul      = $this->time('Time Azul', 'INTERNO');
         $this->verde     = $this->time('Time Verde', 'INTERNO');
         $this->visitante = $this->time('Time Visitante', 'EXTERNO');
+        // Participantes da Liga (a convocação exige o time participante: Fase H, Etapa H2)
+        $this->participantes($this->liga, [$this->azul, $this->verde, $this->visitante]);
     }
 
     // ---------- criar e preencher pela convocação ----------
@@ -207,10 +209,7 @@ class JogoIdadeCampeonatoTest extends TestCase
         // Jogo da Liga usa a convocação (Fase G, Etapa 2): convocado pelo primeiro time, gravado direto (o
         // jogo confere a idade pelo ano do jogo; a tela de Convocados, pelo de início do campeonato)
         if ($elencos) {
-            DB::table('tbl_convocacao')->insert([
-                'id_campeonato' => $this->liga, 'id_time' => $elencos[0], 'id_atleta' => $id,
-                'camisa_convocacao' => DB::table('tbl_convocacao')->count() + 1,
-            ]);
+            $this->convocacaoDireta($this->liga, $elencos[0], $id);
         }
 
         return $id;

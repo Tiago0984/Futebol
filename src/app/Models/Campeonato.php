@@ -118,29 +118,67 @@ class Campeonato extends Model
     /**
      * Grava as categorias ($idsCategorias, já com a de referência) e os participantes de cada uma
      * ($participantes: [id_categoria => [id_time, ...]]; categoria fora da lista é ignorada), numa transação.
-     * Os participantes são regravados; a FK composta só aceita participante numa categoria do campeonato.
+     * Só sai quem saiu e só entra quem entrou: a convocação aponta para o participante (FK composta, Etapa H2),
+     * então quem fica não pode ser apagado e regravado. A FK composta do participante só aceita categoria do
+     * campeonato.
      */
     public function gravarCategoriasEParticipantes(array $idsCategorias, array $participantes): void
     {
         $idsCategorias = array_values(array_unique(array_map('intval', $idsCategorias)));
 
-        DB::transaction(function () use ($idsCategorias, $participantes) {
-            DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)->delete();
+        $linhas = [];
+        foreach ($idsCategorias as $idCategoria) {
+            foreach (array_unique(array_map('intval', $participantes[$idCategoria] ?? [])) as $idTime) {
+                $linhas["{$idCategoria}|{$idTime}"] = ['id_campeonato' => $this->id_campeonato, 'id_categoria' => $idCategoria, 'id_time' => $idTime];
+            }
+        }
+
+        DB::transaction(function () use ($idsCategorias, $linhas) {
+            $saem = DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)
+                ->get(['id_campeonato_time', 'id_categoria', 'id_time'])
+                ->reject(fn ($linha) => isset($linhas["{$linha->id_categoria}|{$linha->id_time}"]))
+                ->pluck('id_campeonato_time')->all();
+            DB::table('tbl_campeonato_time')->whereIn('id_campeonato_time', $saem)->delete();
             DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->id_campeonato)
                 ->whereNotIn('id_categoria', $idsCategorias)->delete();
+
             DB::table('tbl_campeonato_categoria')->insertOrIgnore(array_map(
                 fn ($idCategoria) => ['id_campeonato' => $this->id_campeonato, 'id_categoria' => $idCategoria], $idsCategorias));
-
-            $linhas = [];
-            foreach ($idsCategorias as $idCategoria) {
-                foreach (array_unique(array_map('intval', $participantes[$idCategoria] ?? [])) as $idTime) {
-                    $linhas[] = ['id_campeonato' => $this->id_campeonato, 'id_categoria' => $idCategoria, 'id_time' => $idTime];
-                }
-            }
-            DB::table('tbl_campeonato_time')->insert($linhas);
+            DB::table('tbl_campeonato_time')->insertOrIgnore(array_values($linhas));
         });
 
         $this->unsetRelation('categorias')->unsetRelation('times');
+        $this->categoriasDosTimes = [];
+    }
+
+    /**
+     * Times da AACJ (INTERNO) marcados em mais de uma categoria ($participantes: [id_categoria => [id_time]]):
+     * ["Time Azul", ...]. Cada time da AACJ joga numa categoria só do campeonato (Fase H, Etapa H2): para outra
+     * categoria, a AACJ forma outro time ("AACJ Sub-17"). O externo pode estar em várias.
+     */
+    public static function internosEmVariasCategorias(array $participantes): array
+    {
+        $vezes = array_count_values(array_merge([], ...array_map(
+            fn ($ids) => array_values(array_unique(array_map('intval', (array) $ids))), array_values($participantes))));
+        $repetidos = array_keys(array_filter($vezes, fn ($n) => $n > 1));
+
+        return $repetidos
+            ? Time::whereIn('id_time', $repetidos)->where('tipo_time', 'INTERNO')->orderBy('nome_time')->pluck('nome_time')->all()
+            : [];
+    }
+
+    // Categoria do time no campeonato (o time interno está numa só; null se não participa), guardada por time
+    private array $categoriasDosTimes = [];
+
+    public function categoriaDoTime(Time $time): ?Categoria
+    {
+        if (! array_key_exists($time->id_time, $this->categoriasDosTimes)) {
+            $idCategoria = DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)
+                ->where('id_time', $time->id_time)->orderBy('id_categoria')->value('id_categoria');
+            $this->categoriasDosTimes[$time->id_time] = $idCategoria ? Categoria::find($idCategoria) : null;
+        }
+
+        return $this->categoriasDosTimes[$time->id_time];
     }
 
     // Tira participantes e categorias (exclusão do campeonato; as FKs são NO ACTION)
@@ -224,22 +262,23 @@ class Campeonato extends Model
         return (int) ($this->data_inicio_campeonato ?? now())->format('Y');
     }
 
-    // Convocáveis que passam da idade do campeonato: [id_atleta => "Nome (16 anos)"]; sem categoria, sem limite
-    public function acimaDaIdade(array $idsAtletas): array
+    // Convocáveis que passam da idade da categoria do time no campeonato (Etapa H2): [id_atleta => "Nome (16 anos)"];
+    // sem categoria, sem limite
+    public function acimaDaIdade(Time $time, array $idsAtletas): array
     {
-        return $this->categoria?->atletasAcimaDaIdade($idsAtletas, $this->anoDaIdade()) ?? [];
+        return $this->categoriaDoTime($time)?->atletasAcimaDaIdade($idsAtletas, $this->anoDaIdade()) ?? [];
     }
 
     // Os mesmos atletas, só com a idade: [id_atleta => 16]
-    public function idadesAcimaDaIdade(array $idsAtletas): array
+    public function idadesAcimaDaIdade(Time $time, array $idsAtletas): array
     {
-        return $this->categoria?->idadesAcimaDoLimite($idsAtletas, $this->anoDaIdade()) ?? [];
+        return $this->categoriaDoTime($time)?->idadesAcimaDoLimite($idsAtletas, $this->anoDaIdade()) ?? [];
     }
 
     // "Sub-15 Masculino, até 15 anos" (null sem limite de idade)
-    public function limiteDeIdade(): ?string
+    public function limiteDeIdade(Time $time): ?string
     {
-        return $this->categoria?->limite_de_idade;
+        return $this->categoriaDoTime($time)?->limite_de_idade;
     }
 
     // Por que o time não convoca neste campeonato (ou null): só time interno e participante
@@ -256,16 +295,19 @@ class Campeonato extends Model
 
     /**
      * Confere uma convocação antes de gravar ($camisas: [id_atleta => número da camisa]). Tudo ou nada: devolve
-     * as mensagens de erro (vazio = pode gravar). Regras: atleta ATIVO; um time por atleta no campeonato; idade
-     * do campeonato; camisa sem repetir no pedido nem no time (contando os convocados inativos, que guardam o
-     * número). A faixa do número é conferida na validação do formulário.
+     * as mensagens de erro (vazio = pode gravar). Regras: atleta ATIVO; um time por atleta em cada categoria do
+     * campeonato (o do Sub-15 pode ser convocado também no Sub-17: Etapa H2); idade da categoria do time; camisa
+     * sem repetir no pedido nem no time (contando os convocados inativos, que guardam o número). A faixa do
+     * número é conferida na validação do formulário.
      */
     public function errosDaConvocacao(Time $time, array $camisas): array
     {
-        $ids     = array_map('intval', array_keys($camisas));
-        $atletas = Atleta::whereIn('id_atleta', $ids)->pluck('nome_atleta', 'id_atleta');
-        $ativos  = Atleta::whereIn('id_atleta', $ids)->where('status_atleta', 'ATIVO')->pluck('id_atleta')->all();
-        $jaConvocados = $this->convocacoes()->with('time:id_time,nome_time')->whereIn('id_atleta', $ids)->get()->keyBy('id_atleta');
+        $ids       = array_map('intval', array_keys($camisas));
+        $categoria = $this->categoriaDoTime($time);
+        $atletas   = Atleta::whereIn('id_atleta', $ids)->pluck('nome_atleta', 'id_atleta');
+        $ativos    = Atleta::whereIn('id_atleta', $ids)->where('status_atleta', 'ATIVO')->pluck('id_atleta')->all();
+        $jaConvocados = $this->convocacoes()->where('id_categoria', $categoria?->id_categoria)
+            ->with('time:id_time,nome_time')->whereIn('id_atleta', $ids)->get()->keyBy('id_atleta');
         $camisasDoTime = $this->convocacoes()->where('id_time', $time->id_time)->with('atleta:id_atleta,nome_atleta')
             ->get()->keyBy('camisa_convocacao');
 
@@ -279,7 +321,8 @@ class Campeonato extends Model
             if ($convocacao = $jaConvocados->get($idAtleta)) {
                 $erros[] = (int) $convocacao->id_time === (int) $time->id_time
                     ? "{$nome} já está convocado pelo {$time->nome_time}."
-                    : "{$nome} já foi convocado pelo {$convocacao->time->nome_time} neste campeonato: é um time por atleta em cada campeonato.";
+                    : "{$nome} já foi convocado pelo {$convocacao->time->nome_time} no {$categoria->rotulo} deste campeonato: "
+                        . 'é um time por atleta em cada categoria.';
             }
             if ($dono = $camisasDoTime->get((int) $camisa)) {
                 $erros[] = "A camisa {$camisa} do {$time->nome_time} já é de {$dono->atleta->nome_atleta}.";
@@ -291,21 +334,25 @@ class Campeonato extends Model
             $erros[] = "A camisa {$camisa} foi escolhida para mais de um atleta.";
         }
 
-        if ($acima = $this->acimaDaIdade($ids)) {
-            $erros[] = implode(', ', $acima) . " passa(m) da idade do campeonato ({$this->limiteDeIdade()}): "
+        if ($acima = $this->acimaDaIdade($time, $ids)) {
+            $erros[] = implode(', ', $acima) . " passa(m) da idade da categoria do {$time->nome_time} ({$this->limiteDeIdade($time)}): "
                 . 'atleta mais velho não joga em categoria abaixo da idade dele.';
         }
 
         return array_values(array_unique($erros));
     }
 
-    // Grava a convocação já conferida (errosDaConvocacao), numa transação; devolve quantos foram convocados
+    // Grava a convocação já conferida (errosDaConvocacao), numa transação, na categoria do time no campeonato;
+    // devolve quantos foram convocados
     public function convocar(Time $time, array $camisas, ?int $idUsuario): int
     {
-        DB::transaction(function () use ($time, $camisas, $idUsuario) {
+        $idCategoria = $this->categoriaDoTime($time)->id_categoria;
+
+        DB::transaction(function () use ($time, $camisas, $idUsuario, $idCategoria) {
             foreach ($camisas as $idAtleta => $camisa) {
                 $convocacao = new Convocacao([
                     'id_campeonato'     => $this->id_campeonato,
+                    'id_categoria'      => $idCategoria,
                     'id_time'           => $time->id_time,
                     'id_atleta'         => (int) $idAtleta,
                     'camisa_convocacao' => (int) $camisa,
@@ -328,12 +375,12 @@ class Campeonato extends Model
     }
 
     /**
-     * Aviso (sem bloquear) para quem é de outro sexo que o da categoria do campeonato (CLAUDE.md, seção 8,
-     * pergunta 14): ["Ana é do sexo feminino; o campeonato é Sub-15 Masculino.", ...]. Sem categoria, nada.
+     * Aviso (sem bloquear) para quem é de outro sexo que o da categoria do time no campeonato (CLAUDE.md, seção 8,
+     * pergunta 14): ["Ana é do sexo feminino; o AACJ Sub-15 joga no Sub-15 Masculino.", ...]. Sem categoria, nada.
      */
-    public function avisosDeSexo(array $idsAtletas): array
+    public function avisosDeSexo(Time $time, array $idsAtletas): array
     {
-        $categoria = $this->categoria;
+        $categoria = $this->categoriaDoTime($time);
         if (! $categoria || ! $idsAtletas) {
             return [];
         }
@@ -341,24 +388,33 @@ class Campeonato extends Model
         return Atleta::whereIn('id_atleta', $idsAtletas)->where('sexo_atleta', '<>', $categoria->sexo_categoria)
             ->orderBy('nome_atleta')->get(['nome_atleta', 'sexo_atleta'])
             ->map(fn ($atleta) => "{$atleta->nome_atleta} é do sexo " . mb_strtolower(Categoria::SEXOS[$atleta->sexo_atleta] ?? $atleta->sexo_atleta)
-                . "; o campeonato é {$categoria->rotulo}.")
+                . "; o {$time->nome_time} joga no {$categoria->rotulo}.")
             ->all();
     }
 
     /**
-     * Participantes que sairiam do campeonato com convocados (a edição troca a lista de times com sync):
-     * ["Time Azul (3 convocados)", ...]. O time só sai depois de remover a convocação.
+     * Times com convocados que sairiam da categoria em que convocaram ($participantes: [id_categoria => [id_time]],
+     * o pedido da edição): ["Time Azul no Sub-15 Masculino (3 convocado(s))", ...]. A convocação aponta para o
+     * participante (FK composta): o time só sai da categoria (ou do campeonato) depois de remover a convocação.
      */
-    public function timesQueSaemComConvocados(array $idsQueFicam): array
+    public function timesQueSaemComConvocados(array $participantes): array
     {
+        $ficam = [];
+        foreach ($participantes as $idCategoria => $idsTimes) {
+            foreach ((array) $idsTimes as $idTime) {
+                $ficam[(int) $idCategoria . '|' . (int) $idTime] = true;
+            }
+        }
+
         return $this->convocacoes()
-            ->whereNotIn('tbl_convocacao.id_time', array_map('intval', $idsQueFicam))
             ->join('tbl_time', 'tbl_time.id_time', '=', 'tbl_convocacao.id_time')
-            ->groupBy('tbl_time.id_time', 'tbl_time.nome_time')
+            ->groupBy('tbl_convocacao.id_categoria', 'tbl_time.id_time', 'tbl_time.nome_time')
             ->orderBy('tbl_time.nome_time')
-            ->selectRaw('tbl_time.nome_time, COUNT(*) AS total')
+            ->selectRaw('tbl_convocacao.id_categoria, tbl_time.id_time, tbl_time.nome_time, COUNT(*) AS total')
             ->get()
-            ->map(fn ($linha) => "{$linha->nome_time} ({$linha->total} convocado(s))")
+            ->reject(fn ($linha) => isset($ficam["{$linha->id_categoria}|{$linha->id_time}"]))
+            ->map(fn ($linha) => "{$linha->nome_time} no " . Categoria::find($linha->id_categoria)->rotulo . " ({$linha->total} convocado(s))")
+            ->values()
             ->all();
     }
 }
