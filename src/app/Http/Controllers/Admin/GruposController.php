@@ -32,7 +32,7 @@ class GruposController extends Controller
             ['Eventos', route('admin.calendario.index')],
             ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
             [$campeonato->nome_campeonato, route('admin.campeonatos.times', $campeonato->id_campeonato)],
-            ['Grupos e classificação', null],
+            ['Grupos (chaves) e classificação', null],
         ];
 
         return view('admin.campeonatos.grupos', compact('campeonato', 'participantes', 'grupos', 'classificacoes', 'timesPorGrupo', 'caminho'));
@@ -103,6 +103,26 @@ class GruposController extends Controller
         }
 
         return $this->voltar($campeonato, (int) $categoriaId)->with('sucesso', 'Grupos dos times salvos.');
+    }
+
+    // Quantos passam de cada grupo (chave) na categoria (vazio = não definido: a tabela não destaca ninguém)
+    public function classificados(Request $request, $id, $categoriaId)
+    {
+        $campeonato = Campeonato::findOrFail($id);
+        abort_unless($campeonato->categorias()->where('tbl_categoria.id_categoria', (int) $categoriaId)->exists(), 404);
+
+        $request->validate([
+            'classificados' => 'nullable|integer|min:1|max:' . Campeonato::CLASSIFICADOS_MAX,
+        ], [
+            'classificados.*' => 'Informe de 1 a ' . Campeonato::CLASSIFICADOS_MAX . ' classificados por grupo (chave), ou deixe vazio.',
+        ]);
+
+        $classificados = $request->filled('classificados') ? (int) $request->input('classificados') : null;
+        $campeonato->definirClassificados((int) $categoriaId, $classificados);
+
+        return $this->voltar($campeonato, (int) $categoriaId)->with('sucesso', $classificados
+            ? "{$classificados} classificado(s) por grupo (chave)."
+            : 'Classificados por grupo (chave) sem definição.');
     }
 
     private function campeonatoEGrupo($id, $grupoId): array

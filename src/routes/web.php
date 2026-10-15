@@ -122,6 +122,7 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::patch('campeonatos/{id}/grupos/{grupoId}',             [GruposController::class, 'renomear'])->name('campeonatos.grupos.renomear');
     Route::delete('campeonatos/{id}/grupos/{grupoId}',            [GruposController::class, 'remover'])->name('campeonatos.grupos.remover');
     Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}', [GruposController::class, 'times'])->name('campeonatos.grupos.times');
+    Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}/classificados', [GruposController::class, 'classificados'])->name('campeonatos.grupos.classificados');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
     // Elenco do time interno (antiga Escalação), aberto pela linha do time em Times

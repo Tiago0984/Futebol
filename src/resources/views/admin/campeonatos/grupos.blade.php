@@ -1,12 +1,13 @@
 @extends('layout.admin')
 
-@section('title', 'Grupos — ' . $campeonato->nome_campeonato)
+@section('title', 'Grupos (chaves) — ' . $campeonato->nome_campeonato)
 
 {{--
     Grupos e classificação de um campeonato (Fase H, Etapa H4; GruposController), um bloco por categoria:
     os grupos (criar, renomear, remover o vazio), o grupo de cada participante (um select por time) e a
     classificação de cada grupo (Campeonato::classificacoes: só a fase de grupos; o grupo lista todos os times
-    dele, os sem jogo com zeros). Categoria sem grupo tem uma tabela só, com todos os participantes.
+    dele, os sem jogo com zeros). Categoria sem grupo tem uma tabela só, com todos os participantes. "Grupo
+    (chave)": o dono da AACJ chama o grupo de chave. "Classificam por grupo (chave)" destaca os N primeiros.
 --}}
 @section('content')
 <main class="app-main">
@@ -30,8 +31,8 @@
         <i class="bi bi-arrow-left"></i>
       </a>
       <div>
-        <h1 class="page-title mb-0">Grupos e classificação · {{ $campeonato->nome_campeonato }}</h1>
-        <p class="page-subtitle mb-0">Grupos são opcionais. A classificação conta só os jogos da fase de grupos, com placar, publicados e ativos.</p>
+        <h1 class="page-title mb-0">Grupos (chaves) e classificação · {{ $campeonato->nome_campeonato }}</h1>
+        <p class="page-subtitle mb-0">Grupos (chaves) são opcionais. A classificação conta só os jogos da fase de grupos, com placar, publicados e ativos.</p>
       </div>
     </div>
 
@@ -50,7 +51,7 @@
         <div class="row g-4">
           {{-- Grupos da categoria --}}
           <div class="col-lg-4">
-            <h3 class="h6 text-uppercase text-muted fw-bold">Grupos</h3>
+            <h3 class="h6 text-uppercase text-muted fw-bold">Grupos (chaves)</h3>
             @forelse ($doCategoria as $grupo)
             <div class="d-flex align-items-center gap-1 mb-2" data-id-grupo="{{ $grupo->id_campeonato_grupo }}">
               <form action="{{ route('admin.campeonatos.grupos.renomear', [$campeonato->id_campeonato, $grupo->id_campeonato_grupo]) }}"
@@ -73,16 +74,30 @@
               </form>
             </div>
             @empty
-            <p class="text-muted small mb-2">Sem grupos: a categoria tem uma tabela só.</p>
+            <p class="text-muted small mb-2">Sem grupos (chaves): a categoria tem uma tabela só.</p>
             @endforelse
 
             <form action="{{ route('admin.campeonatos.grupos.criar', $campeonato->id_campeonato) }}" method="POST" class="d-flex gap-1 mt-2">
               @csrf
               <input type="hidden" name="id_categoria" value="{{ $categoria->id_categoria }}">
-              <input type="text" name="nome_campeonato_grupo" placeholder="Novo grupo (ex.: Grupo 01)" required
+              <input type="text" name="nome_campeonato_grupo" placeholder="Novo grupo (ex.: Grupo 01 ou Chave A)" required
                      maxlength="{{ \App\Models\CampeonatoGrupo::NOME_MAX }}" class="form-control form-control-sm"
                      aria-label="Nome do novo grupo do {{ $categoria->rotulo }}">
               <button type="submit" class="btn btn-sm btn-success text-nowrap"><i class="bi bi-plus-lg"></i> Criar</button>
+            </form>
+
+            {{-- Quantos passam de cada grupo (chave): destacados na classificação --}}
+            <form action="{{ route('admin.campeonatos.grupos.classificados', [$campeonato->id_campeonato, $categoria->id_categoria]) }}"
+                  method="POST" class="mt-3">
+              @csrf @method('PUT')
+              <label for="classificados_{{ $categoria->id_categoria }}" class="form-label small mb-1">Classificam por grupo (chave)</label>
+              <div class="d-flex gap-1">
+                <input type="number" min="1" max="{{ \App\Models\Campeonato::CLASSIFICADOS_MAX }}" name="classificados"
+                       id="classificados_{{ $categoria->id_categoria }}" value="{{ $categoria->pivot->classificados_campeonato_categoria }}"
+                       class="form-control form-control-sm" style="max-width: 90px;" placeholder="—">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Salvar</button>
+              </div>
+              <span class="form-text">Ex.: 1 (só o primeiro) ou 2 (primeiro e segundo). Vazio: não destaca ninguém.</span>
             </form>
           </div>
 
@@ -93,7 +108,7 @@
               <p class="text-muted small">Nenhum time participa desta categoria (inclua pelos participantes do campeonato).</p>
             @elseif ($doCategoria->isEmpty())
               <p class="text-muted small mb-0">{{ $timesDaCat->pluck('nome_time')->implode(', ') }}</p>
-              <p class="text-muted small">Crie um grupo para separar os times.</p>
+              <p class="text-muted small">Crie um grupo (chave) para separar os times.</p>
             @else
             <form action="{{ route('admin.campeonatos.grupos.times', [$campeonato->id_campeonato, $categoria->id_categoria]) }}" method="POST">
               @csrf @method('PUT')
@@ -147,9 +162,13 @@
                 </thead>
                 <tbody>
                   @foreach ($tabela['tabela'] as $pos => $linha)
-                  <tr>
+                  @php $classificado = $tabela['classificados'] && $pos < $tabela['classificados']; @endphp
+                  <tr @class(['table-success js-classificado' => $classificado])>
                     <td>{{ $pos + 1 }}</td>
-                    <td class="fw-semibold">{{ $linha['nome'] }}</td>
+                    <td class="fw-semibold">
+                      {{ $linha['nome'] }}
+                      @if ($classificado)<span class="badge bg-success ms-1">Classificado</span>@endif
+                    </td>
                     <td class="text-center fw-bold">{{ $linha['pontos'] }}</td>
                     <td class="text-center">{{ $linha['pj'] }}</td>
                     <td class="text-center">{{ $linha['v'] }}</td>

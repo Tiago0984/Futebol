@@ -21,10 +21,12 @@ class Jogo extends Model
     protected $primaryKey = 'id_jogo';
     public $timestamps = false;
 
-    // Fase do jogo de campeonato (Fase H, Etapa H4; valores sem acento, rótulo aqui). A classificação conta só a
-    // fase de grupos; o mata-mata é opcional. Amistoso: sem fase (NULL)
+    // Fase do jogo de campeonato (Fase H, Etapa H4; valores sem acento, rótulo aqui), na ordem do campeonato (a
+    // repescagem entrou depois no ENUM, no fim). A classificação conta só a fase de grupos; o mata-mata é
+    // opcional. Amistoso: sem fase (NULL)
     public const FASES = [
         'GRUPOS'         => 'Fase de grupos',
+        'REPESCAGEM'     => 'Repescagem',
         'DEZESSEIS_AVOS' => '16 avos de final',
         'OITAVAS'        => 'Oitavas de final',
         'QUARTAS'        => 'Quartas de final',

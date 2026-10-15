@@ -35,7 +35,7 @@
       @if ($campeonato)
       {{-- Grupos e classificação por categoria (Fase H, Etapa H4) --}}
       <a href="{{ route('admin.campeonatos.grupos', $campeonato->id_campeonato) }}" class="btn btn-sm btn-outline-primary ms-auto" id="btnGrupos">
-        <i class="bi bi-diagram-3"></i> Grupos e classificação
+        <i class="bi bi-diagram-3"></i> Grupos (chaves) e classificação
       </a>
       @endif
       <div>

@@ -64,9 +64,47 @@ class GruposClassificacaoTest extends TestCase
 
         $fase = DB::selectOne("SELECT COLUMN_TYPE t, IS_NULLABLE n FROM information_schema.COLUMNS
             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_jogos' AND COLUMN_NAME = 'fase_jogo'");
-        $this->assertSame("enum('GRUPOS','DEZESSEIS_AVOS','OITAVAS','QUARTAS','SEMIFINAL','TERCEIRO','FINAL')", $fase->t);
+        // A repescagem entrou depois, no fim do ENUM; na lista (e no formulário), logo depois da fase de grupos
+        $this->assertSame("enum('GRUPOS','DEZESSEIS_AVOS','OITAVAS','QUARTAS','SEMIFINAL','TERCEIRO','FINAL','REPESCAGEM')", $fase->t);
         $this->assertSame('YES', $fase->n);
-        $this->assertSame(array_keys(Jogo::FASES), ['GRUPOS', 'DEZESSEIS_AVOS', 'OITAVAS', 'QUARTAS', 'SEMIFINAL', 'TERCEIRO', 'FINAL']);
+        $this->assertSame(['GRUPOS', 'REPESCAGEM', 'DEZESSEIS_AVOS', 'OITAVAS', 'QUARTAS', 'SEMIFINAL', 'TERCEIRO', 'FINAL'], array_keys(Jogo::FASES));
+
+        $classificados = DB::selectOne("SELECT COLUMN_TYPE t, IS_NULLABLE n FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_campeonato_categoria' AND COLUMN_NAME = 'classificados_campeonato_categoria'");
+        $this->assertSame('tinyint unsigned', $classificados->t);
+        $this->assertSame('YES', $classificados->n);
+    }
+
+    public function test_classificados_por_grupo_destacados_e_repescagem_fora_da_conta(): void
+    {
+        $grupo = $this->grupo('Chave A', $this->idSub15M);
+        Campeonato::find($this->copa)->definirGrupos($this->idSub15M, [$this->aacj15 => $grupo, $this->botafogo => $grupo, $this->santos => $grupo]);
+        $this->jogo($this->aacj15, $this->botafogo, 2, 0);
+        $this->jogo($this->botafogo, $this->santos, 1, 0);
+        $this->jogo($this->santos, $this->aacj15, 3, 0, 'REPESCAGEM'); // não conta
+
+        // 2 classificados por grupo (chave) no Sub-15
+        $this->comoAdmin()->put(route('admin.campeonatos.grupos.classificados', [$this->copa, $this->idSub15M]), ['classificados' => 2])
+            ->assertSessionHas('sucesso', '2 classificado(s) por grupo (chave).');
+        $this->comoAdmin()->put(route('admin.campeonatos.grupos.classificados', [$this->copa, $this->idSub15M]), ['classificados' => 0])
+            ->assertSessionHasErrors(['classificados' => 'Informe de 1 a 16 classificados por grupo (chave), ou deixe vazio.']);
+
+        [$sub15, $sub17] = Campeonato::find($this->copa)->classificacoes();
+        $this->assertSame(2, $sub15['classificados']);
+        $this->assertSame([2, null], array_column($sub15['tabelas'], 'classificados')); // "Sem grupo" (São Paulo) não destaca
+        $this->assertSame([['AACJ Sub-15', 3, 1], ['Botafogo', 3, 2], ['Santos', 0, 1]], $this->resumo($sub15['tabelas'][0]['tabela']));
+        $this->assertNull($sub17['classificados']);
+
+        // A tela destaca os 2 primeiros da chave
+        $resposta = $this->comoAdmin()->get(route('admin.campeonatos.grupos', $this->copa))->assertOk()
+            ->assertSee('Grupos (chaves) e classificação')
+            ->assertSee('value="2"', false);
+        $this->assertSame(2, substr_count($resposta->getContent(), 'js-classificado'));
+
+        // Vazio: sem definição
+        $this->comoAdmin()->put(route('admin.campeonatos.grupos.classificados', [$this->copa, $this->idSub15M]), ['classificados' => ''])
+            ->assertSessionHas('sucesso', 'Classificados por grupo (chave) sem definição.');
+        $this->assertNull(Campeonato::find($this->copa)->classificacoes()[0]['classificados']);
     }
 
     public function test_banco_recusa_grupo_de_outra_categoria_no_participante(): void
@@ -181,7 +219,7 @@ class GruposClassificacaoTest extends TestCase
         $this->comoAdmin()->post(route('admin.jogos.store'), $dados)->assertSessionHasNoErrors();
         $this->comoAdmin()->post(route('admin.jogos.store'), [...$dados, 'fase_jogo' => 'SEMIFINAL', 'horario_inicio_evento_calendario' => '16:00'])
             ->assertSessionHasNoErrors();
-        $this->comoAdmin()->post(route('admin.jogos.store'), [...$dados, 'fase_jogo' => 'REPESCAGEM'])
+        $this->comoAdmin()->post(route('admin.jogos.store'), [...$dados, 'fase_jogo' => 'PRELIMINAR'])
             ->assertSessionHasErrors(['fase_jogo' => 'Escolha uma fase da lista.']);
         $this->assertSame(['GRUPOS', 'SEMIFINAL'], Jogo::orderBy('id_jogo')->pluck('fase_jogo')->all());
 

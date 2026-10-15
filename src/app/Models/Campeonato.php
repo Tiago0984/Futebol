@@ -78,6 +78,7 @@ class Campeonato extends Model
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class, 'tbl_campeonato_categoria', 'id_campeonato', 'id_categoria')
+            ->withPivot('classificados_campeonato_categoria')
             ->orderBy('sexo_categoria', 'desc')->orderBy('idade_min_categoria');
     }
 
@@ -238,9 +239,20 @@ class Campeonato extends Model
         return null;
     }
 
+    // Quantos passam de cada grupo (chave) na categoria, ou null = não definido (ajuste da Etapa H4, 15/10/2026)
+    public const CLASSIFICADOS_MAX = 16;
+
+    public function definirClassificados(int $idCategoria, ?int $classificados): void
+    {
+        DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->id_campeonato)->where('id_categoria', $idCategoria)
+            ->update(['classificados_campeonato_categoria' => $classificados]);
+        $this->unsetRelation('categorias');
+    }
+
     /**
      * Classificação por categoria e grupo (Fase H, Etapa H4): para cada categoria do campeonato,
-     * ['categoria' => Categoria, 'tabelas' => [['grupo' => nome ou null, 'tabela' => linhas de Jogo::classificacao]]].
+     * ['categoria' => Categoria, 'classificados' => N ou null, 'tabelas' => [['grupo' => nome ou null,
+     * 'classificados' => quantos passam nesta tabela (null na "Sem grupo"), 'tabela' => linhas de Jogo::classificacao]]].
      * Conta só a fase de grupos dos jogos da categoria (a do evento, Etapa H3). Cada grupo lista todos os times
      * dele (os sem jogo com zeros); categoria sem grupo tem uma tabela só, com todos os participantes; com grupos,
      * quem ficou sem grupo vai para a tabela "Sem grupo". Um jogo entre times de grupos diferentes conta para
@@ -259,20 +271,24 @@ class Campeonato extends Model
             $tabela = fn ($doGrupo) => Jogo::classificacao($daCategoria, $doGrupo);
 
             // Grupo vazio: tabela vazia (a lista vazia de times não pode virar "todos que jogaram")
+            $classificados = $categoria->pivot->classificados_campeonato_categoria;
+            $classificados = $classificados === null ? null : (int) $classificados;
+
             $tabelas = [];
             foreach ($grupos[$categoria->id_categoria] ?? [] as $grupo) {
-                $tabelas[] = ['grupo' => $grupo->nome_campeonato_grupo,
+                $tabelas[] = ['grupo' => $grupo->nome_campeonato_grupo, 'classificados' => $classificados,
                     'tabela' => $tabela($times->where('id_campeonato_grupo', $grupo->id_campeonato_grupo)->values())];
             }
             $semGrupo = $times->whereNull('id_campeonato_grupo')->values();
             if (! $tabelas) {
                 // Categoria sem grupo e sem participantes cadastrados: quem jogou
-                $tabelas[] = ['grupo' => null, 'tabela' => $tabela($semGrupo->isNotEmpty() ? $semGrupo : null)];
+                $tabelas[] = ['grupo' => null, 'classificados' => $classificados,
+                    'tabela' => $tabela($semGrupo->isNotEmpty() ? $semGrupo : null)];
             } elseif ($semGrupo->isNotEmpty()) {
-                $tabelas[] = ['grupo' => 'Sem grupo', 'tabela' => $tabela($semGrupo)];
+                $tabelas[] = ['grupo' => 'Sem grupo', 'classificados' => null, 'tabela' => $tabela($semGrupo)];
             }
 
-            $resultado[] = ['categoria' => $categoria, 'tabelas' => $tabelas];
+            $resultado[] = ['categoria' => $categoria, 'classificados' => $classificados, 'tabelas' => $tabelas];
         }
 
         return $resultado;
