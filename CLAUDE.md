@@ -80,6 +80,12 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Convocação (Fase G, Etapa 1, batch 29):** `tbl_convocacao`: `id_convocacao` INT UNSIGNED AI; `id_campeonato`, `id_time` e `id_atleta` INT com sinal (FKs `fk_convocacao_campeonato`, `fk_convocacao_time`, `fk_convocacao_atleta`); `camisa_convocacao` TINYINT UNSIGNED **NOT NULL** (1 a 99, `Convocacao::CAMISA_MIN/MAX`); `id_usuario` BIGINT UNSIGNED nullable (FK `fk_convocacao_usuario`, quem convocou; fora do `$fillable`); `data_convocacao` DATETIME DEFAULT CURRENT_TIMESTAMP. Únicos `convocacao_categoria_atleta_unique` (campeonato, categoria, atleta: um time por atleta em cada categoria; até a H2 era `convocacao_campeonato_atleta_unique`) e `convocacao_camisa_unique` (campeonato, time, camisa). FKs NO ACTION.
   - **Fase H, Etapa H2 (batch 32):** `id_categoria` INT com sinal NOT NULL (a categoria do time no campeonato) e FK composta `fk_convocacao_participante` (campeonato, categoria, time) → único `campeonato_time_categoria_unique` de `tbl_campeonato_time`: só convoca quem é participante naquela categoria.
 - **`tbl_campeonato.id_categoria` é NOT NULL** (todo campeonato tem categoria; o código trata o nulo só por segurança).
+- **Categorias, participantes e grupos do campeonato (Fase H, batches 31 e 33):**
+  - `tbl_campeonato_categoria` (H1): `id_campeonato_categoria` INT UNSIGNED AI; `id_campeonato`, `id_categoria` INT com sinal; único `campeonato_categoria_unique`.
+  - `tbl_campeonato_time.id_categoria` INT NOT NULL (H1), único `campeonato_time_categoria_unique` (campeonato, categoria, time), FK composta `fk_ct_campeonato_categoria`.
+  - `tbl_campeonato_grupo` (H4): `id_campeonato_grupo` INT UNSIGNED AI; `id_campeonato`, `id_categoria` INT com sinal; `nome_campeonato_grupo` VARCHAR(30); únicos `campeonato_grupo_nome_unique` (campeonato, categoria, nome) e `campeonato_grupo_categoria_unique` (id, campeonato, categoria: alvo da FK do participante); FK composta `fk_cg_campeonato_categoria` → `tbl_campeonato_categoria`.
+  - `tbl_campeonato_time.id_campeonato_grupo` INT UNSIGNED nullable (H4): FK composta `fk_ct_grupo` (grupo, campeonato, categoria) → `tbl_campeonato_grupo` (só grupo da mesma categoria).
+  - `tbl_jogos.fase_jogo` ENUM `GRUPOS, DEZESSEIS_AVOS, OITAVAS, QUARTAS, SEMIFINAL, TERCEIRO, FINAL` nullable (H4; rótulos em `Jogo::FASES`; NULL no amistoso).
 - **Tabela própria em vez da `notifications` do Laravel** (Fase 8): a padrão é polimórfica (`notifiable_id` BIGINT UNSIGNED, sem FK possível para `id_atleta` INT), grava nome de classe PHP e guarda os dados num JSON opaco.
 - Todas as FKs existentes estão em `NO ACTION`; não usar `ON DELETE CASCADE` sem discutir.
 - O banco nasceu de script SQL; as migrations `create_*` e `add_foreign_keys_*` estão com batch [0] (marcadas, nunca executadas).
@@ -216,6 +222,13 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Token de 30 dias** (`Atleta::VALIDADE_TOKEN_DIAS`, vale para os dois perfis). Limites: login 5/min por IP e 5/min por e-mail **e perfil**; esqueci-senha 5/min por IP e 3 a cada 10 min por e-mail e perfil.
 - **Responsável único pelo CPF e e-mail único:** cadastro do site e do admin reaproveitam o responsável do mesmo CPF (só dígitos, `Responsavel::porCpf`); o site recusa CPF já cadastrado com outro e-mail; e-mail do responsável único entre responsáveis (normalizado). Os repetidos antigos foram fundidos pela migration 000005 (seção 6).
 - **Selo "Sem acesso ao app"** na lista de atletas quando nem o atleta nem algum responsável tem e-mail.
+
+### Grupos, fase e classificação (Fase H, Etapa H4; dono do projeto, 14 e 15/10/2026)
+- **Grupos opcionais, por categoria do campeonato** ("Grupo 01", "Grupo A"); um grupo por time em cada categoria (no participante). Grupo com times não é removido; tirar a categoria do campeonato tira os grupos dela.
+- **Fase do jogo de campeonato** em lista fixa (`Jogo::FASES`), obrigatória e começando em "Fase de grupos"; o mata-mata é opcional. Amistoso: sem fase.
+- **Classificação** (`Campeonato::classificacoes()`, linhas de `Jogo::classificacao()`): **por categoria e grupo, só a fase de grupos**, com placar, publicada e ATIVO. Cada grupo lista **todos os times dele** (os sem jogo com zeros; grupo vazio = tabela vazia); categoria sem grupo = uma tabela com todos os participantes; com grupos, quem ficou sem grupo vai para "Sem grupo". Jogo entre times de grupos diferentes conta para cada um no grupo dele. Desempate provisório (seção 8, pergunta 13).
+- **Tela "Grupos e classificação"** (`/admin/campeonatos/{id}/grupos`, `GruposController`, botão no topo de "Jogos · Campeonato"): um bloco por categoria com os grupos (criar, renomear, remover o vazio), o grupo de cada time (select) e a classificação de cada grupo. A fase aparece na tela do jogo ("Fase"), no bloco de cada jogo ("Sub-15 Masculino · Final") e na lista de Jogos (fora a fase de grupos).
+- **Site:** a classificação (página do campeonato e prévia da home) já conta só a fase de grupos; as abas por categoria e grupo vêm na H5.
 
 ### Convocação (Fase G, Etapa 1; dono do projeto, 13 e 14/10/2026; por categoria desde a Fase H, Etapa H2, 15/10)
 - **Como a AACJ funciona** (dono do projeto, 15/10/2026): os alunos treinam na rotina da semana; quando há um campeonato, são **selecionados** e a AACJ forma **um time por categoria** (um Sub-11, um Sub-13, um Sub-15…). A convocação é essa seleção.
@@ -654,7 +667,16 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Roteiro no navegador feito em casa (15/10, 10 passos, todos OK, pelo Claude no navegador):** formulário com as categorias da Liga e os times por categoria; Copa Escola com a categoria preenchida; jogo Sub-17 Time Verde x Time Visitante (evento 216) sem convocados; Pedro Lima (16) convocado e inscrito pelo "Preencher pela convocação", sem aviso de idade; Sub-17 com jogo recusado ao sair da Liga; jogo passado para o Sub-15 com o Pedro marcado acima da idade e "Publicar" desabilitado. Ajuste depois do roteiro: o select da categoria mostra "— Selecionar —" (e não "Sem categoria") no campeonato sem categoria escolhida.
   - **Dados de teste que ficaram no `db_futebol` de casa:** o jogo do evento 216 (Liga, Sub-15, Time Verde x Time Visitante, 07/11/2026) **oculto e em rascunho**, com o Pedro Lima inscrito ("Não convocado", acima da idade). A Liga voltou a só Sub-15.
 - **Etapa H3 aprovada.** Daqui em diante pode publicar no servidor (com OK): migrations 31 e 32 (H1 e H2) e o batch 30 (Fase G, Etapa 2), que ainda não foram para lá.
-- **Próximo passo:** H4 (grupos, fase e classificação).
+
+#### Fase H, Etapa H4 — grupos, fase e classificação (computador de casa, 15/10/2026; regras na seção 4, "Grupos, fase e classificação"; tabelas na seção 3)
+- **Migration no `db_futebol` de casa:** batch 33 (`2026_10_15_000003_grupos_e_fase_do_jogo`; não depende de ids). Ensaiada antes no `db_futebol_test` com o backup (8 jogos de campeonato na fase de grupos, 9 amistosos sem fase).
+- **Backup** em `backup/` (só em casa): `db_futebol_antes_grupos_fase_20261015_115021.sql`.
+- **Código:** model `CampeonatoGrupo`; `Campeonato::grupos()`, `participantesComGrupo()`, `definirGrupos()`, `classificacoes()`; `gravarCategoriasEParticipantes()` e `apagarCategoriasEParticipantes()` tiram os grupos; `Jogo::FASES`, `fase_label`, `contaNaClassificacao()` e `classificacao($jogos, $times)`; `JogosController` com a fase; `GruposController` e a view `admin/campeonatos/grupos`; menu ("Jogos" ativo na tela nova).
+- **Testes:** `GruposClassificacaoTest` (8); a migration da H1 no teste dela desfaz antes a H4. **625 testes passando.**
+- **Roteiro no navegador feito em casa (15/10, 9 passos, todos OK, pelo Claude no navegador), na Copa Escola:** tabela única sem grupos; Grupo A (Azul e Visitante) e Grupo B (Verde) com o empate entre grupos contando para cada um; nome repetido recusado; grupo com times não removido; campo Fase; final Time Verde 5 × 0 Time Visitante (evento 217) publicada sem contar na classificação (admin e site); fase no bloco e na lista; grupos desfeitos. **Bug achado e corrigido:** grupo vazio mostrava todos os times que jogaram (agora, tabela vazia).
+  - **Dados de teste que ficaram no `db_futebol` de casa:** o jogo do evento 217 (Copa Escola, final, Time Verde 5 × 0 Time Visitante, 01/10/2026) **oculto**. A Copa Escola voltou a não ter grupos.
+- **Etapa H4 aprovada.**
+- **Próximo passo:** H5 (site e API: página do campeonato com abas por categoria e a classificação de cada grupo).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
