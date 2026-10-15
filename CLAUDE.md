@@ -222,16 +222,23 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Só atleta ATIVO é convocado;** convocado inativado fica na lista com o selo "Inativo" e **não conta** (`Convocacao::deAtivos()`). A exclusão definitiva do atleta apaga as convocações.
 - **Bloqueios:** time ou campeonato com convocados não é excluído; time com convocados **não sai dos participantes** na edição do campeonato (`Campeonato::timesQueSaemComConvocados()`).
 - **Telas:** bloco **"Convocação"** no topo de "Jogos · Campeonato" (um time interno participante por linha, "N convocado(s)" ou "Sem convocados") → tela **"Convocados · Time"** (`/admin/campeonatos/{id}/times/{timeId}/convocados`, `ConvocacaoController`): lista pela camisa (editável na linha), remover (com confirmação) e "Convocar atletas" com a caixa `admin.partials.escolher-atletas` (agora com `$bloqueados` e `$comCamisa`). O item "Jogos" do menu fica ativo nela.
-- **Jogo de campeonato inscreve os convocados** (Etapa 2, 14/10/2026; decisões do dono do projeto): a lista "quem joga por qual time" vem da convocação do campeonato do jogo (`Jogo::atletasPorTime()`/`atletasDosTimes()`, regra única; `convocadosDosTimes()`); o **amistoso continua pelo elenco** até a Etapa 3 (`Jogo::pelaConvocacao()`, `origemAutomatica()`).
+- **Jogo de campeonato inscreve os convocados** (Etapa 2, 14/10/2026; decisões do dono do projeto): a lista "quem joga por qual time" vem da convocação do campeonato do jogo (`Jogo::atletasPorTime()`/`atletasDosTimes()`, regra única; `convocadosDosTimes()`; `Jogo::pelaConvocacao()`). O amistoso não tem lista automática (Etapa 3, abaixo).
   - **Origem nova `CONVOCACAO`** ("Pela convocação"). Criar o jogo inscreve os convocados ativos dos times internos **já escalados** (um time por atleta no campeonato: some o caso "nos dois times"); conflito na criação pelos convocados.
   - **"Preencher pela convocação"** no lugar do "Preencher pelo elenco" (mesma rota `eventos.escalacao.elenco`): inscreve quem falta e escala quem está sem time; ninguém sai. Contador "N convocado(s) ainda não…"/"Todos os convocados estão inscritos".
   - **Troca de time:** sai quem entrou automaticamente (`CONVOCACAO` ou `ELENCO`) e joga por um time que saiu e por nenhum que fica, pela convocação do campeonato; inscrição `ELENCO` antiga só sai se o atleta for convocado pelo time que saiu.
   - **"Não convocado"** no lugar de "Fora do elenco" no jogo de campeonato (tela do jogo: "Convocado: Time X" / "Não convocado · convocado pelo Time Y"; jogadores do time no jogo: coluna "Convocação" e camisa da convocação). Só aviso.
   - **Camisa da convocação ao lado do nome** na escalação do jogo (`Jogo::camisas()`).
   - **"Sem convocados: Time X"** no aviso ao criar/trocar time; "Atualizar inscritos pela categoria" no jogo de campeonato aponta o "Preencher pela convocação".
-  - **Convocação mexida depois:** convocar quando o time já tem jogos futuros no campeonato lembra o "Preencher pela convocação" (`Time::jogosFuturosNoCampeonato()`); remover da convocação mantém a inscrição e avisa em quantos jogos futuros do campeonato (`Time::jogosFuturosComAtleta(..., $idCampeonato)`). O aviso de sair do **elenco** passa a contar **só amistosos**.
+  - **Convocação mexida depois:** convocar quando o time já tem jogos futuros no campeonato lembra o "Preencher pela convocação" (`Time::jogosFuturosNoCampeonato()`); remover da convocação mantém a inscrição e avisa em quantos jogos futuros do campeonato (`Time::jogosFuturosComAtleta(..., $idCampeonato)`).
   - **Jogos anteriores à regra ficam como estão** (sem migração de dados): quem não é convocado aparece "Não convocado"; "Preencher pela convocação" acrescenta quem falta.
   - **Limitação:** mudar só o campeonato de um jogo (mesmos times) não refaz as inscrições; usar "Preencher pela convocação".
+- **Amistoso escolhe os atletas no jogo** (Etapa 3, 14/10/2026; decisões do dono do projeto):
+  - **Um time da AACJ (interno) contra um externo** (`Jogo::erroDosTimesDoAmistoso()`, conferido ao criar e ao editar, inclusive os amistosos antigos de AACJ x AACJ, que ficam como estão até alguém editar): AACJ x AACJ é treino; externo x externo não tem atleta da escolinha. AACJ x AACJ só dentro de campeonato.
+  - **Nasce rascunho sem ninguém inscrito** (nem elenco nem convocação; `Jogo::escolheAtletas()`, `atletasDosTimes()` sem campeonato = []). Mensagem "Escolha os atletas do Time X em "Escolher atletas", nesta tela."
+  - **"Escolher atletas"** na tela do amistoso (caixa `admin.partials.escolher-atletas`, ativos ainda não inscritos por categoria; rota `eventos.escalacao.escolher`, `CalendarioController::escolherAtletas`): inscreve os marcados como **INDIVIDUAL já escalados no time da AACJ** (`Jogo::timeDaAcj()`), com alerta de conflito; quem já está inscrito é ignorado. **Sem limite de idade e sem camisa**; outra categoria/sexo só avisa. Substitui no amistoso os cards "Inscrever atleta" e "Adicionar todos de uma categoria"; o "Preencher" é recusado. A inscrição avulsa (rota de inscrição) no amistoso também escala no time da AACJ.
+  - **Trocar o time da AACJ** passa os inscritos para o time novo (`Jogo::escalarNoTimeDaAcj()`; "N atleta(s) passaram para o Time X."); trocar só o adversário não mexe em ninguém.
+  - Telas: no amistoso, sem "Fora do elenco"/"Elenco: …"; jogadores do time no jogo só com os nomes.
+- **O elenco fixo (`tbl_atleta_time`) não inscreve mais em jogo nenhum** (Etapa 3): a tela do Elenco avisa isso e não conta mais jogos ao remover; `Jogo::elencoDosTimes()` saiu. O cadastro do atleta (caixas de times e camisa), a tela Elenco, o site e a API ainda usam o elenco: retirada na Etapa 4.
 
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
@@ -576,13 +583,33 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 #### Fase G, Etapa 2 — jogo de campeonato pela convocação (computador de casa, 14/10/2026; regras na seção 4, "Convocação")
 - **Migration no `db_futebol` de casa:** batch 30 (`2026_10_14_000002_add_convocacao_to_origem_evento_atleta`, só amplia o ENUM; não depende de ids). **Servidor e Senac:** rodar o `migrate` normal (backup antes).
 - **Backup** em `backup/` (só em casa): `db_futebol_antes_convocacao_origem_20261014_153436.sql`.
-- **Testes:** `JogoConvocacaoTest` (10); `JogoEventoTest`, `JogoIdadeCampeonatoTest` e `EventoFluxoTest` passaram a convocar nos jogos de campeonato; `JogoElencoTest` continua cobrindo o amistoso. **583 testes passando.**
+- **Testes:** `JogoConvocacaoTest` (10); `JogoEventoTest`, `JogoIdadeCampeonatoTest` e `EventoFluxoTest` passaram a convocar nos jogos de campeonato. **583 testes passando** (antes da Etapa 3).
 - **Roteiro no navegador feito em casa (14/10, 10 passos, todos OK):** jogo antigo de 10/10 (evento 209, oculto) com camisas, "Convocado: Time Azul", "Não convocado" e "Preencher pela convocação"; jogadores do time no jogo com a coluna Convocação; jogo novo de 24/10 (evento 213) nascendo com os 5 convocados; troca para o Verde ("Sem convocados") e para o Preto; remover e convocar de novo com os avisos dos jogos futuros; amistoso (evento 205) continua pelo elenco.
   - **Depois do roteiro:** no jogo de campeonato, os inscritos de cada time (tela do jogo e jogadores do time no jogo) ficam na **ordem da camisa** da convocação, sem camisa no fim, pelo nome; no amistoso, pelo nome.
   - Dados de teste que ficaram no `db_futebol` de casa: Atleta Teste API inscrito (CONVOCACAO) no jogo 11; o jogo do evento 213 (Time Preto x Time Visitante, com o Tiago) **oculto**; o Tiago reconvocado no Time Preto da Liga (camisa 10).
 - **Falta:** publicar no servidor (avançar a `main`; lá, backup, `git pull`, `migrate --force` do batch 30 e `optimize:clear`).
 - **Manual do painel** para quem administra: `docs/manual/Manual_do_Painel_AACJ.pdf` (fonte `.html`; PDF gerado pelo Edge em modo headless). Atualizar junto quando um fluxo do admin mudar.
-- **Próximo passo:** roteiro da Etapa 2; candidatos: atleta aprovado no meio do mês entrar nos treinos já gerados (débito 7b) e Fase G, Etapa 3 (amistoso escolhe os atletas no jogo).
+
+#### Fase G, Etapa 3 — amistoso escolhe os atletas no jogo (computador de casa, 14/10/2026; regras na seção 4, "Convocação")
+- **Sem migration.** Origem das escolhas: `INDIVIDUAL`.
+- **Testes:** `JogoAmistosoTest` (11, novo). `JogoElencoTest` e `JogoEscalacaoTest` passaram a usar jogo de campeonato com convocação (o nome `JogoElencoTest` ficou por história); saíram os testes de "atleta nos dois elencos" (a convocação não permite); `JogoChegadaTest`, `JogoConvocacaoTest`, `JogoEventoTest`, `JogoIdadeCampeonatoTest`, `EventoFluxoTest` e `MenuAdminTest` ajustados ao amistoso sem elenco. **593 testes passando.**
+- **Manual** atualizado (R6, tela do jogo, Times, selos e "em construção").
+- **Roteiro no navegador feito em casa (14/10, 9 passos, todos OK):** AACJ x AACJ recusado; amistoso de 31/10 (evento 214, jogo 16) nascendo vazio; "Escolher atletas" com João, Lucas e Pedro (16 anos, entra); troca do mandante para o Verde ("3 atleta(s) passaram para o Time Verde."); jogadores do time só com os nomes; aviso na tela do Elenco. O jogo do evento 214 ficou **oculto**.
+  - Notas: a categoria do amistoso vem sugerida pelo mandante (Time Azul = Sub-11), daí o aviso "Fora da categoria" para os mais velhos; o elenco do Time Azul lista o atleta 11 (Tiago Silva, **REJEITADO**) junto do atleta 4 (homônimo, ativo): a tela de Elenco mostra quem não está ativo (sai na Etapa 4).
+- **Falta:** publicar no servidor (junto com a Etapa 2); copiar o PDF regenerado do manual para `docs/manual/` (o arquivo estava aberto no Windows).
+- **Etapa 4 (retirar o elenco fixo) adiada para depois da Fase H**, que muda a convocação de novo.
+
+#### Fase H (planejada) — campeonato com várias categorias (dono do projeto, 14/10/2026)
+- **Origem:** tabela real da "Copa São Carlos de Futebol de Base 2026" (Primeira Fase, 17/10): um campeonato com Sub-11, Sub-13, Sub-15 e Sub-17, grupos (Grupo 01 a 03), cada jogo numa arena (com endereço); a AACJ (Juscelino) joga Sub-11 13:00, Sub-15 14:00 e Sub-17 15:00 contra o Botafogo na Arena Juscelino.
+- **Respostas do dono da AACJ:** o ideal é **mostrar a classificação no site**; os atletas de cada categoria são outros, mas um ou outro do Sub-15 pode ir para o Sub-17; é **comum** campeonato com várias categorias, e às vezes ele forma **dois ou mais times** (na mesma categoria).
+- **Hoje não cabe:** campeonato tem uma categoria só (idade, convocação e categoria dos jogos). Alternativa sem código, só como remendo: um campeonato por categoria.
+- **Proposta (em etapas, com migration):** (1) categorias do campeonato (lista, as "divisões"); (2) participante por categoria (o mesmo time pode estar em várias; "AACJ A"/"AACJ B" na mesma); (3) convocação por categoria (camisa e idade daquela categoria; o mais novo sobe); (4) jogo com categoria (idade, convocação e classificação por ela); (5) grupos por categoria e classificação por categoria e grupo; (6) site com abas por categoria. Mexe em convocação, idade, criação de jogo, classificação, site e API.
+- **Perguntas para o dono da AACJ antes de começar:**
+  1. O atleta do Sub-15 que sobe **joga nas duas categorias** (até no mesmo dia) ou sai do Sub-15?
+  2. Nome dos times: "AACJ Juscelino" em todas as categorias (com A/B quando houver dois) ou "AACJ Sub-15", "AACJ Sub-17"?
+  3. A classificação exige **os jogos dos outros clubes**: quem lança esses jogos e placares? (sem isso, só a agenda da AACJ)
+  4. Tem **mata-mata** depois dos grupos? A classificação monta isso ou só mostra?
+- **Ordem combinada:** fechar a Etapa 3 → levar as perguntas → com as respostas, plano detalhado da Fase H no CLAUDE.md e começar pelas categorias do campeonato.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).

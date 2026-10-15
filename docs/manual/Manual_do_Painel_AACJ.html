@@ -95,7 +95,7 @@
   <tr><td><strong>Categoria</strong></td><td>A faixa de idade: Sub-9, Sub-11, Sub-13, Sub-15 e Sub-17, masculino e feminino (10 no total). A idade conta pelo <strong>ano</strong> de nascimento.</td><td><span class="caminho">Cadastros › Categorias</span></td></tr>
   <tr><td><strong>Grade de treino</strong></td><td>O <strong>modelo</strong> da semana: "toda terça, das 9h às 11h, no Campo A". A grade sozinha não aparece para ninguém: ela serve para <strong>gerar</strong> os treinos de verdade, mês a mês.</td><td><span class="caminho">Esporte › Grade de treino</span></td></tr>
   <tr><td><strong>Evento</strong></td><td>Um compromisso com data e hora: um treino de um dia, um jogo, uma reunião, um exame. É o que vai para a agenda do atleta.</td><td><span class="caminho">Esporte › Eventos › Calendário</span></td></tr>
-  <tr><td><strong>Inscrição</strong></td><td>A ligação "este atleta participa deste evento". Pode ser automática (pela categoria, pela convocação, pelo elenco) ou escolhida à mão (individual).</td><td>Dentro de cada evento</td></tr>
+  <tr><td><strong>Inscrição</strong></td><td>A ligação "este atleta participa deste evento". Pode ser automática (pela categoria do evento ou pela convocação do campeonato) ou escolhida à mão (individual, como no amistoso).</td><td>Dentro de cada evento</td></tr>
   <tr><td><strong>Time</strong></td><td><strong>Interno</strong> = um time da AACJ (ex.: "AACJ Sub-15"). <strong>Externo</strong> = o adversário (não tem atletas no sistema).</td><td><span class="caminho">Cadastros › Times</span></td></tr>
   <tr><td><strong>Campeonato</strong></td><td>Competição com categoria (faixa de idade), datas e times participantes.</td><td><span class="caminho">Eventos › Campeonatos</span></td></tr>
   <tr><td><strong>Convocação</strong></td><td>A lista de quem joga por cada time da AACJ <strong>naquele campeonato</strong>, com o número da camisa. Feita uma vez por campeonato.</td><td>Jogos do campeonato › bloco Convocação</td></tr>
@@ -149,7 +149,7 @@
   <tr><td>Grade › Gerar agenda do mês</td><td>Transforma a grade em treinos de verdade no mês escolhido.</td></tr>
   <tr><td>Notificações</td><td>Tudo o que foi avisado aos atletas e o botão "Novo aviso".</td></tr>
   <tr><td rowspan="2">CADASTROS</td><td>Categorias</td><td>As faixas de idade.</td></tr>
-  <tr><td>Times</td><td>Times da AACJ e adversários; o elenco de cada time interno.</td></tr>
+  <tr><td>Times</td><td>Times da AACJ e adversários.</td></tr>
   <tr><td rowspan="2">PESSOAS</td><td>Atletas</td><td>Cadastro dos atletas ativos e inativos.</td></tr>
   <tr><td>Matrículas</td><td>Pedidos de matrícula feitos pelo site (pendentes e rejeitadas).</td></tr>
   <tr><td rowspan="2">SISTEMA</td><td>Ver site</td><td>Abre o site público.</td></tr>
@@ -278,11 +278,18 @@
 <h2>R6. Marcar um amistoso</h2>
 <ol class="passos">
   <li><span class="caminho">Esporte › Jogos</span> › <span class="botao">Novo Jogo</span>. No campo campeonato, escolha <strong>Amistoso</strong>.</li>
-  <li>Escolha os times, data, horário, local e, se quiser, a categoria (só para exibição).</li>
-  <li>O amistoso usa o <strong>elenco</strong> fixo do time da AACJ (<span class="caminho">Cadastros › Times</span> › Elenco): quem está no elenco entra inscrito. Ajuste e use <span class="botao">Preencher pelo elenco</span> se alguém entrou no elenco depois.</li>
+  <li>Escolha <strong>um time da AACJ</strong> e <strong>um adversário externo</strong>, a data, o horário, o local e, se quiser, a categoria (só para exibição). Salve: o amistoso nasce como <span class="selo amarelo">Rascunho</span>, <strong>sem ninguém inscrito</strong>.</li>
+  <li>Na tela do jogo, use a caixa <span class="botao">Escolher atletas</span>: marque quem vai jogar (os atletas aparecem separados por categoria, com busca) e clique em <span class="botao">Inscrever escolhidos</span>. Todos entram já no time da AACJ do jogo.</li>
+  <li>Para tirar alguém, use o ✕ na lista de inscritos.</li>
   <li>Revise e clique em <span class="botao">Publicar e avisar os atletas</span>, como no campeonato.</li>
 </ol>
-<div class="caixa atencao"><strong>Vai mudar</strong>Está planejado que o amistoso deixe de usar o elenco fixo: os atletas serão escolhidos no próprio jogo. Amistoso não aparece no calendário do site e não tem limite de idade.</div>
+<div class="caixa info"><strong>Regras do amistoso</strong>
+<ul style="margin:2px 0 0">
+  <li><strong>AACJ contra AACJ não é amistoso:</strong> jogo da escolinha contra ela mesma (com coletes) é <strong>treino</strong>, e se cria pelo Calendário. AACJ contra AACJ só existe dentro de um campeonato.</li>
+  <li><strong>Sem limite de idade e sem camisa.</strong> Atleta de outra categoria ou de outro sexo só gera um aviso.</li>
+  <li><strong>Trocou o time da AACJ</strong> no amistoso (ex.: Sub-13 para Sub-15)? Os escolhidos continuam e passam para o time novo.</li>
+  <li>Amistoso não aparece no calendário do site.</li>
+</ul></div>
 
 <h2>R7. Exame, avaliação ou reunião com alguns atletas</h2>
 <ol class="passos">
@@ -348,7 +355,7 @@
 <ul>
   <li><strong>Faixa amarela "Rascunho"</strong> com <span class="botao">Publicar e avisar os atletas</span>.</li>
   <li><strong>Chegada:</strong> horário de chegada, 1 hora antes do início.</li>
-  <li><strong>Escalação:</strong> quantos atletas em cada time e quantos sem time, mais o botão <span class="botao">Preencher pela convocação</span> (campeonato) ou <span class="botao">Preencher pelo elenco</span> (amistoso), que inscreve quem falta e escala quem está sem time. Ninguém sai.</li>
+  <li><strong>Escalação:</strong> quantos atletas em cada time e quantos sem time. No campeonato, o botão <span class="botao">Preencher pela convocação</span> inscreve os convocados que faltam e escala quem está sem time (ninguém sai). No amistoso, no lugar dele aparece a caixa <span class="botao">Escolher atletas</span>.</li>
   <li><strong>Inscritos lado a lado:</strong> mandante à esquerda, visitante à direita. O time adversário aparece travado. Cada atleta tem a camisa, o seletor de time e o aviso "Convocado: Time X" ou <span class="selo amarelo">Não convocado</span>.</li>
   <li><span class="botao">Placar</span>: lançar o resultado rapidamente.</li>
 </ul>
@@ -393,7 +400,7 @@
 <h2>Times</h2>
 <ul>
   <li>Cadastro de times internos e externos, com logo e categoria.</li>
-  <li><strong>Elenco</strong> (só time interno): adicionar ou remover atletas. Hoje o elenco é usado <strong>só nos amistosos</strong>; no campeonato vale a convocação.</li>
+  <li><strong>Elenco</strong> (só time interno): lista antiga de atletas do time. <strong>Não é mais usada nos jogos</strong> (no campeonato vale a convocação; no amistoso, a escolha no jogo) e vai sair do sistema.</li>
 </ul>
 
 <h2>Atletas</h2>
@@ -431,10 +438,10 @@
   <tr><th style="width:26%">Selo</th><th>Quer dizer</th></tr>
   <tr><td><span class="selo">Pela categoria</span></td><td>Entrou sozinho por ser da categoria do evento. Sai se o evento mudar de categoria.</td></tr>
   <tr><td><span class="selo">Pela convocação</span></td><td>Entrou sozinho por estar convocado pelo time no campeonato. Sai se o time dele sair do jogo.</td></tr>
-  <tr><td><span class="selo">Pelo elenco</span></td><td>Entrou sozinho pelo elenco do time (amistoso).</td></tr>
+  <tr><td><span class="selo">Pelo elenco</span></td><td>Só em jogos antigos: entrou pelo elenco do time, antes da convocação.</td></tr>
   <tr><td><span class="selo">Individual</span></td><td>Escolhido à mão. Nenhuma troca automática tira o atleta; só a remoção.</td></tr>
   <tr><td><span class="selo amarelo">Não convocado</span></td><td>Escalado num time do campeonato pelo qual não está convocado. Só aviso.</td></tr>
-  <tr><td><span class="selo amarelo">Fora do elenco</span></td><td>O mesmo, no amistoso.</td></tr>
+
   <tr><td><span class="selo vermelho">Acima da idade</span></td><td>Passa da idade do campeonato. Precisa sair antes de publicar o jogo.</td></tr>
   <tr><td><span class="selo amarelo">Fora do turno</span></td><td>Treino no mesmo turno da escola do atleta. Só aviso.</td></tr>
   <tr><td><span class="selo amarelo">Fora da categoria / Sexo diferente</span></td><td>Atleta de outra categoria ou sexo no evento. Só aviso.</td></tr>
@@ -472,8 +479,9 @@
 
 <h2>O que ainda está em construção</h2>
 <ul>
-  <li><strong>Jogo de campeonato pela convocação:</strong> descrito neste manual, já pronto no computador de desenvolvimento, mas <strong>ainda não publicado no site no ar</strong>. Até lá, o site no ar inscreve pelo elenco do time.</li>
-  <li><strong>Amistoso sem elenco fixo:</strong> escolher os atletas no próprio jogo.</li>
+  <li><strong>Jogo de campeonato pela convocação e amistoso com escolha no jogo:</strong> descritos neste manual, já prontos no computador de desenvolvimento, mas <strong>ainda não publicados no site no ar</strong>. Até lá, o site no ar inscreve os dois pelo elenco do time.</li>
+  <li><strong>Retirada do elenco fixo</strong> do cadastro do atleta e da tela de Times.</li>
+
   <li><strong>Posições e titular/reserva</strong> na convocação e no jogo.</li>
   <li><strong>Incluir um atleta novo em todos os treinos do mês</strong> de uma vez.</li>
   <li><strong>E-mails de verdade:</strong> o servidor ainda não envia e-mail. Os convites mostram o link para copiar.</li>
