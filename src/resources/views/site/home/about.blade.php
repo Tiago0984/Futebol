@@ -97,12 +97,17 @@
                     {{-- Aba: Classificação (prévia — top 4) --}}
                     <div class="home-camp-tab-panel" id="class-{{ $camp->id_campeonato }}">
                         @php
-                            $classif      = $classificacaoPorCampeonato[$camp->id_campeonato] ?? [];
+                            $previa        = $classificacaoPorCampeonato[$camp->id_campeonato] ?? ['titulo' => null, 'classificados' => null, 'linhas' => []];
+                            $classif       = $previa['linhas'];
                             $classifPrevia = array_slice($classif, 0, 4);
                         @endphp
                         @if(empty($classifPrevia))
                         <p class="home-tab-empty">Nenhum dado de classificação ainda.</p>
                         @else
+                        {{-- A primeira tabela da primeira categoria (Fase H, Etapa H5); as outras, na página do campeonato --}}
+                        @if($previa['titulo'])
+                        <p class="home-tab-empty" style="text-align:left;margin:8px 0;"><strong>{{ $previa['titulo'] }}</strong></p>
+                        @endif
                         <div style="overflow-x:auto;">
                         <table class="home-class-table">
                             <thead>
@@ -117,9 +122,13 @@
                             </thead>
                             <tbody>
                                 @foreach($classifPrevia as $i => $time)
-                                <tr class="{{ $i === 0 ? 'home-class-leader' : '' }}">
+                                @php $classificado = $previa['classificados'] && $i < $previa['classificados']; @endphp
+                                <tr class="{{ $classificado ? 'camp-classificado' : ($i === 0 ? 'home-class-leader' : '') }}">
                                     <td class="home-class-pos">{{ $i + 1 }}</td>
-                                    <td class="home-class-name">{{ $time['nome'] }}</td>
+                                    <td class="home-class-name">
+                                        {{ $time['nome'] }}
+                                        @if($classificado)<span class="camp-classificado-tag">Classificado</span>@endif
+                                    </td>
                                     <td class="stat-v">{{ $time['v'] }}</td>
                                     <td>{{ $time['e'] }}</td>
                                     <td class="stat-d">{{ $time['d'] }}</td>
@@ -129,10 +138,11 @@
                             </tbody>
                         </table>
                         </div>
-                        @if(count($classif) > 4)
+                        {{-- Mais times, ou outras categorias e grupos: a classificação completa na página do campeonato --}}
+                        @if(count($classif) > 4 || $camp->categorias->count() > 1 || str_contains((string) $previa['titulo'], '·'))
                         <div class="home-tab-ver-mais">
                             <a href="{{ route('campeonato.show', $camp->id_campeonato) }}">
-                                Ver classificação completa ({{ count($classif) }} times) <i class="fa fa-arrow-right"></i>
+                                Ver classificação completa <i class="fa fa-arrow-right"></i>
                             </a>
                         </div>
                         @endif

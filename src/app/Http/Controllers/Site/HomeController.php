@@ -47,16 +47,30 @@ class HomeController extends Controller
 
         // Campeonatos com os jogos visíveis (oculto some; cancelado aparece com o selo)
         $campeonatos = Campeonato::with([
+                'categorias',
                 'jogos' => fn ($q) => $q->visiveis()->ordenadosPelaData('desc'),
                 'jogos.evento', 'jogos.timeCasa', 'jogos.timeVisitante',
             ])
             ->orderBy('data_inicio_campeonato', 'desc')
             ->get();
 
-        // Classificação por campeonato: só jogos com placar e não cancelados
-        $classificacaoPorCampeonato = $campeonatos->mapWithKeys(fn ($camp) => [
-            $camp->id_campeonato => Jogo::classificacao($camp->jogos),
-        ])->all();
+        // Prévia da classificação (Fase H, Etapa H5): a primeira tabela com times da primeira categoria do
+        // campeonato (só a fase de grupos), com o título ("Sub-15 Masculino · Grupo 01") e os classificados
+        $classificacaoPorCampeonato = $campeonatos->mapWithKeys(function ($camp) {
+            foreach ($camp->classificacoes() as $categoria) {
+                foreach ($categoria['tabelas'] as $tabela) {
+                    if ($tabela['tabela']) {
+                        return [$camp->id_campeonato => [
+                            'titulo'        => collect([$categoria['categoria']->rotulo, $tabela['grupo']])->filter()->implode(' · '),
+                            'classificados' => $tabela['classificados'],
+                            'linhas'        => $tabela['tabela'],
+                        ]];
+                    }
+                }
+            }
+
+            return [$camp->id_campeonato => ['titulo' => null, 'classificados' => null, 'linhas' => []]];
+        })->all();
 
         $videoDestaque = Video::where('status_video', 'ATIVO')->orderByDesc('id_video')->first();
 

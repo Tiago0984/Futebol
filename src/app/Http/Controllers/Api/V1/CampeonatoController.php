@@ -7,10 +7,11 @@ use App\Models\Campeonato;
 
 class CampeonatoController extends Controller
 {
-    // GET /api/v1/campeonatos - campeonatos ativos
+    // GET /api/v1/campeonatos - campeonatos ativos, com as categorias (Fase H, Etapa H5; "categoria" continua sendo
+    // a de referência, para não quebrar o app)
     public function index()
     {
-        $campeonatos = Campeonato::with('categoria:id_categoria,nome_categoria')
+        $campeonatos = Campeonato::with(['categoria:id_categoria,nome_categoria', 'categorias'])
             ->where('status_campeonato', 'ATIVO')
             ->orderByDesc('data_inicio_campeonato')
             ->get([
@@ -28,15 +29,17 @@ class CampeonatoController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $campeonatos,
+            'data'    => $campeonatos->map(fn ($camp) => [...$camp->toArray(), 'categorias' => $this->categorias($camp)]),
         ]);
     }
 
-    // GET /api/v1/campeonatos/{id} - detalhes, times e jogos do campeonato
+    // GET /api/v1/campeonatos/{id} - detalhes, categorias, times, jogos (com fase e categoria) e a classificação
+    // por categoria e grupo (chave), só a fase de grupos (Fase H, Etapa H5)
     public function show($id)
     {
         $campeonato = Campeonato::with([
                 'categoria:id_categoria,nome_categoria',
+                'categorias',
                 'times:tbl_time.id_time,nome_time,logo_time',
                 // Jogos visíveis, pela data do evento; data_jogo, horario_jogo, local_jogo e status_jogo
                 // vêm do evento (Jogo::$appends), com os mesmos nomes de antes para não quebrar o app
@@ -55,9 +58,37 @@ class CampeonatoController extends Controller
             ], 404);
         }
 
+        $classificacao = collect($campeonato->classificacoes())->map(fn ($c) => [
+            'id_categoria'  => (int) $c['categoria']->id_categoria,
+            'categoria'     => $c['categoria']->rotulo,
+            'classificados' => $c['classificados'],
+            'grupos'        => array_map(fn ($tabela) => [
+                'grupo'         => $tabela['grupo'],
+                'classificados' => $tabela['classificados'],
+                'tabela'        => array_map(fn ($linha, $pos) => [
+                    'posicao' => $pos + 1, 'time' => $linha['nome'], 'logo' => $linha['logo'],
+                    'pontos' => $linha['pontos'], 'jogos' => $linha['pj'], 'vitorias' => $linha['v'],
+                    'empates' => $linha['e'], 'derrotas' => $linha['d'], 'gols_marcados' => $linha['gm'],
+                    'gols_sofridos' => $linha['gc'], 'saldo' => $linha['gm'] - $linha['gc'],
+                    'classificado' => $tabela['classificados'] !== null && $pos < $tabela['classificados'],
+                ], $tabela['tabela'], array_keys($tabela['tabela'])),
+            ], $c['tabelas']),
+        ])->all();
+
         return response()->json([
             'success' => true,
-            'data'    => $campeonato,
+            'data'    => [...$campeonato->toArray(), 'categorias' => $this->categorias($campeonato), 'classificacao' => $classificacao],
         ]);
+    }
+
+    // Categorias do campeonato no JSON: [{id_categoria, nome_categoria, sexo_categoria, rotulo}]
+    private function categorias(Campeonato $campeonato): array
+    {
+        return $campeonato->categorias->map(fn ($categoria) => [
+            'id_categoria'   => (int) $categoria->id_categoria,
+            'nome_categoria' => $categoria->nome_categoria,
+            'sexo_categoria' => $categoria->sexo_categoria,
+            'rotulo'         => $categoria->rotulo,
+        ])->all();
     }
 }

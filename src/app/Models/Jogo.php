@@ -48,7 +48,8 @@ class Jogo extends Model
 
     // No JSON da API, os dados do evento vêm achatados (data_jogo e status_jogo mantêm os nomes de antes,
     // para não quebrar o app); o evento em si não vai
-    protected $appends = ['data_jogo', 'horario_jogo', 'local_jogo', 'status_jogo'];
+    // Fase H, Etapa H5: a fase (rótulo; fase_jogo é o valor gravado) e a categoria do jogo (a do evento)
+    protected $appends = ['data_jogo', 'horario_jogo', 'local_jogo', 'status_jogo', 'fase', 'id_categoria'];
     protected $hidden  = ['evento'];
 
     public function evento()
@@ -640,6 +641,18 @@ class Jogo extends Model
     public function getStatusJogoAttribute(): ?string
     {
         return $this->evento?->status_evento_calendario;
+    }
+
+    // API: "Semifinal" (null no amistoso)
+    public function getFaseAttribute(): ?string
+    {
+        return $this->fase_label;
+    }
+
+    // API: a categoria do jogo (a do evento; no campeonato, uma das categorias dele)
+    public function getIdCategoriaAttribute(): ?int
+    {
+        return $this->evento?->id_categoria === null ? null : (int) $this->evento->id_categoria;
     }
 
     // Título do evento do jogo, gerado pelos times (decisão 5 da Fase 6)

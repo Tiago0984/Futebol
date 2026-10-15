@@ -11,7 +11,7 @@ class CampeonatoController extends Controller
 {
     public function campeonato()
     {
-        $campeonatos = Campeonato::with(['times.categoria'])->get();
+        $campeonatos = Campeonato::with(['categorias', 'times.categoria'])->get();
         $videoDestaque = Video::where('status_video', 'ATIVO')
             ->whereIn('secao_video', ['campeonatos', 'ambas'])
             ->orderByDesc('id_video')
@@ -19,20 +19,39 @@ class CampeonatoController extends Controller
         return view('site.campeonatos.campeonatos', compact('campeonatos', 'videoDestaque'));
     }
 
+    /**
+     * Página do campeonato: uma aba por categoria (Fase H, Etapa H5), cada uma com os times, os jogos (com a
+     * fase) e a classificação de cada grupo (chave), com os classificados destacados (Campeonato::classificacoes:
+     * só a fase de grupos). Campeonato de uma categoria só: sem abas. Rascunho e oculto ficam fora; cancelado
+     * aparece com o selo.
+     */
     public function show($id)
     {
-        $campeonato = Campeonato::with(['times.atletas.cartoes.jogo', 'times.categoria'])->findOrFail($id);
+        $campeonato = Campeonato::with(['categorias', 'times.atletas.cartoes.jogo', 'times.categoria'])->findOrFail($id);
 
-        // Jogos visíveis (oculto some; cancelado aparece com o selo), pela data do evento
+        // Jogos visíveis (oculto e rascunho somem; cancelado aparece com o selo), pela data do evento
         $jogos = Jogo::with(['evento', 'timeCasa', 'timeVisitante'])
             ->where('id_campeonato', $id)
             ->visiveis()
             ->ordenadosPelaData()
             ->get();
 
-        // Classificação: só jogos com placar e não cancelados
-        $classificacao = Jogo::classificacao($jogos);
+        $participantes  = $campeonato->participantesComGrupo()->groupBy('id_categoria');
+        $classificacoes = collect($campeonato->classificacoes())->keyBy(fn ($c) => $c['categoria']->id_categoria);
 
-        return view('site.campeonatos.show', compact('campeonato', 'classificacao', 'jogos'));
+        $abas = $campeonato->categorias->map(fn ($categoria) => [
+            'categoria' => $categoria,
+            'times'     => $campeonato->times->whereIn('id_time', ($participantes[$categoria->id_categoria] ?? collect())->pluck('id_time'))->values(),
+            'jogos'     => $jogos->filter(fn ($jogo) => (int) $jogo->evento->id_categoria === (int) $categoria->id_categoria)->values(),
+            'tabelas'   => $classificacoes[$categoria->id_categoria]['tabelas'] ?? [],
+        ])->values();
+
+        // Por segurança, campeonato sem a lista de categorias: uma aba só, com tudo
+        if ($abas->isEmpty()) {
+            $abas = collect([['categoria' => null, 'times' => $campeonato->times, 'jogos' => $jogos,
+                'tabelas' => [['grupo' => null, 'classificados' => null, 'tabela' => Jogo::classificacao($jogos)]]]]);
+        }
+
+        return view('site.campeonatos.show', compact('campeonato', 'abas'));
     }
 }

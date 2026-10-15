@@ -68,6 +68,7 @@
             <li><a href="#padrao">Padrão das respostas, datas e paginação</a></li>
             <li><a href="#perfis">Perfis e token</a></li>
             <li><a href="#publicas">Rotas públicas</a></li>
+            <li><a href="#campeonatos">Campeonatos (categorias, fase e classificação)</a></li>
             <li><a href="#autenticacao">Login, logout e senha</a></li>
             <li><a href="#atleta">Área do atleta</a></li>
             <li><a href="#responsavel">Área do responsável</a></li>
@@ -127,8 +128,8 @@
             ['GET', '/categorias/{id}/times', 'Times ativos de uma categoria', '{id}: id da categoria'],
             ['GET', '/noticias', 'Notícias ativas. Filtro opcional: ?categoria=Campeonatos', 'categoria? (filtro pela categoria da notícia)'],
             ['GET', '/noticias/{id}', 'Notícia completa', '{id}: id da notícia'],
-            ['GET', '/campeonatos', 'Campeonatos ativos', '—'],
-            ['GET', '/campeonatos/{id}', 'Detalhes do campeonato com times e jogos (data_jogo com fuso)', '{id}: id do campeonato'],
+            ['GET', '/campeonatos', 'Campeonatos ativos, com as categorias de cada um (ver "Campeonatos")', '—'],
+            ['GET', '/campeonatos/{id}', 'Detalhes do campeonato: categorias, times, jogos (com fase e categoria; data_jogo com fuso) e a classificação por categoria e grupo (ver "Campeonatos")', '{id}: id do campeonato'],
         ];
     @endphp
 
@@ -143,6 +144,37 @@
             <div class="param">Parâmetros: <code>{{ $parametros }}</code></div>
         </div>
     @endforeach
+
+    {{-- ================================================================== --}}
+    <h2 id="campeonatos">Campeonatos</h2>
+    <p class="nota">Um campeonato pode ter várias categorias (ex.: Sub-11, Sub-15 e Sub-17). Cada jogo é de uma categoria e de uma fase. A classificação é por categoria e grupo (chave) e conta só a fase de grupos.</p>
+
+    <div class="card">
+        <div class="tabela">
+        <table>
+            <tr><th>Campo</th><th>Descrição</th></tr>
+            <tr><td><code>categorias</code></td><td>As categorias do campeonato: <code>[{ "id_categoria": 2, "nome_categoria": "Sub-15", "sexo_categoria": "M", "rotulo": "Sub-15 Masculino" }]</code>. O campo antigo <code>categoria</code> continua (uma delas), para não quebrar o app; use <code>categorias</code></td></tr>
+            <tr><td><code>jogos[].fase_jogo</code> / <code>jogos[].fase</code></td><td>A fase do jogo: <code>GRUPOS</code>, <code>REPESCAGEM</code>, <code>DEZESSEIS_AVOS</code>, <code>OITAVAS</code>, <code>QUARTAS</code>, <code>SEMIFINAL</code>, <code>TERCEIRO</code>, <code>FINAL</code>; <code>fase</code> é o rótulo ("Fase de grupos", "Disputa de 3º lugar")</td></tr>
+            <tr><td><code>jogos[].id_categoria</code></td><td>A categoria do jogo (uma das <code>categorias</code>)</td></tr>
+            <tr><td><code>classificacao</code></td><td>Só em <code>/campeonatos/{id}</code>: uma entrada por categoria, com <code>id_categoria</code>, <code>categoria</code> (rótulo), <code>classificados</code> (quantos passam de cada grupo, ou <code>null</code>) e <code>grupos</code></td></tr>
+            <tr><td><code>classificacao[].grupos[]</code></td><td><code>grupo</code> (nome, ou <code>null</code> na categoria sem grupos; "Sem grupo" para quem não está em nenhum), <code>classificados</code> e <code>tabela</code>: <code>posicao</code>, <code>time</code>, <code>logo</code>, <code>pontos</code>, <code>jogos</code>, <code>vitorias</code>, <code>empates</code>, <code>derrotas</code>, <code>gols_marcados</code>, <code>gols_sofridos</code>, <code>saldo</code> e <code>classificado</code> (true para os primeiros que passam)</td></tr>
+        </table>
+        </div>
+<pre>"classificacao": [
+  {
+    "id_categoria": 2, "categoria": "Sub-15 Masculino", "classificados": 2,
+    "grupos": [
+      {
+        "grupo": "Grupo 01", "classificados": 2,
+        "tabela": [
+          { "posicao": 1, "time": "AACJ Sub-15", "logo": "aacj.png", "pontos": 6, "jogos": 2, "vitorias": 2,
+            "empates": 0, "derrotas": 0, "gols_marcados": 5, "gols_sofridos": 1, "saldo": 4, "classificado": true }
+        ]
+      }
+    ]
+  }
+]</pre>
+    </div>
 
     {{-- ================================================================== --}}
     <h2 id="autenticacao">Login, logout e senha</h2>

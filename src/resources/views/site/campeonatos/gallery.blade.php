@@ -13,7 +13,8 @@
         <div class="camp-grid">
             @foreach ($campeonatos as $camp)
             @php
-                $subs = $camp->times->map(fn($t) => $t->categoria)->filter()->unique('id_categoria')->sortBy('nome_categoria');
+                // Selos: as categorias do campeonato (Fase H, Etapa H5; antes, as do cadastro dos times)
+                $subs = $camp->categorias;
             @endphp
             <article class="camp-card">
 
@@ -25,7 +26,7 @@
                         @if($subs->isNotEmpty())
                         <div class="camp-card-subs-banner">
                             @foreach($subs as $sub)
-                            <span class="camp-sub-badge-banner">{{ strtoupper($sub->nome_categoria) }}</span>
+                            <span class="camp-sub-badge-banner">{{ mb_strtoupper($sub->rotulo) }}</span>
                             @endforeach
                         </div>
                         @endif

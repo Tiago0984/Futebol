@@ -20,6 +20,14 @@
             <span class="camp-hero-badge">{{ $campeonato->tipo_campeonato }}</span>
             <h1 class="camp-hero-title">{{ $campeonato->nome_campeonato }}</h1>
 
+            @if($campeonato->categorias->isNotEmpty())
+            <div class="camp-hero-cats">
+                @foreach($campeonato->categorias as $categoria)
+                <span class="camp-hero-cat">{{ $categoria->rotulo }}</span>
+                @endforeach
+            </div>
+            @endif
+
             <div class="camp-hero-meta">
                 <div class="camp-hero-meta-row">
                     <i class="fa fa-calendar"></i>
@@ -50,22 +58,42 @@
 </section>
 
 {{-- ======================================================
-     TIMES PARTICIPANTES
+     CATEGORIAS (Fase H, Etapa H5): uma aba por categoria, cada uma com os times, os jogos (com a fase) e a
+     classificação de cada grupo (chave), com os classificados destacados. Uma categoria só: sem abas.
      ====================================================== --}}
+@php $comAbas = $abas->count() > 1; @endphp
+@if($comAbas)
+<section class="camp-cat-tabs-section">
+    <div class="camp-show-container">
+        <div class="camp-cat-tabs" role="tablist" id="abasCategorias">
+            @foreach($abas as $i => $aba)
+            <button type="button" class="camp-cat-tab-btn {{ $i === 0 ? 'is-active' : '' }}" role="tab"
+                    data-alvo="cat-{{ $aba['categoria']->id_categoria }}">{{ $aba['categoria']->rotulo }}</button>
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
+@foreach($abas as $i => $aba)
+<div class="{{ $comAbas ? 'camp-cat-panel' . ($i === 0 ? ' is-active' : '') : '' }}"
+     @if($comAbas) id="cat-{{ $aba['categoria']->id_categoria }}" role="tabpanel" @endif>
+
+{{-- Times participantes da categoria --}}
 <section class="camp-teams-section">
     <div class="camp-show-container">
 
         <div class="section-title-block">
-            <span class="section-subtitle-tag">Edição {{ \Carbon\Carbon::parse($campeonato->data_inicio_campeonato)->format('Y') }}</span>
+            <span class="section-subtitle-tag">{{ $aba['categoria']?->rotulo ?? 'Edição ' . \Carbon\Carbon::parse($campeonato->data_inicio_campeonato)->format('Y') }}</span>
             <h2>Times Participantes</h2>
-            <p>{{ $campeonato->times->count() }} {{ $campeonato->times->count() == 1 ? 'time inscrito' : 'times inscritos' }} nesta edição</p>
+            <p>{{ $aba['times']->count() }} {{ $aba['times']->count() == 1 ? 'time inscrito' : 'times inscritos' }}</p>
         </div>
 
-        @if($campeonato->times->isEmpty())
+        @if($aba['times']->isEmpty())
         <p class="camp-empty-msg">Nenhum time inscrito ainda.</p>
         @else
         <div class="camp-teams-grid">
-            @foreach ($campeonato->times as $time)
+            @foreach ($aba['times'] as $time)
             @if(strtolower($time->tipo_time) === 'interno')
             {{-- Time interno: abre modal completo com elenco --}}
             <div class="camp-team-card camp-team-clickable"
@@ -102,22 +130,20 @@
     </div>
 </section>
 
-{{-- ======================================================
-     RESULTADOS / JOGOS
-     ====================================================== --}}
-@if($jogos->count() > 0)
+{{-- Jogos da categoria (com a fase quando não é a de grupos) --}}
+@if($aba['jogos']->count() > 0)
 <section class="camp-matches-section">
     <div class="camp-show-container">
 
         <div class="section-title-block">
             <span class="section-subtitle-tag">Resultados</span>
             <h2>Jogos</h2>
-            <p>{{ $jogos->count() }} {{ $jogos->count() == 1 ? 'jogo registrado' : 'jogos registrados' }} nesta edição</p>
+            <p>{{ $aba['jogos']->count() }} {{ $aba['jogos']->count() == 1 ? 'jogo registrado' : 'jogos registrados' }}</p>
         </div>
 
         <div class="camp-matches-list">
             {{-- Os jogos já vêm ordenados pela data do evento --}}
-            @foreach ($jogos as $jogo)
+            @foreach ($aba['jogos'] as $jogo)
             @php $dataJogo = $jogo->evento->data_evento_calendario; @endphp
             <div class="match-card">
 
@@ -136,6 +162,9 @@
                     </div>
 
                     <div class="match-score">
+                        @if($jogo->fase_jogo && ! $jogo->contaNaClassificacao())
+                            <span class="match-fase">{{ $jogo->fase_label }}</span>
+                        @endif
                         @if($jogo->estaCancelado())
                             <span class="event-selo-cancelado"><i class="fa fa-ban"></i> Cancelado</span>
                         @elseif($jogo->temPlacar())
@@ -163,9 +192,7 @@
 </section>
 @endif
 
-{{-- ======================================================
-     CLASSIFICAÇÃO
-     ====================================================== --}}
+{{-- Classificação de cada grupo (chave): só a fase de grupos --}}
 <section class="camp-table-section">
     <div class="camp-show-container">
 
@@ -174,8 +201,16 @@
             <h2>Classificação</h2>
         </div>
 
-        @if(empty($classificacao))
+        @php $comLinhas = collect($aba['tabelas'])->contains(fn ($t) => ! empty($t['tabela'])); @endphp
+        @if(! $comLinhas)
         <p class="camp-empty-msg">Nenhum jogo cadastrado para gerar a classificação.</p>
+        @else
+        @foreach($aba['tabelas'] as $tabela)
+        @if($tabela['grupo'])
+        <h3 class="camp-grupo-titulo">{{ $tabela['grupo'] }}</h3>
+        @endif
+        @if(empty($tabela['tabela']))
+        <p class="camp-empty-msg">Nenhum time neste grupo ainda.</p>
         @else
         <div class="camp-table-wrapper">
             <table class="camp-table">
@@ -194,9 +229,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($classificacao as $pos => $time)
+                    @foreach ($tabela['tabela'] as $pos => $time)
+                    @php $classificado = $tabela['classificados'] && $pos < $tabela['classificados']; @endphp
                     <tr class="
-                        @if($pos === 0) camp-pos-1
+                        @if($classificado) camp-classificado
+                        @elseif($pos === 0) camp-pos-1
                         @elseif($pos === 1) camp-pos-2
                         @elseif($pos === 2) camp-pos-3
                         @endif
@@ -219,6 +256,7 @@
                                  class="camp-table-logo">
                             @endif
                             <span class="camp-table-team-name">{{ $time['nome'] }}</span>
+                            @if($classificado)<span class="camp-classificado-tag">Classificado</span>@endif
                         </td>
                         <td><strong>{{ $time['pontos'] }}</strong></td>
                         <td>{{ $time['pj'] }}</td>
@@ -233,10 +271,32 @@
                 </tbody>
             </table>
         </div>
+        @if($tabela['classificados'])
+        <p class="camp-classificados-legenda">Passam {{ $tabela['classificados'] === 1 ? 'o primeiro' : "os {$tabela['classificados']} primeiros" }} de cada grupo (chave).</p>
+        @endif
+        @endif
+        @endforeach
         @endif
 
     </div>
 </section>
+
+</div>
+@endforeach
+
+@if($comAbas)
+<script>
+// Abas das categorias: mostra o painel da aba clicada
+document.querySelectorAll('#abasCategorias .camp-cat-tab-btn').forEach(function (botao) {
+    botao.addEventListener('click', function () {
+        document.querySelectorAll('#abasCategorias .camp-cat-tab-btn').forEach(function (b) { b.classList.remove('is-active'); });
+        document.querySelectorAll('.camp-cat-panel').forEach(function (p) { p.classList.remove('is-active'); });
+        botao.classList.add('is-active');
+        document.getElementById(botao.dataset.alvo).classList.add('is-active');
+    });
+});
+</script>
+@endif
 
 {{-- Modais dos times internos (reutiliza o partial global) --}}
 @php $times = $campeonato->times; @endphp
