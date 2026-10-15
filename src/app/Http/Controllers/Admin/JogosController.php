@@ -367,6 +367,10 @@ class JogosController extends Controller
         if (! $amistoso && ! $request->filled('id_categoria') && count($categoriasDoCampeonato) === 1) {
             $request->merge(['id_categoria' => $categoriasDoCampeonato[0]]);
         }
+        // Fase (Fase H, Etapa H4): só no jogo de campeonato; sem ela, a fase de grupos
+        if (! $amistoso && ! $request->filled('fase_jogo')) {
+            $request->merge(['fase_jogo' => Jogo::FASE_PADRAO]);
+        }
         $regraCategoria = $amistoso
             ? ['nullable', 'integer', Rule::exists('tbl_categoria', 'id_categoria')
                 ->where(fn ($q) => $q->where('status_categoria', 'ATIVO')->orWhere('id_categoria', $idCategoriaAtual))]
@@ -381,6 +385,7 @@ class JogosController extends Controller
             'placar_time_casa_jogos'           => 'nullable|integer|min:0|required_with:placar_time_visitante_jogos',
             'placar_time_visitante_jogos'      => 'nullable|integer|min:0|required_with:placar_time_casa_jogos',
             'id_categoria'                     => $regraCategoria,
+            'fase_jogo'                        => ['nullable', Rule::in(array_keys(Jogo::FASES))],
             'data_evento_calendario'           => 'required|date',
             'horario_inicio_evento_calendario' => 'nullable|date_format:H:i,H:i:s',
             'horario_fim_evento_calendario'    => 'nullable|date_format:H:i,H:i:s',
@@ -393,12 +398,14 @@ class JogosController extends Controller
             'id_categoria.exists'                  => 'Escolha uma categoria ativa para o amistoso, ou deixe sem categoria.',
             'id_categoria.required'                => 'Escolha a categoria do jogo (uma das categorias do campeonato).',
             'id_categoria.in'                      => 'A categoria do jogo precisa ser uma das categorias do campeonato.',
+            'fase_jogo.in'                         => 'Escolha uma fase da lista.',
         ]);
 
         $this->conferirParticipantes($request, $evento?->jogo);
 
         return [
             'id_campeonato'               => $request->id_campeonato === self::AMISTOSO ? null : (int) $request->id_campeonato,
+            'fase_jogo'                   => $request->id_campeonato === self::AMISTOSO ? null : $request->fase_jogo,
             'id_time_casa'                => (int) $request->id_time_casa,
             'id_time_visitante'           => (int) $request->id_time_visitante,
             'placar_time_casa_jogos'      => $request->filled('placar_time_casa_jogos') ? (int) $request->placar_time_casa_jogos : null,

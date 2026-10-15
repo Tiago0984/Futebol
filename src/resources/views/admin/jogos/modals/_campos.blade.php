@@ -39,6 +39,16 @@
         <small class="text-muted js-ajuda-categoria"></small>
     </div>
 
+    <div class="col-md-5 js-bloco-fase d-none">
+        <label class="form-label" for="{{ $p }}fase">Fase</label>
+        <select name="fase_jogo" id="{{ $p }}fase" class="form-select js-fase">
+            @foreach(\App\Models\Jogo::FASES as $fase => $rotuloFase)
+            <option value="{{ $fase }}" @selected(($valor('fase_jogo') ?? \App\Models\Jogo::FASE_PADRAO) === $fase)>{{ $rotuloFase }}</option>
+            @endforeach
+        </select>
+        <small class="text-muted">A classificação conta só a fase de grupos.</small>
+    </div>
+
     <div class="col-12 js-aviso-participantes d-none">
         <small class="text-muted"><i class="bi bi-info-circle"></i> Os times mostram só os participantes da categoria do jogo.</small>
     </div>

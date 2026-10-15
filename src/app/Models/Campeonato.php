@@ -119,8 +119,9 @@ class Campeonato extends Model
      * Grava as categorias ($idsCategorias, já com a de referência) e os participantes de cada uma
      * ($participantes: [id_categoria => [id_time, ...]]; categoria fora da lista é ignorada), numa transação.
      * Só sai quem saiu e só entra quem entrou: a convocação aponta para o participante (FK composta, Etapa H2),
-     * então quem fica não pode ser apagado e regravado. A FK composta do participante só aceita categoria do
-     * campeonato.
+     * então quem fica não pode ser apagado e regravado (e continua no grupo dele, Etapa H4). A FK composta do
+     * participante só aceita categoria do campeonato. Os grupos da categoria que sai saem junto (os times dela
+     * já saíram).
      */
     public function gravarCategoriasEParticipantes(array $idsCategorias, array $participantes): void
     {
@@ -139,6 +140,8 @@ class Campeonato extends Model
                 ->reject(fn ($linha) => isset($linhas["{$linha->id_categoria}|{$linha->id_time}"]))
                 ->pluck('id_campeonato_time')->all();
             DB::table('tbl_campeonato_time')->whereIn('id_campeonato_time', $saem)->delete();
+            DB::table('tbl_campeonato_grupo')->where('id_campeonato', $this->id_campeonato)
+                ->whereNotIn('id_categoria', $idsCategorias)->delete();
             DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->id_campeonato)
                 ->whereNotIn('id_categoria', $idsCategorias)->delete();
 
@@ -185,7 +188,94 @@ class Campeonato extends Model
     public function apagarCategoriasEParticipantes(): void
     {
         DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)->delete();
+        DB::table('tbl_campeonato_grupo')->where('id_campeonato', $this->id_campeonato)->delete();
         DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->id_campeonato)->delete();
+    }
+
+    // ── Grupos e classificação (Fase H, Etapa H4) ──────────────────────────
+
+    public function grupos()
+    {
+        return $this->hasMany(CampeonatoGrupo::class, 'id_campeonato', 'id_campeonato')->orderBy('nome_campeonato_grupo');
+    }
+
+    /**
+     * Participantes de uma categoria com o grupo de cada um: coleção de {id_time, nome_time, logo_time,
+     * tipo_time, id_campeonato_grupo}, pelo nome do time (todas as categorias, sem $idCategoria; com id_categoria).
+     */
+    public function participantesComGrupo(?int $idCategoria = null)
+    {
+        return DB::table('tbl_campeonato_time as ct')
+            ->join('tbl_time as t', 't.id_time', '=', 'ct.id_time')
+            ->where('ct.id_campeonato', $this->id_campeonato)
+            ->when($idCategoria, fn ($q) => $q->where('ct.id_categoria', $idCategoria))
+            ->orderBy('t.nome_time')
+            ->get(['ct.id_categoria', 'ct.id_campeonato_grupo', 't.id_time', 't.nome_time', 't.logo_time', 't.tipo_time']);
+    }
+
+    /**
+     * Põe os participantes da categoria nos grupos ($grupoPorTime: [id_time => id_grupo ou null = sem grupo]).
+     * Só grupos daquela categoria do campeonato (o banco também confere, pela FK composta); time que não é
+     * participante da categoria é ignorado. Devolve a mensagem de erro, ou null se gravou.
+     */
+    public function definirGrupos(int $idCategoria, array $grupoPorTime): ?string
+    {
+        $idsGrupos = $this->grupos()->where('id_categoria', $idCategoria)->pluck('id_campeonato_grupo')->map(fn ($id) => (int) $id)->all();
+        foreach ($grupoPorTime as $idGrupo) {
+            if ($idGrupo !== null && ! in_array((int) $idGrupo, $idsGrupos, true)) {
+                return 'Escolha um grupo desta categoria do campeonato.';
+            }
+        }
+
+        DB::transaction(function () use ($idCategoria, $grupoPorTime) {
+            foreach ($grupoPorTime as $idTime => $idGrupo) {
+                DB::table('tbl_campeonato_time')->where('id_campeonato', $this->id_campeonato)
+                    ->where('id_categoria', $idCategoria)->where('id_time', (int) $idTime)
+                    ->update(['id_campeonato_grupo' => $idGrupo === null ? null : (int) $idGrupo]);
+            }
+        });
+
+        return null;
+    }
+
+    /**
+     * Classificação por categoria e grupo (Fase H, Etapa H4): para cada categoria do campeonato,
+     * ['categoria' => Categoria, 'tabelas' => [['grupo' => nome ou null, 'tabela' => linhas de Jogo::classificacao]]].
+     * Conta só a fase de grupos dos jogos da categoria (a do evento, Etapa H3). Cada grupo lista todos os times
+     * dele (os sem jogo com zeros); categoria sem grupo tem uma tabela só, com todos os participantes; com grupos,
+     * quem ficou sem grupo vai para a tabela "Sem grupo". Um jogo entre times de grupos diferentes conta para
+     * cada um na tabela do grupo dele.
+     */
+    public function classificacoes(): array
+    {
+        $jogos = $this->jogos()->with(['evento', 'timeCasa', 'timeVisitante'])->get();
+        $participantes = $this->participantesComGrupo();
+        $grupos = $this->grupos()->get()->groupBy('id_categoria');
+
+        $resultado = [];
+        foreach ($this->categorias()->get() as $categoria) {
+            $daCategoria = $jogos->filter(fn ($jogo) => (int) $jogo->evento?->id_categoria === (int) $categoria->id_categoria);
+            $times = $participantes->where('id_categoria', $categoria->id_categoria)->values();
+            $tabela = fn ($doGrupo) => Jogo::classificacao($daCategoria, $doGrupo);
+
+            // Grupo vazio: tabela vazia (a lista vazia de times não pode virar "todos que jogaram")
+            $tabelas = [];
+            foreach ($grupos[$categoria->id_categoria] ?? [] as $grupo) {
+                $tabelas[] = ['grupo' => $grupo->nome_campeonato_grupo,
+                    'tabela' => $tabela($times->where('id_campeonato_grupo', $grupo->id_campeonato_grupo)->values())];
+            }
+            $semGrupo = $times->whereNull('id_campeonato_grupo')->values();
+            if (! $tabelas) {
+                // Categoria sem grupo e sem participantes cadastrados: quem jogou
+                $tabelas[] = ['grupo' => null, 'tabela' => $tabela($semGrupo->isNotEmpty() ? $semGrupo : null)];
+            } elseif ($semGrupo->isNotEmpty()) {
+                $tabelas[] = ['grupo' => 'Sem grupo', 'tabela' => $tabela($semGrupo)];
+            }
+
+            $resultado[] = ['categoria' => $categoria, 'tabelas' => $tabelas];
+        }
+
+        return $resultado;
     }
 
     public function jogos()

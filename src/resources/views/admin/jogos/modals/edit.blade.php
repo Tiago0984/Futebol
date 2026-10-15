@@ -10,6 +10,7 @@
     $valoresJogo = $jogoEmEdicao ? [
         'id_campeonato'                    => $jogoEmEdicao->id_campeonato ?? \App\Http\Controllers\Admin\JogosController::AMISTOSO,
         'id_categoria'                     => $ev->id_categoria,
+        'fase_jogo'                        => $jogoEmEdicao->fase_jogo,
         'id_time_casa'                     => $jogoEmEdicao->id_time_casa,
         'id_time_visitante'                => $jogoEmEdicao->id_time_visitante,
         'data_evento_calendario'           => $ev->data_evento_calendario->format('Y-m-d'),

@@ -166,6 +166,9 @@
                                 @if($ev->categoria)
                                     <div class="text-muted" style="font-size:0.75rem;">{{ $ev->categoria->rotulo }}</div>
                                 @endif
+                                @if($jogo->fase_jogo && $jogo->fase_jogo !== \App\Models\Jogo::FASE_PADRAO)
+                                    <div class="text-muted" style="font-size:0.75rem;">{{ $jogo->fase_label }}</div>
+                                @endif
                             </td>
                             <td class="text-center">
                                 <div class="d-flex align-items-center justify-content-end gap-2">

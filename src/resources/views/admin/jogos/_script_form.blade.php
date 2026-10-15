@@ -54,6 +54,8 @@
         const doCampeonato = !amistoso && opcao?.dataset.categorias ? JSON.parse(opcao.dataset.categorias) : null;
 
         bloco.classList.toggle('d-none', campeonato.value === '');
+        // Fase só no jogo de campeonato (Fase H, Etapa H4)
+        form.querySelector('.js-bloco-fase')?.classList.toggle('d-none', amistoso || campeonato.value === '');
         form.querySelector('.js-rotulo-categoria').textContent = amistoso ? 'Categoria do amistoso' : 'Categoria do jogo';
         form.querySelector('.js-obrigatoria').classList.toggle('d-none', amistoso);
         form.querySelector('.js-ajuda-categoria').textContent = amistoso
@@ -102,6 +104,7 @@
                 f.action = `{{ url('admin/jogos') }}/${this.dataset.id}`;
                 document.getElementById('edit_id_campeonato').value    = this.dataset.campeonato;
                 document.getElementById('edit_id_categoria').value     = this.dataset.categoria;
+                document.getElementById('edit_fase').value             = this.dataset.fase;
                 document.getElementById('edit_id_time_casa').value     = this.dataset.casa;
                 document.getElementById('edit_id_time_visitante').value = this.dataset.visitante;
                 document.getElementById('edit_data').value             = this.dataset.data;

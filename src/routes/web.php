@@ -35,6 +35,7 @@ use App\Http\Controllers\Admin\ConfiguracoesController;
 use App\Http\Controllers\Admin\NotificacoesController;
 use App\Http\Controllers\Admin\TimesDoCampeonatoController;
 use App\Http\Controllers\Admin\ConvocacaoController;
+use App\Http\Controllers\Admin\GruposController;
 use App\Http\Controllers\Admin\AmistososController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
@@ -115,6 +116,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     Route::post('campeonatos/{id}/times/{timeId}/convocados',              [ConvocacaoController::class, 'convocar'])->name('campeonatos.convocados.convocar');
     Route::patch('campeonatos/{id}/times/{timeId}/convocados/{atletaId}',  [ConvocacaoController::class, 'camisa'])->name('campeonatos.convocados.camisa');
     Route::delete('campeonatos/{id}/times/{timeId}/convocados/{atletaId}', [ConvocacaoController::class, 'remover'])->name('campeonatos.convocados.remover');
+    // Grupos e classificação por categoria (Fase H, Etapa H4)
+    Route::get('campeonatos/{id}/grupos',                         [GruposController::class, 'show'])->name('campeonatos.grupos');
+    Route::post('campeonatos/{id}/grupos',                        [GruposController::class, 'criar'])->name('campeonatos.grupos.criar');
+    Route::patch('campeonatos/{id}/grupos/{grupoId}',             [GruposController::class, 'renomear'])->name('campeonatos.grupos.renomear');
+    Route::delete('campeonatos/{id}/grupos/{grupoId}',            [GruposController::class, 'remover'])->name('campeonatos.grupos.remover');
+    Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}', [GruposController::class, 'times'])->name('campeonatos.grupos.times');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
     // Elenco do time interno (antiga Escalação), aberto pela linha do time em Times

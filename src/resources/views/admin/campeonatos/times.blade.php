@@ -32,6 +32,12 @@
         <h1 class="page-title">{{ $campeonato ? 'Jogos · ' . $campeonato->nome_campeonato : 'Jogos de todos os campeonatos' }}</h1>
         <p class="page-subtitle">Cada jogo com os dois times; clique num time interno para ver os jogadores escalados</p>
       </div>
+      @if ($campeonato)
+      {{-- Grupos e classificação por categoria (Fase H, Etapa H4) --}}
+      <a href="{{ route('admin.campeonatos.grupos', $campeonato->id_campeonato) }}" class="btn btn-sm btn-outline-primary ms-auto" id="btnGrupos">
+        <i class="bi bi-diagram-3"></i> Grupos e classificação
+      </a>
+      @endif
       <div>
         <label for="filtroCampeonato" class="form-label small text-muted mb-1">Campeonato</label>
         <select id="filtroCampeonato" class="form-select form-select-sm" style="min-width: 220px;"

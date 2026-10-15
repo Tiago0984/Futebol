@@ -81,6 +81,10 @@
           <i class="bi bi-trophy text-muted"></i>
         @endif
         {{ $jogo->campeonato->nome_campeonato }}
+        {{-- Categoria e fase do jogo (Fase H, Etapas H3 e H4) --}}
+        <span class="fw-normal small text-muted js-fase-do-jogo">
+          {{ collect([$ev->categoria?->rotulo, $jogo->fase_label])->filter()->implode(' · ') }}
+        </span>
       </div>
     @endif
     <div class="d-flex flex-wrap align-items-center justify-content-end gap-2" style="flex: 1 1 0;">

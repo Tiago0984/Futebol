@@ -29,7 +29,9 @@ class CampeonatoCategoriasMigrationTest extends TestCase
 
     public function test_up_da_a_cada_campeonato_a_categoria_dele_e_aos_participantes_tambem(): void
     {
-        // A convocação por categoria (H2) aponta para o participante: sai antes (tabela vazia)
+        // Os grupos (H4) e a convocação por categoria (H2) apontam para as categorias e os participantes: saem
+        // antes (tabelas vazias)
+        (require database_path('migrations/2026_10_15_000003_grupos_e_fase_do_jogo.php'))->down();
         (require database_path('migrations/2026_10_15_000002_categoria_na_convocacao.php'))->down();
         $this->migration()->down();
 

@@ -14,6 +14,7 @@
     data-id="{{ $jogo->id_jogo }}"
     data-campeonato="{{ $jogo->id_campeonato ?? \App\Http\Controllers\Admin\JogosController::AMISTOSO }}"
     data-categoria="{{ $ev->id_categoria }}"
+    data-fase="{{ $jogo->fase_jogo ?? \App\Models\Jogo::FASE_PADRAO }}"
     data-casa="{{ $jogo->id_time_casa }}"
     data-visitante="{{ $jogo->id_time_visitante }}"
     data-data="{{ $ev->data_evento_calendario->format('Y-m-d') }}"
