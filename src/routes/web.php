@@ -156,6 +156,8 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
         // Escalação do jogo (tbl_evento_atleta.id_time)
         Route::patch('/eventos/{id}/inscricoes/{idAtleta}/time', [AdminCalendarioController::class, 'escalarAtleta'])->name('eventos.inscricoes.time');
         Route::post('/eventos/{id}/escalacao/elenco',         [AdminCalendarioController::class, 'preencherPeloElenco'])->name('eventos.escalacao.elenco');
+        // Amistoso: escolher os atletas no próprio jogo (Fase G, Etapa 3)
+        Route::post('/eventos/{id}/escalacao/escolher',       [AdminCalendarioController::class, 'escolherAtletas'])->name('eventos.escalacao.escolher');
         // Geração da agenda do mês pela grade (Fase 7): prévia e gerar
         Route::get('/grade/gerar',             [AdminCalendarioController::class, 'previaGeracao'])->name('grade.previa');
         Route::post('/grade/gerar',            [AdminCalendarioController::class, 'gerarAgenda'])->name('grade.gerar');

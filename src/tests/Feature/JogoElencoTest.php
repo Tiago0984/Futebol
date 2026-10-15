@@ -13,9 +13,11 @@ use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
 
 /**
- * Jogo inscreve o elenco (tbl_atleta_time) dos times internos que jogam, não a categoria inteira
- * (CLAUDE.md, seção 4, "Jogos"). Origem ELENCO, já com o time; quem está nos dois elencos entra sem time.
- * Troca de time: sai quem veio pelo elenco do time que saiu, entra o elenco do novo, as INDIVIDUAL ficam.
+ * Jogo de campeonato inscreve quem joga pelos times internos, não a categoria inteira (CLAUDE.md, seção 4,
+ * "Jogos" e "Convocação"). Nasceu como o jogo pelo elenco (Fase 8, daí o nome do arquivo); desde a Fase G,
+ * Etapa 2, a lista vem da convocação do campeonato (origem CONVOCACAO, já com o time). Troca de time: sai
+ * quem veio pela convocação do time que saiu, entra a do novo, as INDIVIDUAL ficam. Rascunho e publicação
+ * (Fase 10, Etapa 4). O amistoso escolhe os atletas no jogo (JogoAmistosoTest).
  */
 class JogoElencoTest extends TestCase
 {
@@ -28,6 +30,7 @@ class JogoElencoTest extends TestCase
     private int $verde;
     private int $preto;
     private int $visitante;
+    private int $copa;
 
     protected function setUp(): void
     {
@@ -40,58 +43,63 @@ class JogoElencoTest extends TestCase
         $this->verde     = $this->time('Time Verde', 'INTERNO');
         $this->preto     = $this->time('Time Preto', 'INTERNO');
         $this->visitante = $this->time('Time Visitante', 'EXTERNO');
+        $this->copa      = DB::table('tbl_campeonato')->insertGetId([
+            'id_categoria' => $this->idSub11M, 'logo_evento' => 'logo.png', 'banner_evento' => 'banner.png',
+            'nome_campeonato' => 'Copa', 'organizador_campeonato' => 'Escola', 'tipo_campeonato' => 'MATA-MATA',
+            'data_inicio_campeonato' => now()->toDateString(), 'data_fim_campeonato' => now()->addMonth()->toDateString(),
+            'local_evento' => 'Campo A',
+        ]);
+        foreach ([$this->azul, $this->verde, $this->preto, $this->visitante] as $idTime) {
+            DB::table('tbl_campeonato_time')->insert(['id_campeonato' => $this->copa, 'id_time' => $idTime]);
+        }
     }
 
     // ---------- criar ----------
 
-    public function test_criar_inscreve_o_elenco_dos_times_internos_ja_com_o_time(): void
+    public function test_criar_inscreve_os_convocados_dos_times_internos_ja_com_o_time(): void
     {
-        $ana  = $this->atleta('Ana', [$this->azul]);
-        $bia  = $this->atleta('Bia', [$this->verde]);
-        $caio = $this->atleta('Caio', [$this->azul, $this->verde]);  // nos dois: entra sem time
-        $this->atleta('Davi', [$this->preto]);                        // time que não joga
-        $this->atleta('Eva');                                         // da categoria, sem elenco
-        $this->atleta('Fabio', [$this->azul], 'INATIVO');
+        $ana  = $this->atleta('Ana', $this->azul);
+        $bia  = $this->atleta('Bia', $this->verde);
+        $this->atleta('Davi', $this->preto);           // time que não joga
+        $this->atleta('Eva');                          // da categoria, não convocada
+        $this->atleta('Fabio', $this->azul, 'INATIVO');
 
         $this->postJogo($this->azul, $this->verde)
-            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 3 atleta(s) do elenco inscrito(s). 1 atleta(s) estão nos elencos dos dois times:'
-                . ' escolha o time de cada um na tela do jogo. Os atletas serão avisados ao publicar.')
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 2 atleta(s) da convocação inscrito(s). Os atletas serão avisados ao publicar.')
             ->assertSessionMissing('aviso');
 
         $jogo = Jogo::sole();
         $this->assertSame([
-            $ana  => ['ELENCO', $this->azul],
-            $bia  => ['ELENCO', $this->verde],
-            $caio => ['ELENCO', null],
+            $ana => ['CONVOCACAO', $this->azul],
+            $bia => ['CONVOCACAO', $this->verde],
         ], $this->inscricoesDo($jogo));
         $this->assertSame(0, Notificacao::count()); // rascunho: ninguém avisado ainda
 
-        // Ao publicar, cada um recebe uma INSCRICAO só, com o time da escalação (Caio, sem time, sem a frase)
-        $this->publicar($jogo)->assertSessionHas('sucesso', 'Jogo publicado. 3 atleta(s) notificado(s).');
-        $this->assertSame([$ana => 'INSCRICAO', $bia => 'INSCRICAO', $caio => 'INSCRICAO'], $this->notificacoesPorAtleta());
+        // Ao publicar, cada um recebe uma INSCRICAO só, com o time da escalação
+        $this->publicar($jogo)->assertSessionHas('sucesso', 'Jogo publicado. 2 atleta(s) notificado(s).');
+        $this->assertSame([$ana => 'INSCRICAO', $bia => 'INSCRICAO'], $this->notificacoesPorAtleta());
         $mensagens = Notificacao::pluck('mensagem_notificacao', 'id_atleta');
         $this->assertStringEndsWith('. Você joga pelo Time Azul.', $mensagens[$ana]);
         $this->assertStringEndsWith('. Você joga pelo Time Verde.', $mensagens[$bia]);
-        $this->assertStringNotContainsString('Você joga', $mensagens[$caio]);
     }
 
-    public function test_time_interno_sem_elenco_fica_sem_inscritos_daquele_lado_e_avisa(): void
+    public function test_time_interno_sem_convocados_fica_sem_inscritos_daquele_lado_e_avisa(): void
     {
-        $ana = $this->atleta('Ana', [$this->azul]);
-        $this->atleta('Fabio', [$this->preto], 'INATIVO'); // o Preto só tem atleta inativo
+        $ana = $this->atleta('Ana', $this->azul);
+        $this->atleta('Fabio', $this->preto, 'INATIVO'); // o Preto só tem convocado inativo
 
         $this->postJogo($this->azul, $this->preto)
-            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.')
-            ->assertSessionHas('aviso', 'Sem elenco cadastrado: Time Preto. Nenhum atleta foi inscrito por esse time;'
-                . ' cadastre o elenco e use "Preencher pelo elenco" na tela do jogo, ou inscreva à mão.');
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) da convocação inscrito(s). Os atletas serão avisados ao publicar.')
+            ->assertSessionHas('aviso', 'Sem convocados: Time Preto. Nenhum atleta foi inscrito por esse time; convoque os atletas'
+                . ' (Jogos do campeonato › Convocação) e use "Preencher pela convocação" na tela do jogo, ou inscreva à mão.');
 
-        $this->assertSame([$ana => ['ELENCO', $this->azul]], $this->inscricoesDo(Jogo::sole()));
+        $this->assertSame([$ana => ['CONVOCACAO', $this->azul]], $this->inscricoesDo(Jogo::sole()));
     }
 
-    public function test_conflito_na_criacao_confere_so_o_elenco(): void
+    public function test_conflito_na_criacao_confere_so_os_convocados(): void
     {
-        $ana = $this->atleta('Ana', [$this->azul]);
-        $eva = $this->atleta('Eva'); // da categoria, fora do elenco: não entra, não conflita
+        $ana = $this->atleta('Ana', $this->azul);
+        $eva = $this->atleta('Eva'); // da categoria, não convocada: não entra, não conflita
         $treino = $this->treinoNoHorarioDoJogo();
         $treino->inscrever($ana, 'INDIVIDUAL', null);
         $treino->inscrever($eva, 'INDIVIDUAL', null);
@@ -106,39 +114,36 @@ class JogoElencoTest extends TestCase
 
     // ---------- trocar time ----------
 
-    public function test_trocar_time_tira_o_elenco_do_que_saiu_e_inscreve_o_do_novo(): void
+    public function test_trocar_time_tira_a_convocacao_do_que_saiu_e_inscreve_a_do_novo(): void
     {
-        $ana  = $this->atleta('Ana', [$this->azul]);
-        $bia  = $this->atleta('Bia', [$this->verde]);
-        $caio = $this->atleta('Caio', [$this->azul, $this->verde]);
+        $ana  = $this->atleta('Ana', $this->azul);
+        $bia  = $this->atleta('Bia', $this->verde);
         $eva  = $this->atleta('Eva');
         $jogo = $this->criarJogo($this->azul, $this->visitante);
-        // Convidada pelo admin, escalada no Azul: é INDIVIDUAL, fica (sem time)
+        // Chamada pelo admin, escalada no Azul: é INDIVIDUAL, fica (sem time)
         $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.inscricoes.store', $jogo->id_evento),
             ['id_atleta' => $eva, 'id_time' => $this->azul]);
         Notificacao::query()->delete();
 
         $this->putJogo($jogo, ['id_time_casa' => $this->verde])
-            ->assertSessionHas('sucesso', 'Jogo atualizado. Inscrições pelo elenco: 1 atleta(s) inscrito(s), 1 removido(s).'
+            ->assertSessionHas('sucesso', 'Jogo atualizado. Inscrições pela convocação: 1 atleta(s) inscrito(s), 1 removido(s).'
                 . ' As inscrições individuais foram mantidas. 1 atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos.'
                 . ' 2 atleta(s) notificado(s).')
             ->assertSessionMissing('aviso');
 
-        // Caio era do Azul e também é do Verde: fica, e é escalado no Verde
         $this->assertSame([
-            $bia  => ['ELENCO', $this->verde],
-            $caio => ['ELENCO', $this->verde],
-            $eva  => ['INDIVIDUAL', null],
+            $bia => ['CONVOCACAO', $this->verde],
+            $eva => ['INDIVIDUAL', null],
         ], $this->inscricoesDo($jogo));
         $this->assertSame([$ana => 'REMOCAO', $bia => 'INSCRICAO'], $this->notificacoesPorAtleta());
     }
 
     public function test_trocar_time_e_horario_juntos_cada_um_recebe_uma_so(): void
     {
-        $ana  = $this->atleta('Ana', [$this->azul]);
-        $bia  = $this->atleta('Bia', [$this->verde]);
-        $caio = $this->atleta('Caio', [$this->azul, $this->verde]);
-        $jogo = $this->criarJogo($this->azul, $this->visitante);
+        $ana  = $this->atleta('Ana', $this->azul);
+        $bia  = $this->atleta('Bia', $this->verde);
+        $caio = $this->atleta('Caio', $this->preto);
+        $jogo = $this->criarJogo($this->azul, $this->preto);
         Notificacao::query()->delete();
 
         $this->putJogo($jogo, ['id_time_casa' => $this->verde, 'horario_inicio_evento_calendario' => '20:00'])
@@ -151,8 +156,8 @@ class JogoElencoTest extends TestCase
 
     public function test_jogo_concluido_que_troca_de_time_nao_muda_as_inscricoes(): void
     {
-        $ana  = $this->atleta('Ana', [$this->azul]);
-        $this->atleta('Bia', [$this->verde]);
+        $ana  = $this->atleta('Ana', $this->azul);
+        $this->atleta('Bia', $this->verde);
         $jogo = $this->criarJogo($this->azul, $this->visitante);
         $passado = now()->subWeek()->toDateString();
         DB::table('tbl_evento_calendario')->where('id_evento_calendario', $jogo->id_evento)->update(['data_evento_calendario' => $passado]);
@@ -161,25 +166,25 @@ class JogoElencoTest extends TestCase
         $this->putJogo($jogo, ['id_time_casa' => $this->verde, 'data_evento_calendario' => $passado])
             ->assertSessionHas('sucesso', 'Jogo atualizado. 1 atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos.');
 
-        $this->assertSame([$ana => ['ELENCO', null]], $this->inscricoesDo($jogo));
+        $this->assertSame([$ana => ['CONVOCACAO', null]], $this->inscricoesDo($jogo));
         $this->assertSame(0, Notificacao::count());
     }
 
     public function test_inverter_o_mando_nao_troca_ninguem(): void
     {
-        $ana  = $this->atleta('Ana', [$this->azul]);
+        $ana  = $this->atleta('Ana', $this->azul);
         $jogo = $this->criarJogo($this->azul, $this->visitante);
 
         $this->putJogo($jogo, ['id_time_casa' => $this->visitante, 'id_time_visitante' => $this->azul])
             ->assertSessionHas('sucesso', 'Jogo atualizado.');
 
-        $this->assertSame([$ana => ['ELENCO', $this->azul]], $this->inscricoesDo($jogo));
+        $this->assertSame([$ana => ['CONVOCACAO', $this->azul]], $this->inscricoesDo($jogo));
     }
 
     public function test_trocar_time_com_conflito_pede_confirmacao(): void
     {
-        $this->atleta('Ana', [$this->azul]);
-        $bia  = $this->atleta('Bia', [$this->verde]);
+        $this->atleta('Ana', $this->azul);
+        $bia  = $this->atleta('Bia', $this->verde);
         $jogo = $this->criarJogo($this->azul, $this->visitante);
         $this->treinoNoHorarioDoJogo()->inscrever($bia, 'INDIVIDUAL', null);
 
@@ -218,7 +223,7 @@ class JogoElencoTest extends TestCase
 
     public function test_evento_jogo_sem_tbl_jogos_continua_pela_categoria(): void
     {
-        $ana = $this->atleta('Ana', [$this->azul]);
+        $ana = $this->atleta('Ana', $this->azul);
         $eva = $this->atleta('Eva');
 
         // Evento JOGO antigo: o Calendário não cria mais (Fase 10), então nasce direto pelo model
@@ -234,37 +239,37 @@ class JogoElencoTest extends TestCase
 
     // ---------- tela do jogo ----------
 
-    public function test_tela_do_jogo_mostra_quem_falta_do_elenco_e_quem_esta_fora_dele(): void
+    public function test_tela_do_jogo_mostra_quem_falta_da_convocacao_e_quem_nao_e_convocado(): void
     {
-        $this->atleta('Ana', [$this->azul]);
+        $this->atleta('Ana', $this->azul);
         $eva  = $this->atleta('Eva');
         $jogo = $this->criarJogo($this->azul, $this->visitante);
-        $hugo = $this->atleta('Hugo', [$this->azul]); // entrou no elenco depois do jogo criado
+        $hugo = $this->atleta('Hugo', $this->azul); // convocado depois do jogo criado
         $jogo->evento->inscrever($eva, 'INDIVIDUAL', null);
         $tela = route('admin.calendario.eventos.show', $jogo->id_evento);
 
         $this->actingAs($this->admin, 'admin')->get($tela)->assertOk()
-            ->assertSee('<strong>1</strong> atleta(s) do elenco ainda não está inscrito', false)
-            ->assertSee('Fora do elenco')
+            ->assertSee('<strong>1</strong> convocado(s) ainda não está inscrito', false)
+            ->assertSee('Não convocado')
             ->assertDontSee('Atualizar inscritos pela categoria');
 
         $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
-            ->assertSessionHas('sucesso', 'Escalação pelo elenco: 0 inscrito(s) escalado(s), 1 atleta(s) inscrito(s) e escalado(s). 1 atleta(s) notificado(s).');
+            ->assertSessionHas('sucesso', 'Escalação pela convocação: 0 inscrito(s) escalado(s), 1 atleta(s) inscrito(s) e escalado(s). 1 atleta(s) notificado(s).');
         $this->assertStringEndsWith('. Você joga pelo Time Azul.', Notificacao::where('id_atleta', $hugo)->value('mensagem_notificacao'));
-        $this->assertSame(['ELENCO', $this->azul], $this->inscricoesDo($jogo)[$hugo]);
+        $this->assertSame(['CONVOCACAO', $this->azul], $this->inscricoesDo($jogo)[$hugo]);
 
-        $this->actingAs($this->admin, 'admin')->get($tela)->assertSee('Todo o elenco ativo está inscrito');
+        $this->actingAs($this->admin, 'admin')->get($tela)->assertSee('Todos os convocados estão inscritos');
     }
 
     // ---------- rascunho e publicação (Fase 10, Etapa 4) ----------
 
     public function test_rascunho_nao_avisa_troca_de_time_edicao_preencher_nem_status(): void
     {
-        $this->atleta('Ana', [$this->azul]);
-        $this->atleta('Bia', [$this->verde]);
+        $this->atleta('Ana', $this->azul);
+        $this->atleta('Bia', $this->verde);
         $this->postJogo($this->azul, $this->visitante);
         $jogo = Jogo::with('evento')->sole();
-        $this->atleta('Hugo', [$this->verde]); // entra no elenco depois
+        $this->atleta('Hugo', $this->verde); // convocado depois
 
         $this->putJogo($jogo, ['id_time_casa' => $this->verde, 'horario_inicio_evento_calendario' => '20:00'])
             ->assertSessionHas('sucesso', fn ($msg) => str_ends_with($msg, ' 0 atleta(s) notificado(s).'));
@@ -279,12 +284,13 @@ class JogoElencoTest extends TestCase
 
     public function test_publicar_avisa_cada_um_uma_vez_com_a_escalacao_feita_no_rascunho(): void
     {
-        $ana  = $this->atleta('Ana', [$this->azul]);
-        $caio = $this->atleta('Caio', [$this->azul, $this->verde]); // nos dois: entra sem time
+        $ana  = $this->atleta('Ana', $this->azul);
+        $caio = $this->atleta('Caio'); // não convocado: o admin chama e escala à mão
         $this->postJogo($this->azul, $this->verde);
         $jogo = Jogo::with('evento')->sole();
 
-        // O admin escala o Caio no Verde ainda no rascunho: o aviso já sai com o time certo
+        // O admin inscreve o Caio sem time e o escala no Verde ainda no rascunho: o aviso já sai com o time certo
+        $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.inscricoes.store', $jogo->id_evento), ['id_atleta' => $caio]);
         $this->actingAs($this->admin, 'admin')->patch(route('admin.calendario.eventos.inscricoes.time', [$jogo->id_evento, $caio]),
             ['id_time' => $this->verde]);
 
@@ -305,7 +311,7 @@ class JogoElencoTest extends TestCase
 
     public function test_publicar_rascunho_concluido_ou_cancelado_nao_avisa(): void
     {
-        $this->atleta('Ana', [$this->azul]);
+        $this->atleta('Ana', $this->azul);
         $semAviso = 'Jogo publicado. Nenhum atleta foi avisado: o jogo já aconteceu, está cancelado ou oculto.';
 
         $this->postJogo($this->azul, $this->visitante, ['data_evento_calendario' => now()->subWeek()->toDateString()]);
@@ -322,24 +328,24 @@ class JogoElencoTest extends TestCase
 
     public function test_tela_e_lista_mostram_o_rascunho_ate_publicar(): void
     {
-        $this->atleta('Ana', [$this->azul]);
+        $this->atleta('Ana', $this->azul);
         $this->postJogo($this->azul, $this->visitante);
         $jogo = Jogo::sole();
         $tela = route('admin.calendario.eventos.show', $jogo->id_evento);
+        $jogosDaCopa = route('admin.campeonatos.times', $this->copa);
 
         $this->actingAs($this->admin, 'admin')->get($tela)->assertOk()
             ->assertSee('id="faixaRascunho"', false)
             ->assertSee('Publicar e avisar os atletas');
         $this->actingAs($this->admin, 'admin')->get(route('admin.jogos.index'))->assertOk()->assertSee('>Rascunho</span>', false);
-        // Jogos dos amistosos (cartões por jogo): aviso no topo, selo e "Revisar e publicar" levando à tela do jogo
-        $this->actingAs($this->admin, 'admin')->get(route('admin.amistosos.times'))->assertOk()
+        // Jogos do campeonato (cartões por jogo): aviso no topo, selo e "Revisar e publicar" levando à tela do jogo
+        $this->actingAs($this->admin, 'admin')->get($jogosDaCopa)->assertOk()
             ->assertSee('id="avisoRascunhos"', false)
-            ->assertSee('1 amistoso ainda não publicado')
             ->assertSee('<a href="' . $tela . '" class="btn btn-warning btn-sm js-publicar-jogo">', false);
 
         $this->publicar($jogo);
 
-        $this->actingAs($this->admin, 'admin')->get(route('admin.amistosos.times'))->assertOk()
+        $this->actingAs($this->admin, 'admin')->get($jogosDaCopa)->assertOk()
             ->assertDontSee('id="avisoRascunhos"', false)
             ->assertDontSee('js-publicar-jogo');
 
@@ -351,7 +357,7 @@ class JogoElencoTest extends TestCase
 
     public function test_rascunho_conta_no_conflito_de_horario(): void
     {
-        $ana = $this->atleta('Ana', [$this->azul]);
+        $ana = $this->atleta('Ana', $this->azul);
         $this->postJogo($this->azul, $this->visitante); // rascunho, 19:00, com a Ana
 
         $conflitos = $this->treinoNoHorarioDoJogo()->conflitosPara([$ana]);
@@ -380,16 +386,17 @@ class JogoElencoTest extends TestCase
 
     // ---------- helpers ----------
 
-    // Atleta da Sub-11 M (a categoria dos times e do campeonato), no elenco dos times indicados
-    private function atleta(string $nome, array $elencos = [], string $status = 'ATIVO'): int
+    // Atleta da Sub-11 M (a categoria dos times e da Copa), convocado na Copa pelo time indicado (camisa sem repetir)
+    private function atleta(string $nome, ?int $idTime = null, string $status = 'ATIVO'): int
     {
         $id = $this->criarAtleta($this->nascidoComIdade(11), 'M', $status);
         DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome]);
         $this->colocarNaCategoria($id, $this->idSub11M);
 
-        foreach ($elencos as $idTime) {
-            DB::table('tbl_atleta_time')->insert([
-                'id_time' => $idTime, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '',
+        if ($idTime) {
+            DB::table('tbl_convocacao')->insert([
+                'id_campeonato' => $this->copa, 'id_time' => $idTime, 'id_atleta' => $id,
+                'camisa_convocacao' => DB::table('tbl_convocacao')->count() + 1,
             ]);
         }
 
@@ -399,8 +406,7 @@ class JogoElencoTest extends TestCase
     private function dadosJogo(int $casa, int $visitante, array $extra = []): array
     {
         return array_merge([
-            'id_campeonato'                    => 'AMISTOSO',
-            'id_categoria'                     => $this->idSub11M,
+            'id_campeonato'                    => $this->copa,
             'id_time_casa'                     => $casa,
             'id_time_visitante'                => $visitante,
             'data_evento_calendario'           => $this->dia,

@@ -282,40 +282,34 @@ class Jogo extends Model
             . 'atleta mais velho não joga em categoria abaixo da idade dele.' : null;
     }
 
-    // Trecho da mensagem para quem ficou de fora de uma inscrição em massa ($quem: "do elenco", "da categoria")
-    public function textoAcimaDaIdade(array $acima, string $quem = 'do elenco'): string
+    // Trecho da mensagem para quem ficou de fora de uma inscrição em massa ($quem: "da convocação", "da categoria")
+    public function textoAcimaDaIdade(array $acima, string $quem = 'da convocação'): string
     {
         return $acima ? ' ' . count($acima) . " atleta(s) {$quem} ficaram de fora por passar da idade do campeonato"
             . " ({$this->limiteDeIdade()}): " . implode(', ', $acima) . '.' : '';
     }
 
-    // ── Quem joga por qual time (convocação no campeonato, elenco no amistoso) ──
+    // ── Quem joga por qual time (convocação no campeonato, escolha no amistoso) ──
 
     /**
-     * Fase G, Etapa 2: o jogo de campeonato tira os atletas da convocação daquele campeonato
-     * (tbl_convocacao); o amistoso continua pelo elenco fixo (tbl_atleta_time) até a Etapa 3.
+     * Fase G: o jogo de campeonato tira os atletas da convocação daquele campeonato (tbl_convocacao, Etapa 2);
+     * o amistoso não tem lista automática: o admin escolhe os atletas no próprio jogo (Etapa 3), e todos jogam
+     * pelo único time da AACJ dele. O elenco fixo (tbl_atleta_time) não inscreve mais em jogo nenhum.
      */
     public function pelaConvocacao(): bool
     {
         return ! $this->ehAmistoso();
     }
 
-    // Origem gravada na inscrição automática: CONVOCACAO no campeonato, ELENCO no amistoso
-    public function origemAutomatica(): string
+    // Amistoso: os atletas são escolhidos na tela do jogo ("Escolher atletas"), sem lista automática
+    public function escolheAtletas(): bool
     {
-        return $this->pelaConvocacao() ? 'CONVOCACAO' : 'ELENCO';
-    }
-
-    // Nome da lista nas mensagens: "da convocação" / "do elenco"
-    public function daLista(): string
-    {
-        return $this->pelaConvocacao() ? 'da convocação' : 'do elenco';
+        return $this->ehAmistoso();
     }
 
     /**
-     * Atletas que jogam pelos times escaláveis deste jogo, só ATIVO: [id_atleta => [id_time, ...]].
-     * No campeonato, os convocados (um time por atleta); no amistoso, o elenco (quem está nos dois elencos
-     * aparece com os dois times).
+     * Atletas que jogam pelos times escaláveis deste jogo, só ATIVO: [id_atleta => [id_time]]. No campeonato,
+     * os convocados (um time por atleta); no amistoso, nenhum (escolhidos no jogo).
      */
     public function atletasPorTime(): array
     {
@@ -324,13 +318,47 @@ class Jogo extends Model
 
     /**
      * Regra única da fonte, usada também antes de o jogo existir (conflito na criação e na troca de time):
-     * com campeonato, a convocação dele; sem campeonato (amistoso), o elenco.
+     * com campeonato, a convocação dele; sem campeonato (amistoso), ninguém entra automaticamente.
      */
     public static function atletasDosTimes(array $idsTimes, $idCampeonato, bool $soAtivos = true): array
     {
-        return $idCampeonato
-            ? self::convocadosDosTimes((int) $idCampeonato, $idsTimes, $soAtivos)
-            : self::elencoDosTimes($idsTimes, $soAtivos);
+        return $idCampeonato ? self::convocadosDosTimes((int) $idCampeonato, $idsTimes, $soAtivos) : [];
+    }
+
+    // ── Amistoso (Fase G, Etapa 3) ──────────────────────────────────────────
+
+    /**
+     * Amistoso é um time da AACJ (interno) contra um adversário (externo): AACJ contra AACJ é treino, e dois
+     * externos não têm atletas da escolinha. Motivo para não salvar, ou null se pode.
+     */
+    public static function erroDosTimesDoAmistoso(int $idCasa, int $idVisitante): ?string
+    {
+        $internos = count(self::idsInternos([$idCasa, $idVisitante]));
+
+        return match ($internos) {
+            1       => null,
+            2       => 'Amistoso é entre um time da AACJ e um adversário externo: AACJ contra AACJ é treino (crie pelo Calendário).',
+            default => 'Amistoso precisa de um time da AACJ (interno): dois times externos não têm atletas da escolinha.',
+        };
+    }
+
+    // O time da AACJ do amistoso (o único interno do jogo); null se não houver
+    public function timeDaAcj(): ?Time
+    {
+        return $this->timesEscalaveis()->first();
+    }
+
+    /**
+     * Amistoso: todo inscrito joga pelo time da AACJ do jogo. Depois de trocar esse time (ou para quem ficou
+     * sem time), passa os inscritos para ele. Devolve quantos mudaram de time.
+     */
+    public function escalarNoTimeDaAcj(): int
+    {
+        $time = $this->timeDaAcj();
+
+        return ! $time ? 0 : EventoAtleta::where('id_evento_calendario', $this->id_evento)
+            ->where(fn ($q) => $q->whereNull('id_time')->orWhere('id_time', '<>', $time->id_time))
+            ->update(['id_time' => $time->id_time]);
     }
 
     /**
@@ -363,49 +391,28 @@ class Jogo extends Model
             ->all();
     }
 
-    /**
-     * Elenco (tbl_atleta_time) dos times informados: [id_atleta => [id_time, ...]]. Só atletas ATIVO,
-     * salvo $soAtivos = false. Usado também antes de o jogo existir (conflito na criação e na troca de time).
-     */
-    public static function elencoDosTimes(array $idsTimes, bool $soAtivos = true): array
-    {
-        if (! $idsTimes) {
-            return [];
-        }
-
-        return DB::table('tbl_atleta_time as at')
-            ->join('tbl_atletas as a', 'a.id_atleta', '=', 'at.id_atleta')
-            ->when($soAtivos, fn ($q) => $q->where('a.status_atleta', 'ATIVO'))
-            ->whereIn('at.id_time', $idsTimes)
-            ->orderBy('at.id_atleta')
-            ->get(['at.id_atleta', 'at.id_time'])
-            ->groupBy('id_atleta')
-            ->map(fn ($linhas) => $linhas->pluck('id_time')->map(fn ($id) => (int) $id)->unique()->sort()->values()->all())
-            ->all();
-    }
-
-    // Times internos (só eles têm elenco) entre os informados
+    // Times internos (os da AACJ, os únicos com atletas da escolinha) entre os informados
     public static function idsInternos(array $idsTimes): array
     {
         return Time::whereIn('id_time', $idsTimes)->where('tipo_time', 'INTERNO')->pluck('id_time')->map(fn ($id) => (int) $id)->all();
     }
 
     /**
-     * Inscreve quem joga pelos times internos do jogo (atletasPorTime: convocados no campeonato, origem
-     * CONVOCACAO; elenco no amistoso, origem ELENCO; INSCRICAO para cada um, pelo inscrever()): quem é de um
-     * time só entra escalado nele; quem está nos dois elencos (só no amistoso) entra sem time, para o admin
-     * escolher. Quem já está inscrito sem time e é de um time só é escalado. Ninguém sai.
+     * Inscreve os convocados dos times internos do jogo de campeonato (atletasPorTime; origem CONVOCACAO,
+     * INSCRICAO para cada um, pelo inscrever()), já escalados no time da convocação; quem já está inscrito sem
+     * time é escalado. Ninguém sai. No amistoso não faz nada (os atletas são escolhidos no jogo).
      * Quem passa da idade do campeonato fica de fora (nem inscrito nem escalado; 'acima_da_idade', com os
-     * nomes de quem não estava inscrito).
-     * Usado ao criar o jogo, no "Preencher pela convocação/pelo elenco" e na troca de time. Devolve os
-     * números para a mensagem e quem entrou (para não receber também a ALTERACAO da mesma edição).
+     * nomes de quem não estava inscrito). 'nos_dois' e 'inscritos_sem_time' ficam 0 desde que a convocação
+     * garante um time por atleta (antes, com o elenco, o atleta dos dois times entrava sem time).
+     * Usado ao criar o jogo, no "Preencher pela convocação" e na troca de time. Devolve os números para a
+     * mensagem e quem entrou (para não receber também a ALTERACAO da mesma edição).
      */
     public function inscreverElenco(?int $idUsuario): array
     {
         return DB::transaction(function () use ($idUsuario) {
             $evento     = $this->evento;
             $elencos    = $this->atletasPorTime();
-            $origem     = $this->origemAutomatica();
+            $origem     = 'CONVOCACAO';
             $inscricoes = $evento->inscricoes()->get(['id_atleta', 'id_time'])->keyBy('id_atleta');
             $acima      = $this->acimaDaIdade(array_keys($elencos));
 
@@ -448,10 +455,14 @@ class Jogo extends Model
         return array_values(array_diff($faltantes, array_keys($this->acimaDaIdade($faltantes))));
     }
 
-    // Times internos do jogo sem nenhum atleta ativo convocado (ou no elenco, no amistoso): o jogo fica sem
-    // inscritos daquele lado
+    // Times internos do jogo de campeonato sem nenhum atleta ativo convocado: o jogo fica sem inscritos daquele
+    // lado (amistoso: nenhum, os atletas são escolhidos no jogo)
     public function timesSemElenco(): Collection
     {
+        if ($this->escolheAtletas()) {
+            return collect();
+        }
+
         $comElenco = collect($this->atletasPorTime())->flatten()->unique();
 
         return $this->timesEscalaveis()->reject(fn ($time) => $comElenco->contains($time->id_time))->values();

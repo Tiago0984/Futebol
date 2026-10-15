@@ -205,23 +205,25 @@
                         <div class="text-muted">Os dois times são externos: não há atletas da escolinha para escalar.</div>
                     @endforelse
                     @if ($escalaveis->isNotEmpty())
-                        {{-- Jogo de campeonato: pela convocação do campeonato; amistoso: pelo elenco dos times --}}
-                        @php $pelaConvocacao = $jogo->pelaConvocacao(); @endphp
                         <div><span class="text-muted small d-block">Sem time</span><strong>{{ $porTime[0] ?? 0 }}</strong> inscrito(s)</div>
+                        @if ($jogo->escolheAtletas())
+                        {{-- Amistoso: sem lista automática; os atletas são escolhidos na caixa abaixo --}}
+                        <span class="ms-auto text-muted small">Amistoso: escolha quem vai jogar em <strong>"Escolher atletas"</strong>, abaixo.</span>
+                        @else
+                        {{-- Jogo de campeonato: pela convocação do campeonato --}}
                         <form action="{{ route('admin.calendario.eventos.escalacao.elenco', $evento->id_evento_calendario) }}" method="POST" class="ms-auto d-flex align-items-center gap-2"
-                              onsubmit="return confirm(@js($pelaConvocacao
-                                  ? 'Escalar pela convocação do campeonato? Quem já tem time não muda; quem está convocado e não está inscrito será inscrito.'
-                                  : 'Escalar pelo elenco dos times? Quem já tem time não muda; quem está no elenco e não está inscrito será inscrito.'))">
+                              onsubmit="return confirm('Escalar pela convocação do campeonato? Quem já tem time não muda; quem está convocado e não está inscrito será inscrito.')">
                             @csrf
                             <span class="text-muted small">
                                 @if ($faltantesDoElenco > 0)
-                                    <strong>{{ $faltantesDoElenco }}</strong> {{ $pelaConvocacao ? 'convocado(s)' : 'atleta(s) do elenco' }} ainda não {{ $faltantesDoElenco === 1 ? 'está inscrito' : 'estão inscritos' }}
+                                    <strong>{{ $faltantesDoElenco }}</strong> convocado(s) ainda não {{ $faltantesDoElenco === 1 ? 'está inscrito' : 'estão inscritos' }}
                                 @else
-                                    {{ $pelaConvocacao ? 'Todos os convocados estão inscritos' : 'Todo o elenco ativo está inscrito' }}
+                                    Todos os convocados estão inscritos
                                 @endif
                             </span>
-                            <button type="submit" class="btn btn-success"><i class="bi bi-people"></i> {{ $pelaConvocacao ? 'Preencher pela convocação' : 'Preencher pelo elenco' }}</button>
+                            <button type="submit" class="btn btn-success"><i class="bi bi-people"></i> Preencher pela convocação</button>
                         </form>
+                        @endif
                     @endif
                 </div>
             </div>
@@ -258,8 +260,8 @@
               $semTime = $porBlocos ? $inscricoes->reject(fn ($i) => $idsEscalaveis->contains((int) $i->id_time)) : collect();
             @endphp
             {{-- Adicionar: entre a escalação e os inscritos, nos jogos e nos outros eventos ("Pela categoria" só no
-                 evento com categoria que não é jogo; no jogo, os inscritos vêm da convocação ou, no amistoso, do
-                 elenco: "Preencher pela convocação/pelo elenco") --}}
+                 evento com categoria que não é jogo; no jogo de campeonato, os inscritos vêm da convocação,
+                 "Preencher pela convocação"; no amistoso, só "Escolher atletas") --}}
             <div class="row g-4 mb-4">
                 @if ($evento->categoria && ! $jogo)
                 <div class="col-12">
@@ -287,6 +289,39 @@
                 </div>
                 @endif
 
+                @if ($jogo?->escolheAtletas())
+                {{-- Amistoso (Fase G, Etapa 3): um jeito só de montar o time, marcando os atletas; todos entram
+                     no time da AACJ do jogo. Sem time da AACJ (amistoso antigo), só o aviso --}}
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-header bg-dark text-white fw-semibold">
+                            <i class="bi bi-person-check me-2"></i> Escolher atletas
+                            @if ($jogo->timeDaAcj()) <span class="fw-normal">· jogam pelo {{ $jogo->timeDaAcj()->nome_time }}</span> @endif
+                        </div>
+                        <div class="card-body">
+                            @if (! $jogo->timeDaAcj())
+                                <p class="text-muted mb-0">Este amistoso não tem time da AACJ: edite o jogo e escolha um time interno.</p>
+                            @elseif ($gruposDoAmistoso->isEmpty())
+                                <p class="text-muted mb-0">Todos os atletas ativos já estão inscritos.</p>
+                            @else
+                            <form action="{{ route('admin.calendario.eventos.escalacao.escolher', $evento->id_evento_calendario) }}" method="POST">
+                                @csrf
+                                @include('admin.partials.escolher-atletas', [
+                                    'prefixo'    => 'amistoso',
+                                    'grupos'     => $gruposDoAmistoso,
+                                    'escolhidos' => array_map('strval', old('atletas', [])),
+                                    'ajuda'      => 'Marque quem vai jogar. Os escolhidos entram já escalados no time da AACJ; amistoso não tem '
+                                                    . 'limite de idade (outra categoria ou sexo só gera aviso). Para tirar alguém, use o ✕ na lista abaixo.',
+                                ])
+                                <div class="mt-3">
+                                    <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle"></i> Inscrever escolhidos</button>
+                                </div>
+                            </form>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+                @else
                 <div class="col-lg-6">
                     <div class="card shadow-sm h-100">
                         <div class="card-header bg-dark text-white fw-semibold">
@@ -348,6 +383,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
             </div>
 
             {{-- Inscritos (largura toda) --}}

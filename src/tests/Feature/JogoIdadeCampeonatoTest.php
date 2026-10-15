@@ -82,13 +82,16 @@ class JogoIdadeCampeonatoTest extends TestCase
 
     public function test_amistoso_nao_tem_limite_de_idade(): void
     {
-        $caio = $this->atleta('Caio', 16, $this->idSub17M, [$this->azul]);
+        $caio = $this->atleta('Caio', 16, $this->idSub17M);
+        $this->postJogo(['id_campeonato' => 'AMISTOSO', 'id_categoria' => $this->idSub15M])->assertSessionHasNoErrors();
+        $jogo = Jogo::sole();
 
-        $this->postJogo(['id_campeonato' => 'AMISTOSO', 'id_categoria' => $this->idSub15M])
-            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.')
+        // Escolhido no amistoso (Fase G, Etapa 3): entra mesmo passando da idade, só com o aviso de categoria
+        $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.escalacao.escolher', $jogo->id_evento), ['atletas' => [$caio]])
+            ->assertSessionHas('sucesso', '1 atleta(s) inscrito(s) e escalado(s) no Time Azul. 0 atleta(s) notificado(s).')
             ->assertSessionHas('avisos_categoria', ['Caio é Sub-17 Masculino; o jogo é Sub-15 Masculino.']); // como antes
 
-        $this->assertSame([$caio => $this->azul], $this->inscritos(Jogo::sole()));
+        $this->assertSame([$caio => $this->azul], $this->inscritos($jogo));
     }
 
     public function test_preencher_pelo_elenco_nao_inscreve_quem_passa_da_idade(): void

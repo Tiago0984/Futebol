@@ -104,7 +104,7 @@
       <button type="submit" class="btn btn-success btn-sm" @disabled($disponiveis->isEmpty())>
         <i class="bi bi-person-plus"></i> Adicionar
       </button>
-      <small class="text-muted w-100">Quem entra não é inscrito sozinho nos amistosos já criados: use "Preencher pelo elenco" na tela de cada jogo. Jogo de campeonato usa a convocação do campeonato.</small>
+      <small class="text-muted w-100">O elenco não inscreve em jogos: no campeonato vale a convocação (Jogos do campeonato › Convocação); no amistoso, os atletas são escolhidos na tela do jogo.</small>
     </form>
     @endunless
 

@@ -10,7 +10,8 @@ use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
 
 /**
- * Fase 6, Etapa 3: escalação por jogo em tbl_evento_atleta.id_time.
+ * Fase 6, Etapa 3: escalação por jogo em tbl_evento_atleta.id_time. Os jogos daqui são de campeonato (a Copa,
+ * Sub-11 M), com a lista da convocação (Fase G, Etapa 2); amistoso só quando o teste diz.
  */
 class JogoEscalacaoTest extends TestCase
 {
@@ -21,6 +22,7 @@ class JogoEscalacaoTest extends TestCase
     private int $preto;
     private int $verde;
     private int $visitante;
+    private int $copa;
 
     protected function setUp(): void
     {
@@ -31,6 +33,11 @@ class JogoEscalacaoTest extends TestCase
         $this->preto     = $this->time('Time Preto', 'INTERNO');
         $this->verde     = $this->time('Time Verde', 'INTERNO');
         $this->visitante = $this->time('Time Visitante', 'EXTERNO');
+        $this->copa      = DB::table('tbl_campeonato')->insertGetId([
+            'id_categoria' => $this->idSub11M, 'logo_evento' => 'l.png', 'banner_evento' => 'b.png', 'nome_campeonato' => 'Copa',
+            'organizador_campeonato' => 'Escola', 'tipo_campeonato' => 'MATA-MATA', 'data_inicio_campeonato' => now()->toDateString(),
+            'data_fim_campeonato' => now()->addMonth()->toDateString(), 'local_evento' => 'Quadra A',
+        ]);
     }
 
     // ---------- escalar um inscrito ----------
@@ -50,9 +57,9 @@ class JogoEscalacaoTest extends TestCase
 
     public function test_atleta_fica_num_time_so_do_jogo(): void
     {
-        // Está nos dois elencos (como o atleta 12): escalar no outro time troca, não duplica
+        // Escalar no outro time troca, não duplica
         $jogo = $this->jogo($this->azul, $this->preto);
-        $idAtleta = $this->atleta('Bia', [$this->azul, $this->preto]);
+        $idAtleta = $this->atleta('Bia', $this->azul);
         $jogo->evento->inscrever($idAtleta, 'INDIVIDUAL', null);
 
         $this->escalar($jogo, $idAtleta, $this->azul);
@@ -116,77 +123,43 @@ class JogoEscalacaoTest extends TestCase
         $this->assertFalse($jogo->evento->inscricoes()->where('id_atleta', $outro)->exists());
     }
 
-    // ---------- preencher pelo elenco ----------
+    // ---------- preencher pela convocação ----------
+    // ("nos dois times" saiu: a convocação garante um time por atleta em cada campeonato)
 
-    public function test_preencher_pelo_elenco(): void
+    public function test_preencher_pela_convocacao(): void
     {
         $jogo = $this->jogo($this->azul, $this->preto);
         $ev   = $jogo->evento;
 
-        $naoInscrito = $this->atleta('Gil', [$this->azul]);                  // inscreve e escala no Azul
-        $semTime     = $this->atleta('Hugo', [$this->preto]);                // já inscrito: escala no Preto
-        $comTime     = $this->atleta('Iara', [$this->azul]);                 // já tem time (Preto): não muda
-        $nosDois     = $this->atleta('Joao', [$this->azul, $this->preto]);   // fica para o admin
-        $inativo     = $this->atleta('Lia', [$this->azul]);
-        $foraDoJogo  = $this->atleta('Mel', [$this->verde]);                 // elenco de time fora do jogo
+        $naoInscrito = $this->atleta('Gil', $this->azul);     // inscreve e escala no Azul
+        $semTime     = $this->atleta('Hugo', $this->preto);   // já inscrito: escala no Preto
+        $comTime     = $this->atleta('Iara', $this->azul);    // já tem time (Preto): não muda
+        $inativo     = $this->atleta('Lia', $this->azul);
+        $foraDoJogo  = $this->atleta('Mel', $this->verde);    // convocado por time fora do jogo
         DB::table('tbl_atletas')->where('id_atleta', $inativo)->update(['status_atleta' => 'INATIVO']);
 
         $ev->inscrever($semTime, 'CATEGORIA', null);
         $ev->inscrever($comTime, 'CATEGORIA', null, $this->preto);
-        $ev->inscrever($nosDois, 'CATEGORIA', null);
 
         $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
-            ->assertSessionHas('sucesso', 'Escalação pelo elenco: 1 inscrito(s) escalado(s), 1 atleta(s) inscrito(s) e escalado(s).'
-                . ' 1 atleta(s) estão nos elencos dos dois times: escolha o time de cada um na lista. 1 atleta(s) notificado(s).');
+            ->assertSessionHas('sucesso', 'Escalação pela convocação: 1 inscrito(s) escalado(s), 1 atleta(s) inscrito(s) e escalado(s).'
+                . ' 1 atleta(s) notificado(s).');
 
         $this->assertSame($this->azul, $this->timeDe($jogo, $naoInscrito));
-        $this->assertSame('ELENCO', $ev->inscricoes()->where('id_atleta', $naoInscrito)->value('origem_evento_atleta'));
+        $this->assertSame('CONVOCACAO', $ev->inscricoes()->where('id_atleta', $naoInscrito)->value('origem_evento_atleta'));
         $this->assertSame($this->preto, $this->timeDe($jogo, $semTime));
         $this->assertSame($this->preto, $this->timeDe($jogo, $comTime));
-        $this->assertNull($this->timeDe($jogo, $nosDois));
         $this->assertFalse($ev->inscricoes()->where('id_atleta', $inativo)->exists());
         $this->assertFalse($ev->inscricoes()->where('id_atleta', $foraDoJogo)->exists());
 
         // Notificação só para quem foi inscrito agora (Gil); escalar quem já estava inscrito não avisa
-        $peloElenco = DB::table('tbl_notificacao')->whereNotNull('id_usuario')->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
-        $this->assertSame([$naoInscrito], $peloElenco);
+        $pelaConvocacao = DB::table('tbl_notificacao')->whereNotNull('id_usuario')->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
+        $this->assertSame([$naoInscrito], $pelaConvocacao);
         $this->assertSame(1, DB::table('tbl_notificacao')->where('id_atleta', $semTime)->count()); // a da inscrição inicial
-    }
 
-    public function test_nos_dois_elencos_e_nao_inscrito_entra_sem_time_e_aparece_na_lista(): void
-    {
-        // Como o atleta 12: estava nos dois elencos e não inscrito, era pulado e sumia da tela
-        $jogo = $this->jogo($this->azul, $this->preto);
-        $nosDois = $this->atleta('Joao', [$this->azul, $this->preto]);
-
-        $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
-            ->assertSessionHas('sucesso', 'Escalação pelo elenco: 0 inscrito(s) escalado(s), 0 atleta(s) inscrito(s) e escalado(s).'
-                . ' 1 atleta(s) estão nos elencos dos dois times (1 inscrito(s) agora, sem time): escolha o time de cada um na lista. 1 atleta(s) notificado(s).');
-
-        $inscricao = $jogo->evento->inscricoes()->where('id_atleta', $nosDois)->sole();
-        $this->assertSame('ELENCO', $inscricao->origem_evento_atleta);
-        $this->assertNull($inscricao->id_time);
-
-        $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
-            ->assertSee('aria-label="Time de Joao"', false)
-            ->assertSee('Elenco: Time Azul, Time Preto');
-
-        // Rodar de novo não duplica nem escala
+        // Rodar de novo não duplica
         $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento));
-        $this->assertSame(1, $jogo->evento->inscricoes()->count());
-        $this->assertNull($this->timeDe($jogo, $nosDois));
-    }
-
-    public function test_nos_dois_elencos_tambem_passa_pelo_alerta_de_conflito(): void
-    {
-        $jogo = $this->jogo($this->azul, $this->preto);
-        $nosDois = $this->atleta('Kai', [$this->azul, $this->preto]);
-        $this->treinoNoHorarioDoJogo($jogo)->inscrever($nosDois, 'INDIVIDUAL', null);
-
-        $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
-            ->assertSessionHas('conflitos_pendentes', fn ($p) => count($p['fortes']) === 1);
-
-        $this->assertFalse($jogo->evento->inscricoes()->where('id_atleta', $nosDois)->exists());
+        $this->assertSame(3, $ev->inscricoes()->count());
     }
 
     // ---------- aviso de categoria/sexo (não bloqueia) ----------
@@ -194,7 +167,7 @@ class JogoEscalacaoTest extends TestCase
     public function test_escalar_fora_da_categoria_do_jogo_avisa_sem_bloquear(): void
     {
         $jogo = $this->jogo($this->azul, $this->preto, categoria: $this->idSub11M);
-        $fulana = $this->atleta('Fulana', [], $this->idCategoria('Sub-15', 'F'), 'F');
+        $fulana = $this->atleta('Fulana', null, $this->idCategoria('Sub-15', 'F'), 'F');
         $daCategoria = $this->atleta('Ciclano');
         $jogo->evento->inscrever($fulana, 'INDIVIDUAL', null);
         $jogo->evento->inscrever($daCategoria, 'CATEGORIA', null);
@@ -216,7 +189,8 @@ class JogoEscalacaoTest extends TestCase
 
     public function test_inscrever_no_jogo_fora_da_categoria_avisa(): void
     {
-        $jogo = $this->jogo($this->azul, $this->preto, categoria: $this->idSub11M);
+        // Amistoso com categoria: avisa (no campeonato, o mais novo do mesmo sexo não gera aviso)
+        $jogo = $this->jogo($this->azul, $this->visitante, categoria: $this->idSub11M, amistoso: true);
         $semCategoria = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         DB::table('tbl_atletas')->where('id_atleta', $semCategoria)->update(['nome_atleta' => 'Beltrano']);
 
@@ -227,33 +201,32 @@ class JogoEscalacaoTest extends TestCase
         $this->assertSame($this->azul, $this->timeDe($jogo, $semCategoria));
     }
 
-    public function test_preencher_pelo_elenco_avisa_quem_e_de_outra_categoria(): void
+    public function test_preencher_pela_convocacao_avisa_quem_e_de_outra_categoria(): void
     {
         $jogo = $this->jogo($this->azul, $this->preto, categoria: $this->idSub11M);
-        $this->atleta('Ana', [$this->azul]);
-        $this->atleta('Zoe', [$this->preto], $this->idCategoria('Sub-13', 'M'));
-        $this->atleta('Ivo', [$this->azul, $this->preto], $this->idCategoria('Sub-11', 'F'), 'F');
+        $this->atleta('Ana', $this->azul);
+        $this->atleta('Zoe', $this->preto, $this->idCategoria('Sub-13', 'M'));
+        $this->atleta('Ivo', $this->preto, $this->idCategoria('Sub-11', 'F'), 'F');
 
+        // Jogo de campeonato: a Zoe (11 anos, cadastrada na Sub-13) é do mesmo sexo e cabe na idade, não avisa;
+        // a Ivo é do feminino, avisa
         $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
-            ->assertSessionHas('avisos_categoria', [
-                'Ivo é Sub-11 Feminino; o jogo é Sub-11 Masculino.',
-                'Zoe é Sub-13 Masculino; o jogo é Sub-11 Masculino.',
-            ]);
+            ->assertSessionHas('avisos_categoria', ['Ivo é Sub-11 Feminino; o jogo é Sub-11 Masculino.']);
     }
 
     public function test_jogo_sem_categoria_nao_avisa(): void
     {
-        $jogo = $this->jogo($this->azul, $this->preto); // amistoso sem categoria
-        $fulana = $this->atleta('Fulana', [], $this->idCategoria('Sub-15', 'F'), 'F');
+        $jogo = $this->jogo($this->azul, $this->visitante, amistoso: true); // amistoso sem categoria
+        $fulana = $this->atleta('Fulana', null, $this->idCategoria('Sub-15', 'F'), 'F');
         $jogo->evento->inscrever($fulana, 'INDIVIDUAL', null);
 
         $this->escalar($jogo, $fulana, $this->azul)->assertSessionMissing('avisos_categoria');
     }
 
-    public function test_preencher_pelo_elenco_com_conflito_pede_confirmacao(): void
+    public function test_preencher_pela_convocacao_com_conflito_pede_confirmacao(): void
     {
         $jogo = $this->jogo($this->azul, $this->preto);
-        $idAtleta = $this->atleta('Nina', [$this->azul]);
+        $idAtleta = $this->atleta('Nina', $this->azul);
         $this->treinoNoHorarioDoJogo($jogo)->inscrever($idAtleta, 'INDIVIDUAL', null);
 
         $this->comoAdmin()->post(route('admin.calendario.eventos.escalacao.elenco', $jogo->id_evento))
@@ -292,20 +265,20 @@ class JogoEscalacaoTest extends TestCase
 
     // ---------- tela ----------
 
-    public function test_tela_do_jogo_mostra_escalacao_times_internos_e_elenco(): void
+    public function test_tela_do_jogo_mostra_escalacao_times_internos_e_convocacao(): void
     {
         $jogo = $this->jogo($this->azul, $this->visitante);
-        $idAtleta = $this->atleta('Rui', [$this->azul]);
+        $idAtleta = $this->atleta('Rui', $this->azul);
         $jogo->evento->inscrever($idAtleta, 'INDIVIDUAL', null, $this->azul);
         $jogo->evento->inscrever($this->atleta('Sol'), 'INDIVIDUAL', null);
 
         $resposta = $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
             ->assertOk()
             ->assertSee('Escalação:')
-            ->assertSee('Preencher pelo elenco')
+            ->assertSee('Preencher pela convocação')
             ->assertSeeInOrder(['Time Azul', '<strong>1</strong> atleta(s)', 'Sem time', '<strong>1</strong> inscrito(s)'], false)
             ->assertSee('<option value="' . $this->azul . '" selected>Time Azul</option>', false)
-            ->assertSee('Elenco: Time Azul');
+            ->assertSee('Convocado: Time Azul');
 
         // Selects de escalação (name="id_time"): o externo não aparece. O formulário de edição do jogo, na
         // mesma tela, lista todos os times (mandante/visitante), por isso a conferência é só nesses selects
@@ -318,15 +291,14 @@ class JogoEscalacaoTest extends TestCase
 
     // ---------- ajudantes ----------
 
-    public function test_fora_do_elenco_compara_com_o_time_escalado(): void
+    public function test_nao_convocado_compara_com_o_time_escalado(): void
     {
         $jogo = $this->jogo($this->azul, $this->preto);
-        $doAzul     = $this->atleta('Ana Do Azul', [$this->azul]);
-        $doPreto    = $this->atleta('Bia Do Preto', [$this->preto]);   // escalada no adversário do time dela
-        $semElenco  = $this->atleta('Caio Sem Elenco');
-        $semTime    = $this->atleta('Davi Sem Time', [$this->preto]);
-        $nosDois    = $this->atleta('Edu Nos Dois', [$this->azul, $this->preto]);
-        foreach ([[$doAzul, $this->azul], [$doPreto, $this->azul], [$semElenco, $this->azul], [$semTime, null], [$nosDois, $this->preto]] as [$id, $time]) {
+        $doAzul        = $this->atleta('Ana Do Azul', $this->azul);
+        $doPreto       = $this->atleta('Bia Do Preto', $this->preto);   // escalada no adversário do time dela
+        $naoConvocado  = $this->atleta('Caio Sem Convocacao');
+        $semTime       = $this->atleta('Davi Sem Time', $this->preto);
+        foreach ([[$doAzul, $this->azul], [$doPreto, $this->azul], [$naoConvocado, $this->azul], [$semTime, null]] as [$id, $time]) {
             $jogo->evento->inscrever($id, 'INDIVIDUAL', null, $time, notificar: false);
         }
 
@@ -337,19 +309,18 @@ class JogoEscalacaoTest extends TestCase
             return trim($m[1] ?? '');
         };
 
-        $this->assertSame('Elenco: Time Azul', $aviso('Ana Do Azul'));
-        $this->assertSame('Fora do elenco · é do Time Preto', $aviso('Bia Do Preto'));
-        $this->assertSame('Fora do elenco', $aviso('Caio Sem Elenco'));
-        $this->assertSame('Elenco: Time Preto', $aviso('Davi Sem Time'));       // sem time: só informa
-        $this->assertSame('Elenco: Time Azul, Time Preto', $aviso('Edu Nos Dois'));
-        $this->assertStringContainsString('<small class="text-warning fw-semibold">Fora do elenco · é do Time Preto</small>', $html);
+        $this->assertSame('Convocado: Time Azul', $aviso('Ana Do Azul'));
+        $this->assertSame('Não convocado · convocado pelo Time Preto', $aviso('Bia Do Preto'));
+        $this->assertSame('Não convocado', $aviso('Caio Sem Convocacao'));
+        $this->assertSame('Convocado: Time Preto', $aviso('Davi Sem Time'));       // sem time: só informa
+        $this->assertStringContainsString('<small class="text-warning fw-semibold">Não convocado · convocado pelo Time Preto</small>', $html);
     }
 
     public function test_inscritos_do_jogo_em_blocos_por_time(): void
     {
         $jogo = $this->jogo($this->azul, $this->preto);
-        $ana  = $this->atleta('Ana Azul', [$this->azul]);
-        $bia  = $this->atleta('Bia Azul', [$this->azul]);
+        $ana  = $this->atleta('Ana Azul', $this->azul);
+        $bia  = $this->atleta('Bia Azul', $this->azul);
         $caio = $this->atleta('Caio Sem Time');
         $jogo->evento->inscrever($ana, 'INDIVIDUAL', null, $this->azul, notificar: false);
         $jogo->evento->inscrever($bia, 'INDIVIDUAL', null, $this->azul, notificar: false);
@@ -374,7 +345,7 @@ class JogoEscalacaoTest extends TestCase
     public function test_selo_da_origem_explica_ao_passar_o_mouse(): void
     {
         $jogo = $this->jogo($this->azul, $this->preto);
-        $jogo->evento->inscrever($this->atleta('Ana', [$this->azul]), 'ELENCO', null, $this->azul, notificar: false);
+        $jogo->evento->inscrever($this->atleta('Ana', $this->azul), 'ELENCO', null, $this->azul, notificar: false);
         $jogo->evento->inscrever($this->atleta('Bia'), 'INDIVIDUAL', null, $this->azul, notificar: false);
 
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))->assertOk()
@@ -399,8 +370,11 @@ class JogoEscalacaoTest extends TestCase
         $this->assertStringContainsString('Rui', $html);
     }
 
-    private function jogo(int $casa, int $visitante, ?int $idCampeonato = null, ?int $categoria = null): Jogo
+    // Jogo direto pelo model: da Copa (padrão), de outro campeonato ($idCampeonato) ou amistoso
+    private function jogo(int $casa, int $visitante, ?int $idCampeonato = null, ?int $categoria = null, bool $amistoso = false): Jogo
     {
+        $idCampeonato = $amistoso ? null : ($idCampeonato ?? $this->copa);
+
         $evento = EventoCalendario::criarPor(null, [
             'titulo_evento_calendario'         => Jogo::tituloPara($casa, $visitante),
             'tipo_evento_calendario'           => 'JOGO',
@@ -427,16 +401,17 @@ class JogoEscalacaoTest extends TestCase
         ]);
     }
 
-    // Atleta ativo (padrão: Sub-11 M), no elenco (tbl_atleta_time) dos times indicados
-    private function atleta(string $nome, array $elencos = [], ?int $idCategoria = null, string $sexo = 'M'): int
+    // Atleta ativo (padrão: Sub-11 M), convocado na Copa pelo time indicado (camisa sem repetir)
+    private function atleta(string $nome, ?int $idTime = null, ?int $idCategoria = null, string $sexo = 'M'): int
     {
         $id = $this->criarAtleta($this->nascidoComIdade(11), $sexo, 'ATIVO');
         DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome]);
         $this->colocarNaCategoria($id, $idCategoria ?? $this->idSub11M);
 
-        foreach ($elencos as $idTime) {
-            DB::table('tbl_atleta_time')->insert([
-                'id_time' => $idTime, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '',
+        if ($idTime) {
+            DB::table('tbl_convocacao')->insert([
+                'id_campeonato' => $this->copa, 'id_time' => $idTime, 'id_atleta' => $id,
+                'camisa_convocacao' => DB::table('tbl_convocacao')->count() + 1,
             ]);
         }
 

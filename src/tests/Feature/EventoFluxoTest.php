@@ -343,26 +343,24 @@ class EventoFluxoTest extends TestCase
         $this->assertSame(0, DB::table('tbl_atleta_time')->count());
     }
 
-    public function test_remover_do_elenco_mantem_a_inscricao_e_avisa_os_jogos_futuros(): void
+    public function test_remover_do_elenco_nao_mexe_nos_jogos(): void
     {
         $rui = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $rui, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '']);
 
         $futuro1 = $this->jogo($this->copa);
         $futuro2 = $this->jogo(null, $this->visitante, $this->azul); // o Azul como visitante
-        $passado = $this->jogo($this->copa, $this->azul, $this->visitante, now()->subWeek()->toDateString());
-        $outro   = $this->jogo($this->copa, $this->verde);                 // jogo de outro time
-        foreach ([$futuro1, $futuro2, $passado, $outro] as $jogo) {
+        foreach ([$futuro1, $futuro2] as $jogo) {
             $jogo->evento->inscrever($rui, 'INDIVIDUAL', null, notificar: false);
         }
 
-        // O elenco só vale no amistoso (Fase G, Etapa 2): conta só o futuro2; no campeonato vale a convocação
+        // O elenco não inscreve mais em jogos (Fase G: campeonato pela convocação, amistoso escolhido no jogo)
         $this->comoAdmin()->delete(route('admin.times.elenco.remover', [$this->azul, $rui]))
-            ->assertSessionHas('aviso', "{$this->nomeAtleta($rui)} saiu do elenco do Time Azul. Continua inscrito em 1 amistoso(s) futuro(s) do time "
-                . '(marcado como "Fora do elenco" na tela do jogo); remova a inscrição na tela de cada jogo, se for o caso.');
+            ->assertSessionHas('sucesso', "{$this->nomeAtleta($rui)} saiu do elenco do Time Azul.");
 
-        $this->assertSame(4, DB::table('tbl_evento_atleta')->where('id_atleta', $rui)->count());
-        $this->comoAdmin()->get(route('admin.times.elenco', $this->azul))->assertSee('Continua inscrito em 1 amistoso(s)');
+        $this->assertSame(2, DB::table('tbl_evento_atleta')->where('id_atleta', $rui)->count());
+        $this->comoAdmin()->get(route('admin.times.elenco', $this->azul))
+            ->assertSee('O elenco não inscreve em jogos');
     }
 
     // ---------- 11: tipo e categoria no formulário do campeonato ----------

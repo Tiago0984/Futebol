@@ -40,9 +40,8 @@ class ElencoController extends Controller
     }
 
     /**
-     * Adiciona um atleta ativo ao elenco (como o modal do atleta faz: titular, camisa opcional). Não inscreve
-     * em amistosos já criados: use "Preencher pelo elenco" na tela de cada jogo (CLAUDE.md, seção 4, "Jogos"; o
-     * jogo de campeonato usa a convocação, Fase G, Etapa 2).
+     * Adiciona um atleta ativo ao elenco (como o modal do atleta faz: titular, camisa opcional). O elenco não
+     * inscreve mais em jogos (Fase G: campeonato pela convocação, amistoso escolhido no jogo); sai na Etapa 4.
      */
     public function adicionar(Request $request, $timeId)
     {
@@ -71,12 +70,12 @@ class ElencoController extends Controller
         ]);
 
         return redirect()->route('admin.times.elenco', $time->id_time)
-            ->with('sucesso', "{$atleta->nome_atleta} entrou no elenco. Para os amistosos já criados, use \"Preencher pelo elenco\" na tela de cada jogo (jogo de campeonato usa a convocação).");
+            ->with('sucesso', "{$atleta->nome_atleta} entrou no elenco.");
     }
 
     /**
-     * Tira o atleta do elenco. As inscrições em amistosos ficam (a tela do jogo marca "Fora do elenco"); a
-     * mensagem diz em quantos jogos futuros do time ele continua inscrito. Contadores do elenco saem juntos.
+     * Tira o atleta do elenco (contadores do elenco saem juntos). Não mexe em jogo nenhum: as inscrições vêm
+     * da convocação (campeonato) ou da escolha no jogo (amistoso).
      */
     public function remover($timeId, $atletaId)
     {
@@ -90,14 +89,8 @@ class ElencoController extends Controller
             return back()->with('erro', "{$atleta->nome_atleta} não está no elenco.");
         }
 
-        $jogos    = $time->jogosFuturosComAtleta($atleta->id_atleta, soAmistosos: true); // no campeonato vale a convocação
-        $mensagem = "{$atleta->nome_atleta} saiu do elenco do {$time->nome_time}.";
-        if ($jogos) {
-            $mensagem .= " Continua inscrito em {$jogos} amistoso(s) futuro(s) do time (marcado como \"Fora do elenco\" na tela do jogo); "
-                . 'remova a inscrição na tela de cada jogo, se for o caso.';
-        }
-
-        return redirect()->route('admin.times.elenco', $time->id_time)->with($jogos ? 'aviso' : 'sucesso', $mensagem);
+        return redirect()->route('admin.times.elenco', $time->id_time)
+            ->with('sucesso', "{$atleta->nome_atleta} saiu do elenco do {$time->nome_time}.");
     }
 
     // Time interno (externo não tem elenco na associação); null se for externo

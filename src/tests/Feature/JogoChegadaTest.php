@@ -107,11 +107,13 @@ class JogoChegadaTest extends TestCase
         ], $extra);
     }
 
-    // Cria o amistoso (Ana entra pelo elenco do Azul) e publica: a publicação manda a INSCRICAO
+    // Cria o amistoso, escolhe a Ana (entra no Azul, Fase G, Etapa 3) e publica: a publicação manda a INSCRICAO
     private function criarJogo(string $inicio): Jogo
     {
         $this->actingAs($this->admin, 'admin')->post(route('admin.jogos.store'), $this->dadosJogo($inicio))->assertSessionHasNoErrors();
         $jogo = Jogo::sole();
+        $this->actingAs($this->admin, 'admin')->post(route('admin.calendario.eventos.escalacao.escolher', $jogo->id_evento), ['atletas' => [$this->ana]])
+            ->assertSessionHasNoErrors();
         $this->actingAs($this->admin, 'admin')->patch(route('admin.jogos.publicar', $jogo->id_jogo))->assertSessionHas('sucesso');
 
         return $jogo;

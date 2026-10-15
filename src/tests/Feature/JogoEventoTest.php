@@ -92,16 +92,17 @@ class JogoEventoTest extends TestCase
         $this->assertSame($this->idSub11M, (int) Jogo::where('id_campeonato', $this->idCampeonato)->sole()->evento->id_categoria);
     }
 
-    public function test_amistoso_sem_categoria_inscreve_o_elenco(): void
+    public function test_amistoso_sem_categoria_nasce_sem_inscritos(): void
     {
-        $this->atletaSub11();
+        $this->atletaSub11(); // no elenco e convocado na Copa: o amistoso não usa nenhum dos dois (Fase G, Etapa 3)
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_campeonato' => 'AMISTOSO']))
-            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.');
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. Escolha os atletas do Time Azul em "Escolher atletas", nesta tela.'
+                . ' Os atletas serão avisados ao publicar.');
 
         $jogo = Jogo::sole();
         $this->assertNull($jogo->evento->id_categoria);
-        $this->assertSame(1, $jogo->evento->inscricoes()->count());
+        $this->assertSame(0, $jogo->evento->inscricoes()->count());
     }
 
     public function test_validacoes_do_jogo(): void

@@ -238,6 +238,14 @@ class CalendarioController extends Controller
         $camisas = $jogo?->camisas() ?? [];
         $faltantesDoElenco = $jogo ? count($jogo->idsFaltantesDoElenco()) : 0;
 
+        // Amistoso: caixa "Escolher atletas" com os ativos ainda não inscritos, por categoria (Fase G, Etapa 3)
+        $idsInscritos = $evento->inscricoes()->pluck('id_atleta')->map(fn ($idAtleta) => (int) $idAtleta)->all();
+        $gruposDoAmistoso = $jogo?->escolheAtletas()
+            ? Atleta::ativosPorCategoria()
+                ->map(fn ($grupo) => $grupo->reject(fn ($atleta) => in_array((int) $atleta->id_atleta, $idsInscritos, true))->values())
+                ->filter(fn ($grupo) => $grupo->isNotEmpty())
+            : collect();
+
         // Jogo de campeonato: inscritos que passam da idade (de antes da regra, ou o campeonato mudou), com
         // aviso e selo na lista, e os do select que não podem entrar ([id_atleta => "Nome (16 anos)"])
         $inscritosAcimaDaIdade = $jogo?->acimaDaIdade($inscricoes->pluck('id_atleta')->all()) ?? [];
@@ -276,7 +284,7 @@ class CalendarioController extends Controller
         }
 
         return view('admin.calendario.evento', compact(
-            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos', 'camisas',
+            'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos', 'camisas', 'gruposDoAmistoso',
             'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar', 'inscritosAcimaDaIdade', 'disponiveisAcimaDaIdade', 'inscritosForaDoTurno', 'turnoDoTreino',
         ) + [
             'campeonatosDoJogo'       => $campeonatosDoJogo ?? collect(),
@@ -343,13 +351,11 @@ class CalendarioController extends Controller
     }
 
     /**
-     * "Preencher pela convocação" no jogo de campeonato, "Preencher pelo elenco" no amistoso
-     * (Jogo::inscreverElenco): inscreve quem falta dos convocados do campeonato (origem CONVOCACAO) ou do
-     * elenco (tbl_atleta_time, origem ELENCO) dos times internos do jogo, com alerta de conflito, e escala
-     * quem está inscrito sem time. Quem é de um time só entra escalado nele; quem está nos dois elencos (só
-     * no amistoso) entra SEM time, para o admin escolher na lista. Quem já tem time não muda; ninguém sai.
-     * Atleta fora da categoria do jogo gera aviso; quem passa da idade do campeonato fica de fora (a
-     * mensagem diz quem).
+     * "Preencher pela convocação", só no jogo de campeonato (Jogo::inscreverElenco): inscreve quem falta dos
+     * convocados do campeonato (origem CONVOCACAO) pelos times internos do jogo, com alerta de conflito, já
+     * escalados, e escala quem está inscrito sem time. Quem já tem time não muda; ninguém sai. Atleta fora da
+     * categoria do jogo gera aviso; quem passa da idade do campeonato fica de fora (a mensagem diz quem).
+     * Amistoso: recusa (os atletas são escolhidos no jogo, "Escolher atletas").
      */
     public function preencherPeloElenco(Request $request, $id)
     {
@@ -358,6 +364,11 @@ class CalendarioController extends Controller
 
         if (! $jogo || $jogo->timesEscalaveis()->isEmpty()) {
             return back()->with('erro', 'Este jogo não tem time interno para escalar.');
+        }
+
+        // Amistoso não tem lista automática (Fase G, Etapa 3)
+        if ($jogo->escolheAtletas()) {
+            return back()->with('erro', 'No amistoso, escolha os atletas em "Escolher atletas", nesta tela.');
         }
 
         $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
@@ -369,21 +380,61 @@ class CalendarioController extends Controller
         $elenco    = $jogo->inscreverElenco(auth('admin')->id());
         $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
 
-        $mensagem = 'Escalação ' . ($jogo->pelaConvocacao() ? 'pela convocação' : 'pelo elenco')
-            . ": {$elenco['escalados']} inscrito(s) escalado(s), {$elenco['inscritos_com_time']} atleta(s) inscrito(s) e escalado(s).";
-        if ($elenco['nos_dois']) {
-            $mensagem .= " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times"
-                . ($elenco['inscritos_sem_time'] ? " ({$elenco['inscritos_sem_time']} inscrito(s) agora, sem time)" : '')
-                . ': escolha o time de cada um na lista.';
-        }
+        $mensagem = "Escalação pela convocação: {$elenco['escalados']} inscrito(s) escalado(s), {$elenco['inscritos_com_time']} atleta(s) inscrito(s) e escalado(s).";
         if ($inscritos > 0) {
             $mensagem .= Notificacao::textoNotificados($evento->atletasNotificados);
         }
-        $mensagem .= $jogo->textoAcimaDaIdade($elenco['acima_da_idade'], $jogo->daLista());
+        $mensagem .= $jogo->textoAcimaDaIdade($elenco['acima_da_idade']);
 
         $this->avisarForaDaCategoria($evento, $elenco['ids_mexidos']);
 
         return back()->with('sucesso', $mensagem);
+    }
+
+    /**
+     * Amistoso (Fase G, Etapa 3): "Escolher atletas" inscreve os marcados (origem INDIVIDUAL) já escalados no
+     * time da AACJ do jogo, com alerta de conflito; quem já está inscrito é ignorado. Amistoso não tem limite de
+     * idade; outra categoria/sexo só avisa. Rascunho não avisa ninguém (o aviso sai ao publicar).
+     */
+    public function escolherAtletas(Request $request, $id)
+    {
+        $evento = EventoCalendario::findOrFail($id);
+        $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
+        $time   = $jogo?->escolheAtletas() ? $jogo->timeDaAcj() : null;
+
+        if (! $time) {
+            return back()->with('erro', 'Escolher atletas é só para amistoso com um time da AACJ.');
+        }
+
+        $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
+
+        $request->validate([
+            'atletas'   => 'required|array|min:1',
+            'atletas.*' => ['integer', Rule::exists('tbl_atletas', 'id_atleta')->where('status_atleta', 'ATIVO')],
+        ], [
+            'atletas.required' => 'Escolha pelo menos um atleta.',
+            'atletas.*.exists' => 'Escolha só atletas ativos.',
+        ]);
+
+        $jaInscritos = $evento->inscricoes()->pluck('id_atleta')->map(fn ($idAtleta) => (int) $idAtleta)->all();
+        $novos = array_values(array_diff(array_unique(array_map('intval', $request->input('atletas'))), $jaInscritos));
+
+        if (! $novos) {
+            return back()->with('sucesso', 'Os atletas escolhidos já estavam inscritos.');
+        }
+
+        if ($confirmar = $this->confirmarConflitos($request, $evento->conflitosPara($novos))) {
+            return $confirmar;
+        }
+
+        $entraram = DB::transaction(fn () => collect($novos)
+            ->filter(fn ($idAtleta) => $evento->inscrever($idAtleta, 'INDIVIDUAL', auth('admin')->id(), $time->id_time))
+            ->values()->all());
+
+        $this->avisarForaDaCategoria($evento, $entraram);
+
+        return back()->with('sucesso', count($entraram) . " atleta(s) inscrito(s) e escalado(s) no {$time->nome_time}."
+            . Notificacao::textoNotificados($evento->atletasNotificados));
     }
 
     // Aviso informativo (não bloqueia) para atletas fora da categoria/sexo do evento, na próxima tela
@@ -446,6 +497,12 @@ class CalendarioController extends Controller
         $idTime = $request->filled('id_time') ? (int) $request->id_time : null;
         $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato.categoria'])->first();
         $jogo?->setRelation('evento', $evento);
+
+        // Amistoso: todo inscrito joga pelo time da AACJ do jogo (Fase G, Etapa 3)
+        if ($idTime === null && $jogo?->escolheAtletas()) {
+            $idTime = $jogo->timeDaAcj()?->id_time;
+        }
+
         if ($idTime !== null) {
             $erro = $jogo ? $jogo->erroDeEscalacao($idTime) : 'Este evento não é um jogo: não tem escalação.';
 

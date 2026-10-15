@@ -528,12 +528,13 @@ class MenuAdminTest extends TestCase
         $this->assertStringContainsString('1 escalado no jogo', $this->blocoDoJogo($html, $jogo));
         $this->assertStringContainsString('1 escalado no jogo', $this->blocoDoJogo($html, $outro));
 
-        // Jogadores do Azul nesse jogo: só os escalados nele, com os dados do elenco (ou "Fora do elenco")
+        // Jogadores do Azul nesse jogo: só os escalados nele. Amistoso: só os nomes (o elenco não vale mais nos
+        // jogos, Fase G, Etapa 3)
         $resposta = $this->comoAdmin()->get(route('admin.jogos.times.show', [$jogo->id_jogo, $this->azul]))->assertOk();
         $this->assertEqualsCanonicalizing([$rui, $eva], $resposta->viewData('escalados')->pluck('id_atleta')->map(fn ($id) => (int) $id)->all());
         $resposta->assertSee('Time Azul · jogadores do jogo')
-            ->assertSee('Rui Azul')->assertSee('MEIA')->assertSee('Reserva')
-            ->assertSee('Eva Avulsa')->assertSee('Fora do elenco')
+            ->assertSee('Rui Azul')->assertSee('Eva Avulsa')
+            ->assertDontSee('MEIA')->assertDontSee('Fora do elenco')->assertDontSee('Status no elenco')
             ->assertDontSee('Gil Verde')->assertDontSee('Ivo Sem Time')->assertDontSee('Ana Outro Jogo')->assertDontSee('Zeca Inativo')
             ->assertSee(route('admin.calendario.eventos.show', $jogo->id_evento), false)
             ->assertSee('<a href="' . route('admin.amistosos.times') . '" class="btn btn-sm btn-outline-secondary" title="Voltar"', false)

@@ -82,18 +82,17 @@ class Time extends Model
     }
 
     /**
-     * Jogos futuros (evento ativo e não concluído) deste time em que o atleta está inscrito. Quem sai do
-     * elenco ou da convocação continua inscrito neles (a tela do jogo marca "Fora do elenco"/"Não
-     * convocado"); a tela do Elenco e a de Convocados avisam quantos. $idCampeonato: só os jogos daquele
-     * campeonato (convocação); $soAmistosos: só os amistosos (o elenco só vale neles, Fase G, Etapa 2).
+     * Jogos futuros (evento ativo e não concluído) deste time em que o atleta está inscrito, só os daquele
+     * campeonato quando informado. Quem sai da convocação continua inscrito neles (a tela do jogo marca "Não
+     * convocado"); a tela de Convocados avisa quantos.
      */
-    public function jogosFuturosComAtleta(int $idAtleta, ?int $idCampeonato = null, bool $soAmistosos = false): int
+    public function jogosFuturosComAtleta(int $idAtleta, ?int $idCampeonato = null): int
     {
         return EventoAtleta::where('id_atleta', $idAtleta)
             ->whereHas('evento', fn ($ev) => $ev
                 ->where('status_evento_calendario', 'ATIVO')
                 ->naoConcluidos()
-                ->whereHas('jogo', fn ($j) => $this->dosJogosDoTime($j, $idCampeonato, $soAmistosos)))
+                ->whereHas('jogo', fn ($j) => $this->dosJogosDoTime($j, $idCampeonato)))
             ->count();
     }
 
@@ -102,17 +101,16 @@ class Time extends Model
     public function jogosFuturosNoCampeonato(int $idCampeonato): int
     {
         return Jogo::whereHas('evento', fn ($ev) => $ev->where('status_evento_calendario', 'ATIVO')->naoConcluidos())
-            ->where(fn ($j) => $this->dosJogosDoTime($j, $idCampeonato, false))
+            ->where(fn ($j) => $this->dosJogosDoTime($j, $idCampeonato))
             ->count();
     }
 
-    // Filtro dos jogos em que este time é mandante ou visitante (de um campeonato, ou só amistosos)
-    private function dosJogosDoTime($query, ?int $idCampeonato, bool $soAmistosos)
+    // Filtro dos jogos em que este time é mandante ou visitante (de um campeonato, quando informado)
+    private function dosJogosDoTime($query, ?int $idCampeonato)
     {
         return $query
             ->where(fn ($t) => $t->where('id_time_casa', $this->id_time)->orWhere('id_time_visitante', $this->id_time))
-            ->when($idCampeonato, fn ($q) => $q->where('id_campeonato', $idCampeonato))
-            ->when($soAmistosos, fn ($q) => $q->whereNull('id_campeonato'));
+            ->when($idCampeonato, fn ($q) => $q->where('id_campeonato', $idCampeonato));
     }
 
     /**

@@ -209,18 +209,19 @@ class JogoConvocacaoTest extends TestCase
         $this->tela($jogo)->assertSee('Não convocado');
     }
 
-    public function test_amistoso_continua_pelo_elenco(): void
+    public function test_amistoso_nao_usa_a_convocacao_nem_o_elenco(): void
     {
         $caio = $this->atleta('Caio');
         $this->elenco($this->azul, $caio);
         $this->convocar($this->azul, [$this->atleta('Ana') => 10]); // convocação não vale no amistoso
 
         $this->postJogo(['id_campeonato' => 'AMISTOSO'])
-            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 1 atleta(s) do elenco inscrito(s). Os atletas serão avisados ao publicar.');
+            ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. Escolha os atletas do Time Azul em "Escolher atletas", nesta tela.'
+                . ' Os atletas serão avisados ao publicar.');
 
         $jogo = Jogo::sole();
-        $this->assertSame([$caio => ['ELENCO', $this->azul]], $this->inscricoes($jogo));
-        $this->tela($jogo)->assertSee('Preencher pelo elenco')->assertSee('Elenco: Time Azul')->assertDontSee('Camisa na convocação');
+        $this->assertSame([], $this->inscricoes($jogo)); // os atletas são escolhidos no jogo (JogoAmistosoTest)
+        $this->tela($jogo)->assertSee('Escolher atletas')->assertDontSee('Preencher pela')->assertDontSee('Camisa na convocação');
     }
 
     // ---------- ajudantes ----------

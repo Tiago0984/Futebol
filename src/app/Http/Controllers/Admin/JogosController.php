@@ -135,11 +135,13 @@ class JogosController extends Controller
             return [$evento, $jogo, $jogo->inscreverElenco(auth('admin')->id())];
         });
 
+        // Campeonato: os convocados entraram; amistoso: ninguém ainda (escolher na tela do jogo)
         $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
         $mensagem  = 'Jogo registrado como rascunho.'
-            . ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) {$jogo->daLista()} inscrito(s)." : '')
-            . ($elenco['nos_dois'] ? " {$elenco['nos_dois']} atleta(s) estão nos elencos dos dois times: escolha o time de cada um na tela do jogo." : '')
-            . $jogo->textoAcimaDaIdade($elenco['acima_da_idade'], $jogo->daLista())
+            . ($jogo->escolheAtletas()
+                ? ' Escolha os atletas do ' . $jogo->timeDaAcj()?->nome_time . ' em "Escolher atletas", nesta tela.'
+                : ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) da convocação inscrito(s)." : ''))
+            . $jogo->textoAcimaDaIdade($elenco['acima_da_idade'])
             . ' Os atletas serão avisados ao publicar.';
 
         // Inscrito de outra categoria/sexo: só avisa, como na tela do jogo (CLAUDE.md, seção 8, pergunta 14)
@@ -276,10 +278,10 @@ class JogosController extends Controller
     }
 
     /**
-     * Grava o jogo (dentro da transação da edição). Times trocados: sai quem veio pela convocação (ou pelo
-     * elenco, no amistoso) do time que saiu, entra a do time novo e as INDIVIDUAL ficam (sem time, se
-     * estavam no que saiu). Jogo concluído não muda as inscrições: só tira da escalação quem estava num time
-     * que saiu.
+     * Grava o jogo (dentro da transação da edição). Times trocados: no campeonato, sai quem veio pela
+     * convocação do time que saiu, entra a do time novo e as INDIVIDUAL ficam (sem time, se estavam no que
+     * saiu); no amistoso, os escolhidos passam para o time da AACJ que ficou. Jogo de campeonato concluído não
+     * muda as inscrições: só tira da escalação quem estava num time que saiu.
      * Devolve o trecho da mensagem e quem entrou (para salvarEdicaoDoEvento), ou null se os times não mudaram.
      */
     private function gravarJogoETrocarTimes(Jogo $jogo, array $dadosJogo, array $timesAntes): ?array
@@ -294,6 +296,14 @@ class JogosController extends Controller
 
         $foraDaEscalacao = fn (int $n) => $n ? " {$n} atleta(s) saíram da escalação (o time deixou o jogo) e continuam inscritos." : '';
 
+        // Amistoso: ninguém sai nem entra; os escolhidos passam para o time da AACJ que ficou no jogo
+        if ($jogo->escolheAtletas()) {
+            $passaram = $jogo->escalarNoTimeDaAcj();
+
+            return ['mensagem' => $passaram ? " {$passaram} atleta(s) passaram para o {$jogo->timeDaAcj()->nome_time}." : '',
+                'ids_entraram' => [], 'mexeu' => false];
+        }
+
         if ($jogo->evento->estaConcluido()) {
             return ['mensagem' => $foraDaEscalacao($jogo->limparEscalacaoForaDosTimes()), 'ids_entraram' => [], 'mexeu' => false];
         }
@@ -302,17 +312,16 @@ class JogosController extends Controller
         $entraram = $troca['inscritos_com_time'] + $troca['inscritos_sem_time'];
 
         return [
-            'mensagem'     => ' Inscrições ' . ($jogo->pelaConvocacao() ? 'pela convocação' : 'pelo elenco')
-                . ": {$entraram} atleta(s) inscrito(s), {$troca['sairam']} removido(s)."
+            'mensagem'     => " Inscrições pela convocação: {$entraram} atleta(s) inscrito(s), {$troca['sairam']} removido(s)."
                 . ' As inscrições individuais foram mantidas.' . $foraDaEscalacao($troca['sem_time'])
-                . $jogo->textoAcimaDaIdade($troca['acima_da_idade'], $jogo->daLista()),
+                . $jogo->textoAcimaDaIdade($troca['acima_da_idade']),
             'ids_entraram' => $troca['ids_entraram'],
             'mexeu'        => $entraram + $troca['sairam'] > 0,
         ];
     }
 
-    // Time interno sem atleta ativo convocado (ou no elenco, no amistoso): o jogo fica sem inscritos daquele
-    // lado; avisa o admin
+    // Jogo de campeonato com time interno sem atleta ativo convocado: o jogo fica sem inscritos daquele lado;
+    // avisa o admin (amistoso: nunca, os atletas são escolhidos no jogo)
     private function comAvisoSemElenco($resposta, Jogo $jogo)
     {
         $semElenco = $jogo->timesSemElenco();
@@ -324,10 +333,8 @@ class JogosController extends Controller
         $nomes  = $semElenco->pluck('nome_time')->implode(', ');
         $porQue = '. Nenhum atleta foi inscrito por ' . ($semElenco->count() === 1 ? 'esse time' : 'esses times');
 
-        return $resposta->with('aviso', $jogo->pelaConvocacao()
-            ? "Sem convocados: {$nomes}{$porQue}; convoque os atletas (Jogos do campeonato › Convocação) e use "
-                . '"Preencher pela convocação" na tela do jogo, ou inscreva à mão.'
-            : "Sem elenco cadastrado: {$nomes}{$porQue}; cadastre o elenco e use \"Preencher pelo elenco\" na tela do jogo, ou inscreva à mão.");
+        return $resposta->with('aviso', "Sem convocados: {$nomes}{$porQue}; convoque os atletas (Jogos do campeonato › Convocação) e use "
+            . '"Preencher pela convocação" na tela do jogo, ou inscreva à mão.');
     }
 
     // Campos do jogo: campeonato (vazio = amistoso), times e placar (os dois ou nenhum)
@@ -372,11 +379,16 @@ class JogosController extends Controller
     /**
      * Jogo de campeonato: mandante e visitante precisam estar entre os times participantes do campeonato
      * (o select já mostra só eles). Campeonato sem participantes cadastrados aceita qualquer time; na
-     * edição, os times que o jogo já tem continuam aceitos (jogos antigos). Amistoso: qualquer time.
+     * edição, os times que o jogo já tem continuam aceitos (jogos antigos). Amistoso: um time da AACJ contra
+     * um externo (Fase G, Etapa 3; vale também ao editar os amistosos antigos de AACJ contra AACJ).
      */
     private function conferirParticipantes(Request $request, ?Jogo $jogoAtual): void
     {
         if ($request->id_campeonato === self::AMISTOSO) {
+            if ($erro = Jogo::erroDosTimesDoAmistoso((int) $request->id_time_casa, (int) $request->id_time_visitante)) {
+                throw ValidationException::withMessages(['id_time_visitante' => $erro]);
+            }
+
             return;
         }
 

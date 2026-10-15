@@ -34,7 +34,9 @@
 
         bloco.classList.toggle('d-none', !amistoso);
         const rotulo = opcao?.dataset.categoria;
-        dica.textContent = !amistoso && rotulo ? `Categoria do campeonato: ${rotulo} (só exibição; quem joga são os convocados do campeonato).` : '';
+        dica.textContent = amistoso
+            ? "Amistoso: um time da AACJ contra um adversário externo. Os atletas são escolhidos na tela do jogo, depois de salvar."
+            : (rotulo ? `Categoria do campeonato: ${rotulo} (só exibição; quem joga são os convocados do campeonato).` : "");
 
         const times = !amistoso && opcao?.dataset.times ? JSON.parse(opcao.dataset.times) : [];
         const participantes = times.length ? times : null;
