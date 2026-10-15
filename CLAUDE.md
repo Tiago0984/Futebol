@@ -79,6 +79,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Período escolar (Fase A, 13/10/2026, batch 27):** `tbl_atletas.periodo_escolar_atleta` ENUM `MANHA, TARDE, NOITE, INTEGRAL` nullable (antes VARCHAR livre, com "Manhã"/"MANHÃ"; a migration normalizou e para com a lista se achar valor desconhecido); `tbl_atletas.turno_treino_atleta` ENUM `MANHA, TARDE, AMBOS` nullable, só para quem estuda à noite (o `Atleta::booted()` limpa nos outros). Rótulos em `Atleta::PERIODOS` e `TURNOS_TREINO`.
 - **Convocação (Fase G, Etapa 1, batch 29):** `tbl_convocacao`: `id_convocacao` INT UNSIGNED AI; `id_campeonato`, `id_time` e `id_atleta` INT com sinal (FKs `fk_convocacao_campeonato`, `fk_convocacao_time`, `fk_convocacao_atleta`); `camisa_convocacao` TINYINT UNSIGNED **NOT NULL** (1 a 99, `Convocacao::CAMISA_MIN/MAX`); `id_usuario` BIGINT UNSIGNED nullable (FK `fk_convocacao_usuario`, quem convocou; fora do `$fillable`); `data_convocacao` DATETIME DEFAULT CURRENT_TIMESTAMP. Únicos `convocacao_categoria_atleta_unique` (campeonato, categoria, atleta: um time por atleta em cada categoria; até a H2 era `convocacao_campeonato_atleta_unique`) e `convocacao_camisa_unique` (campeonato, time, camisa). FKs NO ACTION.
   - **Fase H, Etapa H2 (batch 32):** `id_categoria` INT com sinal NOT NULL (a categoria do time no campeonato) e FK composta `fk_convocacao_participante` (campeonato, categoria, time) → único `campeonato_time_categoria_unique` de `tbl_campeonato_time`: só convoca quem é participante naquela categoria.
+- **`tbl_atleta_time` (elenco fixo) sem uso desde a Fase G, Etapa 4** (15/10/2026): nenhum código lê nem grava; continua no banco (FKs para atleta e time) até uma migration com OK. Excluir time ou atleta apaga as linhas dele nela.
 - **`tbl_campeonato.id_categoria` é NOT NULL** (todo campeonato tem categoria; o código trata o nulo só por segurança).
 - **Categorias, participantes e grupos do campeonato (Fase H, batches 31 e 33):**
   - `tbl_campeonato_categoria` (H1): `id_campeonato_categoria` INT UNSIGNED AI; `id_campeonato`, `id_categoria` INT com sinal; único `campeonato_categoria_unique`.
@@ -189,6 +190,10 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **O resto da home e a página do campeonato não mudaram:** listam os jogos de cada campeonato (o amistoso não tem campeonato, então já não entrava).
 - **Página do campeonato com várias categorias** (Fase H, Etapa H5, 15/10/2026): selos das categorias no topo e **uma aba por categoria** (só com mais de uma; JS próprio, como as abas da home: o site usa Bootstrap 3), cada uma com os **times** da categoria, os **jogos** dela (selo da fase quando não é a de grupos: "Final", "Repescagem") e a **classificação de cada grupo (chave)**, com os **classificados destacados** ("Classificado", fundo verde) e a legenda "Passam os N primeiros de cada grupo (chave)." Rascunho e oculto fora; cancelado com o selo. Estilos no `estilo.css`, seção 70.
 - **Home:** a prévia da classificação é a primeira tabela com times da primeira categoria, com o título ("Sub-11 Masculino · Grupo A") e os classificados; "Ver classificação completa" quando há mais times, categorias ou grupos. **Lista de campeonatos:** os selos são as categorias do campeonato (antes, as do cadastro dos times).
+- **Jogadores da AACJ, não de um time** (dono do projeto, 15/10/2026; Fase G, Etapa 4):
+  - **página Jogadores:** os atletas ativos como "AACJ · Sub-15 Masculino", com filtro por categoria; o modal tem as convocações (campeonato, categoria e camisa, sem o nome do time) e os cartões, e não tem gols, partidas nem defesas;
+  - **home:** "Nossas categorias", que abre a página Jogadores filtrada;
+  - **página do campeonato:** os times só com o escudo, sem lista de jogadores.
 - Pode mudar se o professor pedir.
 
 ### Notificações (Fase 8)
@@ -261,7 +266,13 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - **"Escolher atletas"** na tela do amistoso (caixa `admin.partials.escolher-atletas`, ativos ainda não inscritos por categoria; rota `eventos.escalacao.escolher`, `CalendarioController::escolherAtletas`): inscreve os marcados como **INDIVIDUAL já escalados no time da AACJ** (`Jogo::timeDaAcj()`), com alerta de conflito; quem já está inscrito é ignorado. **Sem limite de idade e sem camisa**; outra categoria/sexo só avisa. Substitui no amistoso os cards "Inscrever atleta" e "Adicionar todos de uma categoria"; o "Preencher" é recusado. A inscrição avulsa (rota de inscrição) no amistoso também escala no time da AACJ.
   - **Trocar o time da AACJ** passa os inscritos para o time novo (`Jogo::escalarNoTimeDaAcj()`; "N atleta(s) passaram para o Time X."); trocar só o adversário não mexe em ninguém.
   - Telas: no amistoso, sem "Fora do elenco"/"Elenco: …"; jogadores do time no jogo só com os nomes.
-- **O elenco fixo (`tbl_atleta_time`) não inscreve mais em jogo nenhum** (Etapa 3): a tela do Elenco avisa isso e não conta mais jogos ao remover; `Jogo::elencoDosTimes()` saiu. O cadastro do atleta (caixas de times e camisa), a tela Elenco, o site e a API ainda usam o elenco: retirada na Etapa 4.
+- **O elenco fixo (`tbl_atleta_time`) não inscreve mais em jogo nenhum** (Etapa 3) e **saiu do sistema** (Etapa 4, 15/10/2026):
+  - o atleta é da AACJ, na categoria dele, sem time nem camisa no cadastro; o time e a camisa são da convocação de cada campeonato;
+  - saiu a tela Elenco;
+  - o site mostra os jogadores como da AACJ (seção 4, "Site público");
+  - a API devolve `times` vazio;
+  - a tabela fica no banco, sem uso.
+  - As inscrições antigas com origem `ELENCO` continuam como estão.
 
 ### Grade de treino
 - Tem **`id_categoria`** (FK, nullable para itens gerais como "Integrado" e "Treino Livre"), feito na Fase 3. Horários femininos entram como linhas novas.
@@ -622,7 +633,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Roteiro no navegador feito em casa (14/10, 9 passos, todos OK):** AACJ x AACJ recusado; amistoso de 31/10 (evento 214, jogo 16) nascendo vazio; "Escolher atletas" com João, Lucas e Pedro (16 anos, entra); troca do mandante para o Verde ("3 atleta(s) passaram para o Time Verde."); jogadores do time só com os nomes; aviso na tela do Elenco. O jogo do evento 214 ficou **oculto**.
   - Notas: a categoria do amistoso vem sugerida pelo mandante (Time Azul = Sub-11), daí o aviso "Fora da categoria" para os mais velhos; o elenco do Time Azul lista o atleta 11 (Tiago Silva, **REJEITADO**) junto do atleta 4 (homônimo, ativo): a tela de Elenco mostra quem não está ativo (sai na Etapa 4).
 - **Falta:** publicar no servidor (junto com a Etapa 2).
-- **Etapa 4 (retirar o elenco fixo) adiada para depois da Fase H**, que muda a convocação de novo.
+- **Etapa 4 (retirar o elenco fixo) adiada para depois da Fase H**, que muda a convocação de novo (feita em 15/10, depois da Fase H).
 
 #### Fase H (planejada) — campeonato com várias categorias (dono do projeto, 14/10/2026)
 - **Origem:** tabela real da "Copa São Carlos de Futebol de Base 2026" (Primeira Fase, 17/10): um campeonato com Sub-11, Sub-13, Sub-15 e Sub-17, grupos (Grupo 01 a 03), cada jogo numa arena (com endereço); a AACJ (Juscelino) joga Sub-11 13:00, Sub-15 14:00 e Sub-17 15:00 contra o Botafogo na Arena Juscelino.
@@ -640,7 +651,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - **H3. Jogo com categoria:** o jogo de campeonato tem a categoria (uma das do campeonato); times oferecidos e convocação/idade pela categoria do jogo. **Jogo sem time da AACJ nasce publicado** (ninguém a avisar; precisa contar na classificação).
   - **H4. Grupos, fase e classificação:** grupos por categoria com seus times; fase do jogo (lista fixa); classificação por categoria e grupo, só fase de grupos; mata-mata opcional.
   - **H5. Site e API:** página do campeonato com abas por categoria (classificação de cada grupo e jogos); API acompanha.
-  - Depois: Fase G, Etapa 4 (retirar o elenco fixo).
+  - Depois: Fase G, Etapa 4 (retirar o elenco fixo; feita em 15/10).
 - **Decisão para a H1 (dono do projeto, 14/10/2026; revista em 15/10):** **sem categoria principal na tela**: todas as categorias do campeonato valem igual (o formulário só tem as caixas, ao menos uma; a lista mostra todas, sem selo). `tbl_campeonato.id_categoria` fica até a H3 como **categoria de referência**, escolhida pelo sistema (`Campeonato::categoriaDeReferencia()`): a atual, se continua marcada (acrescentar categoria não regrava os jogos); senão, a **mais velha** das marcadas (maior idade máxima; no empate, a masculina), para a idade não barrar quem sobe. Até a H3, valia para a idade, a convocação e a categoria dos jogos; **desde a H3, só a API e o site a usam** (até a H5). **Não publicar no servidor entre a H1 e a H3.**
 
 #### Fase H, Etapa H1 — categorias e participantes por categoria (computador de casa, 14 e 15/10/2026; `224ed7e` e o commit sem a principal)
@@ -691,9 +702,35 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - **Dados de teste no `db_futebol` de casa:** a Copa Escola tem o **"Grupo A"** com os três times (criado fora dos roteiros, depois do ajuste da H4; ficou como estava).
 - **Etapa H5 aprovada. Fase H concluída.**
 - **Publicado no servidor (15/10/2026):** `main` avançada até `f0b5ece` (fast-forward, 27 commits); backup pelo phpMyAdmin no computador de casa (`backup/db_futebol_servidor_20261015.sql`, batch 29, com a `tbl_convocacao` vazia); as 5 migrations (`2026_10_14_000002` e `2026_10_15_000001` a `000004`) rodaram sem erro no MariaDB 10.11, **todas no batch 30 do servidor** (em casa ficaram nos batches 30 a 34); `optimize:clear`. Conferido pelo Claude no navegador: lista e página dos campeonatos, home, API e documentação, bloco Convocação com a categoria, tela de grupos e formulário do jogo com categoria e fase.
+- **Próximo passo:** Fase G, Etapa 4 (feita, abaixo); depois a Fase D.
+
+#### Fase G, Etapa 4 — sem o elenco fixo (computador de casa, 15/10/2026; regras na seção 4, "Convocação" e "Site público")
+- **Decisão (dono do projeto, 15/10/2026):** o site pode mostrar os jogadores, mas como **jogadores da escolinha AACJ**, não do time X ou Y.
+- **Sem migration:** `tbl_atleta_time` fica no banco, sem uso, até ser removida por migration com OK. A exclusão do time (`TimesController::destroy`) e a do atleta (`excluirComDependencias`) apagam as linhas antigas dela (FK).
+- **Código:**
+  - **Admin:**
+    - saíram `Atleta::times()`, `Time::atletas()`, `Time::elencoParaTela()`, o `ElencoController`, a view `admin/times/elenco`, as 4 rotas `admin.times.elenco*` e a `admin.campeonatos.times.show` (jogadores do time no campeonato);
+    - o cadastro do atleta ficou sem times e sem camisa;
+    - o participante sem jogo, na tela de jogos do campeonato, abre os **convocados** ("N convocado(s)");
+    - o `escaladosDoTime()` não lê mais o elenco;
+    - o elenco não impede mais excluir um time.
+  - **Site:**
+    - **Jogadores** (`Site\AtletasController`): "AACJ · categoria", filtro **Categoria** (`?categoria=ID` já marcado), modal com Convocações (campeonatos) e Cartões, e a seção "Campeonatos" (campeonato, categoria e camisa da convocação, sem o time). Saíram Gols, Partidas e Defesas, que eram digitados no elenco.
+    - **Home:** "Nossas categorias" (`categoriasDaAcj`).
+    - **Página do campeonato:** só escudo e selo AACJ/Externo.
+    - Saíram o partial `partials/modal-times` e o JS dele.
+    - `script.js` carregado com a data do arquivo (`?v=filemtime`).
+    - `Convocacao::categoria()`.
+  - **API:** `GET /v1/atleta` com `times` sempre vazio (documentado).
+- **Testes:** `ElencoFixoRetiradoTest` (5); `MenuAdminTest` e `EventoFluxoTest` ajustados. **633 testes passando.**
+- **Manual** atualizado (Times, site público, "em construção") e PDF gerado de novo. **O manual ainda não cobre a Fase H** (categorias do campeonato, grupos, fase do jogo).
+- **Roteiro no navegador feito em casa (15/10, 10 passos, pelo Claude no navegador):** atletas sem camisa e sem times (lista, editar, novo); Times sem o botão Elenco e `/admin/times/1/elenco` com 404; participantes sem jogo da Liga abrindo os convocados; Jogadores com "AACJ · categoria", filtro e modal com "Campeonatos"; home com "Nossas categorias" abrindo o filtro; campeonato só com escudos; documentação da API. Sem erro de JavaScript. Duas divergências eram do roteiro, não do sistema: a lixeira de times só aparece para time inativo; a Liga não tem jogo visível.
+- **Etapa 4 aprovada. Fase G concluída.**
 - **Próximo passo:**
-  - **Fase G, Etapa 4:** retirar o elenco fixo.
-  - **Fase D:** posições e titular/reserva na convocação.
+  - **publicar no servidor** (com OK; sem migration: `git pull` e `optimize:clear`);
+  - **Fase D:** posições e titular/reserva na convocação;
+  - manual com a Fase H;
+  - migration para apagar a `tbl_atleta_time` (com OK).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
@@ -719,7 +756,6 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Assinaturas:** gravadas em `public/` (acessíveis por URL), nome previsível, caminho salvo no **responsável** (sobrescreve quando ele tem dois atletas), sem validar se é PNG, e o arquivo não é apagado na exclusão. Plano: coluna `tbl_autorizacoes.arquivo_assinatura`, `Storage::disk('local')` com UUID, rota protegida no admin, comando para migrar os arquivos, apagar após o commit da transação.
 - **Responsável e endereço** ficam no banco após excluir o atleta (o responsável pode ter outros atletas).
 - **Virada do ano:** com a idade pelo ano de nascimento, metade dos atletas muda de categoria todo 1º de janeiro (quem fica com idade par sai de Sub-11/13/15). Plano futuro: tela/relatório para o admin com a lista de atletas cuja categoria esperada mudou; a troca continua **manual** (fechar a linha antiga de `tbl_categoria_atleta` e abrir uma nova).
-- **Camisa repetida na lista de atletas:** um atleta em dois times mostra "Camisa Nº 15" duas vezes, sem dizer de qual time é cada número.
 - **`novalidate` no formulário de cadastro de atleta do admin** (`atletas/modals/create.blade.php`): o `required` do HTML não atua ali; a validação é só do servidor. Os outros formulários do admin não usam `novalidate`.
 - **Manutenção da agenda gerada** (tratar depois da Fase 8):
   - (a) Mudança na grade atualizar os eventos futuros gerados (a partir de uma data), **sem sobrescrever o que foi editado à mão**; hoje a tela só avisa.
