@@ -220,7 +220,7 @@ class EventoFluxoTest extends TestCase
         $this->participantes($this->copa, [$this->azul, $this->visitante]);
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_time_casa' => $this->verde]))
-            ->assertSessionHasErrors(['id_time_casa' => 'O mandante não participa do campeonato Copa Escola. Inclua o time nos participantes do campeonato, ou escolha outro.']);
+            ->assertSessionHasErrors(['id_time_casa' => 'O mandante não participa do Sub-11 Masculino do campeonato Copa Escola. Inclua o time nos participantes dessa categoria, ou escolha outro.']);
         $this->assertSame(0, Jogo::count());
 
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())->assertSessionHasNoErrors();
@@ -229,10 +229,10 @@ class EventoFluxoTest extends TestCase
             ->assertSessionHasNoErrors();
         $this->assertSame(2, Jogo::count());
 
-        // O select sabe os participantes; o texto de ajuda fala do elenco, não da categoria
+        // O select sabe as categorias do campeonato e os participantes de cada uma (Fase H, Etapa H3)
         $this->comoAdmin()->get(route('admin.jogos.index'))
-            ->assertSee('data-times="[' . $this->azul . ',' . $this->visitante . ']"', false)
-            ->assertSee('Só exibição: quem joga é o elenco ativo dos times internos.')
+            ->assertSee('data-categorias="[' . $this->idSub11M . ']"', false)
+            ->assertSee('data-participantes="' . e(json_encode([$this->idSub11M => [$this->azul, $this->visitante]])) . '"', false)
             ->assertDontSee('Os atletas ativos da categoria são inscritos no jogo.');
     }
 
@@ -390,63 +390,51 @@ class EventoFluxoTest extends TestCase
             ->assertSessionHasErrors('tipo_campeonato');
     }
 
-    public function test_trocar_a_categoria_do_campeonato_atualiza_a_dos_jogos_com_historico_e_sem_avisar(): void
+    public function test_categoria_com_jogos_nao_sai_do_campeonato_e_os_jogos_mantem_a_categoria(): void
     {
+        // Cada jogo tem a categoria dele (Fase H, Etapa H3): trocar as categorias do campeonato não regrava os jogos
         $idSub15M = $this->idCategoria('Sub-15', 'M');
-        $futuro  = $this->jogo($this->copa);
-        $passado = $this->jogo($this->copa, data: now()->subMonth()->toDateString());
-        $oculto  = $this->jogo($this->copa, $this->verde);
-        foreach ([$futuro, $passado, $oculto] as $jogo) {
+        $this->participantes($this->copa, []); // o Sub-11 na lista do campeonato
+        $futuro = $this->jogo($this->copa);
+        $oculto = $this->jogo($this->copa, $this->verde);
+        foreach ([$futuro, $oculto] as $jogo) {
             $jogo->evento->update(['id_categoria' => $this->idSub11M]);
         }
         $oculto->evento->update(['status_evento_calendario' => 'INATIVO']);
-        $amistoso = $this->jogo(null);
-        $amistoso->evento->update(['id_categoria' => $this->idSub11M]);
-        $ana = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
-        $this->colocarNaCategoria($ana, $this->idSub11M);
-        $futuro->evento->inscrever($ana, 'INDIVIDUAL', $this->admin->id_usuario);
-        $notificacoes = DB::table('tbl_notificacao')->count();
 
         $dados = [
             'nome_campeonato' => 'Copa Escola', 'tipo_campeonato' => 'MATA-MATA',
-            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01', 'categorias' => [$idSub15M],
+            'data_inicio_campeonato' => '2026-10-01', 'data_fim_campeonato' => '2026-12-01',
         ];
-        // Trocar a categoria (o Sub-11 sai, fica o Sub-15) troca a de referência
-        $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), $dados)
-            ->assertSessionHas('sucesso', 'Campeonato atualizado com sucesso. Categoria atualizada em 3 jogo(s).');
 
-        // Todos os jogos do campeonato acompanham (concluído e oculto também); o amistoso não muda
-        foreach ([$futuro, $passado, $oculto] as $jogo) {
-            $this->assertSame($idSub15M, (int) $jogo->evento->fresh()->id_categoria);
-            $this->assertDatabaseHas('tbl_evento_historico', [
-                'id_evento_calendario' => $jogo->id_evento, 'campo_evento_historico' => 'id_categoria',
-                'id_usuario' => $this->admin->id_usuario,
-            ]);
-        }
-        $this->assertSame($this->idSub11M, (int) $amistoso->evento->fresh()->id_categoria);
+        // Tirar o Sub-11 (que tem jogos, inclusive o oculto): recusado
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), [...$dados, 'categorias' => [$idSub15M]])
+            ->assertSessionHasErrors(['categorias' => 'Não é possível tirar do campeonato categoria com jogos: Sub-11 Masculino (2 jogo(s)). '
+                . 'Mude a categoria desses jogos antes (ou mantenha a categoria).']);
+        $this->assertDatabaseMissing('tbl_campeonato_categoria', ['id_campeonato' => $this->copa, 'id_categoria' => $idSub15M]);
 
-        // Só exibição: ninguém sai nem é avisado
-        $this->assertDatabaseHas('tbl_evento_atleta', ['id_evento_calendario' => $futuro->id_evento, 'id_atleta' => $ana]);
-        $this->assertSame($notificacoes, DB::table('tbl_notificacao')->count());
-
-        // Salvar de novo sem trocar a categoria não mexe nos jogos
-        $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), $dados)
+        // Acrescentar o Sub-15: os jogos continuam no Sub-11, sem histórico
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $this->copa), [...$dados, 'categorias' => [$this->idSub11M, $idSub15M]])
             ->assertSessionHas('sucesso', 'Campeonato atualizado com sucesso.');
-        $this->assertSame(3, DB::table('tbl_evento_historico')->where('campo_evento_historico', 'id_categoria')->count());
+        foreach ([$futuro, $oculto] as $jogo) {
+            $this->assertSame($this->idSub11M, (int) $jogo->evento->fresh()->id_categoria);
+        }
+        $this->assertSame(0, DB::table('tbl_evento_historico')->where('campo_evento_historico', 'id_categoria')->count());
     }
 
-    public function test_cartao_do_time_avisa_quando_a_categoria_do_time_e_outra_que_a_do_campeonato(): void
+    public function test_cartao_do_time_avisa_quando_a_categoria_do_time_e_outra_que_a_do_jogo(): void
     {
-        $this->jogo($this->copa);
+        $jogo = $this->jogo($this->copa);
+        $jogo->evento->update(['id_categoria' => $this->idSub11M]);
 
         // Mesma categoria: só o rótulo
         $this->comoAdmin()->get(route('admin.campeonatos.times', $this->copa))
             ->assertSee('Sub-11 Masculino')
             ->assertDontSee('js-categoria-do-time');
 
-        // Campeonato Sub-15, times Sub-11: "Time: …" com a dica, nos cartões e na tela do jogo
-        DB::table('tbl_campeonato')->where('id_campeonato', $this->copa)->update(['id_categoria' => $this->idCategoria('Sub-15', 'M')]);
-        $dica = 'title="Categoria do cadastro do time. O campeonato é Sub-15 Masculino."';
+        // Jogo Sub-15, times Sub-11: "Time: …" com a dica, nos cartões e na tela do jogo (Fase H, Etapa H3: a do jogo)
+        $jogo->evento->update(['id_categoria' => $this->idCategoria('Sub-15', 'M')]);
+        $dica = 'title="Categoria do cadastro do time. No campeonato, ele joga no Sub-15 Masculino."';
         $this->comoAdmin()->get(route('admin.campeonatos.times', $this->copa))
             ->assertSee('Time: Sub-11 Masculino')
             ->assertSee($dica, false);

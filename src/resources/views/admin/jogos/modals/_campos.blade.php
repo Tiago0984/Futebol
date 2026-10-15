@@ -3,7 +3,8 @@
     $p = prefixo dos ids ('criar_' ou 'edit_'); $comOld = preenche com old() (no criar e na tela do jogo; o editar
     da lista é preenchido pelo JS); $valores (opcional) = valores atuais do jogo, quando old() está vazio.
     Os nomes dos campos do evento são os mesmos do Calendário, para o alerta de conflito reenviar o formulário.
-    Campeonato: data-times = participantes (o JS de admin.jogos._script_form mostra só eles nos times).
+    Campeonato: data-categorias = categorias dele e data-participantes = [id_categoria => [id_time]] (o JS de
+    admin.jogos._script_form mostra só essas categorias e, nos times, só os participantes da categoria escolhida).
 --}}
 @php $valor = fn ($campo) => $comOld ? old($campo, $valores[$campo] ?? null) : null; @endphp
 <div class="row g-3 form-jogo" data-prefixo="{{ $p }}">
@@ -15,8 +16,9 @@
                 Amistoso (sem campeonato)
             </option>
             @foreach($campeonatos as $camp)
-            <option value="{{ $camp->id_campeonato }}" data-categoria="{{ $camp->categoria?->rotulo }}"
-                data-times="{{ $camp->times->pluck('id_time')->toJson() }}"
+            <option value="{{ $camp->id_campeonato }}"
+                data-categorias="{{ $camp->categorias->pluck('id_categoria')->map(fn ($id) => (int) $id)->toJson() }}"
+                data-participantes="{{ json_encode((object) ($camp->participantes_por_categoria ?? [])) }}"
                 @selected((string) $valor('id_campeonato') === (string) $camp->id_campeonato)>
                 {{ $camp->nome_campeonato }}
             </option>
@@ -25,18 +27,20 @@
         <small class="text-muted js-categoria-campeonato"></small>
     </div>
     <div class="col-md-5 js-bloco-categoria d-none">
-        <label class="form-label">Categoria do amistoso</label>
+        <label class="form-label" for="{{ $p }}id_categoria">
+            <span class="js-rotulo-categoria">Categoria do jogo</span> <span class="text-danger js-obrigatoria">*</span>
+        </label>
         <select name="id_categoria" id="{{ $p }}id_categoria" class="form-select js-categoria">
-            <option value="">Sem categoria</option>
+            <option value="" class="js-sem-categoria">Sem categoria</option>
             @foreach($categorias as $cat)
             <option value="{{ $cat->id_categoria }}" @selected((string) $valor('id_categoria') === (string) $cat->id_categoria)>{{ $cat->rotulo }}</option>
             @endforeach
         </select>
-        <small class="text-muted">Só exibição: quem joga é o elenco ativo dos times internos.</small>
+        <small class="text-muted js-ajuda-categoria"></small>
     </div>
 
     <div class="col-12 js-aviso-participantes d-none">
-        <small class="text-muted"><i class="bi bi-info-circle"></i> Os times mostram só os participantes do campeonato.</small>
+        <small class="text-muted"><i class="bi bi-info-circle"></i> Os times mostram só os participantes da categoria do jogo.</small>
     </div>
     <div class="col-md-5">
         <label class="form-label">Time Mandante <span class="text-danger">*</span></label>

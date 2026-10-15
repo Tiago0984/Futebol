@@ -76,7 +76,7 @@ class JogoEventoTest extends TestCase
         $this->assertSame("{$this->dia} 19:00:00", $jogo->data_jogo->format('Y-m-d H:i:s')); // vem do evento
     }
 
-    public function test_amistoso_usa_a_categoria_escolhida_e_ignora_categoria_em_jogo_de_campeonato(): void
+    public function test_amistoso_usa_a_categoria_escolhida_e_jogo_de_campeonato_so_aceita_as_do_campeonato(): void
     {
         $idSub13M = $this->idCategoria('Sub-13', 'M');
 
@@ -89,8 +89,12 @@ class JogoEventoTest extends TestCase
         $this->assertSame($idSub13M, (int) $amistoso->evento->id_categoria);
         $this->assertSame('Campo B', $amistoso->evento->local_evento_calendario);
 
-        // No jogo de campeonato, a categoria enviada não vale: é a do campeonato
-        $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_categoria' => $idSub13M]));
+        // No jogo de campeonato, só uma das categorias do campeonato (Fase H, Etapa H3); com uma só, ela vale sem escolher
+        $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_categoria' => $idSub13M]))
+            ->assertSessionHasErrors(['id_categoria' => 'A categoria do jogo precisa ser uma das categorias do campeonato.']);
+        $this->assertFalse(Jogo::where('id_campeonato', $this->idCampeonato)->exists());
+
+        $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())->assertSessionHasNoErrors();
         $this->assertSame($this->idSub11M, (int) Jogo::where('id_campeonato', $this->idCampeonato)->sole()->evento->id_categoria);
     }
 

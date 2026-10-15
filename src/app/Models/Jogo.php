@@ -108,7 +108,7 @@ class Jogo extends Model
     {
         $jogos = $query
             ->whereHas('evento', fn ($q) => $q->where('status_evento_calendario', '<>', 'INATIVO'))
-            ->with(['evento' => fn ($q) => $q->comInscritosAtivos(), 'campeonato.categoria', 'timeCasa.categoria', 'timeVisitante.categoria'])
+            ->with(['evento' => fn ($q) => $q->comInscritosAtivos(), 'campeonato', 'evento.categoria', 'timeCasa.categoria', 'timeVisitante.categoria'])
             ->get();
 
         $escalados = $jogos->isEmpty() ? collect() : DB::table('tbl_evento_atleta as ea')
@@ -257,20 +257,35 @@ class Jogo extends Model
     /**
      * Campeonato é por faixa de idade (professor, 09/10/2026): o mais novo pode jogar numa categoria acima
      * (Sub-13 no Sub-15), o mais velho nunca joga abaixo. Devolve [id_atleta => "Nome (16 anos)"] dos atletas
-     * informados que passam da idade máxima da categoria do campeonato, com a idade pelo ano do jogo
-     * (Categoria::idadeNoAno). Amistoso e campeonato sem categoria não têm limite: [].
+     * informados que passam da idade máxima da categoria do jogo (Fase H, Etapa H3; antes, a do campeonato),
+     * com a idade pelo ano do jogo (Categoria::idadeNoAno). Amistoso e jogo sem categoria não têm limite: [].
      */
     public function acimaDaIdade(array $idsAtletas): array
     {
         $ano = (int) ($this->evento?->data_evento_calendario ?? now())->format('Y');
 
-        return $this->campeonato?->categoria?->atletasAcimaDaIdade($idsAtletas, $ano) ?? [];
+        return $this->categoriaDoJogo()?->atletasAcimaDaIdade($idsAtletas, $ano) ?? [];
     }
 
-    // Faixa do campeonato para as mensagens: "Sub-15 Masculino, até 15 anos" (null sem limite de idade)
+    // Faixa do jogo para as mensagens: "Sub-15 Masculino, até 15 anos" (null sem limite de idade)
     public function limiteDeIdade(): ?string
     {
-        return $this->campeonato?->categoria?->limite_de_idade;
+        return $this->categoriaDoJogo()?->limite_de_idade;
+    }
+
+    /**
+     * Categoria do jogo de campeonato (Fase H, Etapa H3): a do evento, uma das categorias do campeonato,
+     * escolhida no formulário. Vale para a idade, a convocação e os times. Amistoso: null (a categoria dele
+     * é só exibição, sem limite de idade).
+     */
+    public function categoriaDoJogo(): ?Categoria
+    {
+        return $this->id_campeonato ? $this->evento?->categoria : null;
+    }
+
+    private function idCategoriaDoJogo(): ?int
+    {
+        return $this->id_campeonato && $this->evento?->id_categoria ? (int) $this->evento->id_categoria : null;
     }
 
     // Motivo para o atleta não jogar este jogo por passar da idade do campeonato, ou null se pode
@@ -313,16 +328,17 @@ class Jogo extends Model
      */
     public function atletasPorTime(): array
     {
-        return self::atletasDosTimes($this->timesEscalaveis()->pluck('id_time')->all(), $this->id_campeonato);
+        return self::atletasDosTimes($this->timesEscalaveis()->pluck('id_time')->all(), $this->id_campeonato, idCategoria: $this->idCategoriaDoJogo());
     }
 
     /**
      * Regra única da fonte, usada também antes de o jogo existir (conflito na criação e na troca de time):
-     * com campeonato, a convocação dele; sem campeonato (amistoso), ninguém entra automaticamente.
+     * com campeonato, a convocação dele na categoria do jogo (Fase H, Etapa H3; sem categoria, todas); sem
+     * campeonato (amistoso), ninguém entra automaticamente.
      */
-    public static function atletasDosTimes(array $idsTimes, $idCampeonato, bool $soAtivos = true): array
+    public static function atletasDosTimes(array $idsTimes, $idCampeonato, bool $soAtivos = true, ?int $idCategoria = null): array
     {
-        return $idCampeonato ? self::convocadosDosTimes((int) $idCampeonato, $idsTimes, $soAtivos) : [];
+        return $idCampeonato ? self::convocadosDosTimes((int) $idCampeonato, $idsTimes, $soAtivos, $idCategoria) : [];
     }
 
     // ── Amistoso (Fase G, Etapa 3) ──────────────────────────────────────────
@@ -362,10 +378,11 @@ class Jogo extends Model
     }
 
     /**
-     * Convocados (tbl_convocacao) do campeonato pelos times informados: [id_atleta => [id_time]]. Só atletas
-     * ATIVO, salvo $soAtivos = false. A convocação já garante um time por atleta em cada campeonato.
+     * Convocados (tbl_convocacao) do campeonato pelos times informados, na categoria informada (a do jogo):
+     * [id_atleta => [id_time]]. Só atletas ATIVO, salvo $soAtivos = false. A convocação já garante um time por
+     * atleta em cada categoria do campeonato.
      */
-    public static function convocadosDosTimes(int $idCampeonato, array $idsTimes, bool $soAtivos = true): array
+    public static function convocadosDosTimes(int $idCampeonato, array $idsTimes, bool $soAtivos = true, ?int $idCategoria = null): array
     {
         if (! $idsTimes) {
             return [];
@@ -374,6 +391,7 @@ class Jogo extends Model
         return DB::table('tbl_convocacao as cv')
             ->join('tbl_atletas as a', 'a.id_atleta', '=', 'cv.id_atleta')
             ->when($soAtivos, fn ($q) => $q->where('a.status_atleta', 'ATIVO'))
+            ->when($idCategoria, fn ($q) => $q->where('cv.id_categoria', $idCategoria))
             ->where('cv.id_campeonato', $idCampeonato)
             ->whereIn('cv.id_time', $idsTimes)
             ->orderBy('cv.id_atleta')
@@ -508,7 +526,7 @@ class Jogo extends Model
      */
     public function idsQueSaemNaTroca(array $idsTimesQueSairam, array $idsTimesQueFicam): array
     {
-        $jogam      = fn (array $idsTimes) => array_keys(self::atletasDosTimes(self::idsInternos($idsTimes), $this->id_campeonato, soAtivos: false));
+        $jogam      = fn (array $idsTimes) => array_keys(self::atletasDosTimes(self::idsInternos($idsTimes), $this->id_campeonato, soAtivos: false, idCategoria: $this->idCategoriaDoJogo()));
         $candidatos = array_values(array_diff($jogam($idsTimesQueSairam), $jogam($idsTimesQueFicam)));
 
         return ! $candidatos ? [] : $this->evento->inscricoes()
@@ -532,7 +550,7 @@ class Jogo extends Model
 
         $ficam = array_diff($hoje, $this->idsQueSaemNaTroca($sairam, $idsTimesNovos));
 
-        return array_values(array_unique([...$ficam, ...array_keys(self::atletasDosTimes(self::idsInternos($idsTimesNovos), $this->id_campeonato))]));
+        return array_values(array_unique([...$ficam, ...array_keys(self::atletasDosTimes(self::idsInternos($idsTimesNovos), $this->id_campeonato, idCategoria: $this->idCategoriaDoJogo()))]));
     }
 
     // Depois de trocar os times: quem estava escalado num time que não está mais no jogo (ou não é

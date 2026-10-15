@@ -232,7 +232,7 @@ class CalendarioController extends Controller
         // Evento de jogo: escalação por time (mandante/visitante internos), por qual time cada atleta joga
         // (convocação no campeonato, elenco no amistoso), a camisa da convocação e quantos ainda não estão
         // inscritos (ao lado do "Preencher pela convocação/pelo elenco")
-        $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato.categoria'])->first();
+        $jogo    = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato', 'evento.categoria'])->first();
         $jogo?->setRelation('evento', $evento);
         $elencos = $jogo?->atletasPorTime() ?? [];
         $camisas = $jogo?->camisas() ?? [];
@@ -495,7 +495,7 @@ class CalendarioController extends Controller
         ]);
 
         $idTime = $request->filled('id_time') ? (int) $request->id_time : null;
-        $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato.categoria'])->first();
+        $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato', 'evento.categoria'])->first();
         $jogo?->setRelation('evento', $evento);
 
         // Amistoso: todo inscrito joga pelo time da AACJ do jogo (Fase G, Etapa 3)
@@ -560,7 +560,7 @@ class CalendarioController extends Controller
         $entrariam = array_values(array_diff(Atleta::idsAtivosNaCategoria($categoria->id_categoria), $inscritos));
 
         // Jogo de campeonato: quem passa da idade fica de fora (a mensagem diz quem)
-        $jogo = $evento->jogo()->with('campeonato.categoria')->first();
+        $jogo = $evento->jogo()->with(['campeonato', 'evento.categoria'])->first();
         $jogo?->setRelation('evento', $evento);
         $acima     = $jogo?->acimaDaIdade($entrariam) ?? [];
         $entrariam = array_values(array_diff($entrariam, array_keys($acima)));

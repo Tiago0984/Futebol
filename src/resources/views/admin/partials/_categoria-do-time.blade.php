@@ -2,7 +2,7 @@
 @if($time->categoria)
   @if($outraCategoria)
     <span class="escal-team-cat js-categoria-do-time"
-          title="Categoria do cadastro do time. O campeonato é {{ $categoriaDoCampeonato->rotulo }}.">
+          title="Categoria do cadastro do time. No campeonato, ele joga no {{ $categoriaDoCampeonato->rotulo }}.">
       Time: {{ $time->categoria->rotulo }} <i class="bi bi-info-circle"></i>
     </span>
   @else

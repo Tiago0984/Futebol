@@ -204,24 +204,22 @@ class Campeonato extends Model
     }
 
     /**
-     * O evento de cada jogo guarda uma cópia da categoria do campeonato (JogosController), que é só exibição
-     * desde a Fase 8. Quando a categoria do campeonato muda, a cópia acompanha em todos os jogos dele (inclusive
-     * concluídos, cancelados e ocultos), com histórico e sem avisar nem mexer nas inscrições. Devolve quantos
-     * jogos mudaram.
+     * Categorias com jogos que sairiam do campeonato na edição ($idsCategorias: as que ficam): ["Sub-17
+     * Masculino (3 jogo(s))", ...]. Cada jogo tem a categoria dele (a do evento, Fase H, Etapa H3), inclusive
+     * concluídos, cancelados e ocultos: a categoria só sai do campeonato sem jogos.
      */
-    public function atualizarCategoriaDosJogos(?int $idUsuario): int
+    public function categoriasQueSaemComJogos(array $idsCategorias): array
     {
-        $eventos = EventoCalendario::whereIn('id_evento_calendario', $this->jogos()->select('id_evento'))
-            ->where(fn ($q) => $this->id_categoria === null
-                ? $q->whereNotNull('id_categoria')
-                : $q->whereNull('id_categoria')->orWhere('id_categoria', '<>', $this->id_categoria))
-            ->get();
-
-        foreach ($eventos as $evento) {
-            $evento->atualizarComHistorico(['id_categoria' => $this->id_categoria], $idUsuario);
-        }
-
-        return $eventos->count();
+        return EventoCalendario::whereIn('id_evento_calendario', $this->jogos()->select('id_evento'))
+            ->whereNotNull('id_categoria')
+            ->whereNotIn('id_categoria', array_map('intval', $idsCategorias))
+            ->with('categoria')
+            ->get()
+            ->groupBy('id_categoria')
+            ->map(fn ($eventos) => "{$eventos->first()->categoria->rotulo} ({$eventos->count()} jogo(s))")
+            ->sort()
+            ->values()
+            ->all();
     }
 
     // Por que não pode ser excluído (ou null): jogo preserva o histórico e a FK de tbl_jogos é NO ACTION;

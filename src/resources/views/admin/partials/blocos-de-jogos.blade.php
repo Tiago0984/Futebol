@@ -108,7 +108,7 @@
           @include('admin.partials.cartao-time', [
               'link'     => route('admin.jogos.times.show', [$jogo->id_jogo, $time->id_time]),
               'contagem' => $escalados . ' escalado' . ($escalados != 1 ? 's' : '') . ' no jogo',
-              'categoriaDoCampeonato' => $jogo->campeonato?->categoria,
+              'categoriaDoCampeonato' => $jogo->categoriaDoJogo(), // a do jogo (Fase H, Etapa H3)
           ])
         </div>
       @endforeach

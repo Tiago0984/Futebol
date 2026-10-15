@@ -107,6 +107,12 @@ class CampeonatosController extends Controller
                 . implode(', ', $saem) . '. Remova a convocação do time antes.']);
         }
 
+        // Categoria com jogos não sai do campeonato (cada jogo tem a categoria dele: Fase H, Etapa H3)
+        if ($comJogos = $campeonato->categoriasQueSaemComJogos($idsCategorias)) {
+            return back()->withInput()->withErrors(['categorias' => 'Não é possível tirar do campeonato categoria com jogos: '
+                . implode(', ', $comJogos) . '. Mude a categoria desses jogos antes (ou mantenha a categoria).']);
+        }
+
         $dados = $request->only([
             'nome_campeonato', 'tipo_campeonato', 'data_inicio_campeonato',
             'data_fim_campeonato', 'local_evento', 'organizador_campeonato',
@@ -125,18 +131,13 @@ class CampeonatosController extends Controller
 
         $dados['id_categoria'] = Campeonato::categoriaDeReferencia($idsCategorias, (int) $campeonato->id_categoria);
 
-        // A categoria dos jogos acompanha a de referência do campeonato (Campeonato::atualizarCategoriaDosJogos)
-        $jogosAtualizados = DB::transaction(function () use ($campeonato, $dados, $idsCategorias, $participantes) {
+        // Cada jogo tem a categoria dele (Fase H, Etapa H3): trocar as categorias do campeonato não mexe nos jogos
+        DB::transaction(function () use ($campeonato, $dados, $idsCategorias, $participantes) {
             $campeonato->update($dados);
             $campeonato->gravarCategoriasEParticipantes($idsCategorias, $participantes);
-
-            return $campeonato->wasChanged('id_categoria') ? $campeonato->atualizarCategoriaDosJogos(auth('admin')->id()) : 0;
         });
 
-        $mensagem = 'Campeonato atualizado com sucesso.'
-            . ($jogosAtualizados ? " Categoria atualizada em {$jogosAtualizados} jogo(s)." : '');
-
-        return redirect()->route('admin.campeonatos.index')->with('sucesso', $mensagem);
+        return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato atualizado com sucesso.');
     }
 
     public function toggleStatus($id)

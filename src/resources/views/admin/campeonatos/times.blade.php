@@ -83,7 +83,7 @@
       <div class="col-md-4 col-lg-3" data-id-time="{{ $time->id_time }}">
         @include('admin.partials.cartao-time', [
           'link' => route('admin.campeonatos.times.show', [$campeonato->id_campeonato, $time->id_time]),
-          'categoriaDoCampeonato' => $campeonato->categoria,
+          'categoriaDoCampeonato' => $campeonato->categoriaDoTime($time), // a do time no campeonato (Fase H)
         ])
       </div>
       @endforeach

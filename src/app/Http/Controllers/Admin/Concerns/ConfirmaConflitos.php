@@ -109,11 +109,14 @@ trait ConfirmaConflitos
         return (new EventoCalendario($dados))->conflitosPara(Atleta::idsAtivosNaCategoria((int) $dados['id_categoria']));
     }
 
-    // Jogo novo: os convocados do campeonato (ou o elenco, no amistoso = $idCampeonato null) ativos dos times
-    // internos serão inscritos; confere conflito antes de criar
+    // Jogo novo: os convocados do campeonato na categoria do jogo (amistoso = $idCampeonato null: ninguém) ativos
+    // dos times internos serão inscritos; confere conflito antes de criar
     private function conflitosDaCriacaoDoJogo(array $dados, array $idsTimes, $idCampeonato): Collection
     {
-        return (new EventoCalendario($dados))->conflitosPara(array_keys(Jogo::atletasDosTimes(Jogo::idsInternos($idsTimes), $idCampeonato)));
+        $idCategoria = $idCampeonato && ! empty($dados['id_categoria']) ? (int) $dados['id_categoria'] : null;
+
+        return (new EventoCalendario($dados))->conflitosPara(array_keys(
+            Jogo::atletasDosTimes(Jogo::idsInternos($idsTimes), $idCampeonato, idCategoria: $idCategoria)));
     }
 
     // Mandante e visitante mudaram (em qualquer ordem: inverter o mando não troca ninguém)

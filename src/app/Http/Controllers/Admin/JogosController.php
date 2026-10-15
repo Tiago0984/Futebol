@@ -68,13 +68,19 @@ class JogosController extends Controller
         return view('admin.jogos.index', compact('jogos', 'campeonatos', 'times', 'categorias', 'filtros', 'ocultosForaDaLista', 'jogoFiltrado'));
     }
 
-    // Campeonatos do select do formulário do jogo, com a categoria e os times participantes (o select de
-    // times mostra só eles). Usado aqui e na tela do jogo (CalendarioController::showEvento)
+    // Campeonatos do select do formulário do jogo, com as categorias e os participantes de cada uma
+    // (participantes_por_categoria: [id_categoria => [id_time]]; o select de categoria mostra só as do campeonato
+    // e o de times, só os participantes da categoria escolhida: Fase H, Etapa H3). Usado aqui e na tela do jogo
+    // (CalendarioController::showEvento)
     public static function campeonatosDoFormulario()
     {
-        return Campeonato::with(['categoria', 'times' => fn ($q) => $q->select('tbl_time.id_time')])
-            ->orderBy('nome_campeonato')
-            ->get();
+        $campeonatos = Campeonato::with('categorias')->orderBy('nome_campeonato')->get();
+        $participantes = DB::table('tbl_campeonato_time')->orderBy('id_time')->get(['id_campeonato', 'id_categoria', 'id_time'])
+            ->groupBy('id_campeonato');
+
+        return $campeonatos->each(fn ($camp) => $camp->setAttribute('participantes_por_categoria',
+            ($participantes[$camp->id_campeonato] ?? collect())->groupBy('id_categoria')
+                ->map(fn ($linhas) => $linhas->pluck('id_time')->map(fn ($id) => (int) $id)->values())->all()));
     }
 
     // Listas do modal de edição do jogo (admin.jogos.modals.edit) nas telas que não são a lista de Jogos
@@ -122,11 +128,15 @@ class JogosController extends Controller
             return $confirmar;
         }
 
-        [$evento, $jogo, $elenco] = DB::transaction(function () use ($dadosJogo, $dadosEvento) {
-            // Responsável = admin logado. A categoria fica no evento só para exibição: quem joga são os
-            // convocados (ou o elenco, no amistoso).
+        // Jogo sem time da AACJ (dois externos, num campeonato) nasce publicado: não há ninguém a avisar e ele
+        // precisa contar na classificação (Fase H, Etapa H3)
+        $semAcj = ! Jogo::idsInternos($times);
+
+        [$evento, $jogo, $elenco] = DB::transaction(function () use ($dadosJogo, $dadosEvento, $semAcj) {
+            // Responsável = admin logado. A categoria do evento é a do jogo: no campeonato, vale para a idade e a
+            // convocação (Fase H, Etapa H3); no amistoso, só exibição.
             // Nasce rascunho (Fase 10, Etapa 4): inscritos e escalados, ninguém avisado até publicar
-            $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento, inscreverCategoria: false, rascunho: true);
+            $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento, inscreverCategoria: false, rascunho: ! $semAcj);
 
             $jogo = Jogo::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
             $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
@@ -137,12 +147,14 @@ class JogosController extends Controller
 
         // Campeonato: os convocados entraram; amistoso: ninguém ainda (escolher na tela do jogo)
         $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
-        $mensagem  = 'Jogo registrado como rascunho.'
-            . ($jogo->escolheAtletas()
-                ? ' Escolha os atletas do ' . $jogo->timeDaAcj()?->nome_time . ' em "Escolher atletas", nesta tela.'
-                : ($jogo->timesEscalaveis()->isNotEmpty() ? " {$inscritos} atleta(s) da convocação inscrito(s)." : ''))
-            . $jogo->textoAcimaDaIdade($elenco['acima_da_idade'])
-            . ' Os atletas serão avisados ao publicar.';
+        $mensagem  = $semAcj
+            ? 'Jogo registrado e publicado (sem time da AACJ: não há atletas a inscrever nem a avisar).'
+            : 'Jogo registrado como rascunho.'
+                . ($jogo->escolheAtletas()
+                    ? ' Escolha os atletas do ' . $jogo->timeDaAcj()?->nome_time . ' em "Escolher atletas", nesta tela.'
+                    : " {$inscritos} atleta(s) da convocação inscrito(s).")
+                . $jogo->textoAcimaDaIdade($elenco['acima_da_idade'])
+                . ' Os atletas serão avisados ao publicar.';
 
         // Inscrito de outra categoria/sexo: só avisa, como na tela do jogo (CLAUDE.md, seção 8, pergunta 14)
         if ($avisos = $evento->avisosForaDaCategoria($elenco['ids_mexidos'])) {
@@ -223,7 +235,7 @@ class JogosController extends Controller
      */
     public function publicar($id)
     {
-        $jogo   = Jogo::with(['evento', 'campeonato.categoria'])->findOrFail($id);
+        $jogo   = Jogo::with(['evento.categoria', 'campeonato'])->findOrFail($id);
         $evento = $jogo->evento;
         $tela   = redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario);
 
@@ -287,7 +299,8 @@ class JogosController extends Controller
     private function gravarJogoETrocarTimes(Jogo $jogo, array $dadosJogo, array $timesAntes): ?array
     {
         $jogo->update($dadosJogo);
-        $jogo->load(['timeCasa', 'timeVisitante', 'campeonato.categoria']); // o campeonato pode ter mudado (limite de idade)
+        $jogo->load(['timeCasa', 'timeVisitante', 'campeonato']);
+        $jogo->evento->unsetRelation('categoria'); // a categoria do jogo pode ter mudado (idade e convocação)
         $timesAgora = [(int) $jogo->id_time_casa, (int) $jogo->id_time_visitante];
 
         if (! $this->timesMudaram($timesAntes, $timesAgora)) {
@@ -337,10 +350,27 @@ class JogosController extends Controller
             . '"Preencher pela convocação" na tela do jogo, ou inscreva à mão.');
     }
 
-    // Campos do jogo: campeonato (vazio = amistoso), times e placar (os dois ou nenhum)
+    // Campos do jogo: campeonato (vazio = amistoso), categoria, times e placar (os dois ou nenhum)
     private function dadosJogo(Request $request, ?EventoCalendario $evento = null): array
     {
         $idCategoriaAtual = $evento?->id_categoria;
+        $amistoso = $request->id_campeonato === self::AMISTOSO;
+
+        // Jogo de campeonato: categoria obrigatória, uma das do campeonato (Fase H, Etapa H3); com uma categoria só,
+        // ela vale sem precisar escolher. Amistoso: uma categoria ativa (ou a que ele já tem) ou nenhuma
+        $categoriasDoCampeonato = $amistoso ? [] : DB::table('tbl_campeonato_categoria')
+            ->where('id_campeonato', (int) $request->id_campeonato)->pluck('id_categoria')->map(fn ($id) => (int) $id)->all();
+        // Por segurança, campeonato sem a lista de categorias usa a de referência (tbl_campeonato.id_categoria)
+        if (! $amistoso && ! $categoriasDoCampeonato && ($referencia = Campeonato::whereKey((int) $request->id_campeonato)->value('id_categoria'))) {
+            $categoriasDoCampeonato = [(int) $referencia];
+        }
+        if (! $amistoso && ! $request->filled('id_categoria') && count($categoriasDoCampeonato) === 1) {
+            $request->merge(['id_categoria' => $categoriasDoCampeonato[0]]);
+        }
+        $regraCategoria = $amistoso
+            ? ['nullable', 'integer', Rule::exists('tbl_categoria', 'id_categoria')
+                ->where(fn ($q) => $q->where('status_categoria', 'ATIVO')->orWhere('id_categoria', $idCategoriaAtual))]
+            : ['required', 'integer', Rule::in($categoriasDoCampeonato)];
 
         $request->validate([
             // Escolha obrigatória: um campeonato ou AMISTOSO (assim ninguém cria amistoso por esquecimento)
@@ -350,9 +380,7 @@ class JogosController extends Controller
             'id_time_visitante'                => 'required|integer|exists:tbl_time,id_time|different:id_time_casa',
             'placar_time_casa_jogos'           => 'nullable|integer|min:0|required_with:placar_time_visitante_jogos',
             'placar_time_visitante_jogos'      => 'nullable|integer|min:0|required_with:placar_time_casa_jogos',
-            // Categoria só vale no amistoso (no jogo de campeonato, é a do campeonato)
-            'id_categoria'                     => ['nullable', 'integer', Rule::exists('tbl_categoria', 'id_categoria')
-                ->where(fn ($q) => $q->where('status_categoria', 'ATIVO')->orWhere('id_categoria', $idCategoriaAtual))],
+            'id_categoria'                     => $regraCategoria,
             'data_evento_calendario'           => 'required|date',
             'horario_inicio_evento_calendario' => 'nullable|date_format:H:i,H:i:s',
             'horario_fim_evento_calendario'    => 'nullable|date_format:H:i,H:i:s',
@@ -363,6 +391,8 @@ class JogosController extends Controller
             'placar_time_casa_jogos.required_with' => 'Preencha os dois placares, ou deixe os dois vazios (jogo ainda não jogado).',
             'placar_time_visitante_jogos.required_with' => 'Preencha os dois placares, ou deixe os dois vazios (jogo ainda não jogado).',
             'id_categoria.exists'                  => 'Escolha uma categoria ativa para o amistoso, ou deixe sem categoria.',
+            'id_categoria.required'                => 'Escolha a categoria do jogo (uma das categorias do campeonato).',
+            'id_categoria.in'                      => 'A categoria do jogo precisa ser uma das categorias do campeonato.',
         ]);
 
         $this->conferirParticipantes($request, $evento?->jogo);
@@ -377,10 +407,10 @@ class JogosController extends Controller
     }
 
     /**
-     * Jogo de campeonato: mandante e visitante precisam estar entre os times participantes do campeonato
-     * (o select já mostra só eles). Campeonato sem participantes cadastrados aceita qualquer time; na
-     * edição, os times que o jogo já tem continuam aceitos (jogos antigos). Amistoso: um time da AACJ contra
-     * um externo (Fase G, Etapa 3; vale também ao editar os amistosos antigos de AACJ contra AACJ).
+     * Jogo de campeonato: mandante e visitante precisam estar entre os participantes da categoria do jogo
+     * (Fase H, Etapa H3; o select já mostra só eles). Categoria sem participantes cadastrados aceita qualquer
+     * time; na edição, os times que o jogo já tem continuam aceitos (jogos antigos). Amistoso: um time da AACJ
+     * contra um externo (Fase G, Etapa 3; vale também ao editar os amistosos antigos de AACJ contra AACJ).
      */
     private function conferirParticipantes(Request $request, ?Jogo $jogoAtual): void
     {
@@ -392,8 +422,9 @@ class JogosController extends Controller
             return;
         }
 
-        $campeonato    = Campeonato::with('times')->find((int) $request->id_campeonato);
-        $participantes = $campeonato->times->pluck('id_time')->map(fn ($id) => (int) $id)->all();
+        $campeonato    = Campeonato::find((int) $request->id_campeonato);
+        $categoria     = Categoria::find((int) $request->id_categoria);
+        $participantes = $campeonato->participantesPorCategoria()[(int) $request->id_categoria] ?? [];
         if (! $participantes) {
             return;
         }
@@ -402,8 +433,8 @@ class JogosController extends Controller
         $erros   = [];
         foreach (['id_time_casa' => 'O mandante', 'id_time_visitante' => 'O visitante'] as $campo => $quem) {
             if (! in_array((int) $request->input($campo), $aceitos, true)) {
-                $erros[$campo] = "{$quem} não participa do campeonato {$campeonato->nome_campeonato}. "
-                    . 'Inclua o time nos participantes do campeonato, ou escolha outro.';
+                $erros[$campo] = "{$quem} não participa do {$categoria->rotulo} do campeonato {$campeonato->nome_campeonato}. "
+                    . 'Inclua o time nos participantes dessa categoria, ou escolha outro.';
             }
         }
 
@@ -412,12 +443,11 @@ class JogosController extends Controller
         }
     }
 
-    // Campos do evento do jogo. Título gerado pelos times; categoria do campeonato, ou a escolhida no amistoso
+    // Campos do evento do jogo. Título gerado pelos times; categoria escolhida (a do jogo, no campeonato; só
+    // exibição, no amistoso)
     private function dadosEvento(Request $request, array $dadosJogo): array
     {
-        $idCategoria = $dadosJogo['id_campeonato']
-            ? Campeonato::find($dadosJogo['id_campeonato'])->id_categoria
-            : ($request->filled('id_categoria') ? (int) $request->id_categoria : null);
+        $idCategoria = $request->filled('id_categoria') ? (int) $request->id_categoria : null;
 
         return [
             'titulo_evento_calendario'         => Jogo::tituloPara($dadosJogo['id_time_casa'], $dadosJogo['id_time_visitante']),

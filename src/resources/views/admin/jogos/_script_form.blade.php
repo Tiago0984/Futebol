@@ -1,10 +1,12 @@
 {{--
     JS do formulário do jogo (admin.jogos.modals._campos), usado na lista de Jogos e na tela do jogo.
-    - Campeonato: mostra a categoria dele (só exibição); Amistoso: mostra o select de categoria, sugerindo a
-      do time mandante quando ainda está vazio.
-    - Times: no jogo de campeonato, só os participantes (data-times da opção); no amistoso, ou campeonato
-      sem participantes cadastrados, todos. O time que o formulário abriu selecionado continua na lista
-      (jogo antigo); o servidor confere de novo (JogosController::conferirParticipantes).
+    - Campeonato: "Categoria do jogo" obrigatória, só com as categorias dele (data-categorias; com uma só, ela
+      já vem escolhida): vale para a idade e a convocação (Fase H, Etapa H3). Amistoso: "Categoria do
+      amistoso", opcional e só exibição, sugerindo a do time mandante quando ainda está vazia.
+    - Times: no jogo de campeonato, só os participantes da categoria escolhida (data-participantes da opção;
+      sem categoria escolhida, os de todas); no amistoso, ou categoria sem participantes cadastrados, todos. O
+      time que o formulário abriu selecionado continua na lista (jogo antigo); o servidor confere de novo
+      (JogosController::conferirParticipantes).
     window.atualizarFormJogo(form) refaz tudo (chamado depois de preencher o modal de edição).
     - Botão Editar das ações do jogo (admin.jogos._acoes): preenche o modal #modalEditarJogo.
 --}}
@@ -24,6 +26,24 @@
         });
     }
 
+    // Categorias oferecidas: as do campeonato (a opção vazia vira "— Selecionar —", só de aviso); no amistoso,
+    // todas e "Sem categoria"
+    function filtrarCategorias(categoria, doCampeonato) {
+        categoria.querySelectorAll('option').forEach(opt => {
+            if (opt.value === '') {
+                opt.textContent = doCampeonato !== null ? '— Selecionar —' : 'Sem categoria';
+                opt.hidden = doCampeonato !== null;
+                return;
+            }
+            const fora = doCampeonato !== null && !doCampeonato.includes(Number(opt.value));
+            opt.hidden = fora;
+            opt.disabled = fora;
+        });
+        if (doCampeonato !== null && !doCampeonato.includes(Number(categoria.value))) {
+            categoria.value = doCampeonato.length === 1 ? String(doCampeonato[0]) : '';
+        }
+    }
+
     window.atualizarFormJogo = function (form) {
         const campeonato = form.querySelector('.js-campeonato');
         const amistoso   = campeonato.value === AMISTOSO;
@@ -31,14 +51,26 @@
         const categoria  = form.querySelector('.js-categoria');
         const dica       = form.querySelector('.js-categoria-campeonato');
         const opcao      = campeonato.selectedOptions[0];
+        const doCampeonato = !amistoso && opcao?.dataset.categorias ? JSON.parse(opcao.dataset.categorias) : null;
 
-        bloco.classList.toggle('d-none', !amistoso);
-        const rotulo = opcao?.dataset.categoria;
+        bloco.classList.toggle('d-none', campeonato.value === '');
+        form.querySelector('.js-rotulo-categoria').textContent = amistoso ? 'Categoria do amistoso' : 'Categoria do jogo';
+        form.querySelector('.js-obrigatoria').classList.toggle('d-none', amistoso);
+        form.querySelector('.js-ajuda-categoria').textContent = amistoso
+            ? 'Só exibição: o amistoso não tem limite de idade.'
+            : 'Uma das categorias do campeonato: vale para a idade e a convocação.';
+        categoria.required = !amistoso && campeonato.value !== '';
+        filtrarCategorias(categoria, doCampeonato);
+
         dica.textContent = amistoso
             ? "Amistoso: um time da AACJ contra um adversário externo. Os atletas são escolhidos na tela do jogo, depois de salvar."
-            : (rotulo ? `Categoria do campeonato: ${rotulo} (só exibição; quem joga são os convocados do campeonato).` : "");
+            : (doCampeonato ? 'Quem joga são os convocados do campeonato na categoria do jogo.' : '');
 
-        const times = !amistoso && opcao?.dataset.times ? JSON.parse(opcao.dataset.times) : [];
+        // Participantes da categoria escolhida (sem categoria, os de todas); categoria sem participantes: todos
+        const porCategoria = doCampeonato && opcao.dataset.participantes ? JSON.parse(opcao.dataset.participantes) : {};
+        const times = !doCampeonato ? [] : (categoria.value
+            ? (porCategoria[categoria.value] ?? [])
+            : [...new Set(Object.values(porCategoria).flat())]);
         const participantes = times.length ? times : null;
         filtrarTimes(form, participantes);
         form.querySelector('.js-aviso-participantes')?.classList.toggle('d-none', participantes === null);
@@ -58,6 +90,7 @@
         document.querySelectorAll('.form-jogo').forEach(form => {
             window.guardarTimesIniciais(form);
             form.querySelector('.js-campeonato').addEventListener('change', () => window.atualizarFormJogo(form));
+            form.querySelector('.js-categoria').addEventListener('change', () => window.atualizarFormJogo(form));
             form.querySelector('.js-time-casa').addEventListener('change', () => window.atualizarFormJogo(form));
             window.atualizarFormJogo(form);
         });
