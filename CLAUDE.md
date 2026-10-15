@@ -603,13 +603,20 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Origem:** tabela real da "Copa São Carlos de Futebol de Base 2026" (Primeira Fase, 17/10): um campeonato com Sub-11, Sub-13, Sub-15 e Sub-17, grupos (Grupo 01 a 03), cada jogo numa arena (com endereço); a AACJ (Juscelino) joga Sub-11 13:00, Sub-15 14:00 e Sub-17 15:00 contra o Botafogo na Arena Juscelino.
 - **Respostas do dono da AACJ:** o ideal é **mostrar a classificação no site**; os atletas de cada categoria são outros, mas um ou outro do Sub-15 pode ir para o Sub-17; é **comum** campeonato com várias categorias, e às vezes ele forma **dois ou mais times** (na mesma categoria).
 - **Hoje não cabe:** campeonato tem uma categoria só (idade, convocação e categoria dos jogos). Alternativa sem código, só como remendo: um campeonato por categoria.
-- **Proposta (em etapas, com migration):** (1) categorias do campeonato (lista, as "divisões"); (2) participante por categoria (o mesmo time pode estar em várias; "AACJ A"/"AACJ B" na mesma); (3) convocação por categoria (camisa e idade daquela categoria; o mais novo sobe); (4) jogo com categoria (idade, convocação e classificação por ela); (5) grupos por categoria e classificação por categoria e grupo; (6) site com abas por categoria. Mexe em convocação, idade, criação de jogo, classificação, site e API.
-- **Perguntas para o dono da AACJ antes de começar:**
-  1. O atleta do Sub-15 que sobe **joga nas duas categorias** (até no mesmo dia) ou sai do Sub-15?
-  2. Nome dos times: "AACJ Juscelino" em todas as categorias (com A/B quando houver dois) ou "AACJ Sub-15", "AACJ Sub-17"?
-  3. A classificação exige **os jogos dos outros clubes**: quem lança esses jogos e placares? (sem isso, só a agenda da AACJ)
-  4. Tem **mata-mata** depois dos grupos? A classificação monta isso ou só mostra?
-- **Ordem combinada:** fechar a Etapa 3 → levar as perguntas → com as respostas, plano detalhado da Fase H no CLAUDE.md e começar pelas categorias do campeonato.
+- **Respostas do dono da AACJ (14/10/2026):**
+  1. O atleta que sobe **joga nas duas categorias do mesmo campeonato** (na Copa, Sub-15 às 14:00 e Sub-17 às 15:00); o alerta de conflito de horário cobre a sobreposição.
+  2. Times da AACJ **um por categoria**: "AACJ Sub-15", "AACJ Sub-17" (com A/B quando houver dois na mesma categoria). Já é o modelo de hoje (time interno com categoria).
+  3. **Um responsável lança todos os jogos e placares**, inclusive os dos outros clubes: a classificação usa todos os jogos.
+  4. **Mata-mata é opcional** (há campeonato com e sem).
+- **Decisões do dono do projeto (14/10/2026):** adversário (externo) com **um cadastro só** ("Botafogo"), entrando no campeonato em cada categoria em que joga; **fase do jogo em lista fixa** (fase de grupos, 16 avos, oitavas, quartas, semifinal, disputa de 3º, final), com a classificação contando só a fase de grupos.
+- **Plano (uma etapa por vez, com migration, backup, ensaio, testes, roteiro e aprovação):**
+  - **H1. Categorias e participantes:** lista de categorias do campeonato (tabela própria, no lugar do `tbl_campeonato.id_categoria` único); participante **por categoria** (`tbl_campeonato_time` com a categoria; o mesmo time em várias categorias; AACJ A/B na mesma). Migração: cada campeonato existente vira um campeonato de uma categoria (a atual), com os participantes nela.
+  - **H2. Convocação por categoria:** a convocação vale para a categoria do time no campeonato (camisa e idade daquela categoria); "um time por atleta" passa a ser **por categoria** (o Sub-15 pode ser convocado também no Sub-17).
+  - **H3. Jogo com categoria:** o jogo de campeonato tem a categoria (uma das do campeonato); times oferecidos e convocação/idade pela categoria do jogo. **Jogo sem time da AACJ nasce publicado** (ninguém a avisar; precisa contar na classificação).
+  - **H4. Grupos, fase e classificação:** grupos por categoria com seus times; fase do jogo (lista fixa); classificação por categoria e grupo, só fase de grupos; mata-mata opcional.
+  - **H5. Site e API:** página do campeonato com abas por categoria (classificação de cada grupo e jogos); API acompanha.
+  - Depois: Fase G, Etapa 4 (retirar o elenco fixo).
+- **Próximo passo:** H1 (ler o código do campeonato, participantes, menu e telas que usam `id_categoria` do campeonato; plano detalhado da migration antes de escrever).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
