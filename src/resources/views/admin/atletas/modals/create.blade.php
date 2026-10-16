@@ -1,3 +1,8 @@
+@php
+    // O que foi digitado volta só quando o envio anterior foi deste cadastro: depois de um erro na edição
+    // (que traz _editar_id), o "Novo Atleta" abre vazio, e não com os dados do atleta editado
+    $oldCadastro = fn (string $campo, $padrao = null) => old('_editar_id') ? $padrao : old($campo, $padrao);
+@endphp
 <div class="modal fade {{ $errors->any() ? 'show' : '' }}" id="modalNovoAtleta" tabindex="-1"
     aria-labelledby="modalNovoAtletaLabel" @if($errors->any()) style="display:block;" aria-modal="true" role="dialog" @endif>
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -22,14 +27,14 @@
                         <div class="col-md-8">
                             <label class="form-label">Nome Completo <span class="text-danger">*</span></label>
                             <input type="text" name="nome_atleta" class="form-control @error('nome_atleta') is-invalid @enderror"
-                                placeholder="Ex: Gabriel Silva" required value="{{ old('nome_atleta') }}">
+                                placeholder="Ex: Gabriel Silva" required value="{{ $oldCadastro('nome_atleta') }}">
                             @error('nome_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Data de Nascimento <span class="text-danger">*</span></label>
                             <input type="date" name="data_nasc_atleta" id="cad_data_nasc"
                                 class="form-control @error('data_nasc_atleta') is-invalid @enderror" required
-                                value="{{ old('data_nasc_atleta') }}">
+                                value="{{ $oldCadastro('data_nasc_atleta') }}">
                             @error('data_nasc_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -37,13 +42,13 @@
                         <div class="col-md-6">
                             <label class="form-label">CPF <span class="text-danger">*</span></label>
                             <input type="text" name="cpf_atleta" class="form-control @error('cpf_atleta') is-invalid @enderror"
-                                placeholder="000.000.000-00" maxlength="14" required value="{{ old('cpf_atleta') }}">
+                                placeholder="000.000.000-00" maxlength="14" required value="{{ $oldCadastro('cpf_atleta') }}">
                             @error('cpf_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">RG <span class="text-danger">*</span></label>
                             <input type="text" name="rg_atleta" class="form-control @error('rg_atleta') is-invalid @enderror"
-                                placeholder="00.000.000-0" maxlength="12" required value="{{ old('rg_atleta') }}">
+                                placeholder="00.000.000-0" maxlength="12" required value="{{ $oldCadastro('rg_atleta') }}">
                             @error('rg_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -51,7 +56,7 @@
                             <label class="form-label">E-mail do atleta</label>
                             <input type="email" name="email_atleta" maxlength="255"
                                 class="form-control @error('email_atleta') is-invalid @enderror"
-                                placeholder="atleta@email.com" value="{{ old('email_atleta') }}">
+                                placeholder="atleta@email.com" value="{{ $oldCadastro('email_atleta') }}">
                             @error('email_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             <div class="form-text">Opcional. Sem e-mail, o atleta não consegue acessar o app.</div>
                         </div>
@@ -63,7 +68,7 @@
                                 @foreach($categorias as $cat)
                                 <option value="{{ $cat->id_categoria }}"
                                     data-min="{{ $cat->idade_min_categoria }}" data-max="{{ $cat->idade_max_categoria }}" data-sexo="{{ $cat->sexo_categoria }}"
-                                    {{ old('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
+                                    {{ $oldCadastro('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
                                     {{ $cat->rotulo }}
                                 </option>
                                 @endforeach
@@ -71,29 +76,29 @@
                             <div class="form-text" id="cad_dica_categoria"></div>
                             @error('id_categoria')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             <input type="text" name="motivo_categoria" id="cad_motivo_categoria" maxlength="500"
-                                class="form-control mt-2 {{ old('motivo_categoria') ? '' : 'd-none' }}"
-                                placeholder="Motivo (categoria acima da idade)" value="{{ old('motivo_categoria') }}">
+                                class="form-control mt-2 {{ $oldCadastro('motivo_categoria') ? '' : 'd-none' }}"
+                                placeholder="Motivo (categoria acima da idade)" value="{{ $oldCadastro('motivo_categoria') }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Sexo <span class="text-danger">*</span></label>
                             <select name="sexo_atleta" id="cad_sexo" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                <option value="M" {{ old('sexo_atleta') == 'M' ? 'selected' : '' }}>Masculino</option>
-                                <option value="F" {{ old('sexo_atleta') == 'F' ? 'selected' : '' }}>Feminino</option>
+                                <option value="M" {{ $oldCadastro('sexo_atleta') == 'M' ? 'selected' : '' }}>Masculino</option>
+                                <option value="F" {{ $oldCadastro('sexo_atleta') == 'F' ? 'selected' : '' }}>Feminino</option>
                             </select>
                         </div>
 
-                        @include('admin.atletas._posicoes', ['prefixo' => 'cad', 'selecionadas' => old('posicoes', [])])
+                        @include('admin.atletas._posicoes', ['prefixo' => 'cad', 'selecionadas' => $oldCadastro('posicoes', [])])
 
                         <div class="col-md-3">
                             <label class="form-label">Peso (kg)</label>
                             <input type="number" name="peso_atleta" class="form-control text-center" placeholder="55.00"
-                                step="0.01" min="0" value="{{ old('peso_atleta') }}">
+                                step="0.01" min="0" value="{{ $oldCadastro('peso_atleta') }}">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Altura (m)</label>
                             <input type="number" name="altura_atleta" class="form-control text-center" placeholder="1.70"
-                                step="0.01" min="0" value="{{ old('altura_atleta') }}">
+                                step="0.01" min="0" value="{{ $oldCadastro('altura_atleta') }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Foto do Atleta</label>
@@ -103,25 +108,25 @@
                         <div class="col-md-5">
                             <label class="form-label">Escola <span class="text-danger">*</span></label>
                             <input type="text" name="escola_atleta" class="form-control @error('escola_atleta') is-invalid @enderror"
-                                placeholder="Nome da escola" required value="{{ old('escola_atleta') }}">
+                                placeholder="Nome da escola" required value="{{ $oldCadastro('escola_atleta') }}">
                             @error('escola_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Série</label>
                             <input type="text" name="serie_atleta" class="form-control" placeholder="Ex: 7º Ano"
-                                value="{{ old('serie_atleta') }}">
+                                value="{{ $oldCadastro('serie_atleta') }}">
                         </div>
                         @include('admin.atletas.modals._periodo', ['prefixo' => 'cad', 'comOld' => true])
                         <div class="col-md-1">
                             <label class="form-label">Sala</label>
                             <input type="text" name="sala_atleta" class="form-control text-center" placeholder="A1"
-                                value="{{ old('sala_atleta') }}">
+                                value="{{ $oldCadastro('sala_atleta') }}">
                         </div>
 
                         <div class="col-12">
                             <label class="form-label">Descrição / Observações</label>
                             <input type="text" name="descricao_atleta" class="form-control" placeholder="Observações opcionais"
-                                value="{{ old('descricao_atleta') }}">
+                                value="{{ $oldCadastro('descricao_atleta') }}">
                         </div>
                     </div>
 
@@ -134,7 +139,7 @@
                             <label class="form-label">Nome do Responsável <span class="text-danger">*</span></label>
                             <input type="text" name="nome_responsavel"
                                 class="form-control @error('nome_responsavel') is-invalid @enderror" placeholder="Ex: João Silva"
-                                required value="{{ old('nome_responsavel') }}">
+                                required value="{{ $oldCadastro('nome_responsavel') }}">
                             @error('nome_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-5">
@@ -143,7 +148,7 @@
                                 class="form-select @error('grau_parentesco_responsavel') is-invalid @enderror" required>
                                 <option value="">— Selecionar —</option>
                                 @foreach(\App\Models\Responsavel::GRAUS_PARENTESCO as $grau)
-                                <option value="{{ $grau }}" {{ old('grau_parentesco_responsavel') == $grau ? 'selected' : '' }}>{{ $grau }}</option>
+                                <option value="{{ $grau }}" {{ $oldCadastro('grau_parentesco_responsavel') == $grau ? 'selected' : '' }}>{{ $grau }}</option>
                                 @endforeach
                             </select>
                             @error('grau_parentesco_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -153,21 +158,21 @@
                             <label class="form-label">WhatsApp <span class="text-danger">*</span></label>
                             <input type="text" name="whatsapp_responsavel"
                                 class="form-control @error('whatsapp_responsavel') is-invalid @enderror" placeholder="(11) 99999-9999"
-                                required value="{{ old('whatsapp_responsavel') }}">
+                                required value="{{ $oldCadastro('whatsapp_responsavel') }}">
                             @error('whatsapp_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">CPF do Responsável <span class="text-danger">*</span></label>
                             <input type="text" name="cpf_responsavel"
                                 class="form-control @error('cpf_responsavel') is-invalid @enderror" placeholder="000.000.000-00"
-                                maxlength="14" required value="{{ old('cpf_responsavel') }}">
+                                maxlength="14" required value="{{ $oldCadastro('cpf_responsavel') }}">
                             @error('cpf_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">E-mail do Responsável</label>
                             <input type="email" name="email_responsavel" maxlength="150"
                                 class="form-control @error('email_responsavel') is-invalid @enderror"
-                                placeholder="responsavel@email.com" value="{{ old('email_responsavel') }}">
+                                placeholder="responsavel@email.com" value="{{ $oldCadastro('email_responsavel') }}">
                             @error('email_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             <div class="form-text">Opcional.</div>
                         </div>
@@ -181,20 +186,20 @@
                         <div class="col-md-3">
                             <label class="form-label">CEP <span class="text-danger">*</span></label>
                             <input type="text" name="cep_endereco" class="form-control @error('cep_endereco') is-invalid @enderror"
-                                placeholder="00000-000" maxlength="9" required value="{{ old('cep_endereco') }}">
+                                placeholder="00000-000" maxlength="9" required value="{{ $oldCadastro('cep_endereco') }}">
                             @error('cep_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-7">
                             <label class="form-label">Rua <span class="text-danger">*</span></label>
                             <input type="text" name="rua_endereco" class="form-control @error('rua_endereco') is-invalid @enderror"
-                                placeholder="Nome da rua" required value="{{ old('rua_endereco') }}">
+                                placeholder="Nome da rua" required value="{{ $oldCadastro('rua_endereco') }}">
                             @error('rua_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">Número <span class="text-danger">*</span></label>
                             <input type="text" name="numero_endereco"
                                 class="form-control text-center @error('numero_endereco') is-invalid @enderror" placeholder="123" required
-                                value="{{ old('numero_endereco') }}">
+                                value="{{ $oldCadastro('numero_endereco') }}">
                             @error('numero_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -202,28 +207,28 @@
                             <label class="form-label">Bairro <span class="text-danger">*</span></label>
                             <input type="text" name="bairro_endereco"
                                 class="form-control @error('bairro_endereco') is-invalid @enderror" placeholder="Nome do bairro"
-                                required value="{{ old('bairro_endereco') }}">
+                                required value="{{ $oldCadastro('bairro_endereco') }}">
                             @error('bairro_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-5">
                             <label class="form-label">Cidade <span class="text-danger">*</span></label>
                             <input type="text" name="cidade_endereco"
                                 class="form-control @error('cidade_endereco') is-invalid @enderror" placeholder="São Paulo" required
-                                value="{{ old('cidade_endereco') }}">
+                                value="{{ $oldCadastro('cidade_endereco') }}">
                             @error('cidade_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-2">
                             <label class="form-label">UF <span class="text-danger">*</span></label>
                             <input type="text" name="estado_endereco"
                                 class="form-control text-center @error('estado_endereco') is-invalid @enderror" placeholder="SP" maxlength="2"
-                                required value="{{ old('estado_endereco') }}">
+                                required value="{{ $oldCadastro('estado_endereco') }}">
                             @error('estado_endereco')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
                         <div class="col-12">
                             <label class="form-label">Complemento <span class="text-muted fw-normal">(opcional)</span></label>
                             <input type="text" name="complemento_endereco" class="form-control"
-                                placeholder="Apto, bloco, referência..." value="{{ old('complemento_endereco') }}">
+                                placeholder="Apto, bloco, referência..." value="{{ $oldCadastro('complemento_endereco') }}">
                         </div>
                     </div>
 

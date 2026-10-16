@@ -543,7 +543,7 @@ document.addEventListener('DOMContentLoaded', function () {
         nasc: 'edit_data_nasc', sexo: 'edit_sexo', categoria: 'edit_categoria',
         motivo: 'edit_motivo_categoria', dica: 'edit_dica_categoria',
     });
-    sugestaoCadastro.atualizar(!@js(old('id_categoria')));
+    sugestaoCadastro.atualizar(!@js(old('_editar_id') ? null : old('id_categoria'))); // categoria digitada só se o erro foi do cadastro
 
     // Erro na edição: reabre o modal do mesmo atleta e devolve o que foi digitado na categoria (e nas posições)
     @if ($errors->edicao->any() && old('_editar_id'))
