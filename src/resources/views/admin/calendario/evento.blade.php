@@ -243,6 +243,9 @@
               // fim, pelo nome. Amistoso (sem camisas): continua pelo nome
               $pelaCamisa = fn ($i) => (isset($camisas[$i->id_atleta]) ? '0' . str_pad($camisas[$i->id_atleta], 3, '0', STR_PAD_LEFT) : '1')
                   . mb_strtolower($i->atleta->nome_atleta);
+              // Times da AACJ (Fase D, Etapa D2): pela posição no jogo (gravada ou sugerida; do goleiro ao ataque)
+              // e, na mesma posição, pela camisa
+              $pelaPosicao = fn ($i) => str_pad($i->ordemDaPosicao(), 2, '0', STR_PAD_LEFT) . $pelaCamisa($i);
               // Mandante e visitante nos seus lados; o time externo aparece travado (só para ver: sem elenco na
               // associação, ninguém é escalado nele)
               $blocosDosTimes = $porBlocos
@@ -257,7 +260,8 @@
                         'categoria'  => $par[0]->categoria?->rotulo,
                         'outra_categoria' => $par[0]->categoria && $jogo->categoriaDoJogo()
                             && (int) $par[0]->id_categoria !== (int) $jogo->categoriaDoJogo()->id_categoria,
-                        'inscricoes' => $inscricoes->filter(fn ($i) => (int) $i->id_time === (int) $par[0]->id_time)->sortBy($pelaCamisa),
+                        'inscricoes' => $inscricoes->filter(fn ($i) => (int) $i->id_time === (int) $par[0]->id_time)->sortBy($pelaPosicao),
+                        'id_time'    => (int) $par[0]->id_time,
                     ])->values()
                   : collect();
               $semTime = $porBlocos ? $inscricoes->reject(fn ($i) => $idsEscalaveis->contains((int) $i->id_time)) : collect();
@@ -429,7 +433,17 @@
                                     {{ $bloco['titulo'] }}
                                     <span class="fw-normal text-muted small">· {{ $bloco['papel'] }} ({{ $bloco['inscricoes']->count() }})</span>
                                 </div>
-                                @include('admin.calendario._inscritos_do_bloco', ['lista' => $bloco['inscricoes'], 'vazio' => 'Ninguém escalado neste time.'])
+                                @include('admin.calendario._resumo_da_escalacao', ['lista' => $bloco['inscricoes']])
+                                @include('admin.calendario._inscritos_do_bloco', ['lista' => $bloco['inscricoes'], 'vazio' => 'Ninguém escalado neste time.',
+                                    'formEscalacao' => 'escalacao-' . $bloco['id_time']])
+                                @if ($bloco['inscricoes']->isNotEmpty())
+                                {{-- Os selects de posição e titular/reserva das linhas apontam para este formulário (atributo form) --}}
+                                <form id="escalacao-{{ $bloco['id_time'] }}" class="px-3 py-2 border-top text-end" method="POST"
+                                      action="{{ route('admin.calendario.eventos.escalacao.salvar', [$evento->id_evento_calendario, $bloco['id_time']]) }}">
+                                    @csrf @method('PATCH')
+                                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check2"></i> Salvar escalação</button>
+                                </form>
+                                @endif
                             </div>
                             </div>
                             @endif

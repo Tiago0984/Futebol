@@ -7,8 +7,10 @@ use App\Http\Controllers\Admin\Concerns\ListaPorMes;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
 use App\Models\Categoria;
+use App\Models\EventoAtleta;
 use App\Models\EventoCalendario;
 use App\Models\GradeTreino;
+use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -205,7 +207,7 @@ class CalendarioController extends Controller
         $evento = EventoCalendario::with(['categoria', 'responsavel'])->comAlteracao()->findOrFail($id);
 
         $inscricoes = $evento->inscricoes()
-            ->with(['atleta.categoriasAtivas', 'usuario'])
+            ->with(['atleta.categoriasAtivas', 'atleta.posicoes', 'usuario'])
             ->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))
             ->get()
             ->sortBy(fn ($i) => $i->atleta->nome_atleta, SORT_NATURAL | SORT_FLAG_CASE)
@@ -338,7 +340,10 @@ class CalendarioController extends Controller
             return back()->with('erro', $erro);
         }
 
-        $inscricao->update(['id_time' => $idTime]);
+        // Mesmo time: nada muda (não limpa o titular/reserva)
+        if (($inscricao->id_time === null ? null : (int) $inscricao->id_time) !== $idTime) {
+            $inscricao->update(EventoAtleta::aoMudarDeTime($idTime));
+        }
         $nome = $inscricao->atleta->nome_atleta;
 
         if ($idTime !== null) {
@@ -348,6 +353,55 @@ class CalendarioController extends Controller
         return back()->with('sucesso', $idTime
             ? "{$nome} escalado(a) no {$jogo->timesEscalaveis()->firstWhere('id_time', $idTime)->nome_time}."
             : "{$nome} ficou sem time.");
+    }
+
+    /**
+     * "Salvar escalação" de um time do jogo (Fase D, Etapa D2): posição no jogo e titular/reserva de cada
+     * escalado nele (escalacao[id_atleta][posicao|titular]; vazio = a definir). A posição sugerida (a principal
+     * do atleta, pré-selecionada na tela) só é gravada aqui. Atleta que não está escalado neste time é ignorado.
+     * Sem aviso ao atleta (por enquanto, só no admin). Avisos depois de salvar: sem goleiro titular, mais
+     * titulares que o campo.
+     */
+    public function salvarEscalacao(Request $request, $id, $idTime)
+    {
+        $evento = EventoCalendario::findOrFail($id);
+        $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante'])->first();
+        $time   = $jogo?->timesEscalaveis()->firstWhere('id_time', (int) $idTime);
+
+        if (! $time) {
+            return back()->with('erro', 'Este time não é um time da AACJ neste jogo: não tem escalação.');
+        }
+
+        $request->validate([
+            'escalacao'           => 'required|array',
+            'escalacao.*.posicao' => ['nullable', Rule::in(array_keys(Atleta::POSICOES))],
+            'escalacao.*.titular' => ['nullable', Rule::in(array_keys(EventoAtleta::TITULARIDADES))],
+        ], [
+            'escalacao.*.posicao.in' => 'Posição inválida: escolha uma da lista.',
+            'escalacao.*.titular.in' => 'Escolha Titular, Reserva ou A definir.',
+        ]);
+
+        $inscricoes = $evento->inscricoes()->where('id_time', $time->id_time)
+            ->whereIn('id_atleta', array_keys($request->input('escalacao')))
+            ->get();
+
+        DB::transaction(function () use ($inscricoes, $request) {
+            foreach ($inscricoes as $inscricao) {
+                $linha = $request->input("escalacao.{$inscricao->id_atleta}");
+                $inscricao->update([
+                    'posicao_evento_atleta' => $linha['posicao'] ?? null,
+                    'titular_evento_atleta' => $linha['titular'] ?? null,
+                ]);
+            }
+        });
+
+        $resumo = Jogo::resumoDaEscalacao($evento->inscricoes()->where('id_time', $time->id_time)
+            ->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))->get());
+
+        return back()
+            ->with('sucesso', "Escalação do {$time->nome_time} salva: {$resumo['titulares']} titular(es), "
+                . "{$resumo['reservas']} reserva(s), {$resumo['a_definir']} a definir.")
+            ->with('aviso', $resumo['avisos'] ? implode(' ', $resumo['avisos']) : null);
     }
 
     /**

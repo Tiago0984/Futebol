@@ -57,6 +57,8 @@
           <thead>
             <tr>
               <th>Atleta</th>
+              <th>Posição</th>
+              <th class="text-center">Titular/Reserva</th>
               @if ($pelaConvocacao)
               <th class="text-center">Camisa</th>
               <th class="text-center">Convocação</th>
@@ -67,6 +69,9 @@
             @forelse ($escalados as $atleta)
             <tr class="linha-escalado" data-id-atleta="{{ $atleta->id_atleta }}">
               <td class="fw-semibold">{{ $atleta->nome_atleta }}</td>
+              {{-- Posição e titular/reserva gravados na tela do jogo (Fase D, Etapa D2) --}}
+              <td>{{ $atleta->posicao_evento_atleta ? \App\Models\Atleta::POSICOES[$atleta->posicao_evento_atleta]['sigla'] . ' · ' . \App\Models\Atleta::POSICOES[$atleta->posicao_evento_atleta]['nome'] : '—' }}</td>
+              <td class="text-center">{{ \App\Models\EventoAtleta::TITULARIDADES[$atleta->titular_evento_atleta] ?? 'A definir' }}</td>
               @if ($pelaConvocacao)
               {{-- Campeonato: a camisa é a da convocação por este time --}}
               <td class="text-center">{{ $atleta->camisa_convocacao ?: '—' }}</td>
@@ -81,7 +86,7 @@
             </tr>
             @empty
             <tr>
-              <td colspan="{{ $pelaConvocacao ? 3 : 1 }}" class="text-center text-muted py-4">
+              <td colspan="{{ $pelaConvocacao ? 5 : 3 }}" class="text-center text-muted py-4">
                 Nenhum atleta escalado pelo {{ $time->nome_time }} neste jogo. Escale na tela do jogo
                 ("{{ $pelaConvocacao ? 'Preencher pela convocação' : 'Escolher atletas' }}").
               </td>

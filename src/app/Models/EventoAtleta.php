@@ -28,10 +28,19 @@ class EventoAtleta extends Model
         'CONVOCACAO' => 'Entrou automaticamente por estar convocado pelo time neste campeonato. Sai do jogo se o time dele sair do jogo.',
     ];
 
+    // Titular ou reserva no jogo (Fase D, Etapa D2; por jogo): valor de titular_evento_atleta => rótulo.
+    // NULL = a definir
+    public const TITULARIDADES = [
+        'TITULAR' => 'Titular',
+        'RESERVA' => 'Reserva',
+    ];
+
     protected $fillable = [
         'id_evento_calendario',
         'id_atleta',
         'id_time',
+        'posicao_evento_atleta',
+        'titular_evento_atleta',
         'origem_evento_atleta',
         'id_usuario',
         'data_evento_atleta',
@@ -55,6 +64,37 @@ class EventoAtleta extends Model
     public function usuario()
     {
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
+    }
+
+    /**
+     * Colunas que acompanham a troca de time na escalação (Fase D, Etapa D2): a titularidade é do time, então
+     * outro time limpa o titular/reserva (a posição fica); sem time, limpa os dois. Use junto do id_time em
+     * todo update que muda o time (inclusive os em massa, que não passam por eventos do model).
+     */
+    public static function aoMudarDeTime(?int $idTime): array
+    {
+        return ['id_time' => $idTime, 'titular_evento_atleta' => null]
+            + ($idTime === null ? ['posicao_evento_atleta' => null] : []);
+    }
+
+    // Posição no jogo para a tela: a gravada ou, sem ela, a principal do atleta (sugerida, ainda não gravada).
+    // Precisa de atleta.posicoes carregado
+    public function posicaoNaTela(): ?string
+    {
+        return $this->posicao_evento_atleta ?? $this->atleta?->posicoes->first()?->posicao_atleta_posicao;
+    }
+
+    public function posicaoSugerida(): bool
+    {
+        return $this->posicao_evento_atleta === null && $this->posicaoNaTela() !== null;
+    }
+
+    // Ordem na escalação: pela posição (do goleiro ao ataque, a ordem de Atleta::POSICOES), sem posição no fim
+    public function ordemDaPosicao(): int
+    {
+        $indice = array_search($this->posicaoNaTela(), array_keys(Atleta::POSICOES), true);
+
+        return $indice === false ? 99 : $indice;
     }
 
     public function getOrigemLabelAttribute(): string
