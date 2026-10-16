@@ -79,7 +79,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Período escolar (Fase A, 13/10/2026, batch 27):** `tbl_atletas.periodo_escolar_atleta` ENUM `MANHA, TARDE, NOITE, INTEGRAL` nullable (antes VARCHAR livre, com "Manhã"/"MANHÃ"; a migration normalizou e para com a lista se achar valor desconhecido); `tbl_atletas.turno_treino_atleta` ENUM `MANHA, TARDE, AMBOS` nullable, só para quem estuda à noite (o `Atleta::booted()` limpa nos outros). Rótulos em `Atleta::PERIODOS` e `TURNOS_TREINO`.
 - **Convocação (Fase G, Etapa 1, batch 29):** `tbl_convocacao`: `id_convocacao` INT UNSIGNED AI; `id_campeonato`, `id_time` e `id_atleta` INT com sinal (FKs `fk_convocacao_campeonato`, `fk_convocacao_time`, `fk_convocacao_atleta`); `camisa_convocacao` TINYINT UNSIGNED **NOT NULL** (1 a 99, `Convocacao::CAMISA_MIN/MAX`); `id_usuario` BIGINT UNSIGNED nullable (FK `fk_convocacao_usuario`, quem convocou; fora do `$fillable`); `data_convocacao` DATETIME DEFAULT CURRENT_TIMESTAMP. Únicos `convocacao_categoria_atleta_unique` (campeonato, categoria, atleta: um time por atleta em cada categoria; até a H2 era `convocacao_campeonato_atleta_unique`) e `convocacao_camisa_unique` (campeonato, time, camisa). FKs NO ACTION.
   - **Fase H, Etapa H2 (batch 32):** `id_categoria` INT com sinal NOT NULL (a categoria do time no campeonato) e FK composta `fk_convocacao_participante` (campeonato, categoria, time) → único `campeonato_time_categoria_unique` de `tbl_campeonato_time`: só convoca quem é participante naquela categoria.
-- **`tbl_atleta_time` (elenco fixo) sem uso desde a Fase G, Etapa 4** (15/10/2026): nenhum código lê nem grava; continua no banco (FKs para atleta e time) até uma migration com OK. Excluir time ou atleta apaga as linhas dele nela.
+- **`tbl_atleta_time` (elenco fixo) apagada** (migration `2026_10_15_000005`, batch 35 de casa), sem uso desde a Fase G, Etapa 4.
+- **Posições do atleta (Fase D, Etapa D1, batch 35):** `tbl_atleta_posicao`: `id_atleta_posicao` INT UNSIGNED AI; `id_atleta` INT com sinal (FK `fk_atleta_posicao_atleta`, NO ACTION); `posicao_atleta_posicao` ENUM `GOLEIRO, ZAGUEIRO, LATERAL_DIREITO, LATERAL_ESQUERDO, LIBERO, VOLANTE, MEIA_CENTRAL, MEIA_OFENSIVO, MEIA_DIREITA, MEIA_ESQUERDA, PONTA_DIREITA, PONTA_ESQUERDA, CENTROAVANTE, SEGUNDO_ATACANTE` (siglas, nomes e setores em `Atleta::POSICOES`); `ordem_atleta_posicao` TINYINT UNSIGNED (1 = principal); únicos `atleta_posicao_unique` (atleta, posição) e `atleta_posicao_ordem_unique` (atleta, ordem). A coluna de texto `tbl_atletas.posicao_atleta` saiu (virou a principal: LATERAL → Lateral direito, MEIA → Meia-central, ATACANTE → Centroavante).
 - **`tbl_campeonato.id_categoria` é NOT NULL** (todo campeonato tem categoria; o código trata o nulo só por segurança).
 - **Categorias, participantes e grupos do campeonato (Fase H, batches 31 e 33):**
   - `tbl_campeonato_categoria` (H1): `id_campeonato_categoria` INT UNSIGNED AI; `id_campeonato`, `id_categoria` INT com sinal; único `campeonato_categoria_unique`.
@@ -103,6 +104,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Fonte oficial da categoria do atleta: **`tbl_categoria_atleta`** (com início, fim e status `ATIVO`/`ENCERRADO`). `tbl_inscricao` foi **descontinuada** (Fase 3).
 - Troca de categoria: **fechar a linha antiga** (data_fim + status) e **criar uma nova**, nunca só dar UPDATE.
 - **Atleta ATIVO sempre com categoria** (linha ATIVO em `tbl_categoria_atleta`): obrigatória no cadastro pelo admin e na edição de quem fica ATIVO (o campo vazio encerraria a linha); o botão de status não ativa quem está sem categoria; na edição, a categoria atual inativa aparece como "(inativa)" (manter é aceito, trocar exige categoria ativa). Inativo pode ficar sem; pendente e rejeitado recebem a categoria na aprovação.
+- **Posições** (Fase D, Etapa D1, 15/10/2026; lista do dono do projeto): **até 3 por atleta**, da lista fixa de 14 (`Atleta::POSICOES`: Goleiro; Defensores: Zagueiro, Lateral direito, Lateral esquerdo, Líbero; Meio-campistas: Volante, Meia-central, Meia-ofensivo, Meia-direita, Meia-esquerda; Atacantes: Ponta direita, Ponta esquerda, Centroavante, Segundo atacante), em ordem: **a 1ª é a principal**; opcionais e sem repetir. Cadastro e edição no admin (o site não pergunta); a lista de Atletas e a página Jogadores filtram por qualquer uma; a API devolve `posicoes` e `posicao_atleta` (código da principal).
 - **Período escolar obrigatório e treino no turno oposto** (professor, 13/10/2026; `e0061f4`): quem estuda de manhã treina à tarde, à tarde treina de manhã, **integral treina à tarde**; **à noite escolhe** (manhã, tarde ou os dois, `turno_treino_atleta`). Regra em `Atleta::turnosDeTreino()` e validação única em `Atleta::regrasPeriodo()` (site, admin e API; Noite exige o turno). Atleta sem período: selo amarelo "Sem período escolar" na lista e a edição não salva até preencher. Treinar no turno da escola é exceção: **aviso, sem bloquear** (Fase A, Etapa 3, `00ce96d`): `Atleta::foraDoTurno()` dá o motivo ("estuda de manhã", "está sem período escolar"); só em evento TREINO com horário (`EventoCalendario::turnoDoTreino()`, regra das 12:00 em `Atleta::turnoDoHorario()`); o select de inscrição mostra "· fora do turno", a inscrição individual, o "Adicionar todos" e o "Atualizar inscritos" avisam (`avisos_turno`) e a lista de inscritos mostra o selo "Fora do turno · motivo".
 
 ### Usuários (dashboard)
@@ -271,7 +273,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - saiu a tela Elenco;
   - o site mostra os jogadores como da AACJ (seção 4, "Site público");
   - a API devolve `times` vazio;
-  - a tabela fica no banco, sem uso.
+  - a tabela foi apagada depois (migration `2026_10_15_000005`, batch 35).
   - As inscrições antigas com origem `ELENCO` continuam como estão.
 
 ### Grade de treino
@@ -589,13 +591,13 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
     - **Etapa 2 — geração por turno** ✅ (`b748df3`; seção 4, "Grade de treino").
     - **Etapa 3 — aviso fora do turno** ✅ (`00ce96d`; seção 4, "Atletas"). **Fase A completa no código**; falta só cadastrar a grade real pelas telas (abaixo).
     - **Depois, pelas telas:** 4 treinos sem categoria (ter/qui 09:00–11:00 e 14:00–17:00), a linha de jogos de sábado 13:00–17:00 (só informação, resolve a pergunta 4) e inativar as 18 linhas de teste.
-  - **D — posições e titular/reserva no jogo** (precisa de migration): lista fixa de posições, várias por atleta, titular/reserva na escalação. Entra **na convocação** (Fase G). Falta a lista de posições que ele usa.
+  - **D — posições e titular/reserva no jogo** (precisa de migration): lista fixa de posições, várias por atleta, titular/reserva na escalação. Lista recebida e decisões em 15/10/2026 (Fase D, abaixo).
   - **E — avaliação técnica** escolhendo atletas por faixa de idade; aparece no site? (a regra atual esconde avaliações, pensada para a física).
   - **F — site público com mais eventos** (amistosos? treinos?), a confirmar.
   - **G — convocação no lugar do elenco fixo** (dono do projeto, 13/10; depois da Fase A). O atleta é da AACJ **na sub dele** (`tbl_categoria_atleta`); os times internos de teste (Time Azul, Preto, Verde) são fictícios.
     - **Regras:** time interno = a "camisa" da AACJ no campeonato ("AACJ Sub-15"; pode haver "AACJ Sub-15 B"), **sem elenco fixo**; jogo de campeonato é **associação contra associação**. **Convocação por campeonato**, ajustável no jogo; **camisa na convocação** (fixa no campeonato, pode mudar no seguinte); **um time por atleta em cada campeonato**. Jogo interno com coletes é **treino**, não jogo: **interno contra interno só dentro de campeonato** (AACJ A x AACJ B); no amistoso, bloqueado.
     - **Etapas:** (1) `tbl_convocacao` (campeonato, time, atleta, camisa, quem, quando; único campeonato + atleta) e tela "Convocados" por time do campeonato, com a caixa por categoria e o bloqueio de idade; (2) jogo de campeonato inscreve os convocados ("Preencher pela convocação", "Não convocado" no lugar de "Fora do elenco"); (3) amistoso escolhe os atletas no próprio jogo, bloqueio de interno contra interno fora de campeonato; (4) sai o elenco fixo (caixas de times e camisa do cadastro do atleta, tela Elenco; site e API pela convocação; `tbl_atleta_time` fica no banco até remover com OK). Depois, a Fase D (posições, titular/reserva) entra na convocação.
-- **Perguntas ainda para o professor:** idade no amistoso (pergunta 20); sexo no jogo (pergunta 14); lista de posições; o que o observador vê no site; peneira no site; se quer **chamada (presença) no treino**.
+- **Perguntas ainda para o professor:** idade no amistoso (pergunta 20); sexo no jogo (pergunta 14); o que o observador vê no site; peneira no site; se quer **chamada (presença) no treino**.
 
 #### Ajustes de 13/10/2026 (computador do Senac)
 - **Commits:** `aac0c46` (categoria dos jogos acompanha a do campeonato; cartão do time), `e0061f4` (período escolar), `cd612ea` (barra lateral do admin rola até o fim, acima do bloco do usuário), `9164889` (escolher datas na prévia da geração), `d9dab6e` (aviso livre e lista de notificações por envio), `38cd0a0` (tela do jogo legível no modo escuro: `bg-body-secondary`/`bg-body-tertiary` no lugar de `bg-light` e `#fafafa`, placar em `btn-outline-secondary`), `de4974d` (Publicar desabilitado com atleta acima da idade), `b748df3` (geração por turno), `00ce96d` (aviso fora do turno).
@@ -730,10 +732,23 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - `main` avançada até `169e13b`: `git pull` fast-forward a partir de `f0b5ece`, 41 arquivos;
   - sem migration (servidor continua no batch 30) e `optimize:clear`;
   - conferido pelo Claude no navegador: home ("Nossas categorias" com filtro), Jogadores, campeonato só com escudos, atleta sem camisa e sem times, Times sem Elenco e documentação da API, sem erro de JavaScript.
+- **`tbl_atleta_time` apagada** (dono do projeto, 15/10/2026: "pode apagar"): migration `2026_10_15_000005_drop_tbl_atleta_time` (o `down()` recria a tabela vazia, com as FKs; as linhas só voltam pelo backup); saíram as limpezas dela na exclusão do atleta e do time. `ElencoFixoMigrationTest` (2). Rodou junto com a D1 (abaixo), no batch 35.
+
+#### Fase D (dono do projeto, 15/10/2026) — posições e titular/reserva
+- **Decisões:** lista fixa de 14 posições (a do dono do projeto; seção 4, "Atletas"); **titular/reserva por jogo** (o técnico muda de um jogo para outro; a convocação continua só com quem vai e a camisa); **posição e titular/reserva só no admin, por enquanto** (o aviso ao atleta e o app não mudam: a antiga D3 saiu do plano).
+- **Etapas:** **D1** posições do atleta (feita, abaixo); **D2** escalação do jogo com a posição em que vai jogar (sugerida pela principal) e Titular/Reserva, a lista de cada time separada em titulares e reservas.
+
+#### Fase D, Etapa D1 — posições do atleta (computador de casa, 15/10/2026; regras na seção 4, "Atletas"; tabela na seção 3)
+- **Migration no `db_futebol` de casa:** `2026_10_15_000006_posicoes_do_atleta`, **batch 35**, junto com a `000005` (apaga a `tbl_atleta_time`). Ensaiadas antes no `db_futebol_test` com o backup. Resultado: 9 atletas com a principal (3 Lateral direito, vindos de LATERAL; 6 Centroavante, de ATACANTE); os 13 atletas intactos. Não depende de ids. **Servidor:** rodar o `migrate` normal (backup antes; servidor no batch 30).
+- **Backups** em `backup/` (só em casa): `db_futebol_antes_drop_atleta_time_20261015_172051.sql` (usado no ensaio) e `db_futebol_antes_posicoes_20261015_203237.sql` (logo antes do `migrate`).
+- **Código:** `Atleta::POSICOES` (código => sigla, nome e setor), `POSICOES_MAX`, `posicoes()`, `definirPosicoes()`, `regrasPosicoes()` (repetida conferida na lista inteira, uma mensagem só), `siglasDasPosicoes()`; model `AtletaPosicao` (JSON com `posicao`, `sigla`, `nome`); `excluirComDependencias()` apaga as posições. Admin: partial `admin/atletas/_posicoes` (3 selects agrupados por setor) no cadastro e na edição, coluna "Posição" com as siglas ("VOL · MC") e filtro por qualquer posição. Site (Jogadores): sigla da principal no cartão, nomes no modal, filtro pelas 14. API: `GET /v1/atleta` com `posicoes` e `posicao_atleta` = código da principal (documentado).
+- **Também:** o "Novo Atleta" abria com os dados do atleta editado depois de um erro na edição (anterior à D1): agora o modal de cadastro só reaproveita o que foi digitado quando o erro foi dele (`$oldCadastro`, pelo `_editar_id`). `AtletaModalCadastroTest` (2).
+- **Testes:** `AtletaPosicoesTest` (7), `AtletaPosicoesMigrationTest` (3, sem transação). **647 testes passando.** O `phpunit.xml` passou a ter `memory_limit` de 512M: a suíte inteira passou de 128 MB e o `artisan test` roda o PHPUnit em outro processo (o `-d memory_limit` do comando não chegava lá).
+- **Roteiro no navegador feito em casa (15/10, 9 passos, pelo Claude no navegador):** coluna e filtro no admin, os 3 selects na edição, "VOL · MC" com a dica, erro de posição repetida reabrindo o modal, Jogadores (sigla, modal e filtro), documentação da API, Matrículas e Times. Duas divergências, corrigidas depois: a mensagem de repetida aparecia duas vezes; o "Novo Atleta" abria com os dados da edição. O João Silva voltou a Lateral direito.
 - **Próximo passo:**
-  - **Fase D:** posições e titular/reserva na convocação;
-  - manual com a Fase H;
-  - migration para apagar a `tbl_atleta_time` (com OK).
+  - **D2:** posição e titular/reserva na escalação do jogo;
+  - publicar no servidor (batch 35 de casa = `000005` e `000006`);
+  - manual com a Fase H e as posições.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
