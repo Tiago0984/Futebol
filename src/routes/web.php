@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\TimesController;
 use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
 use App\Http\Controllers\Admin\AtletasController as AdminAtletasController;
+use App\Http\Controllers\Admin\AfastamentosController;
 use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
 use App\Http\Controllers\Admin\CalendarioController as AdminCalendarioController;
@@ -88,7 +89,7 @@ Route::prefix('admin')->name('admin.')->group(function () {
 });
 
 // Rotas protegidas da área admin
-Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function () {
+Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastados'])->group(function () {
 
     Route::get('/', [DashController::class, 'index'])->name('dash');
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');
@@ -180,6 +181,12 @@ Route::prefix('admin')->name('admin.')->middleware('auth:admin')->group(function
     // Convite do app, "Defina sua senha" (Fase 9): um atleta/responsável, ou todos os que ainda não têm senha
     Route::post('atletas/convites-pendentes', [AdminAtletasController::class, 'convitesPendentes'])->name('atletas.convitesPendentes');
     Route::post('atletas/{id}/convite', [AdminAtletasController::class, 'convite'])->name('atletas.convite');
+    // Afastamento (16/10/2026): o atleta não treina de uma data a outra, sem ser inativado
+    Route::get('atletas/{id}/afastamentos', [AfastamentosController::class, 'index'])->name('atletas.afastamentos');
+    Route::post('atletas/{id}/afastamentos', [AfastamentosController::class, 'store'])->name('atletas.afastamentos.store');
+    Route::put('atletas/{id}/afastamentos/{idAfastamento}', [AfastamentosController::class, 'update'])->name('atletas.afastamentos.update');
+    Route::patch('atletas/{id}/afastamentos/{idAfastamento}/encerrar', [AfastamentosController::class, 'encerrar'])->name('atletas.afastamentos.encerrar');
+    Route::delete('atletas/{id}/afastamentos/{idAfastamento}', [AfastamentosController::class, 'destroy'])->name('atletas.afastamentos.destroy');
 
     // Vídeos
     Route::get('videos',                         [VideosController::class, 'index'])->name('videos.index');

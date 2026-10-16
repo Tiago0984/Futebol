@@ -108,6 +108,8 @@
                 </div>
             @endif
 
+            @include('admin.partials.avisos-afastamento')
+
             {{-- Jogo de campeonato com inscrito que passa da idade (de antes da regra, ou o campeonato mudou):
                  o mais velho não joga abaixo da idade; o rascunho não é publicado assim --}}
             @if ($inscritosAcimaDaIdade)
@@ -317,6 +319,7 @@
                                     'prefixo'    => 'amistoso',
                                     'grupos'     => $gruposDoAmistoso,
                                     'escolhidos' => array_map('strval', old('atletas', [])),
+                                    'bloqueados' => $disponiveisAfastados,
                                     'ajuda'      => 'Marque quem vai jogar. Os escolhidos entram já escalados no time da AACJ; amistoso não tem '
                                                     . 'limite de idade (outra categoria ou sexo só gera aviso). Para tirar alguém, use o ✕ na lista abaixo.',
                                 ])
@@ -342,7 +345,10 @@
                                     @foreach ($disponiveis as $rotuloCategoria => $atletasDaCategoria)
                                     <optgroup label="{{ $rotuloCategoria }}">
                                         @foreach ($atletasDaCategoria as $atleta)
-                                        @if (isset($disponiveisAcimaDaIdade[$atleta->id_atleta]))
+                                        @if (isset($disponiveisAfastados[$atleta->id_atleta]))
+                                        {{-- Afastado na data do evento: indisponível (encerrar o afastamento antes) --}}
+                                        <option value="{{ $atleta->id_atleta }}" disabled>{{ $atleta->nome_atleta }} · {{ $disponiveisAfastados[$atleta->id_atleta] }}</option>
+                                        @elseif (isset($disponiveisAcimaDaIdade[$atleta->id_atleta]))
                                         {{-- Jogo de campeonato: o mais velho não joga abaixo da idade --}}
                                         <option value="{{ $atleta->id_atleta }}" disabled>{{ $disponiveisAcimaDaIdade[$atleta->id_atleta] }} · acima da idade</option>
                                         @else

@@ -290,6 +290,35 @@ class Notificacao extends Model
         return self::gravarParaAtivos($idsAtletas, $idUsuario, fn () => self::linha('AVISO', null, self::TITULO_AVISO, trim($mensagem)));
     }
 
+    /**
+     * Afastamento (16/10/2026): uma AGENDA com o resumo, no lugar de uma REMOCAO/INSCRICAO por atividade. Sem o
+     * motivo (dado de saúde de menor). $acao: registrado, alterado, encerrado ou excluido; $antes/$depois =
+     * [início, fim] (Carbon). $saiu conta só as atividades publicadas (o rascunho o atleta não via).
+     */
+    public static function afastamento(int $idAtleta, string $acao, ?array $antes, ?array $depois, int $saiu, int $voltou, ?int $idUsuario): int
+    {
+        $periodo = fn (array $p) => AtletaAfastamento::textoDoPeriodo($p[0], $p[1]);
+        [$titulo, $texto] = match ($acao) {
+            'registrado' => ['Afastamento registrado', "Você está afastado de {$periodo($depois)} e não participa das atividades nesse período."],
+            'alterado'   => ['Seu afastamento mudou', "Agora o afastamento vai de {$periodo($depois)}."],
+            'encerrado'  => ['Afastamento encerrado', 'Você volta às atividades a partir de hoje.'],
+            'excluido'   => ['Afastamento cancelado', "O afastamento de {$periodo($antes)} foi cancelado."],
+        };
+
+        $atividades = fn (int $n) => $n === 1 ? '1 atividade' : "{$n} atividades";
+        $treinos    = fn (int $n) => $n === 1 ? '1 treino' : "{$n} treinos";
+        $texto .= ($saiu ? " Você saiu de {$atividades($saiu)} da agenda." : '')
+            . ($voltou ? " Você voltou para {$treinos($voltou)} da agenda." : '');
+
+        return self::gravarParaAtivos([$idAtleta], $idUsuario, fn () => self::linha('AGENDA', null, $titulo, $texto, [
+            'afastamento' => $acao,
+            'inicio'      => ($depois ?? $antes)[0]->toDateString(),
+            'fim'         => ($depois ?? $antes)[1]->toDateString(),
+            'saiu'        => $saiu,
+            'voltou'      => $voltou,
+        ]));
+    }
+
     // "Mover inscrições" do atleta: uma AGENDA com o resumo, no lugar de uma INSCRICAO/REMOCAO por evento
     public static function inscricoesMovidas(int $idAtleta, int $idCategoriaAntiga, int $idCategoriaNova, array $idsEventosSaiu, array $idsEventosEntrou, ?int $idUsuario): int
     {

@@ -21,6 +21,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'atleta.ativo'      => \App\Http\Middleware\AtletaAtivo::class,
             'perfil'            => \App\Http\Middleware\PerfilDoApp::class,
             'responsavel.ativo' => \App\Http\Middleware\ResponsavelComAtletaAtivo::class,
+            // Admin: aviso de quem ficou fora de uma inscrição por estar afastado (16/10/2026)
+            'avisa.afastados'   => \App\Http\Middleware\AvisaAfastadosIgnorados::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -814,6 +814,7 @@ class MenuAdminTest extends TestCase
             'admin.campeonatos.grupos'      => $this->emAndamento,
             'admin.jogos.times.show'        => [$jogoDaCopa->id_jogo, $this->azul],
             'admin.matriculas.show'         => $atleta,
+            'admin.atletas.afastamentos'    => $atleta,
         ];
 
         $rotas = collect(Route::getRoutes()->getRoutes())

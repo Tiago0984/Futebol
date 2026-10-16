@@ -453,6 +453,20 @@ class Atleta extends Authenticatable
         return $this->hasMany(Convocacao::class, 'id_atleta', 'id_atleta');
     }
 
+    // Afastamentos (16/10/2026), do mais recente para o mais antigo
+    public function afastamentos()
+    {
+        return $this->hasMany(AtletaAfastamento::class, 'id_atleta', 'id_atleta')
+            ->orderByDesc('data_inicio_atleta_afastamento');
+    }
+
+    // O afastamento de hoje ou, sem ele, o próximo (selo da lista de atletas); null se não há
+    public function afastamentoAtual()
+    {
+        return $this->hasOne(AtletaAfastamento::class, 'id_atleta', 'id_atleta')
+            ->vigentesOuFuturos()->orderBy('data_inicio_atleta_afastamento');
+    }
+
     // Notificações do atleta (Fase 8), da mais nova para a mais antiga
     public function notificacoes()
     {
@@ -668,6 +682,7 @@ class Atleta extends Authenticatable
             $this->inscricoesEmEventos()->delete(); // tbl_evento_atleta (FK sem cascade)
             $this->convocacoes()->delete();         // tbl_convocacao (FK sem cascade)
             $this->posicoes()->delete();            // tbl_atleta_posicao (FK sem cascade)
+            $this->afastamentos()->delete();        // tbl_atleta_afastamento (FK sem cascade)
             // tbl_notificacao_leitura e tbl_notificacao (FKs sem cascade): primeiro as leituras dos responsáveis
             NotificacaoLeitura::whereIn('id_notificacao', Notificacao::where('id_atleta', $this->id_atleta)->select('id_notificacao'))->delete();
             $this->notificacoes()->delete();

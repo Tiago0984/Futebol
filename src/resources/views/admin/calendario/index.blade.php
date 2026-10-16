@@ -145,6 +145,8 @@
         </div>
         @endif
 
+        @include('admin.partials.avisos-afastamento')
+
         @include('admin.calendario._conflitos')
 
         @if(session('erro'))

@@ -39,6 +39,8 @@
         </div>
         @endif
 
+        @include('admin.partials.avisos-afastamento')
+
         @if(session('erro'))
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Erro!</strong> {{ session('erro') }}
@@ -165,7 +167,7 @@
                             <th>Categoria</th>
                             <th>Posição</th>
                             <th>Status</th>
-                            <th class="text-center" style="width:120px">Ações</th>
+                            <th class="text-center" style="width:150px">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -227,6 +229,12 @@
                                                title="O treino é no turno oposto ao da escola: informe o período na edição do atleta">
                                         <i class="bi bi-clock"></i> Sem período escolar</span></div>
                                 @endunless
+                                @if($atleta->afastamentoAtual)
+                                    <div><a href="{{ route('admin.atletas.afastamentos', $atleta->id_atleta) }}"
+                                            class="badge bg-warning-subtle text-warning-emphasis text-decoration-none js-afastado" style="font-size:0.7rem;"
+                                            title="Afastado de {{ $atleta->afastamentoAtual->periodoTexto() }}: não treina nesse período">
+                                        <i class="bi bi-bandaid"></i> {{ $atleta->afastamentoAtual->selo }}</a></div>
+                                @endif
                             </td>
                             <td>
                                 @if($nomeResponsavel)
@@ -317,6 +325,13 @@
                                             </button>
                                         @endif
                                     </form>
+                                    @endif
+
+                                    {{-- Afastamento (doença, lesão, viagem): o atleta não treina no período e continua ativo --}}
+                                    @if($atleta->foiAprovado())
+                                    <a href="{{ route('admin.atletas.afastamentos', $atleta->id_atleta) }}" class="btn-tbl edit" title="Afastamento">
+                                        <i class="bi bi-bandaid"></i>
+                                    </a>
                                     @endif
 
                                     {{-- "Reenviar convite" do app (Fase 9): só para atleta ativo e quem tem e-mail --}}

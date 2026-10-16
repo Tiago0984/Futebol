@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Concerns\ConfirmaConflitos;
 use App\Http\Controllers\Admin\Concerns\ListaPorMes;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
+use App\Models\AtletaAfastamento;
 use App\Models\Categoria;
 use App\Models\EventoAtleta;
 use App\Models\EventoCalendario;
@@ -187,17 +188,18 @@ class CalendarioController extends Controller
         }
 
         $idUsuario = auth('admin')->id();
-        $evento = DB::transaction(function () use ($dados, $ids, $idUsuario) {
+        [$evento, $inscritos] = DB::transaction(function () use ($dados, $ids, $idUsuario) {
             $evento = EventoCalendario::criarPor($idUsuario, $dados);
+            $inscritos = 0;
             foreach ($ids as $idAtleta) {
-                $evento->inscrever($idAtleta, 'INDIVIDUAL', $idUsuario);
+                $inscritos += $evento->inscrever($idAtleta, 'INDIVIDUAL', $idUsuario) ? 1 : 0; // afastado fica de fora
             }
 
-            return $evento;
+            return [$evento, $inscritos];
         });
 
         return redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario)
-            ->with('sucesso', 'Evento individual criado. ' . count($ids) . ' atleta(s) inscrito(s).'
+            ->with('sucesso', "Evento individual criado. {$inscritos} atleta(s) inscrito(s)."
                 . Notificacao::textoNotificados($evento->atletasNotificados));
     }
 
@@ -259,6 +261,10 @@ class CalendarioController extends Controller
             : [];
         $disponiveisAcimaDaIdade = $jogo?->acimaDaIdade($disponiveis->flatten()->pluck('id_atleta')->all()) ?? [];
 
+        // Afastados na data do evento: desabilitados no select e na caixa do amistoso ([id_atleta => "afastado até 10/11"])
+        $disponiveisAfastados = collect(AtletaAfastamento::naData($evento->data_evento_calendario))
+            ->map(fn (AtletaAfastamento $a) => $a->textoAte())->all();
+
         // Notificações enviadas sobre o evento, da mais nova para a mais antiga (só no admin)
         // Leitura pelos responsáveis (Fase 9): quantos leram, de quantos o atleta tem
         $notificacoes = $evento->notificacoes()
@@ -288,6 +294,7 @@ class CalendarioController extends Controller
         return view('admin.calendario.evento', compact(
             'evento', 'inscricoes', 'inscritosInativos', 'disponiveis', 'categorias', 'faltantesDaCategoria', 'jogo', 'elencos', 'camisas', 'gruposDoAmistoso',
             'faltantesDoElenco', 'notificacoes', 'caminho', 'voltar', 'inscritosAcimaDaIdade', 'disponiveisAcimaDaIdade', 'inscritosForaDoTurno', 'turnoDoTreino',
+            'disponiveisAfastados',
         ) + [
             'campeonatosDoJogo'       => $campeonatosDoJogo ?? collect(),
             'timesDoJogo'             => $timesDoJogo ?? collect(),
@@ -547,6 +554,12 @@ class CalendarioController extends Controller
             'id_atleta.required' => 'Escolha um atleta.',
             'id_atleta.exists'   => 'Escolha um atleta ativo.',
         ]);
+
+        // Afastado na data do evento: indisponível para tudo (16/10/2026); para inscrever, encerrar o afastamento antes
+        if ($afastamento = $evento->afastamentoDe((int) $request->id_atleta)) {
+            return back()->withInput()->with('erro', Atleta::whereKey((int) $request->id_atleta)->value('nome_atleta')
+                . " está {$afastamento->textoAte()}. Encerre o afastamento antes de inscrever.");
+        }
 
         $idTime = $request->filled('id_time') ? (int) $request->id_time : null;
         $jogo   = $evento->jogo()->with(['timeCasa', 'timeVisitante', 'campeonato', 'evento.categoria'])->first();

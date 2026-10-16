@@ -39,6 +39,7 @@ class AtletasController extends Controller
             'responsaveis',
             'endereco',
             'posicoes',
+            'afastamentoAtual', // selo "Afastado até 10/11"
         ])->orderBy('nome_atleta')->get();
 
         $categorias = Categoria::ativas()->get();

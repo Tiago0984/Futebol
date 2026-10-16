@@ -134,8 +134,8 @@ class GradeTreino extends Model
         return $this->motivoQueNaoGera() === null;
     }
 
-    // Turno do treino desta linha (MANHA ou TARDE), pelo horário de início; null sem horário
-    // MANHA ou TARDE pelo horário de início; null no fim de semana (DIAS_SEM_TURNO: entram todos)
+    // Turno do treino desta linha (MANHA ou TARDE), pelo horário de início; null sem horário e no fim de semana
+    // (DIAS_SEM_TURNO: entram todos)
     public function turno(): ?string
     {
         if (in_array($this->dia_semana_grade_treino, self::DIAS_SEM_TURNO, true)) {
@@ -143,6 +143,30 @@ class GradeTreino extends Model
         }
 
         return Atleta::turnoDoHorario($this->horario_inicio_grade_treino);
+    }
+
+    // O atleta treina nesta linha pelo turno: fim de semana, todos; nos outros dias, quem treina no turno dela
+    // (sem período escolar, não). A mesma regra da geração do mês (previaDoMes)
+    public static function treinaNoTurno(?string $turnoDaLinha, Atleta $atleta): bool
+    {
+        if ($turnoDaLinha === null) {
+            return true;
+        }
+
+        return $atleta->periodo_escolar_atleta && in_array($turnoDaLinha, $atleta->turnosDeTreino(), true);
+    }
+
+    // O atleta ATIVO cabe nesta linha (categoria, se houver, e turno): para a volta do afastamento
+    public function aceitaAtleta(Atleta $atleta): bool
+    {
+        if (strtoupper((string) $atleta->status_atleta) !== 'ATIVO') {
+            return false;
+        }
+        if ($this->id_categoria && ! in_array((int) $atleta->id_atleta, array_map('intval', Atleta::idsAtivosNaCategoria($this->id_categoria)), true)) {
+            return false;
+        }
+
+        return self::treinaNoTurno($this->turno(), $atleta);
     }
 
     /**
@@ -233,12 +257,17 @@ class GradeTreino extends Model
 
         $marcadas = $marcadas === null ? null : array_flip($marcadas);
 
-        $linhas = $grades->map(function (self $grade) use ($inicio, $minimo, $existentes, $marcadas, $ativos, &$porCategoria) {
+        // Afastamentos que cruzam o mês (16/10/2026): o atleta não entra nos treinos das datas afastadas
+        $afastamentos = AtletaAfastamento::porAtletaNoPeriodo($inicio, $inicio->copy()->endOfMonth());
+
+        $linhas = $grades->map(function (self $grade) use ($inicio, $minimo, $existentes, $marcadas, $ativos, $afastamentos, &$porCategoria) {
             $linha = [
                 'grade' => $grade, 'motivo' => $grade->motivoQueNaoGera(),
                 'novas' => collect(), 'desmarcadas' => collect(), 'existentes' => collect(), 'puladas' => collect(),
                 'atletas' => [], 'turno' => $grade->turno(), 'semPeriodo' => [],
                 'origem' => $grade->id_categoria ? 'CATEGORIA' : 'INDIVIDUAL', 'lote' => [],
+                // Por data nova: quem entra (os da linha menos os afastados naquele dia) e os afastados (nome => "até 10/11")
+                'atletasPorData' => [], 'afastados' => [],
             ];
 
             if ($linha['motivo'] !== null) {
@@ -275,8 +304,20 @@ class GradeTreino extends Model
                 } elseif ($marcadas !== null && ! isset($marcadas[self::chaveDaData($grade->id_grade_treino, $data)])) {
                     $linha['desmarcadas']->push($data); // o admin desmarcou (feriado, dia sem aula)
                 } else {
+                    // Afastado naquela data: fica de fora só dela
+                    $doDia = array_values(array_filter($linha['atletas'], function (int $idAtleta) use ($afastamentos, $data, $ativos, &$linha) {
+                        foreach ($afastamentos[$idAtleta] ?? [] as $afastamento) {
+                            if ($afastamento->cobre($data)) {
+                                $linha['afastados'][$ativos[$idAtleta]->nome_atleta] = $afastamento->textoAte();
+                                return false;
+                            }
+                        }
+                        return true;
+                    }));
+
                     $linha['novas']->push($data);
-                    $linha['lote'][] = ['evento' => $evento, 'atletas' => $linha['atletas']];
+                    $linha['atletasPorData'][$data->toDateString()] = $doDia;
+                    $linha['lote'][] = ['evento' => $evento, 'atletas' => $doDia];
                 }
             }
 
@@ -292,12 +333,14 @@ class GradeTreino extends Model
             'conflitos' => $conflitos,
             'totais'    => [
                 'eventos'      => $linhas->sum(fn ($l) => $l['novas']->count()),
-                'inscricoes'   => $linhas->sum(fn ($l) => $l['novas']->count() * count($l['atletas'])),
+                'inscricoes'   => $linhas->sum(fn ($l) => array_sum(array_map('count', $l['atletasPorData']))),
                 'existentes'   => $linhas->sum(fn ($l) => $l['existentes']->count()),
                 'puladas'      => $linhas->sum(fn ($l) => $l['puladas']->count()),
                 'desmarcadas'  => $linhas->sum(fn ($l) => $l['desmarcadas']->count()),
                 // Atletas sem período escolar das linhas que geram algo: não entram em nenhum treino
                 'sem_periodo'  => $linhas->filter(fn ($l) => $l['novas']->isNotEmpty())->flatMap(fn ($l) => $l['semPeriodo'])->unique()->sort()->values()->all(),
+                // Afastados em alguma data nova (nome => "afastado até 10/11"): ficam fora só dessas datas
+                'afastados'    => $linhas->flatMap(fn ($l) => $l['afastados'])->sortKeys()->all(),
                 'nao_geram'    => $linhas->whereNotNull('motivo')->count(),
                 'conflitos_reais'  => $conflitos['totais']['reais'],
                 'conflitos_fracos' => $conflitos['totais']['fracos'],
@@ -339,7 +382,7 @@ class GradeTreino extends Model
                 foreach ($linha['novas'] as $data) {
                     $evento = EventoCalendario::criarDaGrade($linha['grade'], $data, $idUsuario);
 
-                    foreach ($linha['atletas'] as $idAtleta) {
+                    foreach ($linha['atletasPorData'][$data->toDateString()] as $idAtleta) {
                         $inscricoes[] = [
                             'id_evento_calendario' => $evento->id_evento_calendario,
                             'id_atleta'            => $idAtleta,

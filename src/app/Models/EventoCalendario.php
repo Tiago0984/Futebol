@@ -206,6 +206,15 @@ class EventoCalendario extends Model
             return false;
         }
 
+        // Afastado na data do evento (16/10/2026): indisponível para tudo; fica de fora e entra no aviso do admin
+        if ($afastamento = $this->afastamentoDe($idAtleta)) {
+            self::$afastadosIgnorados[$idAtleta] ??= ['afastamento' => $afastamento, 'eventos' => []];
+            self::$afastadosIgnorados[$idAtleta]['eventos'][] = $this->titulo_evento_calendario
+                . ' · ' . $this->data_evento_calendario->format('d/m');
+
+            return false;
+        }
+
         return DB::transaction(function () use ($idAtleta, $origem, $idUsuario, $idTime, $notificar) {
             try {
                 $this->inscricoes()->create([
@@ -225,6 +234,36 @@ class EventoCalendario extends Model
 
             return true;
         });
+    }
+
+    /**
+     * Quem o inscrever() deixou de fora nesta requisição por estar afastado ([id_atleta => ['afastamento' =>
+     * AtletaAfastamento, 'eventos' => ["Título · dd/mm"]]]): o middleware AvisaAfastadosIgnorados transforma em
+     * aviso na próxima tela, qualquer que seja o caminho (criar evento ou jogo, preencher, trocar time, mover).
+     */
+    public static array $afastadosIgnorados = [];
+
+    // Afastamentos na data deste evento ([data => [id_atleta => AtletaAfastamento]]), lidos uma vez por data
+    // (a edição pode mudar a data na mesma instância)
+    private array $afastadosNaData = [];
+
+    public function afastamentoDe(int $idAtleta): ?AtletaAfastamento
+    {
+        $data = $this->data_evento_calendario->toDateString();
+        $this->afastadosNaData[$data] ??= AtletaAfastamento::naData($data);
+
+        return $this->afastadosNaData[$data][$idAtleta] ?? null;
+    }
+
+    // "Enzo Cardoso, afastado até 10/11: fora de Treino da manhã · 05/11; ..." (uma linha por atleta)
+    public static function textosDosAfastadosIgnorados(): array
+    {
+        $nomes = Atleta::whereIn('id_atleta', array_keys(self::$afastadosIgnorados))->pluck('nome_atleta', 'id_atleta');
+
+        return collect(self::$afastadosIgnorados)
+            ->map(fn ($item, $idAtleta) => ($nomes[$idAtleta] ?? "Atleta {$idAtleta}") . ', ' . $item['afastamento']->textoAte()
+                . ': fora de ' . implode('; ', array_unique($item['eventos'])) . '.')
+            ->sort()->values()->all();
     }
 
     // Inscreve os atletas ativos com categoria ativa nesta categoria, menos os ids de $exceto (no jogo de

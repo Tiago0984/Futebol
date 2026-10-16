@@ -73,6 +73,8 @@
         </div>
         @endif
 
+        @include('admin.partials.avisos-afastamento')
+
         @if(session('aviso'))
         <div class="alert alert-warning alert-dismissible fade show mb-3" role="alert">
             <strong>Atenção!</strong> {{ session('aviso') }}

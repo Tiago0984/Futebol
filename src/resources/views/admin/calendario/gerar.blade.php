@@ -67,6 +67,15 @@
             </div>
             @endif
 
+            {{-- Afastamento (16/10/2026): o atleta fica fora só das datas afastadas e entra nas outras --}}
+            @if ($totais['afastados'])
+            <div class="alert alert-info mb-3" role="alert" id="avisoAfastados">
+                <strong><i class="bi bi-bandaid"></i> {{ count($totais['afastados']) }} atleta(s) afastado(s)</strong>
+                não {{ count($totais['afastados']) === 1 ? 'será inscrito' : 'serão inscritos' }} nos treinos das datas do afastamento:
+                {{ collect($totais['afastados'])->map(fn ($ate, $nome) => "{$nome} ({$ate})")->implode(', ') }}.
+            </div>
+            @endif
+
             {{-- Dia sem treino: desmarca a data em todas as linhas (feriado, dia sem aula) --}}
             @php
                 $diasDoLote = $previa['linhas']
@@ -188,8 +197,14 @@
                                                 <i class="bi bi-clock"></i> {{ count($linha['semPeriodo']) }} sem período escolar
                                             </div>
                                         @endif
+                                        @if ($linha['afastados'])
+                                            <div class="text-warning-emphasis js-afastados-linha" style="font-size:0.75rem;"
+                                                 title="{{ collect($linha['afastados'])->map(fn ($ate, $nome) => "{$nome} ({$ate})")->implode(', ') }}">
+                                                <i class="bi bi-bandaid"></i> {{ count($linha['afastados']) }} afastado(s) em alguma data
+                                            </div>
+                                        @endif
                                     </td>
-                                    <td class="text-center">{{ $linha['novas']->count() * count($linha['atletas']) }}</td>
+                                    <td class="text-center">{{ array_sum(array_map('count', $linha['atletasPorData'])) }}</td>
                                 @endif
                             </tr>
                             @endforeach

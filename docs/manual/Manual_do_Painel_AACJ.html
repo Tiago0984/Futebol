@@ -209,6 +209,7 @@
   <li><strong>Categoria:</strong> treino com categoria inscreve os atletas ativos dela; treino geral inscreve todos os atletas ativos.</li>
   <li><strong>Turno:</strong> o atleta treina no turno <strong>oposto ao da escola</strong>. Quem estuda de manhã vai nos treinos da tarde; quem estuda à tarde, nos da manhã; integral, nos da tarde; noite, no turno que escolheu no cadastro. Treino que começa antes do meio-dia é da manhã.</li>
   <li><strong>Fim de semana:</strong> sábado e domingo não têm aula, então não há turno: entram todos os atletas ativos. Num sábado com jogo, desmarque a data na prévia (ou cancele o treino livre daquele dia) para não aparecer conflito de horário com os convocados.</li>
+  <li><strong>Afastado:</strong> o atleta com afastamento fica fora só das datas do afastamento; a prévia avisa quem é.</li>
 </ul></div>
 <h3>Passo 2: gerar a agenda do mês (todo mês)</h3>
 <ol class="passos">
@@ -373,6 +374,7 @@
 <ul>
   <li><strong>Mudou de categoria</strong> (ex.: virada do ano): edite o atleta e escolha a categoria nova. O sistema guarda a categoria antiga com data de fim. Depois de salvar, aparece um aviso com os eventos futuros da categoria antiga e da nova e o botão <span class="botao">Mover inscrições</span>. Nada muda sem você confirmar. O atleta recebe um resumo só.</li>
   <li><strong>Mudou de posição:</strong> edite o atleta e troque as posições (a primeira é a principal). Isso muda a <strong>sugestão</strong> dos próximos jogos; as escalações já salvas continuam como estão.</li>
+  <li><strong>Ficou doente, machucou ou vai viajar:</strong> não inative. Na lista de atletas, clique no botão de <strong>Afastamento</strong> (ícone de curativo) e registre o início, o fim (obrigatório) e, se quiser, o motivo (que só aparece no painel). Até o fim, o atleta fica <strong>indisponível para tudo</strong>: sai dos treinos, jogos e outros eventos do período, não entra nas novas inscrições nem na agenda gerada, e recebe um aviso só no aplicativo (sem o motivo). Ele continua ativo, com o aplicativo e com a convocação dos campeonatos. Precisa de mais tempo: mude o fim (prorrogar). Melhorou antes: <span class="botao">Encerrar</span> (volta hoje). Registrou por engano: excluir. Ao voltar, ele entra de novo sozinho nos <strong>treinos da grade</strong>; nos <strong>jogos</strong>, a tela mostra quais são e você decide pelo <span class="botao">Preencher pela convocação</span>.</li>
   <li><strong>Saiu da escolinha:</strong> na lista de atletas, use <span class="botao">Inativar</span>. As inscrições ficam guardadas, mas ele some das listas e perde o acesso ao aplicativo. <span class="botao">Ativar</span> traz de volta (precisa ter categoria).</li>
   <li><strong>Excluir de vez:</strong> só em <span class="caminho">Matrículas Rejeitadas</span>. Atleta com cartões em jogos não é excluído, para preservar o histórico.</li>
 </ul>
@@ -474,7 +476,8 @@
 <ul>
   <li>Coluna <strong>Posição</strong> com as siglas (ex.: "VOL · MC"; passe o mouse para ver os nomes) e filtro de posição, que acha o atleta por qualquer uma das posições dele.</li>
   <li>No cadastro e no editar: três campos de <strong>Posições</strong> (até 3; a primeira é a principal), agrupados em Goleiro, Defensores, Meio-campistas e Atacantes.</li>
-  <li>Lista com filtros, categoria, responsável e status. Selos <span class="selo amarelo">Sem período escolar</span> e <span class="selo amarelo">Sem acesso ao app</span> (nem o atleta nem os responsáveis têm e-mail).</li>
+  <li>Lista com filtros, categoria, responsável e status. Selos <span class="selo amarelo">Sem período escolar</span>, <span class="selo amarelo">Sem acesso ao app</span> (nem o atleta nem os responsáveis têm e-mail) e <span class="selo amarelo">Afastado até 10/11</span> (leva à tela de afastamentos do atleta).</li>
+  <li>Botão <strong>Afastamento</strong> (ícone de curativo): o afastamento atual e os próximos (mudar as datas, encerrar, excluir), o formulário de registrar e os anteriores (veja o roteiro R10).</li>
   <li><span class="botao">Novo Atleta</span>, editar, <span class="botao">Inativar</span>/<span class="botao">Ativar</span>, <span class="botao">Reenviar convite</span> (link de senha de 24 h) e <span class="botao">Enviar convites pendentes</span> (todos os ativos sem senha).</li>
   <li>Se o e-mail não for enviado, a tela mostra o link para copiar e mandar por WhatsApp. Ele só aparece naquele momento.</li>
 </ul>
@@ -534,6 +537,7 @@
   <tr><td>Reativar ou mostrar de novo</td><td>Reativação.</td></tr>
   <tr><td>Gerar a agenda do mês</td><td>Um aviso só por atleta, com o total de treinos.</td></tr>
   <tr><td>Mover inscrições (troca de categoria)</td><td>Um resumo só.</td></tr>
+  <tr><td>Afastamento registrado, mudado, encerrado ou excluído</td><td>Um resumo só, com o período e de quantas atividades saiu (ou para quantos treinos voltou). Sem o motivo.</td></tr>
   <tr><td>Publicar um jogo</td><td>Inscrição de cada atleta, com o time.</td></tr>
   <tr><td>Novo aviso</td><td>O seu recado.</td></tr>
 </table>
