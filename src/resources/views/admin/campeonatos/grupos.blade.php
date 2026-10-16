@@ -114,8 +114,11 @@
               @csrf @method('PUT')
               <div class="row g-2">
                 @foreach ($timesDaCat as $time)
-                <div class="col-md-6 d-flex align-items-center gap-2" data-id-time="{{ $time->id_time }}">
-                  <label for="grupo_{{ $categoria->id_categoria }}_{{ $time->id_time }}" class="flex-grow-1 small">
+                {{-- Cada time numa caixa com o nome e o select juntos (em duas colunas, o select de um time ficava
+                     encostado no nome do outro) --}}
+                <div class="col-md-6" data-id-time="{{ $time->id_time }}">
+                  <div class="border rounded px-2 py-1 h-100 d-flex align-items-center gap-2 js-time-do-grupo">
+                  <label for="grupo_{{ $categoria->id_categoria }}_{{ $time->id_time }}" class="flex-grow-1 small fw-semibold mb-0">
                     {{ $time->nome_time }}
                     <span @class(['badge-status ms-1', 'ativo' => $time->tipo_time === 'INTERNO', 'inativo' => $time->tipo_time !== 'INTERNO'])
                           style="font-size:0.6rem;">{{ $time->tipo_time === 'INTERNO' ? 'INT' : 'EXT' }}</span>
@@ -129,6 +132,7 @@
                     </option>
                     @endforeach
                   </select>
+                  </div>
                 </div>
                 @endforeach
               </div>
