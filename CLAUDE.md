@@ -287,6 +287,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Origem do evento gerado:** linha da grade + data de origem (`id_grade_treino` + `data_grade_evento_calendario`), únicas juntas. A data de origem fica separada da data do evento (o treino pode mudar de dia sem ser gerado de novo). O formulário de evento nunca grava nem troca a origem (fora do `$fillable`).
 - **Mapeamento:** título "Treino {rótulo}" (rótulo que já começa com "Treino" fica como está); `LIVRE` vira `TREINO` com subtipo "Livre"; horários, local e categoria vêm direto da linha.
 - **Não gera:** tipo `JOGO`, linha inativa, categoria inativa e linha sem horário de início (`GradeTreino::motivoQueNaoGera()`).
+- **Tipo JOGO fora da escolha** (dono do projeto, 16/10/2026; responde a pergunta 4): o Tipo da grade é só TREINO ou LIVRE (`GradeTreino::TIPOS_PARA_ESCOLHER`); o jogo nasce na tela de Jogos. JOGO continua no ENUM (sem migration): a linha que já é JOGO segue sem gerar e, no Editar, pode manter ("JOGO (não gera eventos)", opção `.js-tipo-jogo`) ou trocar; linha nova e as outras recusam JOGO no servidor.
+- **Fim de semana sem turno** (dono do projeto, 16/10/2026): sábado e domingo não têm aula, então a linha não tem turno (`GradeTreino::DIAS_SEM_TURNO`, `turno()` = null) e inscreve **todos** os ativos (da categoria, se houver), inclusive quem está sem período escolar; a prévia mostra "(fim de semana: todos)". O treino de fim de semana não avisa "fora do turno" (`EventoCalendario::turnoDoTreino()` = null). Sábado real: **LIVRE 13:00–17:00** ("Treino livre ou jogo interno": treino, jogo interno com coletes ou exercício). Em sábado com jogo, o evento livre conflita com os convocados: desmarcar a data na prévia, cancelar o livre do dia ou confirmar o conflito.
 - **Linha que já gerou eventos não é excluída**, só inativada.
 - **Linhas sem categoria** (Integrado, Treino Livre): inscrevem **todos os atletas ATIVO**, origem `INDIVIDUAL` (provisório, seção 8, pergunta 15). Quem entra depois é adicionado pelo admin. **Meninas treinam junto** (dono do projeto, 13/10/2026): os treinos reais são sem categoria, meninos e meninas juntos.
 - **Por turno (Fase A, Etapa 2, `b748df3`):** a geração inscreve cada atleta (da categoria da linha ou, sem categoria, todos os ATIVO) só nos treinos do turno dele (`Atleta::turnosDeTreino()`; turno da linha pelo horário de início, `GradeTreino::turno()`: antes das 12:00 = manhã, a partir das 12:00 = tarde, inclusive 18:00). **Sem período escolar não entra em nenhum treino:** a prévia mostra "N sem período escolar" na linha e um alerta no topo com os nomes (`totais.sem_periodo`).
@@ -774,10 +776,22 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - **guardar e devolver o conteúdo do site** (notícias, banners, galeria, vídeos, usuários do admin), como em 14/10 (`backup/restaura_conteudo_do_servidor_20261014.sql`). Fotos enviadas só no servidor não voltam (fictícias);
   - `migrate:fresh` e `db:seed` só com OK explícito e backup antes.
 - **Em aberto para escolher (dono do projeto, 15/10: "deixa em aberto"):**
-  1. **Grade real de treinos** (sem código, pelas telas): ter/qui 09:00–11:00 e 14:00–17:00 sem categoria, a linha de jogos de sábado 13:00–17:00 e inativar as 18 linhas de teste (roteiro para o Claude no navegador).
+  1. ~~**Grade real de treinos**~~ ✅ no local, pelo seeder de demonstração (16/10, abaixo); na entrega, cadastrar pelas telas.
   2. **Fase E — avaliação técnica (peneira):** escolher atletas por faixa de idade quando um clube pede; falta o professor dizer se aparece no site.
   3. **Fase F — site público com mais eventos** (amistosos? treinos?): falta a confirmação do professor.
   4. **Débitos técnicos** da seção 7, por exemplo **CPF único** e **assinaturas** em local protegido.
+
+#### Dados de demonstração (computador do Senac, 16/10/2026)
+- **Dump de casa restaurado** (`backup/db_futebol_para_senac.sql`, batch 36): backup do banco antigo do Senac em `backup/db_futebol_senac_antes_restaurar_20261016.sql`; banco recriado vazio antes de importar (o antigo tinha a `tbl_atleta_time`, que o dump não apaga). 655 testes passando.
+- **Seeder** `Database\Seeders\DemonstracaoSeeder` (fora do `DatabaseSeeder`; `php artisan db:seed --class=DemonstracaoSeeder`). Não grava nada se já houver atletas, times, campeonatos ou grade. Usa os caminhos das telas (cadastro do admin, `errosDaConvocacao`/`convocar`, `criarPor` + `inscreverElenco` + `publicar`). Datas a partir de hoje (rodadas nos dois últimos sábados e no próximo; amistoso duas semanas depois). Cria:
+  - 25 atletas ativos (Sub-11 a Sub-15, 4 meninas), com período escolar, posições, CPF fictício válido e e-mail `@exemplo.com` em 11; 26 responsáveis únicos (os irmãos Davi e Igor Rocha com o mesmo); 2 matrículas PENDENTE com a autorização a assinar;
+  - a grade real (ter/qui 09:00–11:00 e 14:00–17:00 sem categoria; sábado LIVRE 13:00–17:00); os treinos **não** são gerados (usar o "Gerar agenda do mês");
+  - times AACJ Sub-11/13/15 e os externos Botafogo da Vila (nas duas categorias), União Esportiva e Estrela FC;
+  - "Copa Regional de Base" com Sub-13 e Sub-15, "Chave A" de três em cada (passam 2), convocação com camisa (Theo, do Sub-11, sobe ao Sub-13; Samuel, do Sub-13, joga também no Sub-15, 13:00 e 14:30 sem conflito), 4 jogos com placar e 2 da próxima rodada publicados (17 convocados avisados);
+  - amistoso AACJ Sub-11 x União em rascunho, com 6 atletas escolhidos.
+- **Banco local montado do zero** (ensaio do "começar do zero"): backup `backup/db_futebol_antes_demonstracao_20261016_084649.sql`; conteúdo do site guardado em `backup/conteudo_do_site_20261016_084649.sql` (3 usuários do admin, 5 notícias, 7 banners, 11 fotos da galeria, 2 vídeos); `db_futebol` recriado vazio, `migrate --force` (38 tabelas, 10 categorias, **todas as migrations no batch 1**), conteúdo devolvido e o seeder. **O banco de casa e o do servidor continuam com os dados antigos** (e a numeração antiga dos batches) até serem trocados por este.
+- **Também:** grade sem a coluna "#" e sem o campo Ordem no Editar (a edição mantém a ordem gravada); tipo JOGO fora da escolha e fim de semana sem turno (seção 4, "Grade de treino").
+- **Testes:** `DemonstracaoSeederTest` (5) e os novos da grade. A linha de sábado do banco local foi mudada à mão para LIVRE pelo dono do projeto (ainda com o nome "Jogos" e o local "Conforme a agenda").
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
@@ -796,7 +810,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 O painel, o site e a API estão prontos no essencial e publicados. Para a escolinha usar de verdade, faltam:
 1. **Aplicativo** (outro repositório) adaptado à API: login com perfil, escolha do filho, agenda e avisos (item "App no outro repositório", abaixo). Sem ele, o atleta não vê o que o painel faz.
 2. **E-mail de verdade** no servidor (SMTP no Plesk e fila; item "SMTP de verdade e worker de fila", abaixo). Hoje os convites e o "Esqueci minha senha" só funcionam copiando o link.
-3. **Grade real de treinos** cadastrada pelas telas (seção 6, "Passagem para o Senac", item 1).
+3. **Grade real de treinos** cadastrada pelas telas na entrega (ter/qui 09:00–11:00 e 14:00–17:00 sem categoria, sábado LIVRE 13:00–17:00; no local, já vem do seeder de demonstração).
 4. **Começar do zero na entrega** (item seguinte).
 
 Melhorias que não impedem o uso: Fases E e F (seção 6, "Passagem para o Senac"), os demais débitos desta seção, notificação push e as perguntas da seção 8.
@@ -843,7 +857,7 @@ Melhorias que não impedem o uso: Fases E e F (seção 6, "Passagem para o Senac
    - **Masculino e feminino com as mesmas 5 faixas:** total de **10 categorias** (cada faixa em `M` e `F`).
    - **Todos os dados do banco local são de teste**; nada precisa ser preservado (inclui a Sub-12, 10–12, e a Sub-15, 13–15, atuais).
 3. ~~Calendário do site público: mostra tudo, só jogos/campeonatos, ou nada? E os treinos gerados pela grade?~~ ✅ **RESOLVIDA** (dono do projeto, 06/10/2026): a página Calendário mostra **só eventos CAMPEONATO e jogos de campeonato**; amistosos, treinos e os outros tipos ficam de fora; cancelado com o selo, oculto não aparece; a tabela da grade continua (seção 4, "Site público"). **Pode mudar se o professor pedir.**
-4. A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?
+4. ~~A linha "Jogos" (tipo JOGO) da grade continua, já que jogos viram eventos?~~ ✅ **RESOLVIDA** (dono do projeto, 16/10/2026): não. O sábado virou uma linha LIVRE para todos e o tipo JOGO saiu da escolha (seção 4, "Grade de treino").
 5. Atleta com cartões: pode ser excluído (apagando histórico) ou só inativado?
 6. Responsável e endereço de atleta excluído: apagar quando não houver outro atleta vinculado, ou anonimizar?
 7. ~~Link de definição de senha: e-mail do atleta ou do responsável?~~ ✅ **RESOLVIDA e implementada na Fase 9**: o app tem **dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha; o link vai para o e-mail que **cada um** informou no cadastro (seção 4, "App: perfis, senhas, agenda e avisos").
