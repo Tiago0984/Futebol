@@ -349,7 +349,6 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead>
                         <tr>
-                            <th style="width:40px">#</th>
                             <th>Dia</th>
                             <th>Categoria</th>
                             <th>Tipo</th>
@@ -367,7 +366,6 @@
                             data-tipo="{{ $g->tipo_grade_treino }}"
                             data-categoria="{{ mb_strtolower($g->rotulo) }}"
                             data-status="{{ strtoupper($g->status_grade_treino) }}">
-                            <td class="text-muted" style="font-size:0.8rem;">{{ $g->ordem_grade_treino }}</td>
                             <td><span class="fw-semibold">{{ $g->dia_label }}</span></td>
                             <td><span class="badge-cat">{{ $g->rotulo }}</span></td>
                             <td class="text-muted">{{ $g->tipo_grade_treino ?? '—' }}</td>
@@ -395,8 +393,7 @@
                                         data-inicio="{{ $g->horario_inicio_grade_treino }}"
                                         data-fim="{{ $g->horario_fim_grade_treino }}"
                                         data-obs="{{ $g->horario_obs_grade_treino }}"
-                                        data-local="{{ $g->local_grade_treino }}"
-                                        data-ordem="{{ $g->ordem_grade_treino }}">
+                                        data-local="{{ $g->local_grade_treino }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form action="{{ route('admin.calendario.grade.toggleStatus', $g->id_grade_treino) }}" method="POST" style="display:inline">
@@ -425,7 +422,7 @@
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="9" class="text-center text-muted py-4">Nenhum horário na grade.</td>
+                            <td colspan="8" class="text-center text-muted py-4">Nenhum horário na grade.</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -547,7 +544,7 @@
                             </div>
                             <div class="form-text">Cada dia marcado vira uma linha da grade, com os mesmos dados (na edição, cada linha muda sozinha).</div>
                         </div>
-                        {{-- Sem o campo Ordem: a linha nova grava 0 (a ordem só desempata horários iguais no mesmo dia) --}}
+                        {{-- Sem o campo Ordem: a linha nova fica com o padrão do banco (a ordem só desempata horários iguais no mesmo dia) --}}
                         <div class="col-md-4">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_grade_treino" class="form-select" required>
@@ -621,12 +618,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Ordem</label>
-                            <input type="number" id="edit_g_ordem" name="ordem_grade_treino"
-                                class="form-control" min="0">
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select id="edit_g_tipo" name="tipo_grade_treino" class="form-select" required>
                                 @foreach(\App\Models\GradeTreino::TIPOS as $t)
@@ -835,7 +827,6 @@ document.addEventListener('DOMContentLoaded', function () {
         btn.addEventListener('click', function () {
             const baseUrl = '{{ url("admin/calendario/grade") }}';
             document.getElementById('formEditarGrade').action = `${baseUrl}/${this.dataset.id}`;
-            document.getElementById('edit_g_ordem').value     = this.dataset.ordem     || 0;
             document.getElementById('edit_g_id_categoria').value = this.dataset.idCategoria || '';
             document.getElementById('edit_g_categoria').value = this.dataset.categoria || '';
             alternarItemGeral(document.getElementById('edit_g_id_categoria'));

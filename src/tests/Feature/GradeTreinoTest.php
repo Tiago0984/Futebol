@@ -159,6 +159,21 @@ class GradeTreinoTest extends TestCase
         $this->assertDatabaseCount('tbl_grade_treino', 2);
     }
 
+    // A tela não tem mais a coluna "#" nem o campo Ordem: editar sem ele mantém a ordem gravada (só desempata)
+    public function test_edicao_sem_o_campo_ordem_mantem_a_ordem_e_a_lista_nao_mostra_a_coluna(): void
+    {
+        $idGrade = $this->criarGrade(['categoria_grade_treino' => 'Integrado', 'ordem_grade_treino' => 3]);
+        $dados = $this->dadosGrade(['categoria_grade_treino' => 'Integrado', 'local_grade_treino' => 'Campo C']);
+        unset($dados['ordem_grade_treino']);
+
+        $this->comoAdmin()->put(route('admin.calendario.grade.update', $idGrade), $dados)->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('tbl_grade_treino', ['id_grade_treino' => $idGrade, 'local_grade_treino' => 'Campo C', 'ordem_grade_treino' => 3]);
+        $this->comoAdmin()->get(route('admin.calendario.index', ['tab' => 'grade']))->assertOk()
+            ->assertDontSee('name="ordem_grade_treino"', false)
+            ->assertDontSee('<th style="width:40px">#</th>', false);
+    }
+
     public function test_modal_novo_horario_tem_uma_caixa_por_dia(): void
     {
         $resposta = $this->comoAdmin()->get(route('admin.calendario.index', ['tab' => 'grade']))->assertOk()

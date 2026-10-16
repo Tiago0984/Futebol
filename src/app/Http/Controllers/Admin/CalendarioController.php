@@ -976,7 +976,9 @@ class CalendarioController extends Controller
             ]),
             'id_categoria'           => $categoria?->id_categoria,
             'categoria_grade_treino' => $categoria?->nome_categoria ?? $request->categoria_grade_treino,
-            'ordem_grade_treino'     => $request->input('ordem_grade_treino') ?? 0,
+            // A tela não tem mais o campo Ordem (a lista ordena pelo dia e pelo horário; a ordem só desempata):
+            // sem ele, a edição mantém a ordem gravada e o novo horário fica com o padrão do banco
+            ...($request->filled('ordem_grade_treino') ? ['ordem_grade_treino' => (int) $request->ordem_grade_treino] : []),
         ];
     }
 
