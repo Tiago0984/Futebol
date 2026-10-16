@@ -916,7 +916,7 @@ class CalendarioController extends Controller
         ]);
 
         $antes = $this->camposDoEvento($grade);
-        $grade->update([...$this->dadosGrade($request), 'dia_semana_grade_treino' => $request->dia_semana_grade_treino]);
+        $grade->update([...$this->dadosGrade($request, $grade), 'dia_semana_grade_treino' => $request->dia_semana_grade_treino]);
 
         // Mudou algo que o evento copia: os eventos futuros já gerados NÃO acompanham (só avisa)
         $mensagem = 'Horário atualizado.';
@@ -950,12 +950,15 @@ class CalendarioController extends Controller
      * Sem categoria ("Geral", ex.: Integrado, Treino Livre): o rótulo é obrigatório.
      * Tipo e local são NOT NULL no banco, por isso obrigatórios aqui.
      */
-    private function dadosGrade(Request $request): array
+    private function dadosGrade(Request $request, ?GradeTreino $atual = null): array
     {
+        // JOGO saiu da escolha (o jogo nasce na tela de Jogos): só a linha que já é JOGO pode continuar com ele
+        $tipos = $atual?->tipo_grade_treino === 'JOGO' ? GradeTreino::TIPOS : GradeTreino::TIPOS_PARA_ESCOLHER;
+
         $request->validate([
             'id_categoria'                   => ['nullable', 'integer', Rule::exists('tbl_categoria', 'id_categoria')->where('status_categoria', 'ATIVO')],
             'categoria_grade_treino'         => 'required_without:id_categoria|nullable|string|max:60',
-            'tipo_grade_treino'              => ['required', Rule::in(GradeTreino::TIPOS)],
+            'tipo_grade_treino'              => ['required', Rule::in($tipos)],
             'horario_inicio_grade_treino'    => 'required|date_format:H:i,H:i:s',
             'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
             'horario_obs_grade_treino'       => 'nullable|string|max:60',

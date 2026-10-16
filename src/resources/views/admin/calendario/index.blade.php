@@ -544,11 +544,12 @@
                             </div>
                             <div class="form-text">Cada dia marcado vira uma linha da grade, com os mesmos dados (na edição, cada linha muda sozinha).</div>
                         </div>
-                        {{-- Sem o campo Ordem: a linha nova fica com o padrão do banco (a ordem só desempata horários iguais no mesmo dia) --}}
+                        {{-- Sem o campo Ordem: a linha nova fica com o padrão do banco (a ordem só desempata horários iguais no mesmo dia).
+                             Sem JOGO: o jogo nasce na tela de Jogos (a linha JOGO não gera nada) --}}
                         <div class="col-md-4">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_grade_treino" class="form-select" required>
-                                @foreach(\App\Models\GradeTreino::TIPOS as $t)
+                                @foreach(\App\Models\GradeTreino::TIPOS_PARA_ESCOLHER as $t)
                                 <option value="{{ $t }}" @selected(old('tipo_grade_treino', 'TREINO') === $t)>{{ $t }}</option>
                                 @endforeach
                             </select>
@@ -621,9 +622,11 @@
                         <div class="col-md-6">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select id="edit_g_tipo" name="tipo_grade_treino" class="form-select" required>
-                                @foreach(\App\Models\GradeTreino::TIPOS as $t)
+                                @foreach(\App\Models\GradeTreino::TIPOS_PARA_ESCOLHER as $t)
                                 <option value="{{ $t }}">{{ $t }}</option>
                                 @endforeach
+                                {{-- Só para a linha que já é JOGO (o JS mostra); o servidor confere de novo --}}
+                                <option value="JOGO" class="js-tipo-jogo" hidden disabled>JOGO (não gera eventos)</option>
                             </select>
                         </div>
                         <div class="col-md-6">
@@ -837,6 +840,11 @@ document.addEventListener('DOMContentLoaded', function () {
             const selDia  = document.getElementById('edit_g_dia');
             for (let opt of selDia.options)  opt.selected = opt.value === this.dataset.dia;
             const selTipo = document.getElementById('edit_g_tipo');
+            selTipo.querySelectorAll('.js-tipo-jogo').forEach(opt => {
+                const antigo = this.dataset.tipo === 'JOGO';
+                opt.hidden = !antigo;
+                opt.disabled = !antigo;
+            });
             for (let opt of selTipo.options) opt.selected = opt.value === this.dataset.tipo;
         });
     });

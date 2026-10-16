@@ -14,7 +14,15 @@ class GradeTreino extends Model
     protected $primaryKey = 'id_grade_treino';
     public    $timestamps = false;
 
+    // Valores do ENUM. JOGO não gera eventos (jogo nasce na tela de Jogos) e saiu da escolha (dono do projeto,
+    // 16/10/2026): só a linha que já é JOGO pode continuar com ele na edição
     public const TIPOS = ['TREINO', 'JOGO', 'LIVRE'];
+
+    public const TIPOS_PARA_ESCOLHER = ['TREINO', 'LIVRE'];
+
+    // Sem aula no fim de semana: a linha não tem turno e inscreve todos, sem olhar o período escolar
+    // (dono do projeto, 16/10/2026: sábado de treino livre ou jogo interno para todos)
+    public const DIAS_SEM_TURNO = ['sabado', 'domingo'];
 
     protected $fillable = [
         'dia_semana_grade_treino',
@@ -127,8 +135,13 @@ class GradeTreino extends Model
     }
 
     // Turno do treino desta linha (MANHA ou TARDE), pelo horário de início; null sem horário
+    // MANHA ou TARDE pelo horário de início; null no fim de semana (DIAS_SEM_TURNO: entram todos)
     public function turno(): ?string
     {
+        if (in_array($this->dia_semana_grade_treino, self::DIAS_SEM_TURNO, true)) {
+            return null;
+        }
+
         return Atleta::turnoDoHorario($this->horario_inicio_grade_treino);
     }
 
@@ -186,7 +199,7 @@ class GradeTreino extends Model
      *  - puladas: hoje, com o treino já concluído (não é gerado);
      *  - atletas: ids que serão inscritos em cada evento: ATIVO da categoria (sem categoria, todos os ATIVO) que
      *    treinam no turno da linha (Atleta::turnosDeTreino: o oposto ao da escola; Fase A, Etapa 2);
-     *  - turno: MANHA ou TARDE (turno());
+     *  - turno: MANHA ou TARDE (turno()); null no fim de semana, quando entram todos os ativos (da categoria);
      *  - semPeriodo: nomes dos atletas da linha sem período escolar (sem turno de treino: não entram);
      *  - origem: CATEGORIA (linha com categoria) ou INDIVIDUAL (linha sem categoria);
      *  - lote: os eventos novos ainda não salvos, com os atletas (para o conflito).
@@ -235,13 +248,16 @@ class GradeTreino extends Model
             $jaGeradas = ($existentes[$grade->id_grade_treino] ?? collect())
                 ->keyBy(fn ($e) => $e->data_grade_evento_calendario->toDateString());
 
-            // Da categoria (ou todos os ativos), só quem treina no turno da linha; sem período, fica de fora
+            // Da categoria (ou todos os ativos), só quem treina no turno da linha; sem período, fica de fora.
+            // Fim de semana (sem turno): entram todos, inclusive quem está sem período escolar
             $candidatos = $grade->id_categoria
                 ? ($porCategoria[$grade->id_categoria] ??= Atleta::idsAtivosNaCategoria($grade->id_categoria))
                 : $ativos->keys()->all();
             foreach ($candidatos as $idAtleta) {
                 $atleta = $ativos[$idAtleta];
-                if (! $atleta->periodo_escolar_atleta) {
+                if ($linha['turno'] === null) {
+                    $linha['atletas'][] = (int) $idAtleta;
+                } elseif (! $atleta->periodo_escolar_atleta) {
                     $linha['semPeriodo'][] = $atleta->nome_atleta;
                 } elseif (in_array($linha['turno'], $atleta->turnosDeTreino(), true)) {
                     $linha['atletas'][] = (int) $idAtleta;

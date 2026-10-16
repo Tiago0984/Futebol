@@ -323,6 +323,38 @@ class GradeGeracaoMesTest extends TestCase
         $this->assertNull($turno(null));
     }
 
+    // Fim de semana não tem aula (dono do projeto, 16/10/2026): a linha de sábado inscreve todos, sem olhar o
+    // período escolar, e o treino de sábado não avisa "fora do turno"
+    public function test_sabado_livre_inscreve_todos_sem_olhar_o_turno(): void
+    {
+        $sabado = $this->grade(['categoria_grade_treino' => 'Treino livre ou jogo interno', 'tipo_grade_treino' => 'LIVRE',
+            'dia_semana_grade_treino' => 'sabado', 'horario_inicio_grade_treino' => '13:00', 'horario_fim_grade_treino' => '17:00']);
+        $todos = [
+            $this->atletaComPeriodo('Ana', 'MANHA'),
+            $this->atletaComPeriodo('Bia', 'TARDE'),
+            $this->atletaComPeriodo('Duda', 'NOITE', 'MANHA'),
+            $this->atletaComPeriodo('Fabi', null), // sem período: no fim de semana também entra
+        ];
+
+        $previa = $this->comoAdminFixo()->get(route('admin.calendario.grade.previa', ['mes' => '2026-12']))
+            ->assertSee('(fim de semana: todos)')
+            ->assertDontSee('sem período escolar')
+            ->viewData('previa');
+        $linha = $previa['linhas']->firstWhere(fn ($l) => $l['grade']->id_grade_treino === $sabado);
+
+        $this->assertNull($linha['turno']);
+        $this->assertEqualsCanonicalizing($todos, $linha['atletas']);
+        $this->assertSame([], $linha['semPeriodo']);
+
+        $this->comoAdminFixo()->post(route('admin.calendario.grade.gerar'), ['mes' => '2026-12'])->assertSessionHas('sucesso');
+        $evento = EventoCalendario::where('id_grade_treino', $sabado)->where('data_grade_evento_calendario', '2026-12-05')->firstOrFail();
+        $this->assertSame('Treino livre ou jogo interno', $evento->titulo_evento_calendario);
+        $this->assertSame('Livre', $evento->subtipo_evento_calendario);
+        $this->assertEqualsCanonicalizing($todos, $evento->inscricoes()->pluck('id_atleta')->all());
+        $this->assertNull($evento->turnoDoTreino());
+        $this->assertSame([], $evento->avisosForaDoTurno($todos));
+    }
+
     public function test_mes_futuro_gera_todas_as_datas(): void
     {
         [$sub13] = $this->cenario();

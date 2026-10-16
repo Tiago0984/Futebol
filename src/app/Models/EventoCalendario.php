@@ -354,10 +354,15 @@ class EventoCalendario extends Model
      * Jogo de campeonato: o mais novo do mesmo sexo jogando acima da idade é normal (professor, 09/10/2026)
      * e não gera aviso; o mais velho nem chega a ser inscrito (Jogo::acimaDaIdade).
      */
-    // Turno do treino (MANHA ou TARDE) pelo horário de início; null se não é TREINO ou não tem horário
+    // Turno do treino (MANHA ou TARDE) pelo horário de início; null se não é TREINO, não tem horário ou é no fim
+    // de semana (sem aula: GradeTreino::DIAS_SEM_TURNO)
     public function turnoDoTreino(): ?string
     {
-        return $this->tipo_evento_calendario === 'TREINO' ? Atleta::turnoDoHorario($this->horario_inicio_evento_calendario) : null;
+        if ($this->tipo_evento_calendario !== 'TREINO' || $this->data_evento_calendario?->isWeekend()) {
+            return null;
+        }
+
+        return Atleta::turnoDoHorario($this->horario_inicio_evento_calendario);
     }
 
     /**

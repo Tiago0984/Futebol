@@ -174,6 +174,31 @@ class GradeTreinoTest extends TestCase
             ->assertDontSee('<th style="width:40px">#</th>', false);
     }
 
+    // JOGO saiu da escolha (16/10/2026): a linha JOGO não gera nada (o jogo nasce na tela de Jogos)
+    public function test_tipo_jogo_so_continua_na_linha_que_ja_e_jogo(): void
+    {
+        $this->comoAdmin()->post(route('admin.calendario.grade.store'), $this->dadosGrade(['tipo_grade_treino' => 'JOGO']))
+            ->assertSessionHasErrors('tipo_grade_treino');
+        $this->assertDatabaseCount('tbl_grade_treino', 0);
+
+        $treino = $this->criarGrade(['categoria_grade_treino' => 'Integrado']);
+        $this->comoAdmin()->put(route('admin.calendario.grade.update', $treino), $this->dadosGrade(['tipo_grade_treino' => 'JOGO']))
+            ->assertSessionHasErrors('tipo_grade_treino');
+
+        // Linha antiga JOGO: a edição mantém o tipo ou troca por outro
+        $jogos = $this->criarGrade(['categoria_grade_treino' => 'Jogos', 'tipo_grade_treino' => 'JOGO']);
+        $this->comoAdmin()->put(route('admin.calendario.grade.update', $jogos), $this->dadosGrade(['tipo_grade_treino' => 'JOGO', 'local_grade_treino' => 'Arena']))
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('tbl_grade_treino', ['id_grade_treino' => $jogos, 'tipo_grade_treino' => 'JOGO', 'local_grade_treino' => 'Arena']);
+        $this->comoAdmin()->put(route('admin.calendario.grade.update', $jogos), $this->dadosGrade(['tipo_grade_treino' => 'LIVRE']))
+            ->assertSessionHasNoErrors();
+        $this->assertDatabaseHas('tbl_grade_treino', ['id_grade_treino' => $jogos, 'tipo_grade_treino' => 'LIVRE']);
+
+        // Tela: JOGO só como opção escondida do Editar (o JS mostra para a linha JOGO)
+        $this->comoAdmin()->get(route('admin.calendario.index', ['tab' => 'grade']))->assertOk()
+            ->assertSee('<option value="JOGO" class="js-tipo-jogo" hidden disabled>JOGO (não gera eventos)</option>', false);
+    }
+
     public function test_modal_novo_horario_tem_uma_caixa_por_dia(): void
     {
         $resposta = $this->comoAdmin()->get(route('admin.calendario.index', ['tab' => 'grade']))->assertOk()

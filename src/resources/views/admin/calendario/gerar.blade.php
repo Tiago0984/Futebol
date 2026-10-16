@@ -173,10 +173,14 @@
                                         @else
                                             {{ count($linha['atletas']) }}
                                         @endif
-                                        {{-- Só quem treina neste turno (o oposto ao da escola) --}}
+                                        {{-- Só quem treina neste turno (o oposto ao da escola); no fim de semana, todos --}}
                                         <div class="text-muted" style="font-size:0.75rem;">
                                             {{ $linha['origem'] === 'CATEGORIA' ? 'da categoria' : 'ativos' }}
-                                            {{ $linha['turno'] === 'MANHA' ? 'que treinam de manhã' : 'que treinam à tarde' }}
+                                            {{ match ($linha['turno']) {
+                                                'MANHA' => 'que treinam de manhã',
+                                                'TARDE' => 'que treinam à tarde',
+                                                default => '(fim de semana: todos)',
+                                            } }}
                                         </div>
                                         @if ($linha['semPeriodo'])
                                             <div class="text-warning-emphasis js-sem-periodo-linha" style="font-size:0.75rem;"
