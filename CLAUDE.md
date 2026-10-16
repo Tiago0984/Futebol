@@ -787,6 +787,15 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 
 ## 7. Débitos técnicos conhecidos (planejar, não implementar sem OK)
 
+### O que falta para o sistema entrar em uso (resumo de 15/10/2026)
+O painel, o site e a API estão prontos no essencial e publicados. Para a escolinha usar de verdade, faltam:
+1. **Aplicativo** (outro repositório) adaptado à API: login com perfil, escolha do filho, agenda e avisos (item "App no outro repositório", abaixo). Sem ele, o atleta não vê o que o painel faz.
+2. **E-mail de verdade** no servidor (SMTP no Plesk e fila; item "SMTP de verdade e worker de fila", abaixo). Hoje os convites e o "Esqueci minha senha" só funcionam copiando o link.
+3. **Grade real de treinos** cadastrada pelas telas (seção 6, "Passagem para o Senac", item 1).
+4. **Começar do zero na entrega** (item seguinte).
+
+Melhorias que não impedem o uso: Fases E e F (seção 6, "Passagem para o Senac"), os demais débitos desta seção, notificação push e as perguntas da seção 8.
+
 - **Entrega: começar do zero** (dono do projeto, 14/10/2026: tudo o que existe é fictício). Fazer só na hora da entrega, com OK e backup:
   - **Banco:** montar o banco do zero pelas migrations (elas criam toda a estrutura e as 10 categorias oficiais; conferido na Fase 9) num banco vazio, ou apagar todas as tabelas e rodar o `migrate --force`. Nada do banco atual é aproveitado.
   - **Usuário do admin:** criar só o(s) do professor/associação, com senha definida por ele (sem os usuários de teste).
