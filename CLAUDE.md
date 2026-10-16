@@ -757,9 +757,13 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Testes:** `JogoEscalacaoPosicaoTest` (7), `JogoEscalacaoPosicaoMigrationTest` (1, sem transação). **655 testes passando.**
 - **Roteiro no navegador feito em casa (15/10, 10 passos, todos OK, pelo Claude no navegador)**, no jogo do evento 212 (Time Azul x Time Preto, rascunho): selects e "(sugerida)", salvar com Titulares/Reservas, "Sem goleiro titular", troca de time (mantém a posição, limpa o titular) e sem time (limpa os dois), jogadores do time no jogo, nada gravado sem salvar, nenhuma notificação. Desfeito no fim. A tabela só de leitura mostra "—" para quem não tem posição gravada (a sugestão é só na tela do jogo).
 - **Etapa D2 aprovada. Fase D concluída.**
-- **Próximo passo:**
-  - publicar no servidor (`000005`, `000006` e `000007`; servidor no batch 30);
-  - manual com a Fase H e a Fase D.
+- **Publicado no servidor (15/10/2026):**
+  - `main` avançada até `b940427` (fast-forward a partir de `169e13b`; o push foi feito pelo Git Bash do Windows, porque o `git` do WSL não tem o login do GitHub);
+  - backup pelo phpMyAdmin antes: `db_futebol_servidor_20261016.sql` (gerado às 22:04 de 15/10; batch 30, ainda com a `tbl_atleta_time` e a `posicao_atleta`), guardado pelo dono do projeto fora de `backup/`;
+  - posições no servidor antes do `migrate`: iguais às de casa (3 LATERAL, 6 ATACANTE, 4 vazias);
+  - `000005`, `000006` e `000007` rodaram sem erro no MariaDB 10.11, **todas no batch 31 do servidor** (em casa ficaram nos batches 35 e 36); `optimize:clear`;
+  - conferido pelo Claude no navegador: Jogadores (siglas e filtro com as 14), documentação da API, home e campeonatos; no admin, a coluna Posição, os 3 selects (João Silva com Lateral direito, convertido) e a tela do jogo com Posição "(sugerida)", Titular/Reserva, "A DEFINIR" e "Salvar escalação". Nada foi salvo.
+- **Próximo passo:** manual do painel com a Fase H e a Fase D.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
