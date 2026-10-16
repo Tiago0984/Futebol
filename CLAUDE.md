@@ -819,7 +819,12 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Código:** commits locais na `feature/agenda-eventos` (seeder, grade, afastamento e docs). **Falta o push** (com OK do dono do projeto; pelo Git Bash do Windows, porque o `git` do WSL não tem o login do GitHub). A `main` do GitHub continua em `b940427`.
 - **Banco:** levar `backup/db_futebol_para_casa_20261016.sql` (feito às 11:37 de 16/10; 39 tabelas, migrations nos batches 1 e 2, com a demonstração, o conteúdo do site, a agenda de novembro e o afastamento). **Em casa:** backup do banco de casa (ex.: `backup/db_futebol_casa_antes_restaurar_20261016.sql`), **recriar o `db_futebol` vazio** (`DROP DATABASE` + `CREATE DATABASE ... utf8mb4_general_ci`; o de casa tem tabelas que o dump não apaga, como os dados antigos) e restaurar o dump, `php artisan view:clear` e `config:clear`, e rodar a suíte (**678 testes**).
 - **Fotos da galeria:** 3 imagens enviadas pelo admin no Senac (`public/futebol/images/galeria/..._confraternização.jpg` e `..._logo2.png`) ficam fora do Git e só existem aqui; no banco de casa, aparecem quebradas.
-- **Servidor:** continua com os dados antigos e sem a tabela de afastamento. Para levar: push, `git pull`, backup pelo phpMyAdmin e `migrate --force` (ou trocar o banco pela demonstração, guardando o conteúdo do site antes), com OK.
+- **Publicado no servidor (16/10/2026):**
+  - push da `feature/agenda-eventos` e da `main` até `a1e39cb` (Git Bash do Windows);
+  - backup pelo phpMyAdmin antes, guardado pelo dono do projeto;
+  - `git pull --ff-only` (30 arquivos); `migrate --pretend --force` só com a `2026_10_16_000001` e `migrate --force` sem erro no MariaDB 10.11 (**batch 32 do servidor**); `optimize:clear`;
+  - conferido pelo Claude no navegador: home; botão de afastamento na lista de Atletas (ativos e inativos; o inativo não pode registrar); tela de afastamentos; grade sem a coluna "#" e Tipo só TREINO/LIVRE; documentação da API. Nada salvo.
+  - **O banco do servidor continua com os dados antigos** (sem a demonstração). Trocar pela demonstração é outra tarefa (guardar o conteúdo do site antes), com OK.
 - **Próximos passos possíveis:** publicar no servidor; Fase E (peneira) e F (site com mais eventos), que esperam o professor; débitos da seção 7.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
