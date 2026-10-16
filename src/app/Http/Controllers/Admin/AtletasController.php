@@ -38,6 +38,7 @@ class AtletasController extends Controller
             'categoriasAtivas',
             'responsaveis',
             'endereco',
+            'posicoes',
         ])->orderBy('nome_atleta')->get();
 
         $categorias = Categoria::ativas()->get();
@@ -59,6 +60,7 @@ class AtletasController extends Controller
     {
         $nascimento = Atleta::regrasNascimento();
         $periodo    = Atleta::regrasPeriodo();
+        $posicoes   = Atleta::regrasPosicoes();
 
         // Responsável já cadastrado com o CPF (só os dígitos): o atleta é vinculado a ele
         $responsavelExistente = Responsavel::porCpf($request->cpf_responsavel);
@@ -72,6 +74,7 @@ class AtletasController extends Controller
             'email_atleta'                => 'nullable|email|max:255|unique:tbl_atletas,email_atleta',
             'escola_atleta'               => 'required|string|max:255',
             ...$periodo['regras'],
+            ...$posicoes['regras'],
             'sexo_atleta'                 => 'required|in:M,F',
             'id_categoria'                => 'required|integer|exists:tbl_categoria,id_categoria',
             'motivo_categoria'            => 'nullable|string|max:500',
@@ -88,7 +91,7 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...self::MENSAGENS_EMAIL, 'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA]);
+        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL, 'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA]);
 
         $this->validarCategoria($request);
 
@@ -173,7 +176,6 @@ class AtletasController extends Controller
             'foto_atleta'            => $fotoPath,
             'status_atleta'          => 'ATIVO', // Padronizado para MAIÚSCULO
             'id_endereco'            => $endereco->id_endereco,
-            'posicao_atleta'         => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
             'sexo_atleta'            => $request->sexo_atleta,
             'peso_atleta'            => $request->peso_atleta ?? 0,
             'altura_atleta'          => $request->altura_atleta ?? 0,
@@ -183,6 +185,9 @@ class AtletasController extends Controller
             'descricao_atleta'       => $request->descricao_atleta ?? '',
             'sala_atleta'            => $request->sala_atleta,
         ]);
+
+        // Posições (até 3, a principal primeiro; Fase D)
+        $atleta->definirPosicoes($request->input('posicoes', []));
 
         // 4. Pivot atleta <-> responsável
         $atleta->responsaveis()->attach($responsavel->id_responsavel, [
@@ -201,6 +206,7 @@ class AtletasController extends Controller
         $atleta     = Atleta::with(['endereco', 'responsaveis', 'categoriasAtivas'])->findOrFail($id);
         $nascimento = Atleta::regrasNascimento();
         $periodo    = Atleta::regrasPeriodo();
+        $posicoes   = Atleta::regrasPosicoes();
 
         // Responsável que esta edição altera: o atual do atleta, ou (sem nenhum) o já cadastrado com o CPF
         $responsavelAtual     = $atleta->responsaveis->first();
@@ -215,6 +221,7 @@ class AtletasController extends Controller
             'email_atleta'                => ['nullable', 'email', 'max:255', Rule::unique('tbl_atletas', 'email_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
             'escola_atleta'               => 'required|string|max:255',
             ...$periodo['regras'],
+            ...$posicoes['regras'],
             'sexo_atleta'                 => 'required|in:M,F',
             'id_categoria'                => 'nullable|integer|exists:tbl_categoria,id_categoria',
             'motivo_categoria'            => 'nullable|string|max:500',
@@ -231,7 +238,7 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...self::MENSAGENS_EMAIL]);
+        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL]);
 
         // CPF do responsável trocado para o de OUTRO responsável já cadastrado: recusa (viraria um cadastro
         // repetido). Trocar o responsável do atleta por um já cadastrado ainda não é possível pela edição
@@ -281,12 +288,12 @@ class AtletasController extends Controller
                 'sexo_atleta'             => $request->sexo_atleta,
                 'peso_atleta'             => $request->peso_atleta,
                 'altura_atleta'           => $request->altura_atleta,
-                'posicao_atleta'          => $request->posicao_atleta ? strtoupper($request->posicao_atleta) : null,
                 'descricao_atleta'        => $request->descricao_atleta,
                 'sala_atleta'             => $request->sala_atleta,
                 'status_atleta'           => $this->statusAposEdicao($request, $atleta),
                 'foto_atleta'             => $fotoPath,
             ]);
+            $atleta->definirPosicoes($request->input('posicoes', []));
 
             // 2. Atualiza endereço
             if ($atleta->endereco) {

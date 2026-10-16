@@ -288,7 +288,7 @@ $(document).ready(function () {
                 var cardCategoria = String($card.data('categoria') || '');
 
                 var matchNome      = !nome      || cardNome.indexOf(nome) !== -1;
-                var matchPosicao   = !posicao   || cardPosicao === posicao;
+                var matchPosicao   = !posicao   || cardPosicao.indexOf(' ' + posicao + ' ') !== -1; // data-posicao: ' volante meia_central '
                 var matchCategoria = !categoria || cardCategoria === categoria;
 
                 if (matchNome && matchPosicao && matchCategoria) {

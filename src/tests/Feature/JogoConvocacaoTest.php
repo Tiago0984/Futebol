@@ -56,7 +56,6 @@ class JogoConvocacaoTest extends TestCase
         $bia  = $this->atleta('Bia');
         $caio = $this->atleta('Caio');
         $this->convocar($this->azul, [$ana => 10, $bia => 7]);
-        $this->elenco($this->azul, $caio); // só no elenco fixo: no campeonato não conta
 
         $this->postJogo()
             ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. 2 atleta(s) da convocação inscrito(s). Os atletas serão avisados ao publicar.')
@@ -212,7 +211,6 @@ class JogoConvocacaoTest extends TestCase
     public function test_amistoso_nao_usa_a_convocacao_nem_o_elenco(): void
     {
         $caio = $this->atleta('Caio');
-        $this->elenco($this->azul, $caio);
         $this->convocar($this->azul, [$this->atleta('Ana') => 10]); // convocação não vale no amistoso
 
         $this->postJogo(['id_campeonato' => 'AMISTOSO'])
@@ -242,11 +240,6 @@ class JogoConvocacaoTest extends TestCase
             'atletas' => array_keys($camisas),
             'camisas' => $camisas,
         ])->assertSessionHasNoErrors();
-    }
-
-    private function elenco(int $idTime, int $idAtleta): void
-    {
-        DB::table('tbl_atleta_time')->insert(['id_time' => $idTime, 'id_atleta' => $idAtleta, 'camisa_atleta_time' => 99, 'posicao_atleta_time' => '']);
     }
 
     private function inscreverEscalado(Jogo $jogo, int $idAtleta, int $idTime): void

@@ -56,6 +56,27 @@ class Atleta extends Authenticatable
         'AMBOS' => 'Manhã e tarde',
     ];
 
+    // Posições (Fase D; lista do dono do projeto, 15/10/2026): ENUM sem acento => sigla, nome e setor (para
+    // agrupar nos selects). O atleta tem até POSICOES_MAX, em ordem; a 1ª é a principal (tbl_atleta_posicao)
+    public const POSICOES = [
+        'GOLEIRO'          => ['sigla' => 'GOL', 'nome' => 'Goleiro',          'setor' => 'Goleiro'],
+        'ZAGUEIRO'         => ['sigla' => 'ZAG', 'nome' => 'Zagueiro',         'setor' => 'Defensores'],
+        'LATERAL_DIREITO'  => ['sigla' => 'LD',  'nome' => 'Lateral direito',  'setor' => 'Defensores'],
+        'LATERAL_ESQUERDO' => ['sigla' => 'LE',  'nome' => 'Lateral esquerdo', 'setor' => 'Defensores'],
+        'LIBERO'           => ['sigla' => 'LIB', 'nome' => 'Líbero',           'setor' => 'Defensores'],
+        'VOLANTE'          => ['sigla' => 'VOL', 'nome' => 'Volante',          'setor' => 'Meio-campistas'],
+        'MEIA_CENTRAL'     => ['sigla' => 'MC',  'nome' => 'Meia-central',     'setor' => 'Meio-campistas'],
+        'MEIA_OFENSIVO'    => ['sigla' => 'MO',  'nome' => 'Meia-ofensivo',    'setor' => 'Meio-campistas'],
+        'MEIA_DIREITA'     => ['sigla' => 'MD',  'nome' => 'Meia-direita',     'setor' => 'Meio-campistas'],
+        'MEIA_ESQUERDA'    => ['sigla' => 'ME',  'nome' => 'Meia-esquerda',    'setor' => 'Meio-campistas'],
+        'PONTA_DIREITA'    => ['sigla' => 'PD',  'nome' => 'Ponta direita',    'setor' => 'Atacantes'],
+        'PONTA_ESQUERDA'   => ['sigla' => 'PE',  'nome' => 'Ponta esquerda',   'setor' => 'Atacantes'],
+        'CENTROAVANTE'     => ['sigla' => 'CA',  'nome' => 'Centroavante',     'setor' => 'Atacantes'],
+        'SEGUNDO_ATACANTE' => ['sigla' => 'SA',  'nome' => 'Segundo atacante', 'setor' => 'Atacantes'],
+    ];
+
+    public const POSICOES_MAX = 3;
+
     /**
      * Atleta que deixa de ser ATIVO (inativado, rejeitado, de volta a pendente) perde os tokens do app,
      * em qualquer caminho que mude o status pelo model (botão de status, edição, Matrículas). A rota
@@ -83,7 +104,6 @@ class Atleta extends Authenticatable
         'rg_atleta',
         'cpf_atleta',
         'numero_matricula_atleta',
-        'posicao_atleta',
         'telefone_atleta',
         'peso_atleta',
         'altura_atleta',
@@ -128,7 +148,7 @@ class Atleta extends Authenticatable
     }
 
     // Sem times() (Fase G, Etapa 4): o atleta é da AACJ, na categoria dele; o time e a camisa são da
-    // convocação de cada campeonato (convocacoes()). tbl_atleta_time ficou no banco, sem uso
+    // convocação de cada campeonato (convocacoes()). tbl_atleta_time foi apagada (migration 2026_10_15_000005)
 
     /**
      * Próximo número de matrícula (A001, A002...). Leitura com lockForUpdate: dentro de uma transação,
@@ -376,6 +396,57 @@ class Atleta extends Authenticatable
         return $this->hasMany(EventoAtleta::class, 'id_atleta', 'id_atleta');
     }
 
+    // Posições do atleta (Fase D), a principal primeiro
+    public function posicoes()
+    {
+        return $this->hasMany(AtletaPosicao::class, 'id_atleta', 'id_atleta')->orderBy('ordem_atleta_posicao');
+    }
+
+    /**
+     * Grava as posições do atleta na ordem recebida (a 1ª é a principal): vazios e repetidas saem, no máximo
+     * POSICOES_MAX. Lista vazia = sem posição. As regras do formulário estão em regrasPosicoes().
+     */
+    public function definirPosicoes(array $codigos): void
+    {
+        $codigos = array_slice(array_values(array_unique(array_filter($codigos, 'filled'))), 0, self::POSICOES_MAX);
+
+        DB::transaction(function () use ($codigos) {
+            $this->posicoes()->delete();
+            foreach ($codigos as $i => $codigo) {
+                $this->posicoes()->create(['posicao_atleta_posicao' => $codigo, 'ordem_atleta_posicao' => $i + 1]);
+            }
+        });
+
+        $this->unsetRelation('posicoes');
+    }
+
+    // Posições opcionais (admin): até POSICOES_MAX da lista, sem repetir
+    public static function regrasPosicoes(): array
+    {
+        return [
+            'regras' => [
+                // Repetida conferida na lista inteira (o "distinct" dava a mesma mensagem uma vez por select)
+                'posicoes'   => ['nullable', 'array', 'max:' . self::POSICOES_MAX, function ($campo, $valor, $falhar) {
+                    $escolhidas = array_filter((array) $valor, 'filled');
+                    if (count($escolhidas) !== count(array_unique($escolhidas))) {
+                        $falhar('A mesma posição foi escolhida mais de uma vez.');
+                    }
+                }],
+                'posicoes.*' => ['nullable', Rule::in(array_keys(self::POSICOES))],
+            ],
+            'mensagens' => [
+                'posicoes.max'  => 'Escolha no máximo ' . self::POSICOES_MAX . ' posições.',
+                'posicoes.*.in' => 'Posição inválida: escolha uma da lista.',
+            ],
+        ];
+    }
+
+    // Siglas das posições ("VOL · MC"), para as listas; vazio sem posição
+    public function siglasDasPosicoes(): string
+    {
+        return $this->posicoes->pluck('sigla')->implode(' · ');
+    }
+
     // Convocações do atleta nos campeonatos (Fase G): um time por campeonato
     public function convocacoes()
     {
@@ -593,10 +664,10 @@ class Atleta extends Authenticatable
         DB::transaction(function () {
             $this->responsaveis()->detach();
             $this->categorias()->detach();
-            DB::table('tbl_atleta_time')->where('id_atleta', $this->id_atleta)->delete(); // elenco antigo, sem uso (FK)
             $this->autorizacoes()->delete();
             $this->inscricoesEmEventos()->delete(); // tbl_evento_atleta (FK sem cascade)
             $this->convocacoes()->delete();         // tbl_convocacao (FK sem cascade)
+            $this->posicoes()->delete();            // tbl_atleta_posicao (FK sem cascade)
             // tbl_notificacao_leitura e tbl_notificacao (FKs sem cascade): primeiro as leituras dos responsáveis
             NotificacaoLeitura::whereIn('id_notificacao', Notificacao::where('id_atleta', $this->id_atleta)->select('id_notificacao'))->delete();
             $this->notificacoes()->delete();

@@ -42,7 +42,6 @@ class JogoChegadaTest extends TestCase
 
         $this->ana = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         $this->colocarNaCategoria($this->ana, $this->idSub11M);
-        DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $this->ana, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '']);
     }
 
     public function test_chegada_e_uma_hora_antes_do_inicio(): void

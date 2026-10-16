@@ -46,7 +46,7 @@
                             <div class="form-text">Opcional. Sem e-mail, o atleta não consegue acessar o app.</div>
                         </div>
 
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Categoria</label>
                             <select name="id_categoria" id="edit_categoria" class="form-select">
                                 <option value="">— Selecionar —</option>
@@ -68,23 +68,14 @@
                             <input type="text" name="motivo_categoria" id="edit_motivo_categoria" maxlength="500"
                                 class="form-control mt-2 d-none" placeholder="Motivo (categoria acima da idade)">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Posição</label>
-                            <select name="posicao_atleta" id="edit_posicao" class="form-select">
-                                <option value="">— Selecionar —</option>
-                                @foreach(['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'ATACANTE'] as $pos)
-                                <option value="{{ $pos }}">{{ $pos }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Sexo <span class="text-danger">*</span></label>
                             <select name="sexo_atleta" id="edit_sexo" class="form-select" required>
                                 <option value="M">Masculino</option>
                                 <option value="F">Feminino</option>
                             </select>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <label class="form-label">Status <span class="text-danger">*</span></label>
                             <select name="status_atleta" id="edit_status" class="form-select" required>
                                 <option value="ATIVO">Ativo</option>
@@ -92,6 +83,9 @@
                             </select>
                             <div class="form-text d-none" id="edit_status_aviso"></div>
                         </div>
+
+                        {{-- Preenchidas pelo JS da lista (data-posicoes) --}}
+                        @include('admin.atletas._posicoes', ['prefixo' => 'edit', 'selecionadas' => []])
 
                         <div class="col-md-3">
                             <label class="form-label">Peso (kg)</label>

@@ -17,8 +17,8 @@
             <label class="filter-field-label" for="filter-posicao">Posição de Jogo</label>
             <select id="filter-posicao" class="form-control-scout select-scout">
                 <option value="">Todas as Posições</option>
-                @foreach($posicoes as $pos)
-                <option value="{{ $pos }}">{{ $pos }}</option>
+                @foreach($posicoes as $codigo => $pos)
+                <option value="{{ strtolower($codigo) }}">{{ $pos['nome'] }}</option>
                 @endforeach
             </select>
         </div>

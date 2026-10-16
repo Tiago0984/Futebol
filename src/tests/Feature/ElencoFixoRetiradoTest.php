@@ -11,7 +11,7 @@ use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
 
 /**
- * Fase G, Etapa 4: sem o elenco fixo (tbl_atleta_time, que fica no banco sem uso). O atleta é da AACJ, na
+ * Fase G, Etapa 4: sem o elenco fixo (tbl_atleta_time, apagada depois pela migration 2026_10_15_000005). O atleta é da AACJ, na
  * categoria dele; o time e a camisa são da convocação de cada campeonato. O cadastro do atleta não tem times
  * nem camisa; o site mostra os jogadores como da AACJ (com a categoria e as convocações), a home mostra as
  * categorias e a página do campeonato só os escudos; a API devolve "times" vazio.
@@ -41,7 +41,7 @@ class ElencoFixoRetiradoTest extends TestCase
         ]);
 
         $this->rui = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
-        DB::table('tbl_atletas')->where('id_atleta', $this->rui)->update(['nome_atleta' => 'Rui Base', 'posicao_atleta' => 'MEIA']);
+        DB::table('tbl_atletas')->where('id_atleta', $this->rui)->update(['nome_atleta' => 'Rui Base']);
         $this->colocarNaCategoria($this->rui, $this->idSub11M);
         $this->convocacaoDireta($this->taca, $this->azul, $this->rui, 9);
     }
@@ -49,30 +49,30 @@ class ElencoFixoRetiradoTest extends TestCase
     public function test_cadastro_do_atleta_sem_times_nem_camisa(): void
     {
         $this->criarResponsavel($this->rui);
-        DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $this->rui, 'camisa_atleta_time' => 15, 'posicao_atleta_time' => '']);
 
         $this->comoAdmin()->get(route('admin.atletas.index'))->assertOk()
             ->assertDontSee('name="times[]"', false)
             ->assertDontSee('name="camisa_atleta_time"', false)
-            ->assertDontSee('Camisa Nº 15')
+            ->assertDontSee('Camisa Nº')
             ->assertDontSee('data-times=', false);
 
-        // Times e camisa enviados (formulário antigo) não mexem em nada
+        // Times e camisa enviados (formulário antigo) são ignorados
         $this->comoAdmin()->put(route('admin.atletas.update', $this->rui), $this->dadosEdicao($this->rui, [
             'times' => [$this->azul], 'camisa_atleta_time' => '30',
         ]))->assertSessionHas('sucesso');
-        $this->assertSame(1, DB::table('tbl_atleta_time')->count());
-        $this->assertSame(15, (int) DB::table('tbl_atleta_time')->value('camisa_atleta_time'));
     }
 
-    public function test_exclusao_definitiva_apaga_o_elenco_antigo(): void
+    public function test_exclusao_do_atleta_e_do_time_sem_o_elenco(): void
     {
         DB::table('tbl_convocacao')->delete();
-        DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $this->rui, 'camisa_atleta_time' => 15, 'posicao_atleta_time' => '']);
 
         $this->assertTrue(Atleta::find($this->rui)->excluirComDependencias());
-        $this->assertDatabaseMissing('tbl_atleta_time', ['id_atleta' => $this->rui]);
         $this->assertDatabaseMissing('tbl_atletas', ['id_atleta' => $this->rui]);
+
+        DB::table('tbl_campeonato_time')->delete();
+        DB::table('tbl_time')->where('id_time', $this->azul)->update(['status_time' => 'INATIVO']);
+        $this->comoAdmin()->delete(route('admin.times.destroy', $this->azul))->assertSessionHas('sucesso');
+        $this->assertDatabaseMissing('tbl_time', ['id_time' => $this->azul]);
     }
 
     public function test_pagina_jogadores_mostra_o_atleta_da_aacj_na_categoria(): void
@@ -117,7 +117,6 @@ class ElencoFixoRetiradoTest extends TestCase
 
     public function test_api_devolve_times_vazio(): void
     {
-        DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $this->rui, 'camisa_atleta_time' => 15, 'posicao_atleta_time' => '']);
         Sanctum::actingAs(Atleta::find($this->rui));
 
         $this->getJson('/api/v1/atleta')->assertOk()->assertJsonPath('data.times', []);

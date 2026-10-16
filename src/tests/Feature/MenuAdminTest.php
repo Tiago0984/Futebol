@@ -476,15 +476,12 @@ class MenuAdminTest extends TestCase
 
             return $id;
         };
-        $rui = $atleta('Rui Azul');            // do elenco do Azul, escalado
-        $eva = $atleta('Eva Avulsa');          // fora do elenco, escalada no Azul
+        $rui = $atleta('Rui Azul');            // escalado no Azul
+        $eva = $atleta('Eva Avulsa');          // escalada no Azul
         $gil = $atleta('Gil Verde');           // escalado no Verde
         $ivo = $atleta('Ivo Sem Time');        // inscrito sem time
         $ana = $atleta('Ana Outro Jogo');      // escalada no Azul em outro jogo
         $zeca = $atleta('Zeca Inativo', 'INATIVO');
-        DB::table('tbl_atleta_time')->insert([
-            'id_time' => $this->azul, 'id_atleta' => $rui, 'camisa_atleta_time' => 9, 'posicao_atleta_time' => 'MEIA', 'status_atleta_time' => 'RESERVA',
-        ]);
         foreach ([[$rui, $this->azul], [$eva, $this->azul], [$gil, $verde], [$ivo, null], [$zeca, $this->azul]] as [$id, $time]) {
             $jogo->evento->inscrever($id, 'INDIVIDUAL', null, $time, notificar: false);
         }
@@ -877,18 +874,12 @@ class MenuAdminTest extends TestCase
             ->assertSee('tem 1 jogo(s) e não pode ser excluído');
     }
 
-    public function test_time_sem_jogo_sai_com_os_campeonatos_e_o_elenco_antigo(): void
+    public function test_time_sem_jogo_sai_com_os_campeonatos(): void
     {
-        // Elenco antigo (tbl_atleta_time, sem uso desde a Fase G, Etapa 4): não impede, sai junto (FK)
-        $atleta = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
-        DB::table('tbl_atleta_time')->insert(['id_time' => $this->azul, 'id_atleta' => $atleta, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '']);
-
         $this->participantes($this->emAndamento, [$this->azul]);
         $this->comoAdmin()->delete(route('admin.times.destroy', $this->azul))->assertSessionHas('sucesso');
         $this->assertDatabaseMissing('tbl_time', ['id_time' => $this->azul]);
         $this->assertDatabaseMissing('tbl_campeonato_time', ['id_time' => $this->azul]);
-        $this->assertDatabaseMissing('tbl_atleta_time', ['id_time' => $this->azul]);
-        $this->assertDatabaseHas('tbl_atletas', ['id_atleta' => $atleta]);
     }
 
     public function test_campeonato_com_jogo_nao_e_excluido(): void

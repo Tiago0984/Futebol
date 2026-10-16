@@ -368,22 +368,15 @@ class JogoEventoTest extends TestCase
         return Jogo::with('evento')->latest('id_jogo')->first();
     }
 
-    // Atleta ativo da Sub-11 M no elenco (tbl_atleta_time) dos times indicados; padrão: o Time Azul (mandante)
     /**
-     * Atleta Sub-11 no elenco dos times (amistoso) e, pelo primeiro deles, convocado na Copa Escola (jogo de
-     * campeonato, Fase G, Etapa 2; camisa sem repetir). [] = nem elenco nem convocação.
+     * Atleta ativo da Sub-11 M convocado na Copa Escola pelo primeiro dos times (jogo de campeonato, Fase G,
+     * Etapa 2; camisa sem repetir); padrão: o Time Azul (mandante). [] = sem convocação.
      */
     private function atletaSub11(?array $elencos = null): int
     {
         $id = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         $this->colocarNaCategoria($id, $this->idSub11M);
         $elencos ??= [$this->azul];
-
-        foreach ($elencos as $idTime) {
-            DB::table('tbl_atleta_time')->insert([
-                'id_time' => $idTime, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '',
-            ]);
-        }
 
         if ($elencos) {
             $this->convocacaoDireta($this->idCampeonato, $elencos[0], $id);

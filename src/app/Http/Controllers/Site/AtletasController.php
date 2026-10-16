@@ -18,6 +18,7 @@ class AtletasController extends Controller
     {
         $atletas = Atleta::with([
                 'categoriasAtivas',
+                'posicoes',
                 'cartoes',
                 'convocacoes' => fn ($q) => $q->with(['campeonato', 'categoria'])
                     ->join('tbl_campeonato as cp', 'cp.id_campeonato', '=', 'tbl_convocacao.id_campeonato')
@@ -32,7 +33,8 @@ class AtletasController extends Controller
         $idsComAtleta = $atletas->map(fn ($atleta) => $atleta->categoriasAtivas->first()?->id_categoria)->filter()->unique();
         $categorias   = Categoria::ativas()->whereIn('id_categoria', $idsComAtleta)->get();
 
-        $posicoes = ['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'ATACANTE'];
+        // Filtro "Posição": a lista fixa (Fase D); o atleta aparece por qualquer uma das posições dele
+        $posicoes = Atleta::POSICOES;
 
         return view('site.jogadores.index', compact('atletas', 'categorias', 'posicoes'));
     }

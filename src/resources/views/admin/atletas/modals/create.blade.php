@@ -56,7 +56,7 @@
                             <div class="form-text">Opcional. Sem e-mail, o atleta não consegue acessar o app.</div>
                         </div>
 
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Categoria <span class="text-danger">*</span></label>
                             <select name="id_categoria" id="cad_categoria" class="form-select @error('id_categoria') is-invalid @enderror" required>
                                 <option value="">— Selecionar —</option>
@@ -74,16 +74,7 @@
                                 class="form-control mt-2 {{ old('motivo_categoria') ? '' : 'd-none' }}"
                                 placeholder="Motivo (categoria acima da idade)" value="{{ old('motivo_categoria') }}">
                         </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Posição</label>
-                            <select name="posicao_atleta" class="form-select">
-                                <option value="">— Selecionar —</option>
-                                @foreach(['GOLEIRO', 'ZAGUEIRO', 'LATERAL', 'VOLANTE', 'MEIA', 'ATACANTE'] as $pos)
-                                <option value="{{ $pos }}" {{ old('posicao_atleta') == $pos ? 'selected' : '' }}>{{ $pos }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <label class="form-label">Sexo <span class="text-danger">*</span></label>
                             <select name="sexo_atleta" id="cad_sexo" class="form-select" required>
                                 <option value="">— Selecionar —</option>
@@ -91,6 +82,8 @@
                                 <option value="F" {{ old('sexo_atleta') == 'F' ? 'selected' : '' }}>Feminino</option>
                             </select>
                         </div>
+
+                        @include('admin.atletas._posicoes', ['prefixo' => 'cad', 'selecionadas' => old('posicoes', [])])
 
                         <div class="col-md-3">
                             <label class="form-label">Peso (kg)</label>

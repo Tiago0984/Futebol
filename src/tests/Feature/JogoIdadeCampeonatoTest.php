@@ -192,19 +192,13 @@ class JogoIdadeCampeonatoTest extends TestCase
 
     // ---------- apoio ----------
 
-    // Atleta ATIVO na categoria, com a idade no ano do jogo, e no elenco dos times informados
+    // Atleta ATIVO na categoria, com a idade no ano do jogo, convocado pelo primeiro dos times informados
     private function atleta(string $nome, int $idade, int $idCategoria, array $elencos = [], ?string $motivo = null): int
     {
         $ano = (int) substr($this->dia, 0, 4);
         $id  = $this->criarAtleta(($ano - $idade) . '-06-15', 'M', 'ATIVO');
         DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome]);
         $this->colocarNaCategoria($id, $idCategoria, $motivo);
-
-        foreach ($elencos as $idTime) {
-            DB::table('tbl_atleta_time')->insert([
-                'id_time' => $idTime, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '',
-            ]);
-        }
 
         // Jogo da Liga usa a convocação (Fase G, Etapa 2): convocado pelo primeiro time, gravado direto (o
         // jogo confere a idade pelo ano do jogo; a tela de Convocados, pelo de início do campeonato)

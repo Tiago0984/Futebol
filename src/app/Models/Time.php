@@ -29,7 +29,7 @@ class Time extends Model
     }
 
     // Sem atletas() nem tela de Elenco (Fase G, Etapa 4): quem joga pelo time é a convocação de cada
-    // campeonato (convocacoes()). tbl_atleta_time ficou no banco, sem uso
+    // campeonato (convocacoes()). tbl_atleta_time foi apagada (migration 2026_10_15_000005)
 
     /**
      * Jogos futuros (evento ativo e não concluído) deste time em que o atleta está inscrito, só os daquele
@@ -65,8 +65,7 @@ class Time extends Model
 
     /**
      * Por que não pode ser excluído (ou null). Jogo preserva o histórico (e a escalação dele aponta para o
-     * time); a convocação também. FKs em NO ACTION. O elenco antigo (tbl_atleta_time, sem uso desde a Fase
-     * G, Etapa 4) não impede: sai junto na exclusão (TimesController::destroy).
+     * time); a convocação também. FKs em NO ACTION.
      */
     public function motivoParaNaoExcluir(): ?string
     {

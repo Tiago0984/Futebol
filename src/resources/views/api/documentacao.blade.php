@@ -256,13 +256,14 @@ Content-Type: application/json
 
     <div class="card">
         <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Dados do atleta logado, com o endereço e a categoria atual. O atleta é da AACJ, na categoria dele: <code>times</code> vem sempre vazio (mantido para não quebrar o app); o time de cada jogo vem na agenda, em <code>time_do_atleta</code>.</p>
+        <p>Dados do atleta logado, com o endereço e a categoria atual. O atleta é da AACJ, na categoria dele: <code>times</code> vem sempre vazio (mantido para não quebrar o app); o time de cada jogo vem na agenda, em <code>time_do_atleta</code>. Posições: <code>posicoes</code> (até 3, a principal primeiro; <code>posicao</code> é o código fixo, <code>sigla</code> e <code>nome</code> são para mostrar) e <code>posicao_atleta</code> com o código da principal (<code>null</code> sem posição). Códigos: {{ implode(', ', array_keys(\App\Models\Atleta::POSICOES)) }}.</p>
 <pre>200 {
   "success": true,
   "data": {
     "id_atleta": 7, "nome_atleta": "Joana Exemplo", "data_nasc_atleta": "2013-06-15T00:00:00-03:00",
     "email_atleta": "joana@exemplo.com", "numero_matricula_atleta": "A100", "status_atleta": "ATIVO",
     "escola_atleta": "...", "serie_atleta": "...", "peso_atleta": "45.00", "altura_atleta": "1.55", ...,
+    "posicao_atleta": "VOLANTE",
     "endereco": { "cep_endereco": "01000-000", "rua_endereco": "...", ... },
     "categorias": [
       { "id_categoria": 5, "nome_categoria": "Sub-13",
@@ -271,6 +272,10 @@ Content-Type: application/json
                    "data_fim_categoria_atleta": null,
                    "data_atualizacao_categoria_atleta": "2026-02-01T09:30:00-03:00",
                    "status_categoria_atleta": "ATIVO", "observacao_categoria_atleta": null } }
+    ],
+    "posicoes": [
+      { "posicao": "VOLANTE", "sigla": "VOL", "nome": "Volante", "ordem_atleta_posicao": 1 },
+      { "posicao": "MEIA_CENTRAL", "sigla": "MC", "nome": "Meia-central", "ordem_atleta_posicao": 2 }
     ],
     "times": []
   }

@@ -125,8 +125,8 @@
                         <label class="filter-label">Posição</label>
                         <select id="filtroPosicao" class="form-select form-select-sm">
                             <option value="">Todas</option>
-                            @foreach(['Goleiro','Zagueiro','Lateral','Volante','Meia','Atacante'] as $pos)
-                            <option value="{{ strtoupper($pos) }}">{{ strtoupper($pos) }}</option>
+                            @foreach(\App\Models\Atleta::POSICOES as $codigo => $pos)
+                            <option value="{{ $codigo }}">{{ $pos['sigla'] }} · {{ $pos['nome'] }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -183,15 +183,15 @@
                             $nomeResponsavel = $responsavel->nome_responsavel ?? null;
                             // Normalizado para a opção do select ("PAI" -> "Pai", "MAE" -> "Mãe")
                             $grauParentesco = \App\Models\Responsavel::normalizarGrau($responsavel?->pivot->grau_parentesco_responsavel);
-                            // Posição do cadastro do atleta (sem elenco fixo, Fase G, Etapa 4: a camisa é da convocação)
-                            $posicao = $atleta->posicao_atleta ?: null;
+                            // Posições do cadastro do atleta, a principal primeiro (Fase D; a camisa é da convocação)
+                            $codigosPosicoes = $atleta->posicoes->pluck('posicao_atleta_posicao');
                         @endphp
                         <tr class="linha-atleta"
                             data-nome="{{ strtolower($atleta->nome_atleta) }}"
                             data-matricula="{{ strtolower($atleta->numero_matricula_atleta ?? '') }}"
                             data-responsavel="{{ strtolower($nomeResponsavel ?? '') }}"
                             data-categoria="{{ strtoupper($nomeCategoria ?? '') }}"
-                            data-posicao="{{ strtoupper($posicao ?? '') }}"
+                            data-posicao=" {{ $codigosPosicoes->implode(' ') }} "
                             data-status="{{ strtoupper($atleta->status_atleta ?? '') }}">
                             <td>
                                 <div style="position:relative;width:42px;height:42px;flex-shrink:0;">
@@ -246,8 +246,8 @@
                                 @endif
                             </td>
                             <td>
-                                @if($posicao)
-                                    <span class="badge-cat">{{ strtoupper($posicao) }}</span>
+                                @if($atleta->posicoes->isNotEmpty())
+                                    <span class="badge-cat" title="{{ $atleta->posicoes->pluck('nome')->implode(', ') }}">{{ $atleta->siglasDasPosicoes() }}</span>
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif
@@ -267,7 +267,7 @@
                                             data-bs-target="#modalEditarAtleta"
                                             data-id="{{ $atleta->id_atleta }}"
                                             data-nome="{{ $atleta->nome_atleta }}"
-                                            data-posicao-atleta="{{ $atleta->posicao_atleta }}"
+                                            data-posicoes="{{ $codigosPosicoes->implode(',') }}"
                                             data-data-nasc="{{ $atleta->data_nasc_atleta?->format('Y-m-d') }}"
                                             data-cpf="{{ $atleta->cpf_atleta }}"
                                             data-email="{{ $atleta->email_atleta }}"
@@ -429,7 +429,9 @@ document.addEventListener('DOMContentLoaded', function () {
             statusEl.value    = aprovado ? g('data-status').toUpperCase() : '';
             statusAviso.classList.toggle('d-none', aprovado);
             statusAviso.textContent = aprovado ? '' : `${g('data-status')}: o status muda pela tela de Matrículas.`;
-            document.getElementById('edit_posicao').value   = g('data-posicao-atleta');
+            // Posições (até 3, a principal primeiro)
+            const posicoes = g('data-posicoes') ? g('data-posicoes').split(',') : [];
+            document.querySelectorAll('[id^="edit_posicao_"]').forEach((sel, i) => sel.value = posicoes[i] || '');
 
             document.getElementById('edit_nome_responsavel').value     = g('data-nome-responsavel');
             selecionarSemDiferenciar(document.getElementById('edit_grau_responsavel'), g('data-grau-responsavel'));
@@ -543,7 +545,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
     sugestaoCadastro.atualizar(!@js(old('id_categoria')));
 
-    // Erro na edição: reabre o modal do mesmo atleta e devolve o que foi digitado na categoria
+    // Erro na edição: reabre o modal do mesmo atleta e devolve o que foi digitado na categoria (e nas posições)
     @if ($errors->edicao->any() && old('_editar_id'))
     const btnReabrir = document.querySelector(`.btn-editar[data-id="{{ (int) old('_editar_id') }}"]`);
     if (btnReabrir) {
@@ -555,6 +557,8 @@ document.addEventListener('DOMContentLoaded', function () {
         document.getElementById('edit_periodo').value          = @js(old('periodo_escolar_atleta', ''));
         mostrarTurnoDoTreino(document.getElementById('edit_periodo'));
         document.getElementById('edit_turno').value            = @js(old('turno_treino_atleta', ''));
+        const posicoesDigitadas = @js(array_values(old('posicoes', [])));
+        document.querySelectorAll('[id^="edit_posicao_"]').forEach((sel, i) => sel.value = posicoesDigitadas[i] || '');
         sugestaoEdicao.atualizar(false);
         bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarAtleta')).show();
     }
@@ -574,7 +578,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     && (!matricula   || row.dataset.matricula.includes(matricula))
                     && (!responsavel || row.dataset.responsavel.includes(responsavel))
                     && (!categoria   || row.dataset.categoria === categoria)
-                    && (!posicao     || row.dataset.posicao.includes(posicao))
+                    && (!posicao     || row.dataset.posicao.includes(' ' + posicao + ' '))
                     && (!status      || row.dataset.status === status);
             row.style.display = ok ? '' : 'none';
             if (ok) visiveis++;

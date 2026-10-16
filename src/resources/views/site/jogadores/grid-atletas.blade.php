@@ -1,39 +1,12 @@
 <main class="scout-deck-content">
-    @php
-    $posicaoInfo = [
-        // Nomes canônicos (salvos no banco em maiúsculo)
-        'goleiro'      => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
-        'zagueiro'     => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
-        'lateral'      => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
-        'volante'      => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
-        'meia'         => ['sigla' => 'MEI', 'nome' => 'MEIA'],
-        'atacante'     => ['sigla' => 'ATA', 'nome' => 'ATACANTE'],
-        'centroavante' => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
-        // Aliases internacionais
-        'gr'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
-        'gk'  => ['sigla' => 'GR',  'nome' => 'GOLEIRO'],
-        'cb'  => ['sigla' => 'ZAG', 'nome' => 'ZAGUEIRO'],
-        'lb'  => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
-        'rb'  => ['sigla' => 'LAT', 'nome' => 'LATERAL'],
-        'dm'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
-        'am'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
-        'mc'  => ['sigla' => 'MEI', 'nome' => 'MEIA'],
-        'at'  => ['sigla' => 'ATA', 'nome' => 'ATACANTE'],
-        'fw'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
-        'cf'  => ['sigla' => 'CF',  'nome' => 'CENTROAVANTE'],
-        'vo'  => ['sigla' => 'VO',  'nome' => 'VOLANTE'],
-    ];
-    @endphp
     <div class="player-grid-container">
         @forelse($atletas as $atleta)
         @php
-            // Posição do cadastro do atleta; o atleta é da AACJ, na categoria dele (sem time fixo, Fase G, Etapa 4)
-            $posicaoBruta = $atleta->posicao_atleta ?? '';
-            $posKey  = strtolower(trim($posicaoBruta));
-            $posData = $posicaoInfo[$posKey] ?? [
-                'sigla' => $posicaoBruta ? strtoupper(substr(trim($posicaoBruta), 0, 3)) : 'ATL',
-                'nome'  => $posicaoBruta ? ucfirst(strtolower(trim($posicaoBruta))) : 'Atleta',
-            ];
+            // Posições do cadastro (Fase D): a sigla da principal no cartão, os nomes de todas no modal e os códigos
+            // no data-posicao (o filtro acha por qualquer uma). O atleta é da AACJ, na categoria dele (sem time fixo)
+            $principal      = $atleta->posicoes->first();
+            $siglaPrincipal = $principal?->sigla ?? 'ATL';
+            $nomesPosicoes  = $atleta->posicoes->isNotEmpty() ? $atleta->posicoes->pluck('nome')->implode(' · ') : 'Atleta';
             $categoriaDoAtleta = $atleta->categoriasAtivas->first();
             // Campeonatos em que foi convocado (um por campeonato, mesmo se convocado em duas categorias)
             $campeonatosConvocado = $atleta->convocacoes->pluck('id_campeonato')->unique()->count();
@@ -44,7 +17,7 @@
             data-target="#modalAtleta{{ $atleta->id_atleta }}"
             data-atleta-id="{{ $atleta->id_atleta }}"
             data-nome="{{ strtolower($atleta->nome_atleta) }}"
-            data-posicao="{{ strtolower($posicaoBruta) }}"
+            data-posicao=" {{ strtolower($atleta->posicoes->pluck('posicao')->implode(' ')) }} "
             data-categoria="{{ $categoriaDoAtleta?->id_categoria }}"
             role="button" tabindex="0">
             <div class="sticker-inner-frame">
@@ -54,7 +27,7 @@
                     @else
                     <img src="{{ asset('futebol/images/our-teams/default-player.jpg') }}" alt="Foto padrão">
                     @endif
-                    <figcaption class="sticker-pos-tag">{{ $posData['sigla'] }}</figcaption>
+                    <figcaption class="sticker-pos-tag">{{ $siglaPrincipal }}</figcaption>
                 </figure>
                 <footer class="sticker-meta-data">
                     <h3 class="sticker-player-name">{{ $atleta->nome_atleta }}</h3>
@@ -84,7 +57,7 @@
 
                             <div class="col-xs-12 col-md-8">
                                 <header class="profile-header">
-                                    <span class="profile-badge-pos">{{ $posData['nome'] }}</span>
+                                    <span class="profile-badge-pos">{{ $nomesPosicoes }}</span>
                                     <h2 class="profile-main-title">{{ $atleta->nome_atleta }}</h2>
                                 </header>
 

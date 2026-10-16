@@ -45,7 +45,7 @@ class JogoAmistosoTest extends TestCase
 
     public function test_amistoso_nasce_rascunho_sem_inscritos_e_a_tela_mostra_escolher_atletas(): void
     {
-        $this->atleta('Ana', elenco: $this->azul); // no elenco: não entra (o elenco não vale mais nos jogos)
+        $this->atleta('Ana'); // atleta ativo da categoria: não entra sozinho (escolhido no jogo)
 
         $this->postJogo()
             ->assertSessionHas('sucesso', 'Jogo registrado como rascunho. Escolha os atletas do AACJ Sub-13 em "Escolher atletas", nesta tela.'
@@ -202,15 +202,11 @@ class JogoAmistosoTest extends TestCase
 
     // ---------- ajudantes ----------
 
-    private function atleta(string $nome, int $idade = 13, ?int $idCategoria = null, ?int $elenco = null, string $status = 'ATIVO'): int
+    private function atleta(string $nome, int $idade = 13, ?int $idCategoria = null, string $status = 'ATIVO'): int
     {
         $id = $this->criarAtleta($this->nascidoComIdade($idade), 'M', $status);
         DB::table('tbl_atletas')->where('id_atleta', $id)->update(['nome_atleta' => $nome]);
         $this->colocarNaCategoria($id, $idCategoria ?? $this->idSub13M);
-
-        if ($elenco) {
-            DB::table('tbl_atleta_time')->insert(['id_time' => $elenco, 'id_atleta' => $id, 'camisa_atleta_time' => 10, 'posicao_atleta_time' => '']);
-        }
 
         return $id;
     }
