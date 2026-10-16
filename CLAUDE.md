@@ -763,7 +763,16 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - posições no servidor antes do `migrate`: iguais às de casa (3 LATERAL, 6 ATACANTE, 4 vazias);
   - `000005`, `000006` e `000007` rodaram sem erro no MariaDB 10.11, **todas no batch 31 do servidor** (em casa ficaram nos batches 35 e 36); `optimize:clear`;
   - conferido pelo Claude no navegador: Jogadores (siglas e filtro com as 14), documentação da API, home e campeonatos; no admin, a coluna Posição, os 3 selects (João Silva com Lateral direito, convertido) e a tela do jogo com Posição "(sugerida)", Titular/Reserva, "A DEFINIR" e "Salvar escalação". Nada foi salvo.
-- **Próximo passo:** manual do painel com a Fase H e a Fase D.
+- **Manual do painel** atualizado com a Fase H e a Fase D (`8bcd88e`; R5 reescrito com o exemplo "Copa da Cidade", escalação, grupos, posições).
+
+#### Passagem para o Senac (fim do dia em casa, 15/10/2026)
+- **Código:** `feature/agenda-eventos` no GitHub até `8bcd88e` (+ o commit deste registro). A `main` do GitHub está em `b940427` (sem os commits só de documentação; avançar com `git push origin feature/agenda-eventos:main` quando quiser).
+- **Banco:** o do Senac está no **batch 29** (dump de 14/10) e sem o conteúdo do servidor. Levar `backup/db_futebol_para_senac_20261015.sql` (feito em casa às 22:27 de 15/10, depois do batch 36; 38 tabelas, já sem a `tbl_atleta_time` e com a `tbl_atleta_posicao`). **No Senac:** backup do banco de lá (ex.: `backup/db_futebol_senac_antes_restaurar_20261016.sql`), restaurar este dump (não rodar o `migrate` de 30 a 36 sobre o banco antigo, para os dados ficarem iguais aos de casa), `php artisan view:clear` e `config:clear`, e rodar a suíte (recria o `db_futebol_test`; **655 testes**). Docker no Senac: parar o projeto `tipi05-davilla` antes (mesma porta 3308).
+- **Em aberto para escolher (dono do projeto, 15/10: "deixa em aberto"):**
+  1. **Grade real de treinos** (sem código, pelas telas): ter/qui 09:00–11:00 e 14:00–17:00 sem categoria, a linha de jogos de sábado 13:00–17:00 e inativar as 18 linhas de teste (roteiro para o Claude no navegador).
+  2. **Fase E — avaliação técnica (peneira):** escolher atletas por faixa de idade quando um clube pede; falta o professor dizer se aparece no site.
+  3. **Fase F — site público com mais eventos** (amistosos? treinos?): falta a confirmação do professor.
+  4. **Débitos técnicos** da seção 7, por exemplo **CPF único** e **assinaturas** em local protegido.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
