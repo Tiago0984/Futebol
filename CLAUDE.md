@@ -246,6 +246,11 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Token de 30 dias** (`Atleta::VALIDADE_TOKEN_DIAS`, vale para os dois perfis). Limites: login 5/min por IP e 5/min por e-mail **e perfil**; esqueci-senha 5/min por IP e 3 a cada 10 min por e-mail e perfil.
 - **Responsável único pelo CPF e e-mail único:** cadastro do site e do admin reaproveitam o responsável do mesmo CPF (só dígitos, `Responsavel::porCpf`); o site recusa CPF já cadastrado com outro e-mail; e-mail do responsável único entre responsáveis (normalizado). Os repetidos antigos foram fundidos pela migration 000005 (seção 6).
 - **Selo "Sem acesso ao app"** na lista de atletas quando nem o atleta nem algum responsável tem e-mail.
+- **Padrão da API** (17/10/2026, `7095a74`, depois da comparação com a API Futebol, `api-futebol.com.br`):
+  - **todo erro** em `api/*` sai como `{ "success": false, "message" }` em português (401, 404 de rota, 405, 429, 500 genérico sem detalhes; o 422 com `errors`), num tratamento único no `bootstrap/app.php`. Mensagens de validação em `lang/pt_BR/validation.php`, ligadas só na API pelo middleware `IdiomaDaApi` (admin e site continuam no idioma do `config/app.php`);
+  - **limite geral** `throttle:api` em `/api/v1`: 120 por minuto por conta logada e 60 por minuto por IP sem login (`AppServiceProvider`), além dos limites do login e do esqueci-senha;
+  - **imagens com o endereço completo** ao lado do nome do arquivo: `logo_url` (time), `logo_url`/`banner_url` (campeonato), `foto_url` (banner, notícia e atleta), pelo trait `App\Models\Concerns\UrlDeImagem` (`$appends` nos models; `Atleta::urlFoto()` no atleta);
+  - a tabela da classificação traz `id_time` e `logo_url`; o `pivot` saiu dos `times` do detalhe do campeonato.
 
 ### Grupos, fase e classificação (Fase H, Etapa H4; dono do projeto, 14 e 15/10/2026)
 - **Como funciona no campeonato real** (áudios do dono da AACJ, 15/10/2026): **chave de três times** (todos se enfrentam); conforme a quantidade de times, passa **só o primeiro ou o primeiro e o segundo**; às vezes há **repescagem**; depois, **mata-mata** (quartas, semifinal, final: "perdeu, está fora").
@@ -833,8 +838,12 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Commits** (push feito pelo dono do projeto):
   - `2994c69` test: o `TreinoForaDoTurnoTest` marcava o treino para "daqui a uma semana" e falhava em todo sábado e domingo (fim de semana não tem turno desde 16/10); agora usa a próxima terça;
   - `2a1124e` feat: vídeos do site com player e miniaturas, e home só com os vídeos da seção (seção 4, "Site público"). `SiteVideosTest` (6). Sem migration.
-- **684 testes passando.**
 - **Publicado no servidor (17/10/2026):** `main` avançada até `b2615c2`; lá, `git pull --ff-only origin main` e `optimize:clear` (sem migration nem Composer). Conferido pelo dono do projeto.
+- **Depois (17/10, ainda não publicados):**
+  - `691185a` feat: menu do admin sem subitens em Notícias, Banners, Galeria, Vídeos, Grade de treino e Atletas (seção 4, "Menu do dashboard");
+  - `a9e1ff8` fix: o `DemonstracaoSeeder` punha a "próxima rodada" hoje quando era sábado (jogo já passado, publicado sem avisar; o `DemonstracaoSeederTest` falhava); agora as jogadas são os dois sábados antes de hoje e a próxima, o primeiro depois;
+  - `7095a74` feat: padrão da API (seção 4, "App"): erros em português no mesmo formato, limite geral e endereço das imagens. `ApiPadraoTest` (6). A documentação (`/api/documentacao`) ganhou o card "Imagens" e a tabela de erros nova. Sem migration.
+- **690 testes passando.**
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
@@ -887,9 +896,7 @@ Melhorias que não impedem o uso: Fases E e F (seção 6, "Passagem para o Senac
   - **Notificações push:** não existem; o aviso só aparece quando o app consulta `/v1/notificacoes`.
   - **Limpeza de tokens vencidos (agendador):** tokens do Sanctum vencidos (`sanctum:prune-expired`) e links de senha vencidos (`auth:clear-resets`) ficam no banco; falta o agendador (`schedule:run` no cron do Plesk).
   - **Endereços que sobraram da fusão de responsáveis:** os endereços dos responsáveis 6 e 13 (ids 7 e 11 em `tbl_endereco`) ficaram sem dono (ligado ao débito "Responsável e endereço").
-  - **App no outro repositório:** adaptar ao contrato de `/api/documentacao`: login com escolha de perfil, escolha do filho (responsável), agenda (hoje com dados fixos) e avisos com a contagem de não lidos, "Esqueci minha senha".
-  - **Mensagens de validação da API em inglês** (422 padrão do Laravel; o app deve mostrar a própria mensagem). Tradução (`lang/pt_BR`) fica para quando o app for usado.
----
+  - **App no outro repositório:** adaptar ao contrato de `/api/documentacao`: login com escolha de perfil, escolha do filho (responsável), agenda (hoje com dados fixos) e avisos com a contagem de não lidos, "Esqueci minha senha".---
 
 ## 8. Perguntas em aberto para o professor
 
