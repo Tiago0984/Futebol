@@ -395,15 +395,21 @@ class DemonstracaoSeeder extends Seeder
         return $jogo;
     }
 
-    // Os dois últimos sábados (rodadas jogadas) e o próximo (hoje, se for sábado, conta como próximo)
+    // Os dois últimos sábados antes de hoje (rodadas jogadas) e o primeiro depois de hoje (próxima rodada).
+    // Hoje nunca entra: num sábado, o jogo de hoje poderia já ter acontecido (publicado sem avisar) ou não
     private function rodadas(): array
     {
-        $proximo = now()->startOfDay();
+        $ultimo = now()->startOfDay()->subDay();
+        while (! $ultimo->isSaturday()) {
+            $ultimo->subDay();
+        }
+
+        $proximo = now()->startOfDay()->addDay();
         while (! $proximo->isSaturday()) {
             $proximo->addDay();
         }
 
-        return [$proximo->copy()->subWeeks(2), $proximo->copy()->subWeek(), $proximo];
+        return [$ultimo->copy()->subWeek(), $ultimo, $proximo];
     }
 
     private function categoria(string $nome, string $sexo = 'M'): Categoria
