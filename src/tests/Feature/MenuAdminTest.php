@@ -56,7 +56,7 @@ class MenuAdminTest extends TestCase
     {
         $links = $this->linksDaBarra($this->comoAdmin()->get(route('admin.dashboard'))->assertOk());
 
-        // Ramos, Campeonatos (todos), Jogos, Times do campeonato, Grade, Gerar agenda, Categorias e Times
+        // Ramos, Campeonatos (todos), Jogos, Times do campeonato, Grade, Categorias e Times
         $this->assertContains(route('admin.calendario.index', ['ramo' => 'individuais']), $links);
         // Treinos e Outros saíram do menu (os ramos continuam no filtro do Calendário e na linha de caminho)
         $this->assertNotContains(route('admin.calendario.index', ['ramo' => 'treinos']), $links);
@@ -66,7 +66,11 @@ class MenuAdminTest extends TestCase
         // "Jogos" de Campeonatos: os jogos de todos os campeonatos; a lista filtrada e a tela de Campeonatos filtrada saíram do menu
         $this->assertNotContains($this->jogosDoEmAndamento(), $links);
         $this->assertNotContains(route('admin.campeonatos.index', ['campeonato' => $this->emAndamento]), $links);
-        $this->assertContains(route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]), $links);
+        // Sem subitens: Grade (o "Gerar agenda do mês" é o botão da grade), Atletas e o conteúdo do site abrem a lista
+        $this->assertNotContains(route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]), $links);
+        foreach (['noticias', 'banners', 'galeria', 'videos', 'atletas'] as $lista) {
+            $this->assertContains(route("admin.{$lista}.index"), $links);
+        }
         $this->assertContains(route('admin.times.index'), $links);
 
         foreach ($links as $link) {
@@ -89,10 +93,13 @@ class MenuAdminTest extends TestCase
         $this->assertStringNotContainsString('Taça Encerrada', $barra);
         $this->assertStringNotContainsString('Taça Inativa', $barra); // inativo não está "em andamento"
         foreach (['Calendário', 'Campeonatos', 'Amistosos', 'Individuais', 'Jogos',
-                  'Grade de treino', 'Gerar agenda do mês', 'CADASTROS', 'Categorias', 'Times'] as $item) {
+                  'Grade de treino', 'CADASTROS', 'Categorias', 'Times'] as $item) {
             $this->assertStringContainsString($item, $barra);
         }
         $this->assertStringNotContainsString('Ver todos', $barra);
+        foreach (['Gerar agenda do mês', 'Listar notícias', 'Listar banners', 'Listar fotos', 'Listar vídeos', 'Listar atletas'] as $subitem) {
+            $this->assertStringNotContainsString($subitem, $barra);
+        }
     }
 
     public function test_contador_de_matriculas_pendentes(): void
@@ -118,7 +125,7 @@ class MenuAdminTest extends TestCase
             route('admin.calendario.index', ['ramo' => 'individuais'])        => route('admin.calendario.index', ['ramo' => 'individuais']),
             route('admin.calendario.index', ['ramo' => 'campeonatos'])        => route('admin.campeonatos.index'), // Campeonatos (o ramo)
             route('admin.calendario.index', ['tab' => 'grade'])               => route('admin.calendario.index', ['tab' => 'grade']),
-            route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]) => route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]),
+            route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]) => route('admin.calendario.index', ['tab' => 'grade']), // Grade de treino
             route('admin.jogos.index')                                        => route('admin.jogos.index'),
             // Jogos filtrados só por um campeonato (em andamento ou não): Campeonatos e o "Jogos" de dentro dele
             route('admin.jogos.index', ['campeonato' => $this->emAndamento])  => [route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()],

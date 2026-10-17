@@ -27,72 +27,33 @@
 
         <li class="nav-header">CONTEÚDO DO SITE</li>
 
-        {{-- Notícias --}}
-        <li class="nav-item {{ request()->routeIs('admin.noticias.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.noticias.*') ? 'active' : '' }}">
+        {{-- Notícias, Banners, Galeria e Vídeos: sem subitens, cada um abre a lista dele --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.noticias.index') }}" class="nav-link {{ request()->routeIs('admin.noticias.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-newspaper"></i>
-            <p>Notícias <i class="nav-arrow bi bi-chevron-right"></i></p>
+            <p>Notícias</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.noticias.index') }}"
-                class="nav-link {{ request()->routeIs('admin.noticias.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Listar notícias</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
-        {{-- Banners --}}
-        <li class="nav-item {{ request()->routeIs('admin.banners.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}">
+        <li class="nav-item">
+          <a href="{{ route('admin.banners.index') }}" class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-image"></i>
-            <p>Banners <i class="nav-arrow bi bi-chevron-right"></i></p>
+            <p>Banners</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.banners.index') }}"
-                class="nav-link {{ request()->routeIs('admin.banners.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Listar banners</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
-        {{-- Galeria --}}
-        <li class="nav-item {{ request()->routeIs('admin.galeria.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.galeria.*') ? 'active' : '' }}">
+        <li class="nav-item">
+          <a href="{{ route('admin.galeria.index') }}" class="nav-link {{ request()->routeIs('admin.galeria.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-images"></i>
-            <p>Galeria <i class="nav-arrow bi bi-chevron-right"></i></p>
+            <p>Galeria</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.galeria.index') }}"
-                class="nav-link {{ request()->routeIs('admin.galeria.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Listar fotos</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
-        {{-- Vídeos --}}
-        <li class="nav-item {{ request()->routeIs('admin.videos.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.videos.*') ? 'active' : '' }}">
+        <li class="nav-item">
+          <a href="{{ route('admin.videos.index') }}" class="nav-link {{ request()->routeIs('admin.videos.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-camera-video"></i>
-            <p>Vídeos <i class="nav-arrow bi bi-chevron-right"></i></p>
+            <p>Vídeos</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.videos.index') }}"
-                class="nav-link {{ request()->routeIs('admin.videos.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Listar vídeos</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
         <li class="nav-header">ESPORTE</li>
@@ -174,22 +135,12 @@
           </a>
         </li>
 
-        {{-- Grade de treino: o texto abre a grade; a seta mostra "Gerar agenda do mês" --}}
-        <li class="nav-item {{ $ativo('grade') ? 'menu-open' : '' }}">
-          <a href="{{ route('admin.calendario.index', ['tab' => 'grade']) }}"
-            class="nav-link {{ $ativo('grade') && ! request()->routeIs('admin.calendario.grade.previa') ? 'active' : '' }}">
+        {{-- Grade de treino, sem subitens: o "Gerar agenda do mês" fica no botão da própria grade (ativo também nele) --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.calendario.index', ['tab' => 'grade']) }}" class="nav-link {{ $ativo('grade') ? 'active' : '' }}">
             <i class="nav-icon bi bi-clock"></i>
-            <p>Grade de treino <i class="nav-arrow bi bi-chevron-right"></i></p>
+            <p>Grade de treino</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]) }}"
-                class="nav-link {{ request()->routeIs('admin.calendario.grade.previa') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-calendar-plus"></i>
-                <p>Gerar agenda do mês</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
         {{-- Notificações enviadas aos atletas (todas, inclusive as de agenda do mês) --}}
@@ -219,21 +170,12 @@
 
         <li class="nav-header">PESSOAS</li>
 
-        {{-- Atletas --}}
-        <li class="nav-item {{ request()->routeIs('admin.atletas.*') ? 'menu-open' : '' }}">
-          <a href="javascript:void(0)" class="nav-link {{ request()->routeIs('admin.atletas.*') ? 'active' : '' }}">
+        {{-- Atletas, sem subitens --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.atletas.index') }}" class="nav-link {{ request()->routeIs('admin.atletas.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-person-badge"></i>
-            <p>Atletas <i class="nav-arrow bi bi-chevron-right"></i></p>
+            <p>Atletas</p>
           </a>
-          <ul class="nav nav-treeview">
-            <li class="nav-item">
-              <a href="{{ route('admin.atletas.index') }}"
-                class="nav-link {{ request()->routeIs('admin.atletas.*') ? 'active' : '' }}">
-                <i class="nav-icon bi bi-circle"></i>
-                <p>Listar atletas</p>
-              </a>
-            </li>
-          </ul>
         </li>
 
         {{-- Matrículas (contador de pendentes vem do MenuAdminComposer) --}}
