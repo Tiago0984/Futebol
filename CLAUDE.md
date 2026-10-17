@@ -830,11 +830,11 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 
 #### Em casa (16 e 17/10/2026)
 - **Banco de casa igual ao do Senac:** backup do banco antigo em `backup/db_futebol_casa_antes_restaurar_20261016.sql` (38 tabelas, batch 36); `db_futebol` recriado vazio e restaurado o dump do Senac (chegou como `backup/db_futebol_para_casa.sql`, de 16/10 às 11:37): 39 tabelas, migrations nos batches 1 e 2, 27 atletas. As 3 fotos da galeria enviadas no Senac aparecem quebradas aqui.
-- **Commits** (push da `feature/agenda-eventos` feito pelo dono do projeto; a `main` continua em `a1e39cb`):
+- **Commits** (push feito pelo dono do projeto):
   - `2994c69` test: o `TreinoForaDoTurnoTest` marcava o treino para "daqui a uma semana" e falhava em todo sábado e domingo (fim de semana não tem turno desde 16/10); agora usa a próxima terça;
   - `2a1124e` feat: vídeos do site com player e miniaturas, e home só com os vídeos da seção (seção 4, "Site público"). `SiteVideosTest` (6). Sem migration.
 - **684 testes passando.**
-- **Para publicar no servidor:** `git push origin feature/agenda-eventos:main` (com OK); lá, `git pull --ff-only origin main` e `optimize:clear` (sem migration).
+- **Publicado no servidor (17/10/2026):** `main` avançada até `b2615c2`; lá, `git pull --ff-only origin main` e `optimize:clear` (sem migration nem Composer). Conferido pelo dono do projeto.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
