@@ -104,10 +104,10 @@ class AppAgendaEAvisosTest extends TestCase
         $this->assertSame([
             'id_jogo' => $idJogo, 'amistoso' => false,
             'campeonato' => ['id_campeonato' => DB::table('tbl_campeonato')->value('id_campeonato'), 'nome_campeonato' => 'Copa AACJ'],
-            'time_casa' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png'],
-            'time_visitante' => ['id_time' => $visitante, 'nome_time' => 'Rival FC', 'logo_time' => 'time.png'],
+            'time_casa' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png')],
+            'time_visitante' => ['id_time' => $visitante, 'nome_time' => 'Rival FC', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png')],
             'placar' => null,
-            'time_do_atleta' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png'],
+            'time_do_atleta' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png')],
             'horario_chegada' => '09:00', 'chegada' => '2026-10-15T09:00:00-03:00', // 1 hora antes das 10:00
         ], $agenda['proximos'][0]['jogo']);
 
@@ -214,7 +214,7 @@ class AppAgendaEAvisosTest extends TestCase
         $contagem = array_column($filhos, 'notificacoes_nao_lidas', 'id_atleta');
         ksort($contagem);
         $this->assertSame([$filho1 => 2, $filho2 => 0], $contagem); // o inativo não aparece
-        $this->assertSame(['id_atleta', 'nome_atleta', 'numero_matricula_atleta', 'foto_atleta', 'grau_parentesco_responsavel', 'notificacoes_nao_lidas'],
+        $this->assertSame(['id_atleta', 'nome_atleta', 'numero_matricula_atleta', 'foto_atleta', 'foto_url', 'grau_parentesco_responsavel', 'notificacoes_nao_lidas'],
             array_keys($filhos[0]));
     }
 

@@ -39,7 +39,7 @@ class ApiAcessoTest extends TestCase
                 'perfil' => 'atleta',
                 'atleta' => [
                     'id_atleta' => $id, 'nome_atleta' => 'Atleta de Teste', 'email_atleta' => 'ana@exemplo.com',
-                    'numero_matricula_atleta' => null, 'foto_atleta' => null,
+                    'numero_matricula_atleta' => null, 'foto_atleta' => null, 'foto_url' => null,
                 ],
             ],
         ]);

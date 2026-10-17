@@ -108,6 +108,7 @@ class ResponsavelController extends Controller
                 'nome_atleta'                 => $atleta->nome_atleta,
                 'numero_matricula_atleta'     => $atleta->numero_matricula_atleta,
                 'foto_atleta'                 => $atleta->foto_atleta,
+                'foto_url'                    => $atleta->urlFoto(),
                 'grau_parentesco_responsavel' => $atleta->pivot->grau_parentesco_responsavel,
             ])->all();
     }

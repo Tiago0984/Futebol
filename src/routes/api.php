@@ -22,7 +22,7 @@ $rotasDaAgendaEDosAvisos = function (string $prefixo) {
     Route::patch("{$prefixo}/notificacoes/{idNotificacao}/lida", [AppDoAtletaController::class, 'marcarLida'])->whereNumber('idNotificacao');
 };
 
-Route::prefix('v1')->group(function () use ($rotasDaAgendaEDosAvisos) {
+Route::prefix('v1')->middleware('throttle:api')->group(function () use ($rotasDaAgendaEDosAvisos) {
 
     // Status da API
     Route::get('/status', [StatusController::class, 'index']);

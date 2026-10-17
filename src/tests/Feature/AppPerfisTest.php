@@ -55,7 +55,7 @@ class AppPerfisTest extends TestCase
                 'responsavel' => ['id_responsavel' => $idResponsavel, 'nome_responsavel' => 'Responsável de Teste', 'email_responsavel' => 'mae@exemplo.com'],
                 'atletas'     => [[
                     'id_atleta' => $idFilho, 'nome_atleta' => 'Atleta de Teste', 'numero_matricula_atleta' => null,
-                    'foto_atleta' => null, 'grau_parentesco_responsavel' => 'Mãe',
+                    'foto_atleta' => null, 'foto_url' => null, 'grau_parentesco_responsavel' => 'Mãe',
                 ]], // o inativo não aparece
             ],
         ]);

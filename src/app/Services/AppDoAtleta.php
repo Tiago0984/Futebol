@@ -41,6 +41,7 @@ class AppDoAtleta
     // "times" fica sempre vazio (Fase G, Etapa 4: sem elenco fixo; o time de cada jogo vem na agenda, em
     // time_do_atleta), para não quebrar o app. Posições (Fase D): "posicoes" (até 3, a principal primeiro, com
     // código, sigla e nome) e "posicao_atleta" com o código da principal (antes, texto livre), também para o app
+    // "foto_url": endereço completo da foto (null sem foto; o banco guarda o caminho do arquivo)
     public function dados(): Atleta
     {
         $atleta = $this->atleta->load([
@@ -50,7 +51,8 @@ class AppDoAtleta
             'posicoes',
         ])->setRelation('times', collect());
 
-        return $atleta->setAttribute('posicao_atleta', $atleta->posicoes->first()?->posicao);
+        return $atleta->setAttribute('posicao_atleta', $atleta->posicoes->first()?->posicao)
+            ->setAttribute('foto_url', $atleta->urlFoto());
     }
 
     // ── Agenda ──────────────────────────────────────────────────────────────
@@ -134,7 +136,7 @@ class AppDoAtleta
     {
         $chegada = Jogo::chegadaPara($evento->horario_inicio_evento_calendario);
 
-        $time = fn ($t) => $t ? ['id_time' => $t->id_time, 'nome_time' => $t->nome_time, 'logo_time' => $t->logo_time] : null;
+        $time = fn ($t) => $t ? ['id_time' => $t->id_time, 'nome_time' => $t->nome_time, 'logo_time' => $t->logo_time, 'logo_url' => $t->logo_url] : null;
         $doAtleta = match ($idTimeDoAtleta) {
             null                     => null,
             $jogo->id_time_casa      => $jogo->timeCasa,

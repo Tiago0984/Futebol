@@ -2,10 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\UrlDeImagem;
 use Illuminate\Database\Eloquent\Model;
 
 class Time extends Model
 {
+    use UrlDeImagem;
+
+    // Endereço completo do escudo no JSON da API (o banco guarda só o nome do arquivo)
+    protected $appends = ['logo_url'];
+
     protected $table = 'tbl_time';
     protected $primaryKey = 'id_time';
     public $timestamps = false;
@@ -86,5 +92,10 @@ class Time extends Model
     public function convocacoes()
     {
         return $this->hasMany(Convocacao::class, 'id_time', 'id_time');
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return static::urlDaImagem($this->attributes['logo_time'] ?? null, 'team');
     }
 }

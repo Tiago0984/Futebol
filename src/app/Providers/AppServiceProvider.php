@@ -61,6 +61,16 @@ class AppServiceProvider extends ServiceProvider
             ]);
         });
 
+        // Limite geral da API (todas as rotas /api/v1): 120 por minuto por conta logada (atleta ou responsável;
+        // o IP da escola pode ser o mesmo para vários) e 60 por minuto por IP sem login. Passou: 429 em JSON
+        RateLimiter::for('api', function (Request $request) {
+            $conta = $request->user('sanctum');
+
+            return $conta
+                ? Limit::perMinute(120)->by(class_basename($conta) . ':' . $conta->getAuthIdentifier())
+                : Limit::perMinute(60)->by('api-ip:' . $request->ip());
+        });
+
         // "Esqueci minha senha": 5 pedidos por minuto por IP e 3 a cada 10 minutos por e-mail e perfil
         // (além do broker, que não gera outro link para a mesma conta em menos de 60 segundos)
         RateLimiter::for('esqueci-senha-api', function (Request $request) {

@@ -82,10 +82,17 @@
     {{-- ================================================================== --}}
     <h2 id="padrao">Padrão das respostas</h2>
     <div class="card">
-        <p>Todas as respostas são JSON. As respostas da escolinha têm o campo <code>success</code>: em caso de sucesso os dados vêm em <code>data</code>; em caso de erro vem uma <code>message</code> em português.</p>
+        <p>Todas as respostas são JSON e têm o campo <code>success</code>: em caso de sucesso os dados vêm em <code>data</code>; em caso de erro (qualquer um: 401, 403, 404, 405, 422, 429, 500) vem uma <code>message</code> em português, que o app pode mostrar como está.</p>
 <pre>{ "success": true,  "data": { ... } }
 { "success": false, "message": "Atleta não encontrado." }</pre>
-        <p>Envie sempre o cabeçalho <code>Accept: application/json</code>. Os erros gerados pelo próprio Laravel (401 sem token, 422 de validação, 429) vêm só com <code>message</code> (e <code>errors</code> no 422), sem <code>success</code>; veja <a href="#erros">Erros e limites</a>.</p>
+        <p>No <code>422</code> (dados inválidos) vem também <code>errors</code>, com as mensagens de cada campo; <code>message</code> é a primeira delas. Envie o cabeçalho <code>Accept: application/json</code>. Veja <a href="#erros">Erros e limites</a>.</p>
+    </div>
+
+    <div class="card">
+        <h3>Imagens</h3>
+        <p>Os campos de imagem trazem o nome do arquivo (<code>logo_time</code>, <code>logo_evento</code>, <code>banner_evento</code>, <code>foto_banner</code>, <code>foto_noticia</code>, <code>foto_atleta</code>) e, ao lado, o <strong>endereço completo</strong> para mostrar no app: <code>logo_url</code>, <code>banner_url</code> ou <code>foto_url</code>. Sem imagem: <code>null</code>.</p>
+<pre>"logo_time": "aacj.png",
+"logo_url": "https://coderatech.tipi5.smpsistema.com.br/AACJ/futebol/images/team/aacj.png"</pre>
     </div>
 
     <div class="card">
@@ -157,7 +164,7 @@
             <tr><td><code>jogos[].fase_jogo</code> / <code>jogos[].fase</code></td><td>A fase do jogo: <code>GRUPOS</code>, <code>REPESCAGEM</code>, <code>DEZESSEIS_AVOS</code>, <code>OITAVAS</code>, <code>QUARTAS</code>, <code>SEMIFINAL</code>, <code>TERCEIRO</code>, <code>FINAL</code>; <code>fase</code> é o rótulo ("Fase de grupos", "Disputa de 3º lugar")</td></tr>
             <tr><td><code>jogos[].id_categoria</code></td><td>A categoria do jogo (uma das <code>categorias</code>)</td></tr>
             <tr><td><code>classificacao</code></td><td>Só em <code>/campeonatos/{id}</code>: uma entrada por categoria, com <code>id_categoria</code>, <code>categoria</code> (rótulo), <code>classificados</code> (quantos passam de cada grupo, ou <code>null</code>) e <code>grupos</code></td></tr>
-            <tr><td><code>classificacao[].grupos[]</code></td><td><code>grupo</code> (nome, ou <code>null</code> na categoria sem grupos; "Sem grupo" para quem não está em nenhum), <code>classificados</code> e <code>tabela</code>: <code>posicao</code>, <code>time</code>, <code>logo</code>, <code>pontos</code>, <code>jogos</code>, <code>vitorias</code>, <code>empates</code>, <code>derrotas</code>, <code>gols_marcados</code>, <code>gols_sofridos</code>, <code>saldo</code> e <code>classificado</code> (true para os primeiros que passam)</td></tr>
+            <tr><td><code>classificacao[].grupos[]</code></td><td><code>grupo</code> (nome, ou <code>null</code> na categoria sem grupos; "Sem grupo" para quem não está em nenhum), <code>classificados</code> e <code>tabela</code>: <code>posicao</code>, <code>id_time</code>, <code>time</code>, <code>logo</code>, <code>logo_url</code>, <code>pontos</code>, <code>jogos</code>, <code>vitorias</code>, <code>empates</code>, <code>derrotas</code>, <code>gols_marcados</code>, <code>gols_sofridos</code>, <code>saldo</code> e <code>classificado</code> (true para os primeiros que passam)</td></tr>
         </table>
         </div>
 <pre>"classificacao": [
@@ -167,7 +174,8 @@
       {
         "grupo": "Grupo 01", "classificados": 2,
         "tabela": [
-          { "posicao": 1, "time": "AACJ Sub-15", "logo": "aacj.png", "pontos": 6, "jogos": 2, "vitorias": 2,
+          { "posicao": 1, "id_time": 3, "time": "AACJ Sub-15", "logo": "aacj.png",
+            "logo_url": "https://.../futebol/images/team/aacj.png", "pontos": 6, "jogos": 2, "vitorias": 2,
             "empates": 0, "derrotas": 0, "gols_marcados": 5, "gols_sofridos": 1, "saldo": 4, "classificado": true }
         ]
       }
@@ -195,7 +203,7 @@ Content-Type: application/json
     "perfil": "atleta",
     "atleta": {
       "id_atleta": 7, "nome_atleta": "Joana Exemplo", "email_atleta": "joana@exemplo.com",
-      "numero_matricula_atleta": "A100", "foto_atleta": null
+      "numero_matricula_atleta": "A100", "foto_atleta": null, "foto_url": null
     }
   }
 }</pre>
@@ -209,7 +217,7 @@ Content-Type: application/json
     "responsavel": { "id_responsavel": 5, "nome_responsavel": "Carla Exemplo", "email_responsavel": "carla@exemplo.com" },
     "atletas": [
       { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100",
-        "foto_atleta": null, "grau_parentesco_responsavel": "Mãe" }
+        "foto_atleta": null, "foto_url": null, "grau_parentesco_responsavel": "Mãe" }
     ]
   }
 }</pre>
@@ -217,8 +225,8 @@ Content-Type: application/json
 <pre>401 { "success": false, "message": "E-mail ou senha inválidos." }
 403 { "success": false, "message": "Cadastro não está ativo. Procure a secretaria da escolinha." }            (atleta)
 403 { "success": false, "message": "Nenhum atleta ativo vinculado a este responsável. Procure a secretaria da escolinha." }
-422 { "message": "...", "errors": { "perfil": ["..."] } }                                                      (campos inválidos)
-429 { "message": "Too Many Attempts." }                                                                       (limite de tentativas)</pre>
+422 { "success": false, "message": "O valor de perfil não é válido.", "errors": { "perfil": [...] } }   (campos inválidos)
+429 { "success": false, "message": "Muitas tentativas. Aguarde um pouco e tente de novo." }                     (limite de tentativas)</pre>
         <p class="nota">Limite: 5 tentativas por minuto por IP e 5 por minuto por e-mail e perfil (errar a senha do responsável não bloqueia o atleta do mesmo e-mail).</p>
     </div>
 
@@ -263,7 +271,7 @@ Content-Type: application/json
     "id_atleta": 7, "nome_atleta": "Joana Exemplo", "data_nasc_atleta": "2013-06-15T00:00:00-03:00",
     "email_atleta": "joana@exemplo.com", "numero_matricula_atleta": "A100", "status_atleta": "ATIVO",
     "escola_atleta": "...", "serie_atleta": "...", "peso_atleta": "45.00", "altura_atleta": "1.55", ...,
-    "posicao_atleta": "VOLANTE",
+    "posicao_atleta": "VOLANTE", "foto_url": "https://.../futebol/images/our-teams/joana.jpg",
     "endereco": { "cep_endereco": "01000-000", "rua_endereco": "...", ... },
     "categorias": [
       { "id_categoria": 5, "nome_categoria": "Sub-13",
@@ -317,7 +325,7 @@ Content-Type: application/json
     "endereco": { "cep_endereco": "...", "rua_endereco": "...", "numero_endereco": "...", "bairro_endereco": "...",
                   "complemento_endereco": null, "cidade_endereco": "...", "estado_endereco": "SP" },
     "atletas": [ { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100",
-                   "foto_atleta": null, "grau_parentesco_responsavel": "Mãe" } ]
+                   "foto_atleta": null, "foto_url": null, "grau_parentesco_responsavel": "Mãe" } ]
   }
 }</pre>
     </div>
@@ -328,7 +336,8 @@ Content-Type: application/json
 <pre>PATCH /api/v1/responsavel
 { "whatsapp_responsavel": "(11) 90000-0001" }
 
-422 { "message": "...", "errors": { "email_responsavel": ["Este e-mail já está cadastrado para outro responsável."] } }</pre>
+422 { "success": false, "message": "Este e-mail já está cadastrado para outro responsável.",
+      "errors": { "email_responsavel": ["Este e-mail já está cadastrado para outro responsável."] } }</pre>
     </div>
 
     <div class="card">
@@ -342,7 +351,7 @@ Content-Type: application/json
 <pre>200 {
   "success": true,
   "data": [
-    { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100", "foto_atleta": null,
+    { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100", "foto_atleta": null, "foto_url": null,
       "grau_parentesco_responsavel": "Mãe", "notificacoes_nao_lidas": 3 }
   ]
 }</pre>
@@ -420,10 +429,10 @@ Content-Type: application/json
           "id_jogo": 12,
           "amistoso": false,
           "campeonato": { "id_campeonato": 2, "nome_campeonato": "Copa AACJ" },
-          "time_casa": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png" },
-          "time_visitante": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png" },
+          "time_casa": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png" },
+          "time_visitante": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png" },
           "placar": null,
-          "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png" },
+          "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png" },
           "horario_chegada": "09:00",
           "chegada": "2026-10-15T09:00:00-03:00"
         }
@@ -502,19 +511,22 @@ Content-Type: application/json
         <tr><th>Código</th><th>Quando</th><th>Corpo</th></tr>
         <tr><td>200</td><td>Sucesso</td><td><code>{ "success": true, ... }</code></td></tr>
         <tr><td>401</td><td>Login com e-mail ou senha errados</td><td><code>{ "success": false, "message": "E-mail ou senha inválidos." }</code></td></tr>
-        <tr><td>401</td><td>Rota protegida sem token, com token inválido, vencido (30 dias) ou já encerrado</td><td><code>{ "message": "Unauthenticated." }</code></td></tr>
+        <tr><td>401</td><td>Rota protegida sem token, com token inválido, vencido (30 dias) ou já encerrado</td><td><code>{ "success": false, "message": "Faça login para continuar: o token não foi enviado, é inválido ou venceu." }</code></td></tr>
         <tr><td>403</td><td>Atleta sem cadastro ativo; responsável sem filho ativo (os tokens dele são apagados)</td><td><code>{ "success": false, "message": "..." }</code></td></tr>
         <tr><td>403</td><td>Token de um perfil na área do outro</td><td><code>{ "success": false, "message": "Esta área é do perfil responsável. Entre no app como responsável." }</code></td></tr>
         <tr><td>404</td><td>Filho que não é do responsável, inativado ou inexistente; aviso que não é daquele atleta</td><td><code>{ "success": false, "message": "Atleta não encontrado." }</code> / <code>"Notificação não encontrada."</code></td></tr>
-        <tr><td>405</td><td>Método não aceito na rota (ex.: <code>PATCH</code> nos dados do filho)</td><td>Padrão do Laravel</td></tr>
-        <tr><td>422</td><td>Dados inválidos. As mensagens de validação padrão vêm em inglês; mostre uma mensagem própria no app</td><td><code>{ "message": "...", "errors": { "campo": ["..."] } }</code></td></tr>
-        <tr><td>429</td><td>Limite de tentativas (login e esqueci-senha); aguarde e tente de novo</td><td><code>{ "message": "Too Many Attempts." }</code></td></tr>
+        <tr><td>404</td><td>Endereço que não existe na API</td><td><code>{ "success": false, "message": "Endereço não encontrado." }</code></td></tr>
+        <tr><td>405</td><td>Método não aceito na rota (ex.: <code>PATCH</code> nos dados do filho)</td><td><code>{ "success": false, "message": "Método não aceito nesta rota." }</code></td></tr>
+        <tr><td>422</td><td>Dados inválidos, com a mensagem de cada campo em português</td><td><code>{ "success": false, "message": "O campo e-mail é obrigatório.", "errors": { "email": ["O campo e-mail é obrigatório."] } }</code></td></tr>
+        <tr><td>429</td><td>Limite de requisições (abaixo); aguarde os segundos do cabeçalho <code>Retry-After</code> e tente de novo</td><td><code>{ "success": false, "message": "Muitas tentativas. Aguarde um pouco e tente de novo." }</code></td></tr>
+        <tr><td>500</td><td>Erro interno no servidor; tente de novo em instantes</td><td><code>{ "success": false, "message": "Erro interno. Tente de novo em instantes." }</code></td></tr>
     </table>
     </div>
 
     <div class="card" style="margin-top:12px">
-        <h3>Limites de tentativa</h3>
+        <h3>Limites de requisições</h3>
         <ul>
+            <li><strong>Todas as rotas:</strong> 120 por minuto por conta logada (atleta ou responsável) e 60 por minuto por IP sem login. As respostas trazem os cabeçalhos <code>X-RateLimit-Limit</code> e <code>X-RateLimit-Remaining</code>. Guarde no app o que muda pouco (campeonatos, notícias, banners) em vez de buscar a cada tela.</li>
             <li><code>POST /auth/login</code>: 5 por minuto por IP e 5 por minuto por e-mail e perfil.</li>
             <li><code>POST /auth/esqueci-senha</code>: 5 por minuto por IP e 3 a cada 10 minutos por e-mail e perfil.</li>
         </ul>

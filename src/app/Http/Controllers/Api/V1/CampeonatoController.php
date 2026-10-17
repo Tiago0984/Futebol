@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
+use App\Models\Time;
 
 class CampeonatoController extends Controller
 {
@@ -58,6 +59,9 @@ class CampeonatoController extends Controller
             ], 404);
         }
 
+        // A tabela de ligação (pivot) é interna: fica fora do JSON
+        $campeonato->times->each->makeHidden('pivot');
+
         $classificacao = collect($campeonato->classificacoes())->map(fn ($c) => [
             'id_categoria'  => (int) $c['categoria']->id_categoria,
             'categoria'     => $c['categoria']->rotulo,
@@ -66,7 +70,8 @@ class CampeonatoController extends Controller
                 'grupo'         => $tabela['grupo'],
                 'classificados' => $tabela['classificados'],
                 'tabela'        => array_map(fn ($linha, $pos) => [
-                    'posicao' => $pos + 1, 'time' => $linha['nome'], 'logo' => $linha['logo'],
+                    'posicao' => $pos + 1, 'id_time' => $linha['id_time'], 'time' => $linha['nome'], 'logo' => $linha['logo'],
+                    'logo_url' => Time::urlDaImagem($linha['logo'], 'team'),
                     'pontos' => $linha['pontos'], 'jogos' => $linha['pj'], 'vitorias' => $linha['v'],
                     'empates' => $linha['e'], 'derrotas' => $linha['d'], 'gols_marcados' => $linha['gm'],
                     'gols_sofridos' => $linha['gc'], 'saldo' => $linha['gm'] - $linha['gc'],

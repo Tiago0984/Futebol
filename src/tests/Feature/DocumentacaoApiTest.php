@@ -44,7 +44,8 @@ class DocumentacaoApiTest extends TestCase
             ->assertSee('"situacao": "CONFIRMADO"', false)
             ->assertSee('"time_do_atleta"', false)
             ->assertSee('Atleta não encontrado.')
-            ->assertSee('Too Many Attempts.')
-            ->assertSee('Unauthenticated.');
+            ->assertSee('Muitas tentativas. Aguarde um pouco e tente de novo.')
+            ->assertSee('Faça login para continuar')
+            ->assertSee('logo_url');
     }
 }

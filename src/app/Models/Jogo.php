@@ -235,18 +235,19 @@ class Jogo extends Model
      * Classificação: conta só jogos da fase de grupos (Fase H, Etapa H4) com placar e evento publicado e ATIVO
      * (não rascunho, cancelado nem oculto; jogo futuro sem placar não vira empate 0×0). Vitória 3, empate 1.
      * Ordem: pontos, vitórias, saldo, gols marcados, nome. Devolve linhas com nome, logo, pj, v, e, d, gm, gc e
-     * pontos. Com $times (os de um grupo: id_time, nome_time, logo_time), a tabela tem todos eles, os sem jogo
+     * pontos (e o id_time). Com $times (os de um grupo: id_time, nome_time, logo_time), a tabela tem todos eles, os sem jogo
      * com zeros, e só eles; sem $times, quem jogou.
      */
     public static function classificacao(Collection $jogos, ?Collection $times = null): array
     {
-        $linhaVazia = fn ($nome, $logo) => [
+        $linhaVazia = fn ($id, $nome, $logo) => [
+            'id_time' => $id === null ? null : (int) $id,
             'nome' => $nome ?? '-', 'logo' => $logo,
             'pj' => 0, 'v' => 0, 'e' => 0, 'd' => 0, 'gm' => 0, 'gc' => 0, 'pontos' => 0,
         ];
         $tabela = [];
         foreach ($times ?? [] as $time) {
-            $tabela[(int) $time->id_time] = $linhaVazia($time->nome_time, $time->logo_time);
+            $tabela[(int) $time->id_time] = $linhaVazia($time->id_time, $time->nome_time, $time->logo_time);
         }
 
         foreach ($jogos as $jogo) {
@@ -265,7 +266,7 @@ class Jogo extends Model
                 if ($times !== null && ! isset($tabela[(int) $id])) {
                     continue;
                 }
-                $tabela[$id] ??= $linhaVazia($time->nome_time ?? null, $time->logo_time ?? null);
+                $tabela[$id] ??= $linhaVazia($id, $time->nome_time ?? null, $time->logo_time ?? null);
 
                 $linha = &$tabela[$id];
                 $linha['pj']++;

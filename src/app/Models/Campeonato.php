@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\SerializaDatasComFuso;
+use App\Models\Concerns\UrlDeImagem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use App\Models\Time;
@@ -11,6 +12,10 @@ use App\Models\Jogo;
 class Campeonato extends Model
 {
     use SerializaDatasComFuso; // datas no JSON da API: 2025-01-01T00:00:00-03:00
+    use UrlDeImagem;
+
+    // Endereço completo da logo e do banner no JSON da API (o banco guarda só o nome do arquivo)
+    protected $appends = ['logo_url', 'banner_url'];
 
     protected $table = 'tbl_campeonato';
     protected $primaryKey = 'id_campeonato';
@@ -520,5 +525,15 @@ class Campeonato extends Model
             ->map(fn ($linha) => "{$linha->nome_time} no " . Categoria::find($linha->id_categoria)->rotulo . " ({$linha->total} convocado(s))")
             ->values()
             ->all();
+    }
+
+    public function getLogoUrlAttribute(): ?string
+    {
+        return static::urlDaImagem($this->attributes['logo_evento'] ?? null, 'campeonatos');
+    }
+
+    public function getBannerUrlAttribute(): ?string
+    {
+        return static::urlDaImagem($this->attributes['banner_evento'] ?? null, 'campeonatos');
     }
 }

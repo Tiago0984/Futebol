@@ -134,8 +134,14 @@ class SiteCampeonatoCategoriasTest extends TestCase
         $this->assertSame(
             [['AACJ Sub-15', 3, 1, true], ['Santos', 1, 1, false], ['Botafogo', 1, 2, false]], // Santos à frente pelo saldo (0 contra -2)
             array_map(fn ($l) => [$l['time'], $l['pontos'], $l['jogos'], $l['classificado']], $sub15['grupos'][0]['tabela']));
-        $this->assertSame(['posicao', 'time', 'logo', 'pontos', 'jogos', 'vitorias', 'empates', 'derrotas',
+        $this->assertSame(['posicao', 'id_time', 'time', 'logo', 'logo_url', 'pontos', 'jogos', 'vitorias', 'empates', 'derrotas',
             'gols_marcados', 'gols_sofridos', 'saldo', 'classificado'], array_keys($sub15['grupos'][0]['tabela'][0]));
+        $this->assertSame($this->aacj15, $sub15['grupos'][0]['tabela'][0]['id_time']);
+
+        // Times sem a tabela de ligação (pivot) e com o endereço completo do escudo
+        $this->assertArrayNotHasKey('pivot', $dados['times'][0]);
+        $this->assertArrayHasKey('logo_url', $dados['times'][0]);
+        $this->assertArrayHasKey('logo_url', $dados['jogos'][0]['time_casa']);
         $this->assertNull($sub17['grupos'][0]['grupo']);
         $this->assertSame([['AACJ Sub-17', 3], ['Botafogo', 0]], array_map(fn ($l) => [$l['time'], $l['pontos']], $sub17['grupos'][0]['tabela']));
     }

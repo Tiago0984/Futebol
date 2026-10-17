@@ -114,6 +114,7 @@ class AuthController extends Controller
             'email_atleta'            => $atleta->email_atleta,
             'numero_matricula_atleta' => $atleta->numero_matricula_atleta,
             'foto_atleta'             => $atleta->foto_atleta,
+            'foto_url'                => $atleta->urlFoto(),
         ];
     }
 }
