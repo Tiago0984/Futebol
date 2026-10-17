@@ -209,6 +209,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - **página Jogadores:** os atletas ativos como "AACJ · Sub-15 Masculino", com filtro por categoria; o modal tem as convocações (campeonato, categoria e camisa, sem o nome do time) e os cartões, e não tem gols, partidas nem defesas;
   - **home:** "Nossas categorias", que abre a página Jogadores filtrada;
   - **página do campeonato:** os times só com o escudo, sem lista de jogadores.
+- **Vídeos (home e lista de campeonatos; 17/10/2026, `2a1124e`):** cada página mostra os vídeos ativos da **sua seção e os marcados "Ambas"** (`Video::doSite('home'|'campeonatos')`; antes, a home pegava o último ativo de qualquer seção), até 7 (`Video::MAX_NO_SITE`): o **ao vivo primeiro**, depois do mais novo ao mais antigo. **Player com um `iframe` só** e, com mais de um vídeo, uma **faixa de miniaturas** (rola para o lado no celular) que troca o vídeo, o título e a descrição sem recarregar (não é carrossel: um iframe por slide pesaria e o vídeo continuaria tocando). Partial `partials/videos`, JS no `script.js`, estilos no `estilo.css`, seção 71.
 - Pode mudar se o professor pedir.
 
 ### Notificações (Fase 8)
@@ -826,6 +827,14 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - conferido pelo Claude no navegador: home; botão de afastamento na lista de Atletas (ativos e inativos; o inativo não pode registrar); tela de afastamentos; grade sem a coluna "#" e Tipo só TREINO/LIVRE; documentação da API. Nada salvo.
   - **O banco do servidor continua com os dados antigos** (sem a demonstração). Trocar pela demonstração é outra tarefa (guardar o conteúdo do site antes), com OK.
 - **Próximos passos possíveis:** publicar no servidor; Fase E (peneira) e F (site com mais eventos), que esperam o professor; débitos da seção 7.
+
+#### Em casa (16 e 17/10/2026)
+- **Banco de casa igual ao do Senac:** backup do banco antigo em `backup/db_futebol_casa_antes_restaurar_20261016.sql` (38 tabelas, batch 36); `db_futebol` recriado vazio e restaurado o dump do Senac (chegou como `backup/db_futebol_para_casa.sql`, de 16/10 às 11:37): 39 tabelas, migrations nos batches 1 e 2, 27 atletas. As 3 fotos da galeria enviadas no Senac aparecem quebradas aqui.
+- **Commits** (push da `feature/agenda-eventos` feito pelo dono do projeto; a `main` continua em `a1e39cb`):
+  - `2994c69` test: o `TreinoForaDoTurnoTest` marcava o treino para "daqui a uma semana" e falhava em todo sábado e domingo (fim de semana não tem turno desde 16/10); agora usa a próxima terça;
+  - `2a1124e` feat: vídeos do site com player e miniaturas, e home só com os vídeos da seção (seção 4, "Site público"). `SiteVideosTest` (6). Sem migration.
+- **684 testes passando.**
+- **Para publicar no servidor:** `git push origin feature/agenda-eventos:main` (com OK); lá, `git pull --ff-only origin main` e `optimize:clear` (sem migration).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
