@@ -1,30 +1,20 @@
 <!-- VIDEO SECTION -->
-<div class="home-video-section">
+<div class="home-video-section js-videos">
     <div class="home-video-overlay">
         <div class="container">
 
             <div class="row">
                 <div class="col-sm-12 col-md-8 col-md-offset-2">
 
-                    @if($videoDestaque ?? null)
+                    @if($videos->isNotEmpty())
                     <div class="home-video-header">
                         <span class="home-video-sup">AACJ FUTEBOL</span>
-                        <h2 class="home-video-title">
-                            {{ $videoDestaque->ao_vivo_video ? 'ASSISTA AO VIVO' : strtoupper($videoDestaque->titulo_video) }}
-                        </h2>
-                        @if(!$videoDestaque->ao_vivo_video && $videoDestaque->descricao_video)
-                            <p class="home-video-desc">{{ $videoDestaque->descricao_video }}</p>
-                        @endif
+                        <h2 class="home-video-title js-video-titulo">{{ $videos->first()->titulo_no_site }}</h2>
+                        <p class="home-video-desc js-video-desc" @if($videos->first()->descricao_no_site === '') hidden @endif>{{ $videos->first()->descricao_no_site }}</p>
                         <div class="home-video-divider"></div>
                     </div>
 
-                    <div class="home-video-frame-wrap">
-                        <div class="embed-responsive embed-responsive-16by9">
-                            <iframe class="embed-responsive-item"
-                                    src="{{ $videoDestaque->embed_url }}"
-                                    allowfullscreen></iframe>
-                        </div>
-                    </div>
+                    @include('partials.videos')
                     @else
                     <div class="home-video-header">
                         <span class="home-video-sup">AACJ FUTEBOL</span>

@@ -21,6 +21,34 @@ class Video extends Model
         'secao_video',
     ];
 
+    /** Quantos vídeos a seção do site mostra: o do player e os outros nas miniaturas. */
+    public const MAX_NO_SITE = 7;
+
+    /**
+     * Vídeos ativos de uma seção do site ('home' ou 'campeonatos'), mais os marcados para as duas ('ambas'):
+     * o ao vivo primeiro (vai para o player), depois do mais novo para o mais antigo.
+     */
+    public function scopeDoSite($query, string $secao)
+    {
+        return $query->where('status_video', 'ATIVO')
+            ->whereIn('secao_video', [$secao, 'ambas'])
+            ->orderByDesc('ao_vivo_video')
+            ->orderByDesc('id_video')
+            ->limit(self::MAX_NO_SITE);
+    }
+
+    /** Título mostrado no site: "ASSISTA AO VIVO" no ao vivo; senão, o título em maiúsculas. */
+    public function getTituloNoSiteAttribute(): string
+    {
+        return $this->ao_vivo_video ? 'ASSISTA AO VIVO' : mb_strtoupper($this->titulo_video);
+    }
+
+    /** Descrição mostrada no site (o ao vivo não mostra). */
+    public function getDescricaoNoSiteAttribute(): string
+    {
+        return $this->ao_vivo_video ? '' : (string) $this->descricao_video;
+    }
+
     public function getEmbedUrlAttribute(): string
     {
         $url = $this->url_video;

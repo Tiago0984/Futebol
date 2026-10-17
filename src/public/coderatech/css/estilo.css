@@ -11053,3 +11053,74 @@ body.lp-body {
     letter-spacing: 0.8px;
 }
 .camp-classificados-legenda { font-size: 0.85rem; color: #666666; margin-top: 8px; }
+
+/* ==========================================================================
+   71. VÍDEOS NO SITE — PLAYER E MINIATURAS (home e campeonatos)
+   ========================================================================== */
+.site-videos-lista {
+    display: flex;
+    gap: 12px;
+    margin-top: 18px;
+    padding-bottom: 6px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+}
+.site-videos-item {
+    flex: 0 0 160px;
+    scroll-snap-align: start;
+    background: rgba(255, 255, 255, 0.04);
+    border: 2px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    padding: 0;
+    overflow: hidden;
+    text-align: left;
+    color: rgba(255, 255, 255, 0.75);
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+}
+.site-videos-item:hover,
+.site-videos-item:focus-visible { border-color: rgba(255, 255, 255, 0.35); color: #ffffff; outline: none; }
+.site-videos-item.is-active { border-color: #e20e0e; color: #ffffff; }
+.site-videos-thumb {
+    position: relative;
+    display: block;
+    aspect-ratio: 16 / 9;
+    background: #111111;
+}
+.site-videos-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.site-videos-thumb .fa {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2rem;
+    color: rgba(255, 255, 255, 0.85);
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
+}
+.site-videos-item.is-active .site-videos-thumb .fa { color: #e20e0e; }
+.site-videos-aovivo {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: #e20e0e;
+    color: #ffffff;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+}
+.site-videos-nome {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    padding: 6px 8px;
+    font-size: 0.78rem;
+    line-height: 1.3;
+}
+@media (max-width: 767px) {
+    .site-videos-item { flex-basis: 140px; }
+}

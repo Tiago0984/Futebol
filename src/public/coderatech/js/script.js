@@ -338,3 +338,31 @@ $(document).ready(function () {
         }
     }
 });
+
+// ── VÍDEOS (home e campeonatos): a miniatura troca o vídeo do player, o título e a descrição ──
+(function () {
+    document.querySelectorAll('.js-videos').forEach(function (secao) {
+        var player = secao.querySelector('.js-video-player');
+        var titulo = secao.querySelector('.js-video-titulo');
+        var desc   = secao.querySelector('.js-video-desc');
+        var itens  = secao.querySelectorAll('.js-video-item');
+        if (!player || !itens.length) return;
+
+        itens.forEach(function (item) {
+            item.addEventListener('click', function () {
+                if (item.classList.contains('is-active')) return;
+                itens.forEach(function (i) { i.classList.remove('is-active'); });
+                item.classList.add('is-active');
+
+                var embed = item.dataset.embed;
+                player.src = embed + (embed.indexOf('?') === -1 ? '?' : '&') + 'autoplay=1';
+                player.title = item.dataset.titulo;
+                if (titulo) titulo.textContent = item.dataset.titulo;
+                if (desc) {
+                    desc.textContent = item.dataset.desc;
+                    desc.hidden = item.dataset.desc === '';
+                }
+            });
+        });
+    });
+})();

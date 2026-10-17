@@ -81,8 +81,8 @@ class HomeController extends Controller
             return [$camp->id_campeonato => ['titulo' => null, 'classificados' => null, 'linhas' => []]];
         })->all();
 
-        $videoDestaque = Video::where('status_video', 'ATIVO')->orderByDesc('id_video')->first();
+        $videos = Video::doSite('home')->get();
 
-        return view('site.home.home', compact('galerias', 'banners', 'noticias', 'categoriasDaAcj', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato', 'videoDestaque'));
+        return view('site.home.home', compact('galerias', 'banners', 'noticias', 'categoriasDaAcj', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato', 'videos'));
     }
 }

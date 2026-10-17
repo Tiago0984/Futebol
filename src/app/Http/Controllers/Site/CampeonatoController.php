@@ -12,11 +12,8 @@ class CampeonatoController extends Controller
     public function campeonato()
     {
         $campeonatos = Campeonato::with(['categorias', 'times.categoria'])->get();
-        $videoDestaque = Video::where('status_video', 'ATIVO')
-            ->whereIn('secao_video', ['campeonatos', 'ambas'])
-            ->orderByDesc('id_video')
-            ->first();
-        return view('site.campeonatos.campeonatos', compact('campeonatos', 'videoDestaque'));
+        $videos = Video::doSite('campeonatos')->get();
+        return view('site.campeonatos.campeonatos', compact('campeonatos', 'videos'));
     }
 
     /**
