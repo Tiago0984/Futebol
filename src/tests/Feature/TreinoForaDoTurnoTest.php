@@ -84,7 +84,7 @@ class TreinoForaDoTurnoTest extends TestCase
     {
         $reuniao = EventoCalendario::criarPor($this->admin->id_usuario, [
             'titulo_evento_calendario' => 'Reunião', 'tipo_evento_calendario' => 'REUNIAO',
-            'data_evento_calendario' => now()->addWeek()->toDateString(), 'horario_inicio_evento_calendario' => '09:00',
+            'data_evento_calendario' => now()->next('Tuesday')->toDateString(), 'horario_inicio_evento_calendario' => '09:00',
             'status_evento_calendario' => 'ATIVO',
         ], inscreverCategoria: false);
         $ana = $this->atleta('Ana', 'MANHA');
@@ -101,7 +101,7 @@ class TreinoForaDoTurnoTest extends TestCase
     {
         return EventoCalendario::criarPor($this->admin->id_usuario, [
             'titulo_evento_calendario' => 'Treino', 'tipo_evento_calendario' => 'TREINO',
-            'data_evento_calendario' => now()->addWeek()->toDateString(), 'horario_inicio_evento_calendario' => $inicio,
+            'data_evento_calendario' => now()->next('Tuesday')->toDateString(), 'horario_inicio_evento_calendario' => $inicio,
             'status_evento_calendario' => 'ATIVO',
         ], inscreverCategoria: false);
     }
