@@ -844,6 +844,8 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - `a9e1ff8` fix: o `DemonstracaoSeeder` punha a "próxima rodada" hoje quando era sábado (jogo já passado, publicado sem avisar; o `DemonstracaoSeederTest` falhava); agora as jogadas são os dois sábados antes de hoje e a próxima, o primeiro depois;
   - `7095a74` feat: padrão da API (seção 4, "App"): erros em português no mesmo formato, limite geral e endereço das imagens. `ApiPadraoTest` (6). A documentação (`/api/documentacao`) ganhou o card "Imagens" e a tabela de erros nova. Sem migration.
 - **690 testes passando.**
+- **Publicado no servidor (17/10/2026):** `main` avançada até `e193147` (menu, seeder e padrão da API); lá, `git pull --ff-only` e `optimize:clear`. Conferido pelo Claude com o `curl`: 401, 404 e 422 em português, `X-RateLimit-Limit`, `logo_url` com o `/AACJ` abrindo a imagem, documentação no ar.
+- **Passagem para o Senac (segunda, 19/10):** nenhuma migration nova desde 16/10 e o banco do Senac é a origem do de casa, então **não precisa de dump** (só se algo foi cadastrado à mão no admin de casa). No Senac: `git switch feature/agenda-eventos`, `git pull`, `php artisan view:clear` e `config:clear`, e rodar a suíte (**690 testes**).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
