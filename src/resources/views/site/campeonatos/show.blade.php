@@ -136,7 +136,7 @@
 
                 <div class="match-date-col">
                     <span class="match-day">{{ $dataJogo->format('d') }}</span>
-                    <span class="match-month">{{ $dataJogo->format('M') }}</span>
+                    <span class="match-month">{{ $dataJogo->locale('pt_BR')->isoFormat('MMM') }}</span>
                     <span class="match-year">{{ $dataJogo->format('Y') }}</span>
                 </div>
 

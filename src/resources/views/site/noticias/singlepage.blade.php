@@ -18,7 +18,7 @@
                             </div>
                             <div class="blog-date">
                                 <span>{{ \Carbon\Carbon::parse($noticia->data_publicacao_noticia)->format('d') }}</span>
-                                {{ \Carbon\Carbon::parse($noticia->data_publicacao_noticia)->format('M') }}
+                                {{ \Carbon\Carbon::parse($noticia->data_publicacao_noticia)->locale('pt_BR')->isoFormat('MMM') }}
                             </div>
                         </div>
                     </div>
