@@ -76,6 +76,7 @@ class CampeonatoController extends Controller
                     'empates' => $linha['e'], 'derrotas' => $linha['d'], 'gols_marcados' => $linha['gm'],
                     'gols_sofridos' => $linha['gc'], 'saldo' => $linha['gm'] - $linha['gc'],
                     'classificado' => $tabela['classificados'] !== null && $pos < $tabela['classificados'],
+                    'empate_sorteio' => $linha['sorteio'],
                 ], $tabela['tabela'], array_keys($tabela['tabela'])),
             ], $c['tabelas']),
         ])->all();

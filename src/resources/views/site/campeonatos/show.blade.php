@@ -250,7 +250,7 @@
                                  alt="{{ $time['nome'] }}"
                                  class="camp-table-logo">
                             @endif
-                            <span class="camp-table-team-name">{{ $time['nome'] }}</span>
+                            <span class="camp-table-team-name">{{ $time['nome'] }}@if($time['sorteio'])<span class="camp-sorteio" title="Empatado em todos os critérios: no fim, decidido por sorteio">*</span>@endif</span>
                             @if($classificado)<span class="camp-classificado-tag">Classificado</span>@endif
                         </td>
                         <td><strong>{{ $time['pontos'] }}</strong></td>
@@ -266,6 +266,7 @@
                 </tbody>
             </table>
         </div>
+        @include('partials.legenda-desempate', ['linhas' => $tabela['tabela'], 'classe' => 'camp-classificados-legenda'])
         @if($tabela['classificados'])
         <p class="camp-classificados-legenda">Passam {{ $tabela['classificados'] === 1 ? 'o primeiro' : "os {$tabela['classificados']} primeiros" }} de cada grupo (chave).</p>
         @endif

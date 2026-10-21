@@ -11153,3 +11153,8 @@ body.lp-body {
     color: #666666;
 }
 .match-info .fa { color: #e31c1c; margin-right: 3px; }
+
+/* ==========================================================================
+   73. CLASSIFICAÇÃO: EMPATE EM TODOS OS CRITÉRIOS (21/10/2026, desempate do Brasileirão)
+   ========================================================================== */
+.camp-sorteio { color: #e31c1c; font-weight: 700; margin-left: 2px; cursor: help; }

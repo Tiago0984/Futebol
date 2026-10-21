@@ -234,17 +234,19 @@ class Jogo extends Model
     /**
      * Classificação: conta só jogos da fase de grupos (Fase H, Etapa H4) com placar e evento publicado e ATIVO
      * (não rascunho, cancelado nem oculto; jogo futuro sem placar não vira empate 0×0). Vitória 3, empate 1.
-     * Ordem: pontos, vitórias, saldo, gols marcados, nome. Devolve linhas com nome, logo, pj, v, e, d, gm, gc e
-     * pontos (e o id_time). Com $times (os de um grupo: id_time, nome_time, logo_time), a tabela tem todos eles, os sem jogo
-     * com zeros, e só eles; sem $times, quem jogou.
+     * Ordem do Brasileirão (dono do projeto, 21/10/2026; seção 8, pergunta 13): ver ordenarClassificacao().
+     * Devolve linhas com nome, logo, pj, v, e, d, gm, gc, pontos, sorteio (e o id_time). Com $times (os de um
+     * grupo: id_time, nome_time, logo_time), a tabela tem todos eles, os sem jogo com zeros, e só eles; sem
+     * $times, quem jogou.
      */
     public static function classificacao(Collection $jogos, ?Collection $times = null): array
     {
         $linhaVazia = fn ($id, $nome, $logo) => [
             'id_time' => $id === null ? null : (int) $id,
             'nome' => $nome ?? '-', 'logo' => $logo,
-            'pj' => 0, 'v' => 0, 'e' => 0, 'd' => 0, 'gm' => 0, 'gc' => 0, 'pontos' => 0,
+            'pj' => 0, 'v' => 0, 'e' => 0, 'd' => 0, 'gm' => 0, 'gc' => 0, 'pontos' => 0, 'sorteio' => false,
         ];
+        $contados = [];
         $tabela = [];
         foreach ($times ?? [] as $time) {
             $tabela[(int) $time->id_time] = $linhaVazia($time->id_time, $time->nome_time, $time->logo_time);
@@ -255,6 +257,7 @@ class Jogo extends Model
                 || $jogo->evento->status_evento_calendario !== 'ATIVO') {
                 continue;
             }
+            $contados[] = $jogo;
 
             $lados = [
                 [$jogo->id_time_casa, $jogo->timeCasa, $jogo->placar_time_casa_jogos, $jogo->placar_time_visitante_jogos],
@@ -286,14 +289,72 @@ class Jogo extends Model
             }
         }
 
-        // Desempate PROVISÓRIO (CLAUDE.md, seção 8, pergunta 13): pontos, vitórias, saldo de gols,
-        // gols marcados e, por fim, nome do time (assim a ordem nunca fica ao acaso). O nome é comparado
-        // sem acentos e sem maiúsculas: "Águias" fica antes de "Zebra"
-        $nome = fn (array $linha) => mb_strtolower(Str::ascii($linha['nome']));
-        usort($tabela, fn ($a, $b) => [$b['pontos'], $b['v'], $b['gm'] - $b['gc'], $b['gm'], $nome($a)]
-            <=> [$a['pontos'], $a['v'], $a['gm'] - $a['gc'], $a['gm'], $nome($b)]);
+        return self::ordenarClassificacao($tabela, $contados);
+    }
 
-        return $tabela;
+    /**
+     * Desempate do Brasileirão (dono do projeto, 21/10/2026): pontos, vitórias, saldo de gols, gols marcados e,
+     * com só DOIS times empatados nisso tudo, o confronto direto (pontos nos jogos entre eles, de $jogos: os que
+     * contaram na tabela). Os cartões ficam de fora (só os atletas da AACJ têm cartão; os adversários, nunca).
+     * Empatados em tudo (três ou mais, ou dois sem vencedor no confronto direto) e que já jogaram ficam com
+     * 'sorteio' = true (no fim, a ordem sai por sorteio, fora do sistema) e, enquanto isso, pelo nome (sem acentos
+     * e sem maiúsculas: "Águias" antes de "Zebra"), para a ordem nunca ficar ao acaso.
+     */
+    private static function ordenarClassificacao(array $tabela, array $jogos): array
+    {
+        $chave = fn (array $linha) => [$linha['pontos'], $linha['v'], $linha['gm'] - $linha['gc'], $linha['gm']];
+        $nome  = fn (array $linha) => mb_strtolower(Str::ascii($linha['nome']));
+
+        usort($tabela, fn ($a, $b) => [...$chave($b), $nome($a)] <=> [...$chave($a), $nome($b)]);
+
+        // Blocos de empatados nos quatro critérios (já vizinhos, pela ordenação acima)
+        $blocos = [];
+        foreach ($tabela as $linha) {
+            $blocos[implode('|', $chave($linha))][] = $linha;
+        }
+
+        $ordenada = [];
+        foreach ($blocos as $bloco) {
+            if (count($bloco) === 2) {
+                $pontos = self::pontosNoConfrontoDireto($bloco[0]['id_time'], $bloco[1]['id_time'], $jogos);
+                if ($pontos[0] !== $pontos[1]) {
+                    $ordenada = [...$ordenada, ...($pontos[0] > $pontos[1] ? $bloco : array_reverse($bloco))];
+                    continue;
+                }
+            }
+            if (count($bloco) > 1 && $bloco[0]['pj'] > 0) {
+                $bloco = array_map(fn ($linha) => [...$linha, 'sorteio' => true], $bloco);
+            }
+            $ordenada = [...$ordenada, ...$bloco];
+        }
+
+        return $ordenada;
+    }
+
+    // Pontos de cada um dos dois times ([a, b]) nos jogos entre eles (vitória 3, empate 1)
+    private static function pontosNoConfrontoDireto(?int $idA, ?int $idB, array $jogos): array
+    {
+        $pontos = [0, 0];
+        foreach ($jogos as $jogo) {
+            $casa = (int) $jogo->id_time_casa;
+            $fora = (int) $jogo->id_time_visitante;
+            if (! (($casa === $idA && $fora === $idB) || ($casa === $idB && $fora === $idA))) {
+                continue;
+            }
+
+            $golsA = $casa === $idA ? $jogo->placar_time_casa_jogos : $jogo->placar_time_visitante_jogos;
+            $golsB = $casa === $idA ? $jogo->placar_time_visitante_jogos : $jogo->placar_time_casa_jogos;
+            if ((int) $golsA > (int) $golsB) {
+                $pontos[0] += 3;
+            } elseif ((int) $golsA < (int) $golsB) {
+                $pontos[1] += 3;
+            } else {
+                $pontos[0]++;
+                $pontos[1]++;
+            }
+        }
+
+        return $pontos;
     }
 
     // ── Escalação (tbl_evento_atleta.id_time) ───────────────────────────────

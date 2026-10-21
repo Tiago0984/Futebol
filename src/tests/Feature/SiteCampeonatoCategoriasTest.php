@@ -135,7 +135,7 @@ class SiteCampeonatoCategoriasTest extends TestCase
             [['AACJ Sub-15', 3, 1, true], ['Santos', 1, 1, false], ['Botafogo', 1, 2, false]], // Santos à frente pelo saldo (0 contra -2)
             array_map(fn ($l) => [$l['time'], $l['pontos'], $l['jogos'], $l['classificado']], $sub15['grupos'][0]['tabela']));
         $this->assertSame(['posicao', 'id_time', 'time', 'logo', 'logo_url', 'pontos', 'jogos', 'vitorias', 'empates', 'derrotas',
-            'gols_marcados', 'gols_sofridos', 'saldo', 'classificado'], array_keys($sub15['grupos'][0]['tabela'][0]));
+            'gols_marcados', 'gols_sofridos', 'saldo', 'classificado', 'empate_sorteio'], array_keys($sub15['grupos'][0]['tabela'][0]));
         $this->assertSame($this->aacj15, $sub15['grupos'][0]['tabela'][0]['id_time']);
 
         // Times sem a tabela de ligação (pivot) e com o endereço completo do escudo

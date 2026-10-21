@@ -170,7 +170,7 @@
                   <tr @class(['table-success js-classificado' => $classificado])>
                     <td>{{ $pos + 1 }}</td>
                     <td class="fw-semibold">
-                      {{ $linha['nome'] }}
+                      {{ $linha['nome'] }}@if ($linha['sorteio'])<span class="text-warning" title="Empatado em todos os critérios: no fim, decidir por sorteio">*</span>@endif
                       @if ($classificado)<span class="badge bg-success ms-1">Classificado</span>@endif
                     </td>
                     <td class="text-center fw-bold">{{ $linha['pontos'] }}</td>
@@ -186,6 +186,7 @@
                 </tbody>
               </table>
             </div>
+            @include('partials.legenda-desempate', ['linhas' => $tabela['tabela'], 'classe' => 'small text-muted mt-1 mb-0'])
             @endif
           </div>
           @endforeach
