@@ -182,7 +182,7 @@ class JogoSiteTest extends TestCase
 
         $this->get(route('campeonato.show', $this->idCampeonato))->assertOk()
             ->assertSee('3 jogos registrados')
-            ->assertSeeInOrder(['20', 'Jan', '2099', '15', 'Feb', '2099', 'Cancelado', '10', 'Mar', '2099'])
+            ->assertSeeInOrder(['20', 'jan', '2099', '15', 'fev', '2099', 'Cancelado', '10', 'mar', '2099']) // mês em português (o CSS põe em maiúsculas)
             ->assertDontSee('<span class="score-value">5</span>', false);
     }
 
