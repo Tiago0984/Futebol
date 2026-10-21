@@ -76,7 +76,8 @@ class SiteCampeonatoCategoriasTest extends TestCase
         // Sub-15: os times dela, os jogos com a fase da semifinal e a Chave A com o primeiro destacado
         $this->assertStringContainsString('AACJ Sub-15', $sub15);
         $this->assertStringNotContainsString('AACJ Sub-17', $sub15);
-        $this->assertStringContainsString('match-fase">Semifinal', $sub15);
+        $this->assertStringContainsString('match-secao">Semifinal', $sub15);   // título da seção (Fase I, Etapa I1b)
+        $this->assertMatchesRegularExpression('#match-info-fase"><i class="fa fa-trophy"></i>\s*Semifinal#', $sub15);
         $this->assertStringContainsString('camp-grupo-titulo">Chave A', $sub15);
         $this->assertSame(1, substr_count($sub15, 'camp-classificado-tag'));
         $this->assertStringContainsString('Passam o primeiro de cada grupo (chave).', $sub15);

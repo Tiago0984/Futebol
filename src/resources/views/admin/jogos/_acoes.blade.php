@@ -23,6 +23,12 @@
     data-local="{{ $ev->local_evento_calendario }}"
     data-placar-casa="{{ $jogo->placar_time_casa_jogos }}"
     data-placar-visitante="{{ $jogo->placar_time_visitante_jogos }}"
+    data-rodada="{{ $jogo->rodada_jogo }}"
+    data-ida="{{ $jogo->id_jogo_ida }}"
+    data-prorrogacao-casa="{{ $jogo->prorrogacao_time_casa_jogos }}"
+    data-prorrogacao-visitante="{{ $jogo->prorrogacao_time_visitante_jogos }}"
+    data-penaltis-casa="{{ $jogo->penaltis_time_casa_jogos }}"
+    data-penaltis-visitante="{{ $jogo->penaltis_time_visitante_jogos }}"
     title="Editar">
     <i class="bi bi-pencil"></i>
 </button>

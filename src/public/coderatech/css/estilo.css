@@ -11158,3 +11158,28 @@ body.lp-body {
    73. CLASSIFICAÇÃO: EMPATE EM TODOS OS CRITÉRIOS (21/10/2026, desempate do Brasileirão)
    ========================================================================== */
 .camp-sorteio { color: #e31c1c; font-weight: 700; margin-left: 2px; cursor: help; }
+
+/* ==========================================================================
+   74. JOGOS DO CAMPEONATO: RODADAS, MATA-MATA, PRORROGAÇÃO E PÊNALTIS (21/10/2026, Fase I, Etapa I1b)
+   ========================================================================== */
+.match-secao {
+    grid-column: 1 / -1;
+    margin: 18px 0 0;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #e31c1c;
+}
+.match-secao:first-child { margin-top: 0; }
+.match-resultado {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 12px;
+    font-size: 0.8rem;
+    color: #666666;
+}
+.match-resultado strong { color: #1e7e34; }
+.match-info-fase { font-weight: 700; color: #111111; }

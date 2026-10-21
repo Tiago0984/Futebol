@@ -45,7 +45,7 @@ class CampeonatoController extends Controller
                 // Jogos visíveis, pela data do evento; data_jogo, horario_jogo, local_jogo e status_jogo
                 // vêm do evento (Jogo::$appends), com os mesmos nomes de antes para não quebrar o app
                 'jogos' => fn ($query) => $query->visiveis()->ordenadosPelaData(),
-                'jogos.evento',
+                'jogos.evento', 'jogos.jogoIda', 'jogos.jogoVolta',   // para o "confronto" sem uma consulta por jogo
                 'jogos.timeCasa:id_time,nome_time,logo_time',
                 'jogos.timeVisitante:id_time,nome_time,logo_time',
             ])

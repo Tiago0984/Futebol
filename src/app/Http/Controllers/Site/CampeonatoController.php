@@ -35,7 +35,7 @@ class CampeonatoController extends Controller
         $campeonato = Campeonato::with(['categorias', 'times.categoria'])->ativos()->findOrFail($id);
 
         // Jogos visíveis (oculto e rascunho somem; cancelado aparece com o selo), pela data do evento
-        $jogos = Jogo::with(['evento', 'timeCasa', 'timeVisitante'])
+        $jogos = Jogo::with(['evento', 'timeCasa', 'timeVisitante', 'jogoIda', 'jogoVolta'])
             ->where('id_campeonato', $id)
             ->visiveis()
             ->ordenadosPelaData()
@@ -57,8 +57,27 @@ class CampeonatoController extends Controller
                 'tabelas' => [['grupo' => null, 'classificados' => null, 'tabela' => Jogo::classificacao($jogos)]]]]);
         }
 
+        $abas = $abas->map(fn ($aba) => [...$aba, 'jogos' => self::emSecoes($aba['jogos'])]);
         $local = $campeonato->textoDosLocais($jogos);
 
         return view('site.campeonatos.show', compact('campeonato', 'abas', 'local'));
+    }
+
+    /**
+     * Jogos da aba em seções (Fase I, Etapa I1b): fase de grupos por rodada ("Rodada 1", "Rodada 2"; sem rodada,
+     * "Fase de grupos") e o mata-mata pela fase, na ordem de Jogo::FASES; dentro de cada seção, pela data (a
+     * ordem que já vem). Cada jogo ganha 'secao_site' (o título da seção).
+     */
+    private static function emSecoes($jogos)
+    {
+        $ordemDaFase = array_flip(array_keys(Jogo::FASES));
+
+        return $jogos
+            ->each(fn ($jogo) => $jogo->setAttribute('secao_site', $jogo->ehMataMata()
+                ? $jogo->fase_label
+                : ($jogo->rodada_jogo ? 'Rodada ' . $jogo->rodada_jogo : 'Fase de grupos')))
+            // Na fase de grupos, os jogos sem rodada vêm depois das rodadas
+            ->sortBy(fn ($jogo) => [$ordemDaFase[$jogo->fase_jogo ?? Jogo::FASE_PADRAO] ?? 99, $jogo->rodada_jogo ?? Jogo::RODADA_MAX + 1])
+            ->values();
     }
 }

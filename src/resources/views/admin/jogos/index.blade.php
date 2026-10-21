@@ -173,8 +173,8 @@
                                 @if($ev->categoria)
                                     <div class="text-muted" style="font-size:0.75rem;">{{ $ev->categoria->rotulo }}</div>
                                 @endif
-                                @if($jogo->fase_jogo && $jogo->fase_jogo !== \App\Models\Jogo::FASE_PADRAO)
-                                    <div class="text-muted" style="font-size:0.75rem;">{{ $jogo->fase_label }}</div>
+                                @if($jogo->ehMataMata() || $jogo->rodada_jogo)
+                                    <div class="text-muted" style="font-size:0.75rem;">{{ $jogo->fase_completa }}</div>
                                 @endif
                             </td>
                             <td class="text-center">
@@ -189,6 +189,7 @@
                             <td class="text-center fw-bold">
                                 @if($jogo->placar_time_casa_jogos !== null && $jogo->placar_time_visitante_jogos !== null)
                                     <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
+                                    @include('admin.jogos._resultado')
                                 @else
                                     <span class="text-muted">VS</span>
                                 @endif

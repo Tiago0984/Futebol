@@ -36,21 +36,31 @@ class Jogo extends Model
     ];
     public const FASE_PADRAO = 'GRUPOS';
 
+    // Rodada da fase de grupos: 1 a RODADA_MAX (Fase I, Etapa I1b)
+    public const RODADA_MAX = 99;
+
     protected $fillable = [
         'id_evento',
         'id_campeonato',
         'fase_jogo',
+        'rodada_jogo',
+        'id_jogo_ida',
         'id_time_casa',
         'id_time_visitante',
         'placar_time_casa_jogos',
         'placar_time_visitante_jogos',
+        'prorrogacao_time_casa_jogos',
+        'prorrogacao_time_visitante_jogos',
+        'penaltis_time_casa_jogos',
+        'penaltis_time_visitante_jogos',
     ];
 
     // No JSON da API, os dados do evento vêm achatados (data_jogo e status_jogo mantêm os nomes de antes,
     // para não quebrar o app); o evento em si não vai
     // Fase H, Etapa H5: a fase (rótulo; fase_jogo é o valor gravado) e a categoria do jogo (a do evento)
-    protected $appends = ['data_jogo', 'horario_jogo', 'local_jogo', 'status_jogo', 'fase', 'id_categoria'];
-    protected $hidden  = ['evento'];
+    // Fase I, Etapa I1b: confronto (quem passa no mata-mata); a ida e a volta em si não vão (só id_jogo_ida)
+    protected $appends = ['data_jogo', 'horario_jogo', 'local_jogo', 'status_jogo', 'fase', 'id_categoria', 'confronto'];
+    protected $hidden  = ['evento', 'jogoIda', 'jogoVolta'];
 
     public function evento()
     {
@@ -67,6 +77,23 @@ class Jogo extends Model
     public function contaNaClassificacao(): bool
     {
         return $this->fase_jogo === null || $this->fase_jogo === self::FASE_PADRAO;
+    }
+
+    // Mata-mata: toda fase de campeonato que não é a de grupos (repescagem também; Fase I, Etapa I1b)
+    public function ehMataMata(): bool
+    {
+        return $this->fase_jogo !== null && $this->fase_jogo !== self::FASE_PADRAO;
+    }
+
+    // No jogo de volta do mata-mata, o de ida; na ida, a volta (no máximo uma: único no banco)
+    public function jogoIda()
+    {
+        return $this->belongsTo(self::class, 'id_jogo_ida', 'id_jogo');
+    }
+
+    public function jogoVolta()
+    {
+        return $this->hasOne(self::class, 'id_jogo_ida', 'id_jogo');
     }
 
     public function campeonato()
@@ -707,6 +734,234 @@ class Jogo extends Model
     public function temPlacar(): bool
     {
         return $this->placar_time_casa_jogos !== null && $this->placar_time_visitante_jogos !== null;
+    }
+
+    // ── Rodada, ida e volta, prorrogação e pênaltis (Fase I, Etapa I1b) ────────
+    // Regras do dono do projeto (21/10/2026): ida e volta empatada no agregado vai direto para os pênaltis, sem
+    // gol fora e sem prorrogação (CBF desde 2023); jogo único empatado no mata-mata tem prorrogação e depois
+    // pênaltis. O placar do jogo é o do tempo normal; a prorrogação e os pênaltis ficam à parte.
+
+    /**
+     * Erros do formulário do jogo nas colunas da Etapa I1b ([campo => mensagem]; vazio = tudo certo). $d: os
+     * dados já validados no formato do banco (inteiros ou null): id_campeonato, id_categoria, fase_jogo,
+     * rodada_jogo, id_jogo_ida, id_time_casa, id_time_visitante, placar_*, prorrogacao_* e penaltis_*.
+     * $atual: o jogo editado (null na criação).
+     */
+    public static function errosDoResultado(array $d, ?self $atual = null): array
+    {
+        $erros     = [];
+        $mataMata  = $d['fase_jogo'] !== null && $d['fase_jogo'] !== self::FASE_PADRAO;
+        $soUm      = fn (string $casa, string $fora) => ($d[$casa] === null) !== ($d[$fora] === null);
+        $temPlacar = $d['placar_time_casa_jogos'] !== null && $d['placar_time_visitante_jogos'] !== null;
+        $volta     = $atual?->jogoVolta;   // este jogo já é a ida de outro
+        $ida       = null;
+
+        if ($d['rodada_jogo'] !== null && $d['fase_jogo'] !== self::FASE_PADRAO) {
+            $erros['rodada_jogo'] = 'A rodada é só da fase de grupos.';
+        }
+
+        // Ida e volta: a volta aponta para a ida, do mesmo campeonato, categoria e fase, com os times invertidos
+        if ($d['id_jogo_ida'] !== null) {
+            $ida = self::with('evento', 'jogoVolta')->find($d['id_jogo_ida']);
+            $erro = match (true) {
+                ! $mataMata                                   => 'Jogo de volta só no mata-mata.',
+                ! $ida || $ida->id_jogo === $atual?->id_jogo  => 'Escolha o jogo de ida na lista.',
+                $volta !== null                               => 'Este jogo já é a ida de outro jogo: não pode ser também uma volta.',
+                $ida->id_jogo_ida !== null                    => 'O jogo escolhido já é um jogo de volta.',
+                $ida->jogoVolta && $ida->jogoVolta->id_jogo !== $atual?->id_jogo
+                                                              => 'O jogo de ida escolhido já tem jogo de volta.',
+                default                                       => self::erroDoConfronto(self::dadosDoConfronto($ida), $d),
+            };
+            if ($erro) {
+                $erros['id_jogo_ida'] = $erro;
+                $ida = null;
+            }
+        }
+        // Este jogo é a ida de uma volta: a volta precisa continuar combinando com ele
+        if ($volta) {
+            $erro = $mataMata
+                ? self::erroDoConfronto($d, self::dadosDoConfronto($volta))
+                : 'Este jogo tem jogo de volta: mantenha a fase de mata-mata (ou tire o vínculo no jogo de volta antes).';
+            if ($erro) {
+                $erros['fase_jogo'] = $erro;
+            }
+        }
+        $idaOuVolta = $d['id_jogo_ida'] !== null || $volta !== null;
+
+        // Prorrogação: só no jogo único do mata-mata, depois de empate no tempo normal
+        if ($soUm('prorrogacao_time_casa_jogos', 'prorrogacao_time_visitante_jogos')) {
+            $erros['prorrogacao_time_casa_jogos'] = 'Preencha a prorrogação dos dois times, ou deixe as duas vazias.';
+        } elseif ($d['prorrogacao_time_casa_jogos'] !== null) {
+            $erro = match (true) {
+                ! $mataMata   => 'Prorrogação só no mata-mata.',
+                $idaOuVolta   => 'Na ida e volta não há prorrogação: o empate no agregado vai direto para os pênaltis.',
+                ! $temPlacar || $d['placar_time_casa_jogos'] !== $d['placar_time_visitante_jogos']
+                              => 'Prorrogação só depois de empate no tempo normal.',
+                default       => null,
+            };
+            if ($erro) {
+                $erros['prorrogacao_time_casa_jogos'] = $erro;
+            }
+        }
+
+        // Pênaltis: só no mata-mata, no jogo que decide, com empate (no agregado, ou no tempo normal e na prorrogação)
+        if ($soUm('penaltis_time_casa_jogos', 'penaltis_time_visitante_jogos')) {
+            $erros['penaltis_time_casa_jogos'] = 'Preencha os pênaltis dos dois times, ou deixe os dois vazios.';
+        } elseif ($d['penaltis_time_casa_jogos'] !== null) {
+            $erro = match (true) {
+                ! $mataMata                                                   => 'Pênaltis só no mata-mata.',
+                $d['penaltis_time_casa_jogos'] === $d['penaltis_time_visitante_jogos']
+                                                                              => 'A disputa de pênaltis não termina empatada.',
+                $volta !== null                                               => 'Na ida e volta, os pênaltis ficam no jogo de volta.',
+                ! $temPlacar                                                  => 'Lance o placar antes dos pênaltis.',
+                $d['id_jogo_ida'] !== null                                    => self::erroDosPenaltisDaVolta($d, $ida),
+                $d['placar_time_casa_jogos'] !== $d['placar_time_visitante_jogos']
+                                                                              => 'Pênaltis só com empate.',
+                $d['prorrogacao_time_casa_jogos'] === null                    => 'Lance a prorrogação antes dos pênaltis (jogo único: prorrogação e depois pênaltis).',
+                $d['prorrogacao_time_casa_jogos'] !== $d['prorrogacao_time_visitante_jogos']
+                                                                              => 'Pênaltis só se a prorrogação também terminar empatada.',
+                default                                                       => null,
+            };
+            if ($erro) {
+                $erros['penaltis_time_casa_jogos'] = $erro;
+            }
+        }
+
+        return $erros;
+    }
+
+    // Volta: pênaltis só com o placar da ida lançado e empate no agregado
+    private static function erroDosPenaltisDaVolta(array $d, ?self $ida): ?string
+    {
+        if (! $ida) {
+            return null;   // o erro já está no id_jogo_ida
+        }
+        if (! $ida->temPlacar()) {
+            return 'Lance o placar do jogo de ida antes dos pênaltis.';
+        }
+
+        $agregadoCasa = $d['placar_time_casa_jogos'] + (int) $ida->placar_time_visitante_jogos;
+        $agregadoFora = $d['placar_time_visitante_jogos'] + (int) $ida->placar_time_casa_jogos;
+
+        return $agregadoCasa === $agregadoFora ? null : "Pênaltis só com empate no agregado (está {$agregadoCasa} × {$agregadoFora}).";
+    }
+
+    // Ida e volta: mesmo campeonato, categoria e fase, e os times invertidos (o mandante da ida é o visitante da volta)
+    private static function erroDoConfronto(array $ida, array $volta): ?string
+    {
+        $combina = (int) $ida['id_campeonato'] === (int) $volta['id_campeonato']
+            && (int) $ida['id_categoria'] === (int) $volta['id_categoria']
+            && $ida['fase_jogo'] === $volta['fase_jogo']
+            && (int) $ida['id_time_casa'] === (int) $volta['id_time_visitante']
+            && (int) $ida['id_time_visitante'] === (int) $volta['id_time_casa'];
+
+        return $combina ? null
+            : 'A volta precisa ser do mesmo campeonato, categoria e fase da ida, com os times invertidos (o mandante da ida é o visitante da volta).';
+    }
+
+    private static function dadosDoConfronto(self $jogo): array
+    {
+        return [
+            'id_campeonato' => $jogo->id_campeonato, 'id_categoria' => $jogo->evento?->id_categoria, 'fase_jogo' => $jogo->fase_jogo,
+            'id_time_casa' => $jogo->id_time_casa, 'id_time_visitante' => $jogo->id_time_visitante,
+        ];
+    }
+
+    /**
+     * Quem passa (ou vence, na final e na disputa de 3º) no mata-mata: ['id_time', 'como' (tempo normal,
+     * prorrogação, agregado ou pênaltis), 'agregado' ([mandante, visitante] deste jogo, só na volta) e 'texto'
+     * ("Botafogo passa nos pênaltis (4 × 3)")]. null fora do mata-mata, na ida (decide na volta), sem placar
+     * ou empatado sem o desempate lançado. Na volta, pênaltis lançados com o agregado já decidido não contam.
+     */
+    public function resultadoDoConfronto(): ?array
+    {
+        if (! $this->ehMataMata() || ! $this->temPlacar() || $this->jogoVolta) {
+            return null;
+        }
+
+        $casa = (int) $this->placar_time_casa_jogos;
+        $fora = (int) $this->placar_time_visitante_jogos;
+        $agregado = null;
+        $como = 'tempo normal';
+
+        if ($this->id_jogo_ida) {
+            if (! $this->jogoIda?->temPlacar()) {
+                return null;
+            }
+            $casa += (int) $this->jogoIda->placar_time_visitante_jogos;
+            $fora += (int) $this->jogoIda->placar_time_casa_jogos;
+            $agregado = [$casa, $fora];
+            $como = 'agregado';
+        } elseif ($casa === $fora && $this->prorrogacao_time_casa_jogos !== null) {
+            $casa += (int) $this->prorrogacao_time_casa_jogos;
+            $fora += (int) $this->prorrogacao_time_visitante_jogos;
+            $como = 'prorrogação';
+        }
+
+        $penaltis = null;
+        if ($casa === $fora) {
+            if ($this->penaltis_time_casa_jogos === null || $this->penaltis_time_casa_jogos === $this->penaltis_time_visitante_jogos) {
+                return null;
+            }
+            $penaltis = [(int) $this->penaltis_time_casa_jogos, (int) $this->penaltis_time_visitante_jogos];
+            [$casa, $fora] = $penaltis;
+            $como = 'pênaltis';
+        }
+
+        $time  = $casa > $fora ? $this->timeCasa : $this->timeVisitante;
+        $verbo = in_array($this->fase_jogo, ['FINAL', 'TERCEIRO'], true) ? 'vence' : 'passa';
+        $texto = ($time?->nome_time ?? 'Time') . " {$verbo}" . match ($como) {
+            'tempo normal' => '',
+            'prorrogação'  => ' na prorrogação',
+            'agregado'     => " no agregado ({$agregado[0]} × {$agregado[1]})",
+            'pênaltis'     => ($agregado ? " nos pênaltis ({$penaltis[0]} × {$penaltis[1]}), depois do agregado {$agregado[0]} × {$agregado[1]}"
+                                         : " nos pênaltis ({$penaltis[0]} × {$penaltis[1]})"),
+        };
+
+        return ['id_time' => (int) $time?->id_time, 'como' => $como, 'agregado' => $agregado, 'texto' => $texto];
+    }
+
+    /**
+     * Opções do select "Jogo de volta de…" do formulário do jogo: os jogos de mata-mata que ainda não são volta,
+     * com o campeonato, a categoria, a fase e os times (o JS mostra só os que combinam com o jogo e já tenham a
+     * ida com os times invertidos).
+     */
+    public static function opcoesDeIda(): Collection
+    {
+        return self::with(['evento', 'timeCasa:id_time,nome_time', 'timeVisitante:id_time,nome_time', 'jogoVolta:id_jogo,id_jogo_ida'])
+            ->whereNotNull('tbl_jogos.id_campeonato')
+            ->where('tbl_jogos.fase_jogo', '<>', self::FASE_PADRAO)
+            ->whereNull('tbl_jogos.id_jogo_ida')
+            ->ordenadosPelaData()
+            ->get();
+    }
+
+    // No JSON da API: quem passa no mata-mata (resultadoDoConfronto) ou null
+    public function getConfrontoAttribute(): ?array
+    {
+        return $this->resultadoDoConfronto();
+    }
+
+    // O que vem depois do placar do tempo normal: "prorr. 1 × 1 · pên. 4 × 3" (vazio sem prorrogação nem pênaltis)
+    public function getPlacarExtraAttribute(): string
+    {
+        return collect([
+            $this->prorrogacao_time_casa_jogos !== null ? "prorr. {$this->prorrogacao_time_casa_jogos} × {$this->prorrogacao_time_visitante_jogos}" : null,
+            $this->penaltis_time_casa_jogos !== null ? "pên. {$this->penaltis_time_casa_jogos} × {$this->penaltis_time_visitante_jogos}" : null,
+        ])->filter()->join(' · ');
+    }
+
+    // Fase com a rodada ou a perna: "Fase de grupos · Rodada 5", "Oitavas de final · volta" (null no amistoso)
+    public function getFaseCompletaAttribute(): ?string
+    {
+        $perna = match (true) {
+            $this->rodada_jogo !== null => 'Rodada ' . $this->rodada_jogo,
+            $this->id_jogo_ida !== null => 'volta',
+            $this->ehMataMata() && $this->jogoVolta !== null => 'ida',
+            default => null,
+        };
+
+        return $this->fase_label === null ? null : collect([$this->fase_label, $perna])->filter()->join(' · ');
     }
 
     public function estaCancelado(): bool

@@ -32,7 +32,7 @@
                 @if ($jogo)
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalPlacar">
                     <i class="bi bi-123"></i> Placar
-                    @if ($jogo->temPlacar())<span class="badge bg-secondary ms-1">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>@endif
+                    @if ($jogo->temPlacar())<span class="badge bg-secondary ms-1">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}{{ $jogo->placar_extra ? ' · ' . $jogo->placar_extra : '' }}</span>@endif
                 </button>
                 @endif
 
@@ -184,7 +184,20 @@
                     <div><span class="text-muted small d-block">Tipo</span><span class="badge-cat">{{ $evento->tipo_label }}</span></div>
                     <div><span class="text-muted small d-block">Categoria</span>{{ $evento->categoria?->rotulo ?? 'Sem categoria (individual)' }}</div>
                     @if ($jogo?->fase_label)
-                    <div><span class="text-muted small d-block">Fase</span>{{ $jogo->fase_label }}</div>
+                    <div><span class="text-muted small d-block">Fase</span>{{ $jogo->fase_completa }}</div>
+                    @endif
+                    @if ($jogo?->id_jogo_ida && $jogo->jogoIda)
+                    <div><span class="text-muted small d-block">Jogo de ida</span>
+                        <a href="{{ route('admin.calendario.eventos.show', $jogo->jogoIda->id_evento) }}">{{ $jogo->jogoIda->evento?->titulo_evento_calendario }}</a>
+                        @if ($jogo->jogoIda->temPlacar()) ({{ $jogo->jogoIda->placar_time_casa_jogos }} × {{ $jogo->jogoIda->placar_time_visitante_jogos }})@endif
+                    </div>
+                    @elseif ($jogo?->ehMataMata() && $jogo->jogoVolta)
+                    <div><span class="text-muted small d-block">Jogo de volta</span>
+                        <a href="{{ route('admin.calendario.eventos.show', $jogo->jogoVolta->id_evento) }}">{{ $jogo->jogoVolta->evento?->titulo_evento_calendario }}</a>
+                    </div>
+                    @endif
+                    @if ($jogo && ($confronto = $jogo->resultadoDoConfronto()))
+                    <div><span class="text-muted small d-block">Resultado</span><span class="text-success fw-semibold">{{ $confronto['texto'] }}</span></div>
                     @endif
                     <div><span class="text-muted small d-block">Responsável</span>{{ $evento->responsavel?->nome_usuario ?? '—' }}</div>
                     <div><span class="text-muted small d-block">Situação</span><span class="badge-status {{ $classeSituacao }}">{{ $evento->situacao_label }}</span></div>
@@ -609,7 +622,37 @@
                                            placeholder="—" value="{{ old('placar_time_visitante_jogos', $jogo->placar_time_visitante_jogos) }}">
                                 </div>
                             </div>
-                            <p class="text-muted small mt-2 mb-0">Vazios = jogo ainda não jogado.</p>
+                            <p class="text-muted small mt-2 mb-0">Tempo normal. Vazios = jogo ainda não jogado.</p>
+
+                            {{-- Mata-mata (Fase I, Etapa I1b): jogo único tem prorrogação e pênaltis; a volta, só os
+                                 pênaltis (empate no agregado); a ida, nenhum dos dois --}}
+                            @if ($jogo->ehMataMata() && ! $jogo->jogoVolta)
+                            @foreach (array_filter([
+                                'prorrogacao' => $jogo->id_jogo_ida ? null : 'Prorrogação (só os gols dela)',
+                                'penaltis'    => 'Pênaltis',
+                            ]) as $campo => $rotulo)
+                            <div class="row g-2 align-items-end mt-1">
+                                <div class="col-12 small fw-semibold">{{ $rotulo }}</div>
+                                <div class="col-5">
+                                    <input type="number" min="0" max="99" name="{{ $campo }}_time_casa_jogos" class="form-control form-control-sm text-center"
+                                           placeholder="—" aria-label="{{ $rotulo }} {{ $jogo->timeCasa->nome_time }}"
+                                           value="{{ old("{$campo}_time_casa_jogos", $jogo->{"{$campo}_time_casa_jogos"}) }}">
+                                </div>
+                                <div class="col-2 text-center fw-bold pb-1">×</div>
+                                <div class="col-5">
+                                    <input type="number" min="0" max="99" name="{{ $campo }}_time_visitante_jogos" class="form-control form-control-sm text-center"
+                                           placeholder="—" aria-label="{{ $rotulo }} {{ $jogo->timeVisitante->nome_time }}"
+                                           value="{{ old("{$campo}_time_visitante_jogos", $jogo->{"{$campo}_time_visitante_jogos"}) }}">
+                                </div>
+                            </div>
+                            @endforeach
+                            <p class="text-muted small mt-2 mb-0">
+                                {{ $jogo->id_jogo_ida ? 'Jogo de volta: empate no agregado vai direto para os pênaltis (sem gol fora).' : 'Jogo único empatado: prorrogação e, se continuar empatado, pênaltis.' }}
+                            </p>
+                            @endif
+                            @foreach (['placar_time_casa_jogos', 'prorrogacao_time_casa_jogos', 'penaltis_time_casa_jogos'] as $campoComErro)
+                            @error($campoComErro)<div class="text-danger small mt-2">{{ $message }}</div>@enderror
+                            @endforeach
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancelar</button>
@@ -631,7 +674,8 @@
         // Reabre o formulário que voltou com erro de validação (edição: voltar=evento; placar: só os placares)
         $reabrir = $errors->any()
             ? (old('voltar') === 'evento' ? ($jogo ? 'modalEditarJogo' : 'modalEditarEvento')
-                : ($jogo && $errors->hasAny(['placar_time_casa_jogos', 'placar_time_visitante_jogos']) ? 'modalPlacar' : null))
+                : ($jogo && $errors->hasAny(['placar_time_casa_jogos', 'placar_time_visitante_jogos', 'prorrogacao_time_casa_jogos',
+                    'prorrogacao_time_visitante_jogos', 'penaltis_time_casa_jogos', 'penaltis_time_visitante_jogos']) ? 'modalPlacar' : null))
             : null;
     @endphp
     <script>

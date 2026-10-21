@@ -129,9 +129,15 @@
         </div>
 
         <div class="camp-matches-list">
-            {{-- Os jogos já vêm ordenados pela data do evento --}}
+            {{-- Em seções (rodadas e fases do mata-mata; CampeonatoController::emSecoes), cada uma pela data.
+                 O título só aparece quando a aba tem mais de uma seção --}}
+            @php $comSecoes = $aba['jogos']->pluck('secao_site')->unique()->count() > 1; $secaoAnterior = null; @endphp
             @foreach ($aba['jogos'] as $jogo)
             @php $dataJogo = $jogo->evento->data_evento_calendario; @endphp
+            @if ($comSecoes && $jogo->secao_site !== $secaoAnterior)
+            <h3 class="match-secao">{{ $jogo->secao_site }}</h3>
+            @php $secaoAnterior = $jogo->secao_site; @endphp
+            @endif
             <div class="match-card">
 
                 <div class="match-date-col">
@@ -149,9 +155,6 @@
                     </div>
 
                     <div class="match-score">
-                        @if($jogo->fase_jogo && ! $jogo->contaNaClassificacao())
-                            <span class="match-fase">{{ $jogo->fase_label }}</span>
-                        @endif
                         @if($jogo->estaCancelado())
                             <span class="event-selo-cancelado"><i class="fa fa-ban"></i> Cancelado</span>
                         @elseif($jogo->temPlacar())
@@ -172,11 +175,23 @@
 
                     {{-- Horário e local de cada jogo: os jogos de um campeonato podem ser em locais diferentes --}}
                     <div class="match-info">
+                        {{-- Fase e perna do mata-mata ("Oitavas de final · ida") na linha de baixo: dentro do placar, quebrava --}}
+                        @if($jogo->ehMataMata())
+                        <span class="match-info-fase"><i class="fa fa-trophy"></i> {{ $jogo->fase_completa }}</span>
+                        @endif
                         <span><i class="fa fa-clock-o"></i> {{ $jogo->evento->horario_texto }}</span>
                         @if($jogo->evento->local_evento_calendario)
                         <span><i class="fa fa-map-marker"></i> {{ $jogo->evento->local_evento_calendario }}</span>
                         @endif
                     </div>
+
+                    {{-- Mata-mata (Fase I, Etapa I1b): prorrogação, pênaltis e quem passa --}}
+                    @if(! $jogo->estaCancelado() && ($jogo->placar_extra || $jogo->resultadoDoConfronto()))
+                    <div class="match-resultado">
+                        @if($jogo->placar_extra)<span>{{ $jogo->placar_extra }}</span>@endif
+                        @if($confronto = $jogo->resultadoDoConfronto())<strong>{{ $confronto['texto'] }}</strong>@endif
+                    </div>
+                    @endif
                 </div>
 
             </div>

@@ -206,24 +206,41 @@ class JogosController extends Controller
      */
     public function placar(Request $request, $id)
     {
-        $jogo = Jogo::findOrFail($id);
+        $jogo = Jogo::with('evento')->findOrFail($id);
 
         $request->validate([
             'placar_time_casa_jogos'      => 'nullable|integer|min:0|max:99|required_with:placar_time_visitante_jogos',
             'placar_time_visitante_jogos' => 'nullable|integer|min:0|max:99|required_with:placar_time_casa_jogos',
+            ...self::regrasDoResultado(),
         ], [
             'placar_time_casa_jogos.required_with'      => 'Preencha os dois placares, ou deixe os dois vazios (jogo ainda não jogado).',
             'placar_time_visitante_jogos.required_with' => 'Preencha os dois placares, ou deixe os dois vazios (jogo ainda não jogado).',
+            ...self::MENSAGENS_DO_RESULTADO,
         ]);
 
-        $jogo->update([
-            'placar_time_casa_jogos'      => $request->filled('placar_time_casa_jogos') ? (int) $request->placar_time_casa_jogos : null,
-            'placar_time_visitante_jogos' => $request->filled('placar_time_visitante_jogos') ? (int) $request->placar_time_visitante_jogos : null,
-        ]);
+        // Prorrogação e pênaltis só no mata-mata (os campos nem aparecem nos outros jogos)
+        $numero = fn (string $campo) => $request->filled($campo) ? (int) $request->input($campo) : null;
+        $placar = [
+            'placar_time_casa_jogos'           => $numero('placar_time_casa_jogos'),
+            'placar_time_visitante_jogos'      => $numero('placar_time_visitante_jogos'),
+            'prorrogacao_time_casa_jogos'      => $jogo->ehMataMata() ? $numero('prorrogacao_time_casa_jogos') : null,
+            'prorrogacao_time_visitante_jogos' => $jogo->ehMataMata() ? $numero('prorrogacao_time_visitante_jogos') : null,
+            'penaltis_time_casa_jogos'         => $jogo->ehMataMata() ? $numero('penaltis_time_casa_jogos') : null,
+            'penaltis_time_visitante_jogos'    => $jogo->ehMataMata() ? $numero('penaltis_time_visitante_jogos') : null,
+        ];
+        $dados = [...$jogo->only(['id_campeonato', 'fase_jogo', 'rodada_jogo', 'id_jogo_ida', 'id_time_casa', 'id_time_visitante']),
+            'id_categoria' => $jogo->evento?->id_categoria, ...$placar];
+        if ($erros = Jogo::errosDoResultado($dados, $jogo)) {
+            throw ValidationException::withMessages($erros);
+        }
+
+        $jogo->update($placar);
+
+        $extra = $jogo->placar_extra ? " ({$jogo->placar_extra})" : '';
 
         return redirect()->route('admin.calendario.eventos.show', $jogo->id_evento)
             ->with('sucesso', $jogo->temPlacar()
-                ? "Placar salvo: {$jogo->placar_time_casa_jogos} × {$jogo->placar_time_visitante_jogos}."
+                ? "Placar salvo: {$jogo->placar_time_casa_jogos} × {$jogo->placar_time_visitante_jogos}{$extra}."
                 : 'Placar apagado (jogo ainda não jogado).');
     }
 
@@ -386,6 +403,9 @@ class JogosController extends Controller
             'placar_time_visitante_jogos'      => 'nullable|integer|min:0|required_with:placar_time_casa_jogos',
             'id_categoria'                     => $regraCategoria,
             'fase_jogo'                        => ['nullable', Rule::in(array_keys(Jogo::FASES))],
+            ...self::regrasDoResultado(),
+            'rodada_jogo'                      => 'nullable|integer|min:1|max:' . Jogo::RODADA_MAX,
+            'id_jogo_ida'                      => 'nullable|integer',
             'data_evento_calendario'           => 'required|date',
             'horario_inicio_evento_calendario' => 'nullable|date_format:H:i,H:i:s',
             'horario_fim_evento_calendario'    => 'nullable|date_format:H:i,H:i:s',
@@ -399,19 +419,55 @@ class JogosController extends Controller
             'id_categoria.required'                => 'Escolha a categoria do jogo (uma das categorias do campeonato).',
             'id_categoria.in'                      => 'A categoria do jogo precisa ser uma das categorias do campeonato.',
             'fase_jogo.in'                         => 'Escolha uma fase da lista.',
+            'rodada_jogo.min'                      => 'A rodada vai de 1 a ' . Jogo::RODADA_MAX . '.',
+            'rodada_jogo.max'                      => 'A rodada vai de 1 a ' . Jogo::RODADA_MAX . '.',
+            ...self::MENSAGENS_DO_RESULTADO,
         ]);
 
         $this->conferirParticipantes($request, $evento?->jogo);
 
+        // Amistoso: sem fase, rodada, volta, prorrogação nem pênaltis
+        $numero   = fn (string $campo) => $amistoso || ! $request->filled($campo) ? null : (int) $request->input($campo);
+        $dadosJogo = [
+            'id_campeonato'                    => $amistoso ? null : (int) $request->id_campeonato,
+            'fase_jogo'                        => $amistoso ? null : $request->fase_jogo,
+            'rodada_jogo'                      => $numero('rodada_jogo'),
+            'id_jogo_ida'                      => $numero('id_jogo_ida'),
+            'id_time_casa'                     => (int) $request->id_time_casa,
+            'id_time_visitante'                => (int) $request->id_time_visitante,
+            'placar_time_casa_jogos'           => $request->filled('placar_time_casa_jogos') ? (int) $request->placar_time_casa_jogos : null,
+            'placar_time_visitante_jogos'      => $request->filled('placar_time_visitante_jogos') ? (int) $request->placar_time_visitante_jogos : null,
+            'prorrogacao_time_casa_jogos'      => $numero('prorrogacao_time_casa_jogos'),
+            'prorrogacao_time_visitante_jogos' => $numero('prorrogacao_time_visitante_jogos'),
+            'penaltis_time_casa_jogos'         => $numero('penaltis_time_casa_jogos'),
+            'penaltis_time_visitante_jogos'    => $numero('penaltis_time_visitante_jogos'),
+        ];
+
+        // Rodada, ida e volta, prorrogação e pênaltis (Fase I, Etapa I1b)
+        if ($erros = Jogo::errosDoResultado([...$dadosJogo, 'id_categoria' => $request->filled('id_categoria') ? (int) $request->id_categoria : null], $evento?->jogo)) {
+            throw ValidationException::withMessages($erros);
+        }
+
+        return $dadosJogo;
+    }
+
+    // Prorrogação e pênaltis (Fase I, Etapa I1b): no formulário do jogo e no placar rápido
+    private static function regrasDoResultado(): array
+    {
         return [
-            'id_campeonato'               => $request->id_campeonato === self::AMISTOSO ? null : (int) $request->id_campeonato,
-            'fase_jogo'                   => $request->id_campeonato === self::AMISTOSO ? null : $request->fase_jogo,
-            'id_time_casa'                => (int) $request->id_time_casa,
-            'id_time_visitante'           => (int) $request->id_time_visitante,
-            'placar_time_casa_jogos'      => $request->filled('placar_time_casa_jogos') ? (int) $request->placar_time_casa_jogos : null,
-            'placar_time_visitante_jogos' => $request->filled('placar_time_visitante_jogos') ? (int) $request->placar_time_visitante_jogos : null,
+            'prorrogacao_time_casa_jogos'      => 'nullable|integer|min:0|max:99',
+            'prorrogacao_time_visitante_jogos' => 'nullable|integer|min:0|max:99',
+            'penaltis_time_casa_jogos'         => 'nullable|integer|min:0|max:99',
+            'penaltis_time_visitante_jogos'    => 'nullable|integer|min:0|max:99',
         ];
     }
+
+    private const MENSAGENS_DO_RESULTADO = [
+        'prorrogacao_time_casa_jogos.*'      => 'Gols da prorrogação: um número de 0 a 99.',
+        'prorrogacao_time_visitante_jogos.*' => 'Gols da prorrogação: um número de 0 a 99.',
+        'penaltis_time_casa_jogos.*'         => 'Pênaltis: um número de 0 a 99.',
+        'penaltis_time_visitante_jogos.*'    => 'Pênaltis: um número de 0 a 99.',
+    ];
 
     /**
      * Jogo de campeonato: mandante e visitante precisam estar entre os participantes da categoria do jogo

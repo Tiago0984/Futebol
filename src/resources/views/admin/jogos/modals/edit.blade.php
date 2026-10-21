@@ -19,6 +19,13 @@
         'local_evento_calendario'          => $ev->local_evento_calendario,
         'placar_time_casa_jogos'           => $jogoEmEdicao->placar_time_casa_jogos,
         'placar_time_visitante_jogos'      => $jogoEmEdicao->placar_time_visitante_jogos,
+        'id_jogo'                          => $jogoEmEdicao->id_jogo,
+        'rodada_jogo'                      => $jogoEmEdicao->rodada_jogo,
+        'id_jogo_ida'                      => $jogoEmEdicao->id_jogo_ida,
+        'prorrogacao_time_casa_jogos'      => $jogoEmEdicao->prorrogacao_time_casa_jogos,
+        'prorrogacao_time_visitante_jogos' => $jogoEmEdicao->prorrogacao_time_visitante_jogos,
+        'penaltis_time_casa_jogos'         => $jogoEmEdicao->penaltis_time_casa_jogos,
+        'penaltis_time_visitante_jogos'    => $jogoEmEdicao->penaltis_time_visitante_jogos,
     ] : [];
 @endphp
 <div class="modal fade" id="modalEditarJogo" tabindex="-1" aria-hidden="true">

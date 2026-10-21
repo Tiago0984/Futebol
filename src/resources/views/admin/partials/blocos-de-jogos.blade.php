@@ -65,7 +65,10 @@
       @if ($ev->estaCancelado())
         <span class="badge-status inativo">Cancelado</span>
       @elseif ($jogo->temPlacar())
-        <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
+        <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}{{ $jogo->placar_extra ? ' · ' . $jogo->placar_extra : '' }}</span>
+        @if ($confronto = $jogo->resultadoDoConfronto())
+          <span class="text-success small fw-semibold"><i class="bi bi-arrow-right-circle"></i> {{ $confronto['texto'] }}</span>
+        @endif
       @endif
       @unless ($ev->estaPublicado())
         <span class="badge bg-warning text-dark" title="Os atletas ainda não foram avisados">Rascunho</span>
@@ -83,7 +86,7 @@
         {{ $jogo->campeonato->nome_campeonato }}
         {{-- Categoria e fase do jogo (Fase H, Etapas H3 e H4) --}}
         <span class="fw-normal small text-muted js-fase-do-jogo">
-          {{ collect([$ev->categoria?->rotulo, $jogo->fase_label])->filter()->implode(' · ') }}
+          {{ collect([$ev->categoria?->rotulo, $jogo->fase_completa])->filter()->implode(' · ') }}
         </span>
       </div>
     @endif

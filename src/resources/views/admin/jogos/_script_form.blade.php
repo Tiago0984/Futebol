@@ -81,7 +81,53 @@
         if (amistoso && !categoria.value && casa?.dataset.categoria) {
             categoria.value = casa.dataset.categoria;
         }
+
+        atualizarMataMata(form, amistoso || campeonato.value === '' ? null : form.querySelector('.js-fase')?.value, campeonato.value, categoria.value);
     };
+
+    // Fase I, Etapa I1b: rodada só na fase de grupos; no mata-mata, "Jogo de volta de…" (só as idas do mesmo
+    // campeonato, categoria e fase, sem outra volta), a prorrogação (só no jogo único) e os pênaltis. Os times
+    // NÃO filtram as idas: com os times na ordem errada, o vínculo é enviado e o servidor mostra o erro (filtrar
+    // aqui apagava o vínculo sem avisar). Bloco escondido vai desabilitado (não é enviado)
+    function atualizarMataMata(form, fase, idCampeonato, idCategoria) {
+        const grupos   = fase === 'GRUPOS';
+        const mataMata = !!fase && !grupos;
+        // O jogo editado (para não se oferecer como a própria ida): pelo data-id-jogo ou pelo endereço do formulário
+        const idJogo   = form.dataset.idJogo || (form.closest('form')?.getAttribute('action') ?? '').match(/jogos\/(\d+)$/)?.[1] || '';
+        const ida      = form.querySelector('.js-ida');
+
+        const mostrar = (seletor, visivel) => form.querySelectorAll(seletor).forEach(bloco => {
+            bloco.classList.toggle('d-none', !visivel);
+            bloco.querySelectorAll('input, select').forEach(campo => campo.disabled = !visivel);
+        });
+
+        let esteEhIda = false;
+        ida?.querySelectorAll('option[value]:not([value=""])').forEach(opt => {
+            if (opt.value === idJogo) {
+                esteEhIda = opt.dataset.volta !== '';
+            }
+            const combina = mataMata && opt.value !== idJogo
+                && opt.dataset.campeonato === idCampeonato && opt.dataset.categoria === idCategoria && opt.dataset.fase === fase
+                && (opt.dataset.volta === '' || opt.dataset.volta === idJogo);
+            opt.hidden = !combina;
+            opt.disabled = !combina;
+        });
+        if (ida?.selectedOptions[0]?.disabled) ida.value = '';
+
+        const idaOuVolta = esteEhIda || !!ida?.value;
+        mostrar('.js-bloco-rodada', grupos);
+        mostrar('.js-bloco-ida', mataMata && !esteEhIda);
+        mostrar('.js-bloco-mata-mata', mataMata);
+        mostrar('.js-bloco-prorrogacao', mataMata && !idaOuVolta);
+        const ajuda = form.querySelector('.js-ajuda-mata-mata');
+        if (ajuda) {
+            ajuda.textContent = esteEhIda
+                ? 'Este é o jogo de ida: a prorrogação não existe e os pênaltis, se houver, ficam no jogo de volta.'
+                : (ida?.value
+                    ? 'Jogo de volta: empate no agregado (ida + volta) vai direto para os pênaltis, sem prorrogação e sem gol fora.'
+                    : 'Jogo único empatado: prorrogação (só os gols dela) e, se continuar empatado, pênaltis.');
+        }
+    }
 
     // Guarda os times com que o formulário abriu (o modal de edição da lista chama de novo ao preencher)
     window.guardarTimesIniciais = function (form) {
@@ -94,6 +140,9 @@
             form.querySelector('.js-campeonato').addEventListener('change', () => window.atualizarFormJogo(form));
             form.querySelector('.js-categoria').addEventListener('change', () => window.atualizarFormJogo(form));
             form.querySelector('.js-time-casa').addEventListener('change', () => window.atualizarFormJogo(form));
+            form.querySelector('.js-time-visitante').addEventListener('change', () => window.atualizarFormJogo(form));
+            form.querySelector('.js-fase')?.addEventListener('change', () => window.atualizarFormJogo(form));
+            form.querySelector('.js-ida')?.addEventListener('change', () => window.atualizarFormJogo(form));
             window.atualizarFormJogo(form);
         });
 
@@ -113,6 +162,14 @@
                 document.getElementById('edit_local').value            = this.dataset.local;
                 document.getElementById('edit_placar_casa').value      = this.dataset.placarCasa;
                 document.getElementById('edit_placar_visitante').value = this.dataset.placarVisitante;
+                // Fase I, Etapa I1b
+                f.querySelector('.form-jogo').dataset.idJogo = this.dataset.id;
+                document.getElementById('edit_rodada').value                = this.dataset.rodada;
+                document.getElementById('edit_id_jogo_ida').value           = this.dataset.ida;
+                document.getElementById('edit_prorrogacao_casa').value      = this.dataset.prorrogacaoCasa;
+                document.getElementById('edit_prorrogacao_visitante').value = this.dataset.prorrogacaoVisitante;
+                document.getElementById('edit_penaltis_casa').value         = this.dataset.penaltisCasa;
+                document.getElementById('edit_penaltis_visitante').value    = this.dataset.penaltisVisitante;
                 // Times com que o modal abriu ficam na lista mesmo fora dos participantes (jogo antigo)
                 window.guardarTimesIniciais(f.querySelector('.form-jogo'));
                 window.atualizarFormJogo(f.querySelector('.form-jogo'));
