@@ -149,7 +149,8 @@ class EventoHistoricoTest extends TestCase
             'data_evento_calendario' => now()->addDays(12)->toDateString(),
         ]));
 
-        $this->comoAdmin()->get(route('admin.calendario.index'))
+        // A lista abre no mês atual: pede o mês do evento (daqui a 12 dias pode ser o mês seguinte)
+        $this->comoAdmin()->get(route('admin.calendario.index', ['mes' => now()->addDays(12)->format('Y-m')]))
             ->assertSee('<span class="badge-status pendente">Alterado</span>', false);
 
         $this->get('/calendario')
