@@ -43,8 +43,13 @@
                         <select id="filtroCampeonato" name="campeonato" class="form-select form-select-sm js-filtro-url">
                             <option value="">Todos</option>
                             <option value="amistoso" @selected($filtros['campeonato'] === 'amistoso')>Amistosos</option>
-                            @foreach($campeonatos as $camp)
-                            <option value="{{ $camp->id_campeonato }}" @selected($filtros['campeonato'] === (string) $camp->id_campeonato)>{{ $camp->nome_campeonato }}</option>
+                            {{-- Ativos primeiro; os inativos num grupo à parte, no fim (21/10/2026) --}}
+                            @foreach($campeonatos->groupBy(fn ($c) => $c->estaAtivo() ? 'ativos' : 'inativos')->sortKeys() as $grupo => $opcoes)
+                            @if($grupo === 'inativos')<optgroup label="Inativos">@endif
+                            @foreach($opcoes as $camp)
+                            <option value="{{ $camp->id_campeonato }}" @selected($filtros['campeonato'] === (string) $camp->id_campeonato)>{{ $camp->nome_campeonato }}{{ $grupo === 'inativos' ? ' (inativo)' : '' }}</option>
+                            @endforeach
+                            @if($grupo === 'inativos')</optgroup>@endif
                             @endforeach
                         </select>
                     </div>

@@ -40,7 +40,7 @@
             <div class="kpi-icon"><i class="bi bi-trophy"></i></div>
             <div class="kpi-body">
               <div class="kpi-number">{{ $stats['campeonatos'] }}</div>
-              <div class="kpi-label">Campeonatos</div>
+              <div class="kpi-label">Campeonatos ativos</div>
             </div>
             <i class="bi bi-arrow-right kpi-arrow"></i>
           </a>

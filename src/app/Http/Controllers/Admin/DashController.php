@@ -20,7 +20,7 @@ class DashController extends Controller
             $stats = [
                 'noticias'             => Noticia::count(),
                 'banners'              => Banner::count(),
-                'campeonatos'          => Campeonato::count(),
+                'campeonatos'          => Campeonato::ativos()->count(),
                 'times'                => Time::count(),
                 'galerias'             => Galeria::count(),
                 'jogos'                => Jogo::count(),

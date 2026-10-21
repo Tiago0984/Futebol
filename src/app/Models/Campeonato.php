@@ -310,6 +310,11 @@ class Campeonato extends Model
         return $query->where('status_campeonato', 'ATIVO');
     }
 
+    public function estaAtivo(): bool
+    {
+        return mb_strtoupper((string) $this->status_campeonato) === 'ATIVO';
+    }
+
     // "Em andamento" (menu do admin): status ATIVO e hoje dentro do período (CLAUDE.md, seção 5)
     public function scopeEmAndamento($query)
     {

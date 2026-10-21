@@ -387,10 +387,11 @@ class MenuAdminTest extends TestCase
         $this->assertStringNotContainsString(route('admin.campeonatos.convocados', [$this->emAndamento, $verde]), $semJogo[0]);
         $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()], $this->linksAtivos($resposta));
 
-        // Filtro "Campeonato": todos (inclusive o encerrado e o inativo), o atual selecionado; cada opção abre a tela dele
+        // Filtro "Campeonato": todos (inclusive o encerrado e o inativo, este no grupo "Inativos"), o atual
+        // selecionado; cada opção abre a tela dele
         $opcoes = [];
         $xpath = new \DOMXPath(tap(new \DOMDocument(), fn ($d) => @$d->loadHTML('<?xml encoding="utf-8"?>' . $html)));
-        foreach ($xpath->query('//select[@id="filtroCampeonato"]/option') as $opcao) {
+        foreach ($xpath->query('//select[@id="filtroCampeonato"]//option') as $opcao) {
             /** @var \DOMElement $opcao */
             $opcoes[$opcao->getAttribute('value')] = $opcao->hasAttribute('selected');
         }

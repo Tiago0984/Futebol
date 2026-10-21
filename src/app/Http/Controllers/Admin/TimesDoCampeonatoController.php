@@ -60,7 +60,8 @@ class TimesDoCampeonatoController extends Controller
     // campeonato; sem a lista de participantes sem jogo (ela é de um campeonato só)
     public function todos()
     {
-        [$proximos, $realizados] = Jogo::separadosParaTelaDeTimes(Jogo::whereNotNull('id_campeonato'));
+        // Jogos dos campeonatos inativos ficam de fora (o filtro ainda abre cada um, no grupo "Inativos")
+        [$proximos, $realizados] = Jogo::separadosParaTelaDeTimes(Jogo::whereHas('campeonato', fn ($q) => $q->ativos()));
 
         $campeonato = null;
         $semJogo    = collect();
@@ -85,7 +86,7 @@ class TimesDoCampeonatoController extends Controller
     {
         return [
             'campeonatos'    => Campeonato::orderByDesc('data_inicio_campeonato')->orderBy('nome_campeonato')
-                ->get(['id_campeonato', 'nome_campeonato']),
+                ->get(['id_campeonato', 'nome_campeonato', 'status_campeonato']),
             'formularioJogo' => JogosController::dadosDoFormulario(),
         ];
     }

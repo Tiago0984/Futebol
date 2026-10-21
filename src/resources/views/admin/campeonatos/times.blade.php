@@ -43,10 +43,15 @@
         <select id="filtroCampeonato" class="form-select form-select-sm" style="min-width: 220px;"
                 onchange="if (this.value) window.location.href = this.value">
           <option value="{{ route('admin.campeonatos.jogos') }}" @selected(! $campeonato)>Todos</option>
-          @foreach ($campeonatos as $opcao)
+          {{-- Ativos primeiro; os inativos num grupo à parte, no fim (21/10/2026) --}}
+          @foreach ($campeonatos->groupBy(fn ($c) => $c->estaAtivo() ? 'ativos' : 'inativos')->sortKeys() as $grupo => $opcoes)
+          @if ($grupo === 'inativos')<optgroup label="Inativos">@endif
+          @foreach ($opcoes as $opcao)
           <option value="{{ route('admin.campeonatos.times', $opcao->id_campeonato) }}" @selected($opcao->id_campeonato === $campeonato?->id_campeonato)>
-            {{ $opcao->nome_campeonato }}
+            {{ $opcao->nome_campeonato }}{{ $grupo === 'inativos' ? ' (inativo)' : '' }}
           </option>
+          @endforeach
+          @if ($grupo === 'inativos')</optgroup>@endif
           @endforeach
         </select>
       </div>

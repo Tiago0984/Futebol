@@ -15,12 +15,13 @@
             <option value="{{ \App\Http\Controllers\Admin\JogosController::AMISTOSO }}" @selected($valor('id_campeonato') === \App\Http\Controllers\Admin\JogosController::AMISTOSO)>
                 Amistoso (sem campeonato)
             </option>
-            @foreach($campeonatos as $camp)
+            {{-- Campeonato inativo não recebe jogo novo: só aparece na edição (o jogo que já é dele), com "(inativo)" --}}
+            @foreach($campeonatos->filter(fn ($c) => $c->estaAtivo() || $p !== 'criar_') as $camp)
             <option value="{{ $camp->id_campeonato }}"
                 data-categorias="{{ $camp->categorias->pluck('id_categoria')->map(fn ($id) => (int) $id)->toJson() }}"
                 data-participantes="{{ json_encode((object) ($camp->participantes_por_categoria ?? [])) }}"
                 @selected((string) $valor('id_campeonato') === (string) $camp->id_campeonato)>
-                {{ $camp->nome_campeonato }}
+                {{ $camp->nome_campeonato }}{{ $camp->estaAtivo() ? '' : ' (inativo)' }}
             </option>
             @endforeach
         </select>

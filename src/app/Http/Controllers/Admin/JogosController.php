@@ -430,6 +430,13 @@ class JogosController extends Controller
         }
 
         $campeonato    = Campeonato::find((int) $request->id_campeonato);
+
+        // Campeonato inativo (21/10/2026): não recebe jogo novo; o jogo que já é dele continua editável
+        if (! $campeonato->estaAtivo() &&(int) $jogoAtual?->id_campeonato !== (int) $campeonato->id_campeonato) {
+            throw ValidationException::withMessages(['id_campeonato' =>
+                "O campeonato {$campeonato->nome_campeonato} está inativo. Reative-o (Campeonatos) antes de pôr jogos nele."]);
+        }
+
         $categoria     = Categoria::find((int) $request->id_categoria);
         $participantes = $campeonato->participantesPorCategoria()[(int) $request->id_categoria] ?? [];
         if (! $participantes) {
