@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
         // Dados do site só nas views que os usam (com '*', as consultas rodavam em toda view renderizada,
         // inclusive em cada partial do admin). Campeonatos do menu: só o header do site
         View::composer('partials.header', function ($view) {
-            $view->with('campeonatosMenu', Campeonato::orderBy('nome_campeonato')->get());
+            $view->with('campeonatosMenu', Campeonato::ativos()->orderBy('nome_campeonato')->get());
         });
 
         // As 3 notícias ATIVAS mais recentes: header e footer do site e as páginas de notícias

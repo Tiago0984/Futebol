@@ -304,6 +304,12 @@ class Campeonato extends Model
         return $this->hasMany(Jogo::class, 'id_campeonato', 'id_campeonato');
     }
 
+    // Campeonatos que o site e a API mostram: inativo some (com os jogos dele) e a página dá 404 (21/10/2026)
+    public function scopeAtivos($query)
+    {
+        return $query->where('status_campeonato', 'ATIVO');
+    }
+
     // "Em andamento" (menu do admin): status ATIVO e hoje dentro do período (CLAUDE.md, seção 5)
     public function scopeEmAndamento($query)
     {

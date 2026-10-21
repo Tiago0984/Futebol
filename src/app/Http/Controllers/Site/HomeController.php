@@ -60,6 +60,7 @@ class HomeController extends Controller
                 'jogos' => fn ($q) => $q->visiveis()->ordenadosPelaData('desc'),
                 'jogos.evento', 'jogos.timeCasa', 'jogos.timeVisitante',
             ])
+            ->ativos()
             ->orderBy('data_inicio_campeonato', 'desc')
             ->get();
 

@@ -672,7 +672,8 @@ class EventoCalendario extends Model
             ->where('tipo_evento_calendario', 'CAMPEONATO')
             ->orWhere(fn ($jogo) => $jogo
                 ->where('tipo_evento_calendario', 'JOGO')
-                ->whereHas('jogo', fn ($j) => $j->whereNotNull('id_campeonato'))));
+                // Jogo de campeonato inativo some junto com ele (21/10/2026)
+                ->whereHas('jogo', fn ($j) => $j->whereHas('campeonato', fn ($c) => $c->ativos()))));
     }
 
     /**

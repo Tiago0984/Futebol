@@ -13,7 +13,7 @@ class CampeonatoController extends Controller
     public function index()
     {
         $campeonatos = Campeonato::with(['categoria:id_categoria,nome_categoria', 'categorias'])
-            ->where('status_campeonato', 'ATIVO')
+            ->ativos()
             ->orderByDesc('data_inicio_campeonato')
             ->get([
                 'id_campeonato',
@@ -49,7 +49,7 @@ class CampeonatoController extends Controller
                 'jogos.timeCasa:id_time,nome_time,logo_time',
                 'jogos.timeVisitante:id_time,nome_time,logo_time',
             ])
-            ->where('status_campeonato', 'ATIVO')
+            ->ativos()
             ->find($id);
 
         if (!$campeonato) {
