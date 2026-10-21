@@ -12,8 +12,16 @@ class CampeonatoController extends Controller
     public function campeonato()
     {
         $campeonatos = Campeonato::with(['categorias', 'times.categoria'])->get();
+
+        // Local de cada cartão: o principal ou os locais dos jogos visíveis (cada jogo tem o seu), numa consulta só
+        $jogosPorCampeonato = Jogo::with('evento')->whereIn('id_campeonato', $campeonatos->pluck('id_campeonato'))
+            ->visiveis()->ordenadosPelaData()->get()->groupBy('id_campeonato');
+        $locais = $campeonatos->mapWithKeys(fn ($camp) => [
+            $camp->id_campeonato => $camp->textoDosLocais($jogosPorCampeonato[$camp->id_campeonato] ?? []),
+        ]);
+
         $videos = Video::doSite('campeonatos')->get();
-        return view('site.campeonatos.campeonatos', compact('campeonatos', 'videos'));
+        return view('site.campeonatos.campeonatos', compact('campeonatos', 'locais', 'videos'));
     }
 
     /**
@@ -49,6 +57,8 @@ class CampeonatoController extends Controller
                 'tabelas' => [['grupo' => null, 'classificados' => null, 'tabela' => Jogo::classificacao($jogos)]]]]);
         }
 
-        return view('site.campeonatos.show', compact('campeonato', 'abas'));
+        $local = $campeonato->textoDosLocais($jogos);
+
+        return view('site.campeonatos.show', compact('campeonato', 'abas', 'local'));
     }
 }

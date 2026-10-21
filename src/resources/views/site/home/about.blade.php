@@ -17,9 +17,14 @@
                 @foreach($campeonatos as $camp)
                 <div class="home-camp-card {{ $loop->first ? 'is-active' : '' }}"
                      data-camp-id="{{ $camp->id_campeonato }}">
-                    <img src="{{ asset('futebol/images/campeonatos/' . $camp->logo_evento) }}"
+                    @if($camp->logo_url)
+                    <img src="{{ $camp->logo_url }}"
                          alt="{{ $camp->nome_campeonato }}"
                          class="home-camp-logo">
+                    @else
+                    {{-- Sem logo (opcional desde 21/10/2026): as iniciais do nome --}}
+                    <span class="home-camp-logo home-camp-logo-iniciais" aria-hidden="true">{{ $camp->iniciais }}</span>
+                    @endif
                     <div class="home-camp-info">
                         <span class="home-camp-type">{{ $camp->tipo_campeonato }}</span>
                         <strong class="home-camp-name">{{ $camp->nome_campeonato }}</strong>

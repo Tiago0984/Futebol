@@ -536,4 +536,42 @@ class Campeonato extends Model
     {
         return static::urlDaImagem($this->attributes['banner_evento'] ?? null, 'campeonatos');
     }
+
+    // Iniciais do nome, no lugar da logo (opcional desde 21/10/2026): "Copa da Cidade" => "CC"
+    public function getIniciaisAttribute(): string
+    {
+        return collect(preg_split('/\s+/u', trim((string) $this->nome_campeonato)))
+            ->reject(fn ($palavra) => in_array(mb_strtolower($palavra), ['da', 'de', 'do', 'das', 'dos', 'e'], true))
+            ->take(2)
+            ->map(fn ($palavra) => mb_strtoupper(mb_substr($palavra, 0, 1)))
+            ->join('');
+    }
+
+    // Quantos locais dos jogos aparecem pelo nome no site; os outros viram "e mais N"
+    public const LOCAIS_NO_SITE = 2;
+
+    /**
+     * Local do campeonato para o site (21/10/2026): o local principal, se preenchido; senão, os locais dos jogos
+     * ($jogos com o evento: cada jogo tem o seu), na ordem em que vêm e sem repetir: "Arena A", "Arena A e Arena B"
+     * ou "Arena A, Arena B e mais 2". Sem nenhum, null (a linha do local some).
+     */
+    public function textoDosLocais(iterable $jogos): ?string
+    {
+        if (filled($this->local_evento)) {
+            return $this->local_evento;
+        }
+
+        $locais = collect($jogos)
+            ->map(fn ($jogo) => trim((string) $jogo->evento?->local_evento_calendario))
+            ->filter()
+            ->unique(fn ($local) => mb_strtolower($local))
+            ->values();
+
+        return match (true) {
+            $locais->isEmpty()                         => null,
+            $locais->count() <= self::LOCAIS_NO_SITE   => $locais->join(', ', ' e '),
+            default                                    => $locais->take(self::LOCAIS_NO_SITE)->join(', ')
+                                                          . ' e mais ' . ($locais->count() - self::LOCAIS_NO_SITE),
+        };
+    }
 }

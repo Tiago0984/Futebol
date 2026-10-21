@@ -37,7 +37,7 @@
                     <div class="row g-3">
                         <div class="col-md-7">
                             <label class="form-label">Nome do Campeonato <span class="text-danger">*</span></label>
-                            <input type="text" name="nome_campeonato" class="form-control" required
+                            <input type="text" name="nome_campeonato" class="form-control" maxlength="100" required
                                 value="{{ old('nome_campeonato', $campeonato->nome_campeonato) }}">
                         </div>
                         <div class="col-md-3">
@@ -66,13 +66,14 @@
                                 value="{{ old('data_fim_campeonato', $campeonato->data_fim_campeonato?->format('Y-m-d')) }}">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Local</label>
-                            <input type="text" name="local_evento" class="form-control" list="locaisUsados" autocomplete="off"
+                            <label class="form-label">Local principal</label>
+                            <input type="text" name="local_evento" class="form-control" maxlength="100" list="locaisUsados" autocomplete="off"
                                 value="{{ old('local_evento', $campeonato->local_evento) }}">
+                            <span class="form-text">Opcional. Cada jogo tem o seu local; este é a sugestão para os jogos novos.</span>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Organizador</label>
-                            <input type="text" name="organizador_campeonato" class="form-control"
+                            <input type="text" name="organizador_campeonato" class="form-control" maxlength="100"
                                 value="{{ old('organizador_campeonato', $campeonato->organizador_campeonato) }}">
                         </div>
                         <div class="col-12">

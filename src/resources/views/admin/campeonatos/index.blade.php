@@ -240,7 +240,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Nome <span class="text-danger">*</span></label>
-                            <input type="text" name="nome_campeonato" class="form-control"
+                            <input type="text" name="nome_campeonato" class="form-control" maxlength="100"
                                 placeholder="Ex: Liga Premiere 2025" required>
                         </div>
                         <div class="col-md-3">
@@ -261,12 +261,13 @@
                             <input type="date" name="data_fim_campeonato" class="form-control" required>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Local</label>
-                            <input type="text" name="local_evento" class="form-control" placeholder="Ex: Campo AACJ" list="locaisUsados" autocomplete="off">
+                            <label class="form-label">Local principal</label>
+                            <input type="text" name="local_evento" class="form-control" maxlength="100" placeholder="Ex: Campo AACJ" list="locaisUsados" autocomplete="off">
+                            <span class="form-text">Opcional. Cada jogo tem o seu local.</span>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Organizador</label>
-                            <input type="text" name="organizador_campeonato" class="form-control" placeholder="Ex: Liga Municipal">
+                            <input type="text" name="organizador_campeonato" class="form-control" maxlength="100" placeholder="Ex: Liga Municipal">
                         </div>
                         <div class="col-12">
                             <label class="form-label">Descrição</label>
@@ -323,7 +324,7 @@
 
                         <div class="col-md-6">
                             <label class="form-label">Nome <span class="text-danger">*</span></label>
-                            <input type="text" id="edit_nome_campeonato" name="nome_campeonato"
+                            <input type="text" id="edit_nome_campeonato" name="nome_campeonato" maxlength="100"
                                 class="form-control" required>
                         </div>
                         <div class="col-md-3">
@@ -346,12 +347,13 @@
                                 class="form-control" required>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Local</label>
-                            <input type="text" id="edit_local_evento" name="local_evento" class="form-control" list="locaisUsados" autocomplete="off">
+                            <label class="form-label">Local principal</label>
+                            <input type="text" id="edit_local_evento" name="local_evento" class="form-control" maxlength="100" list="locaisUsados" autocomplete="off">
+                            <span class="form-text">Opcional. Cada jogo tem o seu local.</span>
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Organizador</label>
-                            <input type="text" id="edit_organizador" name="organizador_campeonato"
+                            <input type="text" id="edit_organizador" name="organizador_campeonato" maxlength="100"
                                 class="form-control">
                         </div>
                         <div class="col-12">

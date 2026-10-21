@@ -11124,3 +11124,32 @@ body.lp-body {
 @media (max-width: 767px) {
     .site-videos-item { flex-basis: 140px; }
 }
+
+/* ==========================================================================
+   72. CAMPEONATO SEM BANNER OU SEM LOGO (21/10/2026: imagens opcionais)
+   ========================================================================== */
+.camp-hero-section.sem-imagem,
+.camp-card-banner.sem-imagem {
+    background-image: linear-gradient(135deg, #2a0707 0%, #0a0a0a 70%);
+}
+.home-camp-logo-iniciais {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #e31c1c;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 0.9rem;
+    letter-spacing: 0.5px;
+}
+/* Horário e local de cada jogo, na linha de baixo do cartão (página do campeonato) */
+.match-info {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px 16px;
+    font-size: 0.8rem;
+    color: #666666;
+}
+.match-info .fa { color: #e31c1c; margin-right: 3px; }

@@ -5,16 +5,19 @@
 {{-- ======================================================
      HERO DO CAMPEONATO
      ====================================================== --}}
-<section class="camp-hero-section"
-         style="background-image: url('{{ asset('futebol/images/campeonatos/' . $campeonato->banner_evento) }}');">
+{{-- Logo e banner são opcionais (21/10/2026): sem banner, fundo em degradê; sem logo, o bloco some --}}
+<section class="camp-hero-section {{ $campeonato->banner_url ? '' : 'sem-imagem' }}"
+         @if($campeonato->banner_url) style="background-image: url('{{ $campeonato->banner_url }}');" @endif>
     <div class="camp-hero-overlay"></div>
     <div class="camp-hero-inner">
 
+        @if($campeonato->logo_url)
         <div class="camp-hero-logo-wrap">
-            <img src="{{ asset('futebol/images/campeonatos/' . $campeonato->logo_evento) }}"
+            <img src="{{ $campeonato->logo_url }}"
                  alt="{{ $campeonato->nome_campeonato }}"
                  class="camp-hero-logo">
         </div>
+        @endif
 
         <div class="camp-hero-info">
             <span class="camp-hero-badge">{{ $campeonato->tipo_campeonato }}</span>
@@ -37,10 +40,13 @@
                         {{ \Carbon\Carbon::parse($campeonato->data_fim_campeonato)->format('d/m/Y') }}
                     </span>
                 </div>
+                {{-- O local principal ou os locais dos jogos (Campeonato::textoDosLocais) --}}
+                @if($local)
                 <div class="camp-hero-meta-row">
                     <i class="fa fa-map-marker"></i>
-                    <span>{{ $campeonato->local_evento }}</span>
+                    <span>{{ $local }}</span>
                 </div>
+                @endif
                 @if($campeonato->organizador_campeonato)
                 <div class="camp-hero-meta-row">
                     <i class="fa fa-users"></i>
@@ -162,6 +168,14 @@
                              alt="{{ $jogo->timeVisitante->nome_time }}"
                              class="match-team-logo">
                         <span class="match-team-name">{{ $jogo->timeVisitante->nome_time }}</span>
+                    </div>
+
+                    {{-- Horário e local de cada jogo: os jogos de um campeonato podem ser em locais diferentes --}}
+                    <div class="match-info">
+                        <span><i class="fa fa-clock-o"></i> {{ $jogo->evento->horario_texto }}</span>
+                        @if($jogo->evento->local_evento_calendario)
+                        <span><i class="fa fa-map-marker"></i> {{ $jogo->evento->local_evento_calendario }}</span>
+                        @endif
                     </div>
                 </div>
 

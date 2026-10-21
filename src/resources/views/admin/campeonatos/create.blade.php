@@ -37,7 +37,7 @@
                     <div class="row g-3">
                         <div class="col-md-7">
                             <label class="form-label">Nome do Campeonato <span class="text-danger">*</span></label>
-                            <input type="text" name="nome_campeonato" class="form-control"
+                            <input type="text" name="nome_campeonato" class="form-control" maxlength="100"
                                 placeholder="Ex: Liga Premiere 2025" required value="{{ old('nome_campeonato') }}">
                         </div>
                         <div class="col-md-3">
@@ -60,13 +60,14 @@
                                 required value="{{ old('data_fim_campeonato') }}">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Local</label>
-                            <input type="text" name="local_evento" class="form-control" list="locaisUsados" autocomplete="off"
+                            <label class="form-label">Local principal</label>
+                            <input type="text" name="local_evento" class="form-control" maxlength="100" list="locaisUsados" autocomplete="off"
                                 placeholder="Ex: Campo AACJ" value="{{ old('local_evento') }}">
+                            <span class="form-text">Opcional. Cada jogo tem o seu local; este é a sugestão para os jogos novos.</span>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Organizador</label>
-                            <input type="text" name="organizador_campeonato" class="form-control"
+                            <input type="text" name="organizador_campeonato" class="form-control" maxlength="100"
                                 placeholder="Ex: Liga Municipal" value="{{ old('organizador_campeonato') }}">
                         </div>
                         <div class="col-12">

@@ -19,8 +19,8 @@
             <article class="camp-card">
 
                 <a href="{{ route('campeonato.show', $camp->id_campeonato) }}" class="camp-card-banner-link">
-                    <div class="camp-card-banner"
-                         style="background-image: url('{{ asset('futebol/images/campeonatos/' . $camp->banner_evento) }}');">
+                    <div class="camp-card-banner {{ $camp->banner_url ? '' : 'sem-imagem' }}"
+                         @if($camp->banner_url) style="background-image: url('{{ $camp->banner_url }}');" @endif>
                         <div class="camp-card-overlay"></div>
                         <span class="camp-card-type-badge">{{ $camp->tipo_campeonato }}</span>
                         @if($subs->isNotEmpty())
@@ -43,10 +43,13 @@
                             &mdash;
                             {{ \Carbon\Carbon::parse($camp->data_fim_campeonato)->format('d/m/Y') }}
                         </span>
+                        {{-- O local principal ou os locais dos jogos (Campeonato::textoDosLocais) --}}
+                        @if($local = $locais[$camp->id_campeonato] ?? $camp->local_evento)
                         <span class="camp-meta-item">
                             <i class="fa fa-map-marker"></i>
-                            {{ $camp->local_evento }}
+                            {{ $local }}
                         </span>
+                        @endif
                         @if($camp->organizador_campeonato)
                         <span class="camp-meta-item">
                             <i class="fa fa-users"></i>

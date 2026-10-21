@@ -179,12 +179,13 @@ class CampeonatosController extends Controller
         }
 
         $request->validate([
-            'nome_campeonato'        => 'required|string|max:255',
+            // Tamanho das colunas (VARCHAR(100)): acima disso, o banco recusaria com erro 500
+            'nome_campeonato'        => 'required|string|max:100',
             'tipo_campeonato'        => ['required', Rule::in($tipos)],
             'data_inicio_campeonato' => 'required|date',
             'data_fim_campeonato'    => 'required|date|after_or_equal:data_inicio_campeonato',
-            'local_evento'           => 'nullable|string|max:255',
-            'organizador_campeonato' => 'nullable|string|max:255',
+            'local_evento'           => 'nullable|string|max:100',
+            'organizador_campeonato' => 'nullable|string|max:100',
             'descricao_campeonato'   => 'nullable|string',
             'categorias'             => 'required|array|min:1',
             'categorias.*'           => 'integer|exists:tbl_categoria,id_categoria',
@@ -196,6 +197,9 @@ class CampeonatosController extends Controller
         ], [
             'categorias.required' => 'Marque ao menos uma categoria do campeonato.',
             'categorias.min'      => 'Marque ao menos uma categoria do campeonato.',
+            'nome_campeonato.max'        => 'O nome do campeonato pode ter no máximo 100 caracteres.',
+            'local_evento.max'           => 'O local principal pode ter no máximo 100 caracteres.',
+            'organizador_campeonato.max' => 'O organizador pode ter no máximo 100 caracteres.',
         ]);
     }
 
