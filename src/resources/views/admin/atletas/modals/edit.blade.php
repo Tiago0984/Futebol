@@ -190,6 +190,15 @@
                         </div>
                     </div>
 
+                    {{-- Nome, CPF e data de nascimento corrigidos pelo próprio atleta no app (tbl_atleta_historico),
+                         preenchido pelo data-historico do botão Editar; some quando não há nada --}}
+                    <div id="edit_historico_bloco" class="d-none">
+                        <p class="modal-section-label">
+                            <i class="bi bi-clock-history"></i> Alterações feitas pelo app
+                        </p>
+                        <ul id="edit_historico" class="list-unstyled small text-muted mb-3" style="max-height:140px;overflow-y:auto;"></ul>
+                    </div>
+
                 </div>
 
                 <div class="modal-footer">

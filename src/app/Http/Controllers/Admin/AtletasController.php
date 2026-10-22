@@ -47,6 +47,7 @@ class AtletasController extends Controller
             'endereco',
             'posicoes',
             'afastamentoAtual', // selo "Afastado até 10/11"
+            'historico.usuario', // "Alterações feitas pelo app" no Editar
         ])->orderBy('nome_atleta')->get();
 
         $categorias = Categoria::ativas()->get();

@@ -474,6 +474,14 @@ class Atleta extends Authenticatable
             ->vigentesOuFuturos()->orderBy('data_inicio_atleta_afastamento');
     }
 
+    // Alterações registradas (22/10/2026: nome, CPF e data de nascimento corrigidos pelo app), da mais nova para a mais antiga
+    public function historico()
+    {
+        return $this->hasMany(AtletaHistorico::class, 'id_atleta', 'id_atleta')
+            ->orderByDesc('data_atleta_historico')
+            ->orderByDesc('id_atleta_historico');
+    }
+
     // Notificações do atleta (Fase 8), da mais nova para a mais antiga
     public function notificacoes()
     {
@@ -690,6 +698,7 @@ class Atleta extends Authenticatable
             $this->convocacoes()->delete();         // tbl_convocacao (FK sem cascade)
             $this->posicoes()->delete();            // tbl_atleta_posicao (FK sem cascade)
             $this->afastamentos()->delete();        // tbl_atleta_afastamento (FK sem cascade)
+            $this->historico()->delete();           // tbl_atleta_historico (FK sem cascade)
             // tbl_notificacao_leitura e tbl_notificacao (FKs sem cascade): primeiro as leituras dos responsáveis
             NotificacaoLeitura::whereIn('id_notificacao', Notificacao::where('id_atleta', $this->id_atleta)->select('id_notificacao'))->delete();
             $this->notificacoes()->delete();

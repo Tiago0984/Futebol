@@ -303,12 +303,21 @@ Content-Type: application/json
 
     <div class="card">
         <div class="rota"><span class="metodo PUT">PUT</span><span class="metodo PATCH">PATCH</span><code>/api/v1/atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Atualiza os dados que o atleta pode mudar (pode mandar só alguns): <code>email_atleta</code> (único), <code>telefone_atleta</code>, <code>escola_atleta</code>, <code>serie_atleta</code>, <code>sala_atleta</code>, <code>periodo_escolar_atleta</code>, <code>turno_treino_atleta</code>, <code>peso_atleta</code>, <code>altura_atleta</code>, <code>descricao_atleta</code>. Nome, CPF, RG, matrícula e status só a secretaria muda.</p>
+        <p>Atualiza os dados que o atleta pode mudar (pode mandar só alguns; campos fora desta lista são ignorados): <code>nome_atleta</code>, <code>cpf_atleta</code>, <code>data_nasc_atleta</code>, <code>email_atleta</code> (único), <code>telefone_atleta</code>, <code>escola_atleta</code>, <code>serie_atleta</code>, <code>sala_atleta</code>, <code>periodo_escolar_atleta</code>, <code>turno_treino_atleta</code>, <code>peso_atleta</code>, <code>altura_atleta</code>, <code>descricao_atleta</code>. RG, matrícula, status e o <strong>ano</strong> de nascimento só a secretaria muda. A resposta traz o atleta no mesmo formato de <code>GET /api/v1/atleta</code>.</p>
+        <p><strong>Nome, CPF e data de nascimento</strong> ficam registrados para a secretaria (o painel mostra o antes e o depois):</p>
+        <ul>
+            <li><code>nome_atleta</code>: de 3 a 100 caracteres.</li>
+            <li><code>cpf_atleta</code>: com ou sem pontuação (<code>194.727.789-84</code> ou <code>19472778984</code>); volta sempre como <code>000.000.000-00</code>. Os dígitos verificadores são conferidos e o CPF não pode ser de outro atleta ("Este CPF já está cadastrado para outro atleta.").</li>
+            <li><code>data_nasc_atleta</code>: <code>AAAA-MM-DD</code>, uma data que existe, anterior a hoje e de quem tem de 9 a 17 anos no ano. <strong>Só o dia e o mês</strong> podem mudar: outro ano dá 422 com "Para mudar o ano de nascimento, procure a secretaria da escolinha." (o ano decide a categoria e a idade nos campeonatos).</li>
+        </ul>
         <p><code>periodo_escolar_atleta</code> (quando vier, não pode ser vazio): <code>MANHA</code>, <code>TARDE</code>, <code>NOITE</code> ou <code>INTEGRAL</code>. O treino é no turno oposto ao da escola (integral treina à tarde). Com <code>NOITE</code>, mande junto <code>turno_treino_atleta</code>: <code>MANHA</code>, <code>TARDE</code> ou <code>AMBOS</code>; nos outros períodos ele volta como <code>null</code>.</p>
 <pre>PATCH /api/v1/atleta
-{ "telefone_atleta": "(11) 90000-0001" }
+{ "nome_atleta": "Joana Exemplo da Silva", "cpf_atleta": "19472778984", "data_nasc_atleta": "2014-05-20" }
 
-200 { "success": true, "message": "Dados atualizados com sucesso.", "data": { ...atleta... } }</pre>
+200 { "success": true, "message": "Dados atualizados com sucesso.", "data": { ...o mesmo de GET /api/v1/atleta... } }
+
+422 { "success": false, "message": "Para mudar o ano de nascimento, procure a secretaria da escolinha.",
+      "errors": { "data_nasc_atleta": ["Para mudar o ano de nascimento, procure a secretaria da escolinha."] } }</pre>
     </div>
 
     <div class="card">
@@ -552,7 +561,7 @@ Content-Type: application/json
             ['POST',  '/auth/esqueci-senha', 'Público', 'email, perfil?'],
             ['POST',  '/auth/logout', 'Qualquer perfil', '—'],
             ['GET',   '/atleta', 'Atleta', '—'],
-            ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
+            ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'nome_atleta?, cpf_atleta?, data_nasc_atleta?, email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
             ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],
             ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
             ['GET',   '/agenda', 'Atleta', 'page?'],

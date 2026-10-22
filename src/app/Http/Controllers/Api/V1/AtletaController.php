@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
+use App\Models\AtletaHistorico;
+use App\Rules\CpfValido;
 use App\Services\AppDoAtleta;
+use App\Support\Cpf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
@@ -21,16 +25,35 @@ class AtletaController extends Controller
         ]);
     }
 
-    // PUT/PATCH /api/v1/atleta - atualiza apenas os dados que o próprio atleta pode alterar
-    // Nome, CPF, RG, matrícula e status continuam sendo responsabilidade da secretaria (painel admin)
+    // PUT/PATCH /api/v1/atleta - atualiza apenas os dados que o próprio atleta pode alterar.
+    // Nome, CPF e data de nascimento (só dia e mês) o atleta corrige pelo app, com registro para a secretaria
+    // (tbl_atleta_historico; 22/10/2026). RG, matrícula, status e o ano de nascimento continuam com a secretaria
+    // (painel admin): o ano decide a idade no campeonato (Categoria::idadeNoAno), e mudar dia e mês não muda regra nenhuma
     public function update(Request $request)
     {
         $atleta = $request->user();
 
+        // Com ou sem pontos, o CPF é conferido e gravado como 000.000.000-00 (o mesmo do admin e do site)
+        if ($request->filled('cpf_atleta')) {
+            $request->merge(['cpf_atleta' => Cpf::formatar($request->input('cpf_atleta'))]);
+        }
+
         // "sometimes" permite enviar só alguns campos (atualização parcial). Período: MANHA, TARDE, NOITE ou
         // INTEGRAL; NOITE exige o turno do treino (Atleta::regrasPeriodo)
         $periodo = Atleta::regrasPeriodo(parcial: true);
+        $limites = Atleta::limitesNascimento();
+        $anoAtual = $atleta->data_nasc_atleta?->format('Y');
         $dados = $request->validate([
+            'nome_atleta'            => 'sometimes|required|string|min:3|max:100',
+            'cpf_atleta'             => ['bail', 'sometimes', 'required', 'string', 'max:14', new CpfValido('Informe um CPF válido.'),
+                Rule::unique('tbl_atletas', 'cpf_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
+            'data_nasc_atleta'       => ['bail', 'sometimes', 'required', 'date_format:Y-m-d', 'before:today',
+                "after_or_equal:{$limites['min']}", "before_or_equal:{$limites['max']}",
+                function ($campo, $valor, $falhar) use ($anoAtual) {
+                    if ($anoAtual && substr((string) $valor, 0, 4) !== $anoAtual) {
+                        $falhar('Para mudar o ano de nascimento, procure a secretaria da escolinha.');
+                    }
+                }],
             'email_atleta'           => ['sometimes', 'required', 'email', 'max:255', Rule::unique('tbl_atletas', 'email_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
             'telefone_atleta'        => 'sometimes|nullable|string|max:20',
             'escola_atleta'          => 'sometimes|required|string|max:100',
@@ -40,15 +63,48 @@ class AtletaController extends Controller
             'peso_atleta'            => 'sometimes|nullable|numeric|min:0|max:999',
             'altura_atleta'          => 'sometimes|nullable|numeric|min:0|max:9.99',
             'descricao_atleta'       => 'sometimes|nullable|string|max:1000',
+        ], [
+            'cpf_atleta.unique'                => 'Este CPF já está cadastrado para outro atleta.',
+            'data_nasc_atleta.date_format'     => 'Informe a data de nascimento no formato AAAA-MM-DD, com um dia que existe.',
+            'data_nasc_atleta.before'          => 'A data de nascimento precisa ser anterior a hoje.',
+            'data_nasc_atleta.after_or_equal'  => $limites['mensagem'],
+            'data_nasc_atleta.before_or_equal' => $limites['mensagem'],
         ]);
 
-        $atleta->update($dados);
+        // A edição e o registro do que mudou de verdade (nome, CPF, data), juntos
+        DB::transaction(function () use ($atleta, $dados) {
+            $antes = collect(array_keys(AtletaHistorico::CAMPOS))
+                ->mapWithKeys(fn ($campo) => [$campo => $this->valorParaHistorico($atleta, $campo)]);
 
+            $atleta->update($dados);
+
+            foreach ($antes as $campo => $valorAntigo) {
+                $valorNovo = $this->valorParaHistorico($atleta, $campo);
+                if ($valorNovo !== $valorAntigo) {
+                    $atleta->historico()->create([
+                        'campo_atleta_historico'        => $campo,
+                        'valor_antigo_atleta_historico' => $valorAntigo,
+                        'valor_novo_atleta_historico'   => $valorNovo,
+                        'id_usuario'                    => null, // o próprio atleta, pelo app
+                    ]);
+                }
+            }
+        });
+
+        // A mesma montagem do GET /atleta
         return response()->json([
             'success' => true,
             'message' => 'Dados atualizados com sucesso.',
-            'data'    => $atleta->fresh(),
+            'data'    => (new AppDoAtleta($atleta->fresh()))->dados(),
         ]);
+    }
+
+    // Valor do campo como texto, para comparar e gravar no histórico (a data sem a hora)
+    private function valorParaHistorico(Atleta $atleta, string $campo): ?string
+    {
+        $valor = $atleta->{$campo};
+
+        return $valor instanceof \DateTimeInterface ? $valor->format('Y-m-d') : ($valor === null ? null : (string) $valor);
     }
 
     // PUT /api/v1/atleta/senha - confere a senha atual e grava a nova com Hash::make()

@@ -276,6 +276,7 @@
                                             data-id="{{ $atleta->id_atleta }}"
                                             data-nome="{{ $atleta->nome_atleta }}"
                                             data-posicoes="{{ $codigosPosicoes->implode(',') }}"
+                                            data-historico="{{ $atleta->historico->take(20)->map(fn ($h) => $h->data_atleta_historico->format('d/m/Y H:i') . ' · ' . $h->autor . ' · ' . $h->resumo)->values()->toJson(JSON_UNESCAPED_UNICODE) }}"
                                             data-data-nasc="{{ $atleta->data_nasc_atleta?->format('Y-m-d') }}"
                                             data-cpf="{{ $atleta->cpf_atleta }}"
                                             data-email="{{ $atleta->email_atleta }}"
@@ -458,6 +459,12 @@ document.addEventListener('DOMContentLoaded', function () {
             // Posições (até 3, a principal primeiro)
             const posicoes = g('data-posicoes') ? g('data-posicoes').split(',') : [];
             document.querySelectorAll('[id^="edit_posicao_"]').forEach((sel, i) => sel.value = posicoes[i] || '');
+
+            // Alterações feitas pelo app (as 20 mais recentes); textContent para não interpretar o texto como HTML
+            const historico = JSON.parse(g('data-historico') || '[]');
+            const listaHistorico = document.getElementById('edit_historico');
+            listaHistorico.replaceChildren(...historico.map(texto => Object.assign(document.createElement('li'), { textContent: texto })));
+            document.getElementById('edit_historico_bloco').classList.toggle('d-none', historico.length === 0);
 
             document.getElementById('edit_nome_responsavel').value     = g('data-nome-responsavel');
             selecionarSemDiferenciar(document.getElementById('edit_grau_responsavel'), g('data-grau-responsavel'));
