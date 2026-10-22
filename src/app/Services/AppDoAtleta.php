@@ -9,6 +9,7 @@ use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Models\NotificacaoLeitura;
 use App\Models\Responsavel;
+use App\Models\Time;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
 
@@ -60,6 +61,67 @@ class AppDoAtleta
         return $atleta->setAttribute('posicao_atleta', $atleta->posicoes->first()?->posicao)
             ->setAttribute('foto_url', $atleta->urlFoto())
             ->setAttribute('responsaveis', $responsaveis);
+    }
+
+    // ── Estatísticas ────────────────────────────────────────────────────────
+
+    /**
+     * GET /atleta/estatisticas (22/10/2026): os números do atleta desde que entrou na escolinha, no total e por
+     * time, só com o que o sistema registra:
+     * - partidas: jogos (campeonato ou amistoso) em que foi ESCALADO num time, publicados, ativos e já realizados
+     *   (inscrito sem time não conta: foi chamado, mas não se sabe se jogou);
+     * - convocações: uma por campeonato e categoria (inclusive de quando estava inativo: é histórico);
+     * - cartões: tbl_cartoes (sem tela para lançar ainda), no time da escalação daquele jogo;
+     * - gols e assistências: null = ainda não registrados (a súmula do jogo é a próxima etapa). null, e não 0,
+     *   para o app mostrar "—" e passar a mostrar o número sem mudar o formato.
+     */
+    public function estatisticas(): array
+    {
+        $idAtleta = $this->atleta->id_atleta;
+
+        // Time da escalação em cada jogo do atleta (id_evento => id_time), para as partidas e os cartões
+        $escalacoes = EventoAtleta::where('id_atleta', $idAtleta)->whereNotNull('id_time')
+            ->whereHas('evento.jogo')
+            ->get(['id_evento_calendario', 'id_time'])
+            ->pluck('id_time', 'id_evento_calendario');
+
+        $idsJogados = EventoCalendario::whereIn('id_evento_calendario', $escalacoes->keys())
+            ->publicados()->where('status_evento_calendario', 'ATIVO')->concluidos()
+            ->pluck('id_evento_calendario');
+        $partidas = $escalacoes->only($idsJogados->all())->countBy()->all();
+
+        $convocacoes = $this->atleta->convocacoes()->pluck('id_time')->countBy()->all();
+
+        // Cartão no time em que o atleta estava escalado naquele jogo (sem escalação, só no total)
+        $eventoDoJogo = Jogo::whereIn('id_jogo', $this->atleta->cartoes()->pluck('id_jogo'))->pluck('id_evento', 'id_jogo');
+        $cartoes = $this->atleta->cartoes()->get(['id_jogo', 'tipo_cartao'])
+            ->map(fn ($c) => ['tipo' => $c->tipo_cartao, 'id_time' => $escalacoes[$eventoDoJogo[$c->id_jogo] ?? 0] ?? null]);
+
+        $numeros = fn (int $partidas, int $convocacoes, $cartoesDoTime) => [
+            'partidas'          => $partidas,
+            'convocacoes'       => $convocacoes,
+            'cartoes_amarelos'  => $cartoesDoTime->where('tipo', 'AMARELO')->count(),
+            'cartoes_vermelhos' => $cartoesDoTime->where('tipo', 'VERMELHO')->count(),
+            'gols'              => null,
+            'assistencias'      => null,
+        ];
+
+        $idsTimes = collect(array_keys($partidas))->merge(array_keys($convocacoes))
+            ->merge($cartoes->pluck('id_time')->filter())->unique();
+        $porTime = Time::with('categoria')->whereIn('id_time', $idsTimes)->get()
+            ->map(fn (Time $time) => [
+                'id_time'   => $time->id_time,
+                'nome_time' => $time->nome_time,
+                'logo_url'  => $time->logo_url,
+                'categoria' => $time->categoria?->rotulo,
+            ] + $numeros($partidas[$time->id_time] ?? 0, $convocacoes[$time->id_time] ?? 0, $cartoes->where('id_time', $time->id_time)))
+            ->sortBy([['partidas', 'desc'], ['convocacoes', 'desc'], ['nome_time', 'asc']])
+            ->values()->all();
+
+        return [
+            'total'    => $numeros(array_sum($partidas), array_sum($convocacoes), $cartoes),
+            'por_time' => $porTime,
+        ];
     }
 
     // ── Agenda ──────────────────────────────────────────────────────────────

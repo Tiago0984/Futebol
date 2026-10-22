@@ -38,6 +38,13 @@ class AppDoAtletaController extends Controller
         return response()->json(['success' => true, 'data' => $this->app($request)->dados()]);
     }
 
+    // GET /atleta/estatisticas (e /responsavel/atletas/{idAtleta}/estatisticas): partidas, convocações e cartões,
+    // no total e por time; gols e assistências null até existir a súmula
+    public function estatisticas(Request $request)
+    {
+        return response()->json(['success' => true, 'data' => $this->app($request)->estatisticas()]);
+    }
+
     // GET /agenda?page=N
     public function agenda(Request $request)
     {

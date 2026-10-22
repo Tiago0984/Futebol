@@ -64,6 +64,7 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () use ($rotasDa
         Route::prefix('/responsavel/atletas')->group(function () use ($rotasDaAgendaEDosAvisos) {
             Route::get('/', [AppDoAtletaController::class, 'filhos']);
             Route::get('/{idAtleta}', [AppDoAtletaController::class, 'dados'])->whereNumber('idAtleta');
+            Route::get('/{idAtleta}/estatisticas', [AppDoAtletaController::class, 'estatisticas'])->whereNumber('idAtleta');
             $rotasDaAgendaEDosAvisos('/{idAtleta}');
         });
     });
@@ -82,6 +83,9 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () use ($rotasDa
 
         // Atualizar senha
         Route::put('/atleta/senha', [AtletaController::class, 'updateSenha']);
+
+        // Estatísticas (partidas, convocações e cartões; o responsável tem a mesma, sob o filho)
+        Route::get('/atleta/estatisticas', [AppDoAtletaController::class, 'estatisticas']);
 
         // Agenda e avisos do próprio atleta
         $rotasDaAgendaEDosAvisos('');

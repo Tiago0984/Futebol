@@ -329,6 +329,28 @@ Content-Type: application/json
 422 { "success": false, "message": "Senha atual incorreta." }</pre>
     </div>
 
+    <div class="card">
+        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/atleta/estatisticas</code><span class="acesso atleta">Atleta</span></div>
+        <p>Os números do atleta desde que entrou na escolinha, no <code>total</code> e <code>por_time</code> (cada time em que jogou ou foi convocado, do que tem mais partidas para o que tem menos):</p>
+        <ul>
+            <li><code>partidas</code>: jogos (campeonato ou amistoso) em que ele foi <strong>escalado num time</strong>, publicados, não cancelados e já realizados. Inscrito sem time não conta.</li>
+            <li><code>convocacoes</code>: convocações para campeonatos (uma por campeonato e categoria).</li>
+            <li><code>cartoes_amarelos</code>, <code>cartoes_vermelhos</code>: no time em que ele estava escalado naquele jogo.</li>
+            <li><code>gols</code>, <code>assistencias</code>: <strong><code>null</code> por enquanto</strong> (o painel ainda não registra quem fez cada gol). <code>null</code> = não registrado, diferente de <code>0</code>: mostre "—". Quando passarem a ser registrados, viram números, sem mudar o formato.</li>
+        </ul>
+<pre>200 {
+  "success": true,
+  "data": {
+    "total": { "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": null, "assistencias": null },
+    "por_time": [
+      { "id_time": 3, "nome_time": "AACJ Sub-17 A", "logo_url": "https://.../images/times/sub17.png", "categoria": "Sub-17 Masculino",
+        "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": null, "assistencias": null }
+    ]
+  }
+}</pre>
+        <p>Atleta que ainda não jogou: tudo <code>0</code> no <code>total</code> e <code>por_time</code> vazio. O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/estatisticas</code>.</p>
+    </div>
+
     {{-- ================================================================== --}}
     <h2 id="responsavel">Área do responsável</h2>
     <p class="nota">Rotas com o token do perfil <strong>responsavel</strong> e pelo menos um filho <code>ATIVO</code>. Em todas as rotas de um filho, o servidor confere que o atleta é filho do responsável logado e está <code>ATIVO</code>; senão responde <code>404</code> (o mesmo para atleta de outra família, inativado ou inexistente).</p>
@@ -384,9 +406,10 @@ Content-Type: application/json
     </div>
 
     <div class="card">
-        <h3>Agenda e avisos do filho</h3>
+        <h3>Agenda, avisos e estatísticas do filho</h3>
         <p>As mesmas rotas do atleta, sob <code>/api/v1/responsavel/atletas/{idAtleta}</code>, com as mesmas respostas:</p>
         <ul>
+            <li><code>GET .../estatisticas</code></li>
             <li><code>GET .../agenda</code></li>
             <li><code>GET .../notificacoes</code>, <code>GET .../notificacoes/nao-lidas</code></li>
             <li><code>PATCH .../notificacoes/{idNotificacao}/lida</code>, <code>PATCH .../notificacoes/lidas</code></li>
@@ -564,6 +587,7 @@ Content-Type: application/json
             ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'nome_atleta?, cpf_atleta?, data_nasc_atleta?, email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
             ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],
             ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
+            ['GET',   '/atleta/estatisticas', 'Atleta', '—'],
             ['GET',   '/agenda', 'Atleta', 'page?'],
             ['GET',   '/notificacoes', 'Atleta', 'page?'],
             ['GET',   '/notificacoes/nao-lidas', 'Atleta', '—'],
@@ -575,6 +599,7 @@ Content-Type: application/json
             ['PUT',   '/responsavel/senha', 'Responsável', $camposDaSenha],
             ['GET',   '/responsavel/atletas', 'Responsável', '—'],
             ['GET',   '/responsavel/atletas/{idAtleta}', 'Responsável', '{idAtleta}'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/estatisticas', 'Responsável', '{idAtleta}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes', 'Responsável', '{idAtleta}, page?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes/nao-lidas', 'Responsável', '{idAtleta}'],
