@@ -126,7 +126,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     // Gerar os jogos de todos contra todos de uma categoria e publicar uma rodada (Fase I, Etapa I2)
     Route::get('campeonatos/{id}/categorias/{categoriaId}/gerar-jogos',  [GeradorDeJogosController::class, 'show'])->name('campeonatos.gerar-jogos');
     Route::post('campeonatos/{id}/categorias/{categoriaId}/gerar-jogos', [GeradorDeJogosController::class, 'gerar'])->name('campeonatos.gerar-jogos.gerar');
-    Route::patch('campeonatos/{id}/rodadas/publicar',                   [GeradorDeJogosController::class, 'publicarRodada'])->name('campeonatos.rodadas.publicar');
+    // Montar a próxima fase do mata-mata (Fase I, Etapa I3)
+    Route::get('campeonatos/{id}/categorias/{categoriaId}/proxima-fase',  [GeradorDeJogosController::class, 'proximaFase'])->name('campeonatos.proxima-fase');
+    Route::post('campeonatos/{id}/categorias/{categoriaId}/proxima-fase', [GeradorDeJogosController::class, 'gerarProximaFase'])->name('campeonatos.proxima-fase.gerar');
+    Route::patch('campeonatos/{id}/rodadas/publicar',                  [GeradorDeJogosController::class, 'publicarRodada'])->name('campeonatos.rodadas.publicar');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento

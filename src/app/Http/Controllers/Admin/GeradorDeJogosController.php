@@ -9,6 +9,7 @@ use App\Models\EventoCalendario;
 use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Services\GeradorDeRodadas;
+use App\Services\MontadorDaProximaFase;
 use Illuminate\Http\Request;
 
 /**
@@ -65,6 +66,97 @@ class GeradorDeJogosController extends Controller
 
         return redirect()->route('admin.campeonatos.times', $campeonato->id_campeonato)->with('sucesso',
             "{$resultado['jogos']} jogo(s) do {$categoria->rotulo} criado(s) em {$resultado['rodadas']} rodada(s): " . implode(' e ', $partes) . '.');
+    }
+
+    // Montar a próxima fase do mata-mata (Fase I, Etapa I3): prévia editável (nada gravado)
+    public function proximaFase(Request $request, $id, $categoriaId)
+    {
+        [$campeonato, $categoria] = $this->carregar($id, $categoriaId);
+        $opcoes   = $request->has('data') ? $this->validarOpcoesDaFase($request) : $this->opcoesPadraoDaFase($campeonato, $categoria);
+        $montador = new MontadorDaProximaFase($campeonato, $categoria, $opcoes);
+
+        return view('admin.campeonatos.proxima-fase', [
+            'campeonato' => $campeonato,
+            'categoria'  => $categoria,
+            'opcoes'     => $opcoes,
+            'montador'   => $montador,
+            'origem'     => $montador->origem(),
+            'erros'      => $montador->erros(),
+            'previa'     => $montador->previa(),
+            'caminho'    => [
+                ['Eventos', route('admin.calendario.index')],
+                ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
+                [$campeonato->nome_campeonato, route('admin.campeonatos.times', $campeonato->id_campeonato)],
+                ['Grupos (chaves) e classificação', route('admin.campeonatos.grupos', $campeonato->id_campeonato)],
+                ['Próxima fase · ' . $categoria->rotulo, null],
+            ],
+        ]);
+    }
+
+    public function gerarProximaFase(Request $request, $id, $categoriaId)
+    {
+        [$campeonato, $categoria] = $this->carregar($id, $categoriaId);
+        $opcoes   = $this->validarOpcoesDaFase($request);
+        $montador = new MontadorDaProximaFase($campeonato, $categoria, $opcoes);
+        $previa   = route('admin.campeonatos.proxima-fase', [$campeonato->id_campeonato, $categoria->id_categoria, ...$opcoes]);
+
+        if ($erros = $montador->erros()) {
+            return redirect($previa)->with('erro', implode(' ', $erros));
+        }
+
+        $fase = Jogo::FASES[$montador->fase()];
+        $resultado = $montador->gerar(auth('admin')->id(), $request->boolean('confirmar_conflitos'));
+        if (! $resultado['gravou']) {
+            return redirect($previa)->with('erro', 'Nada foi gravado: há conflito de horário dos convocados. Confira abaixo e use "Confirmar mesmo assim e gerar".');
+        }
+
+        $partes = array_filter([
+            $resultado['rascunhos'] ? "{$resultado['rascunhos']} em rascunho (com time da AACJ: revise e publique cada um para avisar os atletas)" : null,
+            $resultado['publicados'] ? "{$resultado['publicados']} publicado(s) (sem time da AACJ)" : null,
+        ]);
+
+        return redirect()->route('admin.campeonatos.times', $campeonato->id_campeonato)->with('sucesso',
+            "{$fase} do {$categoria->rotulo}: {$resultado['jogos']} jogo(s) em {$resultado['confrontos']} confronto(s): " . implode(' e ', $partes) . '.');
+    }
+
+    // Padrões da próxima fase: jogo único, 13:00, de hora em hora, no 1º sábado depois do último jogo da categoria
+    // no campeonato (fora os ocultos; nunca antes do próximo sábado), para não cair no mesmo dia da fase anterior
+    private function opcoesPadraoDaFase(Campeonato $campeonato, Categoria $categoria): array
+    {
+        $padrao = $this->opcoesPadrao($campeonato);
+        $ultimo = EventoCalendario::whereHas('jogo', fn ($q) => $q->where('id_campeonato', $campeonato->id_campeonato))
+            ->where('id_categoria', $categoria->id_categoria)
+            ->where('status_evento_calendario', '<>', 'INATIVO')
+            ->max('data_evento_calendario');
+        if ($ultimo && ($depois = \Illuminate\Support\Carbon::parse($ultimo)->next(\Carbon\CarbonInterface::SATURDAY))->gt($padrao['data'])) {
+            $padrao['data'] = $depois->toDateString();
+        }
+
+        return [...$padrao, 'ida_e_volta' => 0, 'dias_volta' => 7, 'terceiro' => 0, 'pares' => []];
+    }
+
+    private function validarOpcoesDaFase(Request $request): array
+    {
+        $request->mergeIfMissing(['dias' => 7]);   // "dias entre rodadas" é só do gerador de rodadas
+        $comuns = $this->validarOpcoes($request);
+        $request->validate([
+            'ida_e_volta' => 'nullable|boolean',
+            'dias_volta'  => 'nullable|integer|min:1|max:60',
+            'terceiro'    => 'nullable|boolean',
+            'pares'       => 'nullable|array|max:16',
+            'pares.*'     => 'array|size:2',
+            'pares.*.*'   => 'integer',
+        ], ['dias_volta.*' => 'Dias entre a ida e a volta: de 1 a 60.', 'pares.*' => 'Confira os confrontos da prévia.']);
+
+        unset($comuns['returno'], $comuns['dias']);
+
+        return [
+            ...$comuns,
+            'ida_e_volta' => (int) $request->boolean('ida_e_volta'),
+            'dias_volta'  => (int) ($request->input('dias_volta') ?: 7),
+            'terceiro'    => (int) $request->boolean('terceiro'),
+            'pares'       => array_values(array_map(fn ($par) => array_map('intval', array_values($par)), (array) $request->input('pares', []))),
+        ];
     }
 
     // "Publicar a Rodada N": os rascunhos da rodada (campeonato e categoria), com o aviso aos atletas de cada jogo

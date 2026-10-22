@@ -190,6 +190,21 @@ class GeradorDeRodadasTest extends TestCase
         $this->assertSame(6, Jogo::count());
     }
 
+    public function test_aviso_de_time_que_ja_joga_no_dia(): void
+    {
+        // O Botafogo já tem um amistoso no 1º sábado: a prévia avisa (sem bloquear) em todos os times dele naquele dia
+        Jogo::criarComEvento($this->admin->id_usuario, [
+            'id_campeonato' => null, 'id_time_casa' => $this->aacj, 'id_time_visitante' => $this->externos[0],
+        ], [
+            'titulo_evento_calendario' => 'AACJ Sub-15 x Botafogo', 'tipo_evento_calendario' => 'JOGO', 'id_categoria' => $this->idSub15M,
+            'data_evento_calendario' => $this->sabado, 'horario_inicio_evento_calendario' => '09:00', 'status_evento_calendario' => 'ATIVO',
+        ]);
+
+        $this->comoAdmin()->get(route('admin.campeonatos.gerar-jogos', [$this->copa, $this->idSub15M, ...$this->opcoes()]))->assertOk()
+            ->assertSee('Botafogo já tem jogo em ' . \Illuminate\Support\Carbon::parse($this->sabado)->format('d/m') . ' às 09:00 (AACJ Sub-15 x Botafogo).')
+            ->assertSee('Gerar 6 jogo(s)');
+    }
+
     public function test_campeonato_inativo_e_categoria_de_fora(): void
     {
         DB::table('tbl_campeonato')->where('id_campeonato', $this->copa)->update(['status_campeonato' => 'INATIVO']);

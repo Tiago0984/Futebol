@@ -4,11 +4,10 @@ namespace App\Services;
 
 use App\Models\Campeonato;
 use App\Models\Categoria;
-use App\Models\EventoCalendario;
 use App\Models\Jogo;
+use App\Services\Concerns\ProgramaJogos;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Gerar os jogos de todos contra todos de uma categoria do campeonato (Fase I, Etapa I2; dono do projeto,
@@ -25,6 +24,8 @@ use Illuminate\Support\Facades\DB;
  */
 class GeradorDeRodadas
 {
+    use ProgramaJogos;
+
     private ?array $previa = null;
 
     public function __construct(
@@ -147,10 +148,9 @@ class GeradorDeRodadas
 
             // Jogos do dia escalonados pelo intervalo (0 = todos no mesmo horário)
             foreach ($jogos as $k => &$jogo) {
-                $inicio = Carbon::parse($this->opcoes['data'] . ' ' . $this->opcoes['horario'])->addMinutes($k * (int) $this->opcoes['intervalo']);
-                $jogo['inicio'] = $inicio->format('H:i');
-                $jogo['fim']    = filled($this->opcoes['duracao'] ?? null) ? $inicio->copy()->addMinutes((int) $this->opcoes['duracao'])->format('H:i') : null;
-                $jogo['acj']    = isset($internos[$jogo['casa']->id_time]) || isset($internos[$jogo['visitante']->id_time]);
+                $jogo = [...$jogo, ...$this->horarioDoJogo($k), 'data' => $data,
+                    'acj' => isset($internos[$jogo['casa']->id_time]) || isset($internos[$jogo['visitante']->id_time]),
+                    'colunas' => ['fase_jogo' => Jogo::FASE_PADRAO, 'rodada_jogo' => $r + 1]];
             }
             unset($jogo);
 
@@ -166,6 +166,7 @@ class GeradorDeRodadas
         if ($rodadas && $rodadas[0]['data']->lt(today())) {
             $avisos[] = 'A 1ª rodada (' . $rodadas[0]['data']->format('d/m/Y') . ') já passou: os jogos de datas passadas nascem sem aviso aos atletas.';
         }
+        $avisos = [...$avisos, ...$this->avisosDeTimesNoMesmoDia($todos->all())];
 
         return $this->previa = [
             'rodadas'   => $rodadas,
@@ -177,7 +178,7 @@ class GeradorDeRodadas
                 'publicados' => $todos->where('acj', false)->count(),
             ],
             'avisos'    => $avisos,
-            'conflitos' => EventoCalendario::conflitosEmLote($this->lote($rodadas)),
+            'conflitos' => $this->conflitosDosJogos($todos->all()),
         ];
     }
 
@@ -194,30 +195,7 @@ class GeradorDeRodadas
             return $resultado;
         }
 
-        $local = filled($this->opcoes['local'] ?? null) ? $this->opcoes['local'] : $this->campeonato->local_evento;
-
-        DB::transaction(function () use ($previa, $idUsuario, $local) {
-            foreach ($previa['rodadas'] as $rodada) {
-                foreach ($rodada['jogos'] as $jogo) {
-                    Jogo::criarComEvento($idUsuario, [
-                        'id_campeonato'     => $this->campeonato->id_campeonato,
-                        'fase_jogo'         => Jogo::FASE_PADRAO,
-                        'rodada_jogo'       => $rodada['numero'],
-                        'id_time_casa'      => $jogo['casa']->id_time,
-                        'id_time_visitante' => $jogo['visitante']->id_time,
-                    ], [
-                        'titulo_evento_calendario'         => Jogo::tituloPara($jogo['casa']->id_time, $jogo['visitante']->id_time),
-                        'tipo_evento_calendario'           => 'JOGO',
-                        'id_categoria'                     => $this->categoria->id_categoria,
-                        'data_evento_calendario'           => $rodada['data']->toDateString(),
-                        'horario_inicio_evento_calendario' => $jogo['inicio'],
-                        'horario_fim_evento_calendario'    => $jogo['fim'],
-                        'local_evento_calendario'          => $local,
-                        'status_evento_calendario'         => 'ATIVO',
-                    ]);
-                }
-            }
-        });
+        $this->gravarJogos(collect($previa['rodadas'])->flatMap(fn ($rodada) => $rodada['jogos'])->all(), $idUsuario);
 
         return [...$resultado, 'gravou' => true];
     }
@@ -232,30 +210,5 @@ class GeradorDeRodadas
             ->groupBy(fn ($p) => $p->id_campeonato_grupo ? (string) $nomes[$p->id_campeonato_grupo] : '')
             ->map(fn ($linhas) => $linhas->values())
             ->sortKeys();
-    }
-
-    // Lote para o conflito de horário: os jogos com time da AACJ e os convocados ativos dos times internos
-    private function lote(array $rodadas): array
-    {
-        $lote = [];
-        foreach ($rodadas as $rodada) {
-            foreach ($rodada['jogos'] as $jogo) {
-                if (! $jogo['acj']) {
-                    continue;
-                }
-                $evento = new EventoCalendario([
-                    'titulo_evento_calendario'         => $jogo['casa']->nome_time . ' x ' . $jogo['visitante']->nome_time,
-                    'tipo_evento_calendario'           => 'JOGO',
-                    'data_evento_calendario'           => $rodada['data']->toDateString(),
-                    'horario_inicio_evento_calendario' => $jogo['inicio'],
-                    'horario_fim_evento_calendario'    => $jogo['fim'],
-                ]);
-                $lote[] = ['evento' => $evento, 'atletas' => array_keys(Jogo::atletasDosTimes(
-                    Jogo::idsInternos([$jogo['casa']->id_time, $jogo['visitante']->id_time]),
-                    $this->campeonato->id_campeonato, idCategoria: $this->categoria->id_categoria))];
-            }
-        }
-
-        return $lote;
     }
 }

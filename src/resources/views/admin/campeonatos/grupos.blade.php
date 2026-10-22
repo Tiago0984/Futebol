@@ -49,10 +49,17 @@
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
           <h2 class="h5 mb-0">{{ $categoria->rotulo }}</h2>
           {{-- Fase I, Etapa I2: todos contra todos (por grupo, se houver), com prévia antes de gravar --}}
-          <a href="{{ route('admin.campeonatos.gerar-jogos', [$campeonato->id_campeonato, $categoria->id_categoria]) }}"
-             class="btn btn-sm btn-outline-primary js-gerar-jogos">
-            <i class="bi bi-lightning-charge"></i> Gerar jogos (todos contra todos)
-          </a>
+          <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('admin.campeonatos.gerar-jogos', [$campeonato->id_campeonato, $categoria->id_categoria]) }}"
+               class="btn btn-sm btn-outline-primary js-gerar-jogos">
+              <i class="bi bi-lightning-charge"></i> Gerar jogos (todos contra todos)
+            </a>
+            {{-- Fase I, Etapa I3: mata-mata pelos classificados da tabela ou pelos vencedores da fase anterior --}}
+            <a href="{{ route('admin.campeonatos.proxima-fase', [$campeonato->id_campeonato, $categoria->id_categoria]) }}"
+               class="btn btn-sm btn-outline-primary js-proxima-fase">
+              <i class="bi bi-diagram-2"></i> Montar próxima fase
+            </a>
+          </div>
         </div>
 
         <div class="row g-4">
