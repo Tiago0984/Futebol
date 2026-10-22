@@ -670,10 +670,11 @@ class EventoCalendario extends Model
     }
 
     /**
-     * Agenda do site público (decisão de 06/10/2026, CLAUDE.md seção 4, "Site público"): só eventos do tipo
-     * CAMPEONATO e jogos de campeonato (evento com tbl_jogos e campeonato preenchido). Ficam de fora
-     * amistosos, treinos (à mão ou da grade), eventos JOGO sem tbl_jogos, os outros tipos e o rascunho
-     * (Fase 10, Etapa 4). O status (cancelado com o selo, oculto fora) é filtrado à parte.
+     * Agenda do site público (decisão de 06/10/2026, CLAUDE.md seção 4, "Site público"): eventos do tipo
+     * CAMPEONATO, jogos de campeonato ativo e, desde a Fase F (21/10/2026), os amistosos (evento com tbl_jogos
+     * sem campeonato). Ficam de fora treinos (à mão ou da grade), eventos JOGO sem tbl_jogos, os outros tipos
+     * (avaliação e peneira inclusive) e o rascunho (Fase 10, Etapa 4). O status (cancelado com o selo, oculto
+     * fora) é filtrado à parte.
      */
     public function scopeDaAgendaPublica($query)
     {
@@ -681,8 +682,9 @@ class EventoCalendario extends Model
             ->where('tipo_evento_calendario', 'CAMPEONATO')
             ->orWhere(fn ($jogo) => $jogo
                 ->where('tipo_evento_calendario', 'JOGO')
-                // Jogo de campeonato inativo some junto com ele (21/10/2026)
-                ->whereHas('jogo', fn ($j) => $j->whereHas('campeonato', fn ($c) => $c->ativos()))));
+                // Jogo de campeonato ativo (o de campeonato inativo some junto com ele, 21/10/2026) ou amistoso
+                // (Fase F, dono do projeto, 21/10/2026: amistosos no site, sem os atletas)
+                ->whereHas('jogo', fn ($j) => $j->whereNull('id_campeonato')->orWhereHas('campeonato', fn ($c) => $c->ativos()))));
     }
 
     /**

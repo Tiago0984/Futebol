@@ -37,7 +37,7 @@
                 <button class="btn-cal-filter is-active" data-filter="all">
                     <i class="fa fa-list"></i> Todos <span class="filter-count">{{ $eventos->count() }}</span>
                 </button>
-                {{-- Sem filtro de treinos: o site mostra só campeonatos e jogos de campeonato --}}
+                {{-- Sem filtro de treinos: o site mostra campeonatos, jogos de campeonato e amistosos (Fase F) --}}
                 <button class="btn-cal-filter" data-filter="jogo">
                     <i class="fa fa-dot-circle-o"></i> Jogos / Confrontos <span class="filter-count">{{ $eventos->where('tipo_evento_calendario', 'JOGO')->count() }}</span>
                 </button>

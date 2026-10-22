@@ -41,9 +41,9 @@ class HomeController extends Controller
             ->where('total_atletas', '>', 0)
             ->values();
 
-        // Próximo jogo em destaque (LIGA PREMIERE): mesma regra da agenda do site (só jogo de campeonato;
-        // amistoso não), ativo, de hoje em diante, como o "Próximo Evento" do calendário. Sem nenhum, mostra
-        // o último jogo de campeonato visível; sem nenhum jogo de campeonato, a seção mostra o rótulo padrão.
+        // Próximo jogo em destaque (LIGA PREMIERE): mesma regra da agenda do site (jogo de campeonato ou, desde a
+        // Fase F, amistoso, com o rótulo "AMISTOSO"), ativo, de hoje em diante, como o "Próximo Evento" do
+        // calendário. Sem nenhum, mostra o último jogo visível; sem nenhum jogo, a seção mostra o rótulo padrão.
         $comDados = ['evento', 'timeCasa', 'timeVisitante', 'campeonato'];
 
         $proximoJogo = Jogo::with($comDados)

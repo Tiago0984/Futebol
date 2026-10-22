@@ -10,8 +10,8 @@ class CalendarioController extends Controller
 {
     public function calendario()
     {
-        // Só eventos CAMPEONATO e jogos de campeonato (escopo daAgendaPublica); treinos, amistosos e os
-        // outros tipos ficam fora (a grade de treinos continua na tabela da página).
+        // Eventos CAMPEONATO, jogos de campeonato e amistosos (escopo daAgendaPublica); treinos e os outros
+        // tipos ficam fora (a grade de treinos continua na tabela da página).
         // jogo.campeonato: para a etiqueta (nome do campeonato) sem uma consulta por evento
         $eventos = EventoCalendario::with('jogo.campeonato')
             ->whereIn('status_evento_calendario', EventoCalendario::STATUS_VISIVEIS)

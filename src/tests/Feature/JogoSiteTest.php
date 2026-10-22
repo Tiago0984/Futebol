@@ -121,38 +121,31 @@ class JogoSiteTest extends TestCase
             ->assertSeeInOrder(['COPA ESCOLA', 'TIME AZUL', now()->addDays(4)->format('d M') . ', 15:30', 'CAMPO NOVO', 'TIME VISITANTE']);
     }
 
-    // Destaque da home com a regra da agenda do site: só jogo de campeonato
-    public function test_proximo_jogo_ignora_amistoso(): void
+    // Destaque da home com a regra da agenda do site: jogo de campeonato ou, desde a Fase F (21/10/2026), amistoso
+    public function test_proximo_jogo_inclui_o_amistoso(): void
     {
-        $this->jogo(+1, $this->verde, $this->azul, null, 'ATIVO', [], amistoso: true);   // mais perto, mas amistoso
-        $jogo = $this->jogo(+5, $this->azul, $this->visitante);
+        $amistoso = $this->jogo(+1, $this->verde, $this->azul, null, 'ATIVO', [], amistoso: true);   // mais perto
+        $this->jogo(+5, $this->azul, $this->visitante);
 
         $this->get('/')->assertOk()
-            ->assertViewHas('proximoJogo', fn ($proximo) => $proximo->id_jogo === $jogo->id_jogo)
-            ->assertSee('COPA ESCOLA')
-            ->assertDontSee('AMISTOSO');
+            ->assertViewHas('proximoJogo', fn ($proximo) => $proximo->id_jogo === $amistoso->id_jogo)
+            ->assertSee('AMISTOSO');
     }
 
-    public function test_sem_jogo_futuro_mostra_o_ultimo_de_campeonato_visivel(): void
+    public function test_sem_jogo_futuro_mostra_o_ultimo_jogo_visivel(): void
     {
         $this->jogo(-8, $this->verde, $this->visitante, [1, 0]);
         $this->jogo(-4, $this->azul, $this->visitante, [3, 2]);
-        $this->jogo(-2, $this->verde, $this->azul, [5, 5], 'ATIVO', [], amistoso: true); // amistoso não aparece
+        $this->jogo(-2, $this->verde, $this->azul, [5, 5], 'ATIVO', [], amistoso: true); // o último visível (amistoso)
         $this->jogo(-1, $this->azul, $this->verde, [9, 9], 'INATIVO');                   // oculto não aparece
-        $this->jogo(+3, $this->azul, $this->verde, null, 'ATIVO', [], amistoso: true);   // amistoso futuro também não
 
         $this->get('/')->assertOk()
-            ->assertSeeInOrder(['TIME AZUL', '<span class="lp-score-num">3</span>', 'TIME VISITANTE'], false)
-            ->assertDontSee('<span class="lp-score-num">9</span>', false)
-            ->assertDontSee('<span class="lp-score-num">5</span>', false)
-            ->assertDontSee('AMISTOSO');
+            ->assertSeeInOrder(['AMISTOSO', 'TIME VERDE', '<span class="lp-score-num">5</span>', 'TIME AZUL'], false)
+            ->assertDontSee('<span class="lp-score-num">9</span>', false);
     }
 
-    public function test_sem_jogo_de_campeonato_o_destaque_da_home_nao_quebra(): void
+    public function test_sem_nenhum_jogo_o_destaque_da_home_nao_quebra(): void
     {
-        $this->jogo(+2, $this->azul, $this->verde, null, 'ATIVO', [], amistoso: true);
-        $this->jogo(-2, $this->verde, $this->azul, [1, 1], 'ATIVO', [], amistoso: true);
-
         $this->get('/')->assertOk()
             ->assertViewHas('proximoJogo', null)
             ->assertSee('LIGA PREMIERE')
@@ -246,16 +239,17 @@ class JogoSiteTest extends TestCase
     }
 
     /**
-     * Agenda do site (decisão de 06/10/2026): só eventos CAMPEONATO e jogos de campeonato. Amistoso, treino
-     * (à mão), evento JOGO sem tbl_jogos e os outros tipos ficam fora; cancelado aparece com o selo, oculto não.
+     * Agenda do site (decisão de 06/10/2026; amistosos desde a Fase F, 21/10/2026): eventos CAMPEONATO, jogos de
+     * campeonato e amistosos. Treino (à mão), evento JOGO sem tbl_jogos e os outros tipos ficam fora; cancelado
+     * aparece com o selo, oculto não.
      */
-    public function test_agenda_do_site_mostra_so_campeonatos_e_jogos_de_campeonato(): void
+    public function test_agenda_do_site_mostra_campeonatos_jogos_e_amistosos(): void
     {
         $abertura  = $this->eventoCampeonato(+1, 'Abertura da Copa');
         $jogo      = $this->jogo(+2, $this->azul, $this->visitante);
         $cancelado = $this->jogo(+3, $this->azul, $this->verde, null, 'CANCELADO');
         $this->jogo(+4, $this->verde, $this->visitante, null, 'INATIVO');                    // oculto
-        $this->jogo(+5, $this->verde, $this->azul, null, 'ATIVO', [], amistoso: true);       // amistoso
+        $amistoso  = $this->jogo(+5, $this->verde, $this->azul, null, 'ATIVO', [], amistoso: true);
         foreach (['JOGO' => 'Jogo sem cadastro', 'TREINO' => 'Treino de finalização', 'REUNIAO' => 'Reunião de pais'] as $tipo => $titulo) {
             EventoCalendario::criarPor(null, [
                 'titulo_evento_calendario' => $titulo, 'tipo_evento_calendario' => $tipo,
@@ -265,26 +259,28 @@ class JogoSiteTest extends TestCase
 
         $this->get(route('calendario'))->assertOk()
             ->assertViewHas('eventos', fn ($eventos) => $eventos->pluck('id_evento_calendario')->all()
-                === [$abertura->id_evento_calendario, $jogo->id_evento, $cancelado->id_evento])
+                === [$abertura->id_evento_calendario, $jogo->id_evento, $cancelado->id_evento, $amistoso->id_evento])
             ->assertViewHas('proximoEvento', fn ($proximo) => $proximo->id_evento_calendario === $abertura->id_evento_calendario)
             ->assertSee('event-selo-cancelado', false)
+            ->assertSee('<div class="event-type-tag tag-jogo">Amistoso</div>', false)
+            ->assertSee('Time Verde x Time Azul')           // amistoso
             ->assertDontSee('Time Verde x Time Visitante')  // oculto
-            ->assertDontSee('Time Verde x Time Azul')       // amistoso
             ->assertDontSee('Jogo sem cadastro')
             ->assertDontSee('Treino de finalização')
             ->assertDontSee('Reunião de pais')
             ->assertDontSee('Treinos Especiais');           // o filtro de treinos saiu
     }
 
-    public function test_proximo_evento_do_site_e_so_jogo_de_campeonato_ativo(): void
+    public function test_proximo_evento_do_site_e_o_jogo_ativo_mais_perto_inclusive_amistoso(): void
     {
-        $this->jogo(+1, $this->azul, $this->verde, null, 'ATIVO', [], amistoso: true);    // amistoso: não
-        $this->jogo(+2, $this->verde, $this->visitante, null, 'CANCELADO');              // cancelado: só na lista
-        $jogo = $this->jogo(+3, $this->azul, $this->visitante);
+        $this->jogo(+1, $this->verde, $this->visitante, null, 'CANCELADO');              // cancelado: só na lista
+        $this->jogo(+2, $this->azul, $this->verde, null, 'ATIVO', [], rascunho: true);   // rascunho: não
+        $amistoso = $this->jogo(+3, $this->azul, $this->verde, null, 'ATIVO', [], amistoso: true);
+        $this->jogo(+4, $this->azul, $this->visitante);
 
         $this->get(route('calendario'))->assertOk()
-            ->assertViewHas('proximoEvento', fn ($proximo) => $proximo->id_evento_calendario === $jogo->id_evento)
-            ->assertSee('<h3 class="cal-next-title">Time Azul x Time Visitante</h3>', false);
+            ->assertViewHas('proximoEvento', fn ($proximo) => $proximo->id_evento_calendario === $amistoso->id_evento)
+            ->assertSee('<h3 class="cal-next-title">Time Azul x Time Verde</h3>', false);
     }
 
     // ---------- rascunho (Fase 10, Etapa 4) ----------
@@ -365,9 +361,9 @@ class JogoSiteTest extends TestCase
     }
 
     private function jogo(int $dias, int $casa, int $visitante, ?array $placar = null, string $status = 'ATIVO',
-        array $evento = [], bool $amistoso = false, ?string $data = null): Jogo
+        array $evento = [], bool $amistoso = false, ?string $data = null, bool $rascunho = false): Jogo
     {
-        $ev = EventoCalendario::criarPor(null, array_merge([
+        $ev = EventoCalendario::criarPor(null, rascunho: $rascunho, dados: array_merge([
             'titulo_evento_calendario'         => Jogo::tituloPara($casa, $visitante),
             'tipo_evento_calendario'           => 'JOGO',
             'data_evento_calendario'           => $data ?? now()->addDays($dias)->toDateString(),
