@@ -24,7 +24,8 @@ class PeneiraTest extends TestCase
         $this->colocarNaCategoria($id, $this->idCategoria('Sub-15', 'M'));
 
         $this->comoAdmin()->get(route('admin.calendario.index', ['ramo' => 'individuais']))->assertOk()
-            ->assertSee('Nova peneira')->assertSee('data-peneira="1"', false)
+            ->assertDontSee('data-peneira="1"', false)                            // um botão só (22/10/2026)
+            ->assertSee('id="ind_peneira"', false)->assertSee('É uma peneira (avaliação técnica de um clube)')
             ->assertSee('Marcar só quem cabe')
             ->assertSee('data-ano="' . (now()->year - 14) . '" data-sexo="M"', false)
             ->assertSee('(' . (now()->year - 14) . ')')

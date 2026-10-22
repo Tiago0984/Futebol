@@ -17,6 +17,17 @@
                 <input type="hidden" name="_formulario" value="individual">
                 <div class="modal-body">
                     <div class="row g-3">
+                        {{-- Fase E: a peneira é este mesmo formulário; a chave só preenche tipo, subtipo, título e descrição.
+                             Sem name: não vai ao servidor (o que vale é o subtipo, EventoCalendario::ehPeneira()) --}}
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="ind_peneira"
+                                    @checked(old('subtipo_evento_calendario') === \App\Models\EventoCalendario::SUBTIPO_PENEIRA)>
+                                <label class="form-check-label" for="ind_peneira">
+                                    <i class="bi bi-binoculars"></i> É uma peneira (avaliação técnica de um clube)
+                                </label>
+                            </div>
+                        </div>
                         <div class="col-md-4">
                             <label class="form-label" for="ind_tipo">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_evento_calendario" id="ind_tipo" class="form-select js-tipo-evento" required>
@@ -79,20 +90,24 @@
     </div>
 </div>
 
-{{-- Fase E: o botão "Nova peneira" abre este formulário já como peneira (tipo Avaliação, subtipo, título e um
-     modelo de descrição); o "Novo evento individual" limpa o que a peneira tinha posto. O que foi digitado à mão fica --}}
+{{-- Fase E: ligar a chave "É uma peneira" prepara o formulário (tipo Avaliação, subtipo, título e um modelo de
+     descrição); desligar limpa o que a peneira tinha posto. O que foi digitado à mão fica --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const modal = document.getElementById('modalEventoIndividual');
+    const chave = document.getElementById('ind_peneira');
     const SUBTIPO = @js(\App\Models\EventoCalendario::SUBTIPO_PENEIRA);
     const TITULO = 'Peneira · ';
     const DESCRICAO = 'Avaliação técnica do clube (nome). Traga chuteira, caneleira e documento.';
-    modal?.addEventListener('show.bs.modal', function (e) {
-        const peneira = e.relatedTarget?.dataset.peneira === '1';
+    const mostrarTitulo = peneira => modal.querySelector('.modal-title').innerHTML = peneira
+        ? '<i class="bi bi-binoculars"></i> Nova peneira (avaliação técnica)'
+        : '<i class="bi bi-person-check"></i> Novo evento individual';
+    // Voltou com erro de validação já como peneira: a chave vem ligada pelo old(); só o título acompanha
+    if (chave?.checked) mostrarTitulo(true);
+    chave?.addEventListener('change', function () {
+        const peneira = chave.checked;
         const campo = id => document.getElementById(id);
-        modal.querySelector('.modal-title').innerHTML = peneira
-            ? '<i class="bi bi-binoculars"></i> Nova peneira (avaliação técnica)'
-            : '<i class="bi bi-person-check"></i> Novo evento individual';
+        mostrarTitulo(peneira);
         if (peneira) {
             campo('ind_tipo').value = 'AVALIACAO';
             campo('ind_subtipo').value = SUBTIPO;

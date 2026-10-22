@@ -24,13 +24,9 @@
                     <i class="bi bi-calendar-plus"></i> Gerar agenda do mês
                 </button>
                 @elseif($filtros['ramo'] === 'individuais')
-                {{-- Individuais: o técnico cria o evento já escolhendo os atletas --}}
+                {{-- Individuais: o técnico cria o evento já escolhendo os atletas (a peneira é uma chave no formulário) --}}
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalEventoIndividual">
                     <i class="bi bi-person-plus"></i> Novo evento individual
-                </button>
-                {{-- Fase E: o mesmo formulário, já preparado para a peneira (avaliação técnica de um clube) --}}
-                <button class="btn-admin-primary js-nova-peneira" data-bs-toggle="modal" data-bs-target="#modalEventoIndividual" data-peneira="1">
-                    <i class="bi bi-binoculars"></i> Nova peneira
                 </button>
                 @else
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalCriarEvento">
