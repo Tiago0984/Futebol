@@ -374,6 +374,7 @@ O atleta pode estar em mais de um time. Ao **inscrever ou escalar** um atleta nu
 - **ESPORTE:** Jogos; Grade de treino; Notificações. **CADASTROS:** Categorias; Times. **CONTEÚDO DO SITE** (Notícias, Banners, Galeria, Vídeos), **Grade de treino** e **Atletas** sem subitens (17/10/2026): o item abre a lista direto; o "Gerar agenda do mês" é o botão da grade (o item Grade fica ativo nele). **Matrículas** continua com os subitens (lista e rejeitadas).
 - **Ramos (`EventoCalendario::RAMOS`, `doRamo()`/`ramo()`):** Campeonatos = tipo CAMPEONATO e jogos com campeonato; Amistosos = jogos sem campeonato; Treinos = TREINO; **Individuais = AVALIACAO, REUNIAO e EVENTO sem categoria**; Outros = CONFRATERNIZACAO e esses tipos com categoria.
 - **Evento individual** (botão em Individuais): o técnico descreve "o que o atleta vai fazer" e marca os atletas (caixas por categoria, com busca); só eles são inscritos (INDIVIDUAL) e avisados. A notificação de inscrição leva a descrição resumida (120 caracteres, `Notificacao::RECADO_MAX`); o texto inteiro vai na agenda (campo `descricao` da API).
+- **Peneira (avaliação técnica)** (Fase E, 21/10/2026; dono do projeto: só no admin e no app): quando um clube pede atletas de certas idades. Botão **"Nova peneira"** em Individuais, que abre o mesmo formulário do evento individual já como peneira (tipo AVALIACAO, subtipo **"Avaliação técnica (peneira)"**, `EventoCalendario::SUBTIPO_PENEIRA`/`ehPeneira()`, título "Peneira · " e um modelo de descrição; sem coluna nova). A caixa de atletas do evento individual (partial `admin.partials.escolher-atletas` com `$comFiltroDeIdade`) mostra o ano de nascimento e tem **"Nascidos de … até …"**, **Sexo** e **"Marcar só quem cabe"** (marca a faixa e desmarca o resto; ajustável à mão). Só os marcados são inscritos e avisados; selo "Peneira" na lista de Individuais; **nunca no site** (avaliação fica fora da agenda pública).
 
 ---
 
@@ -834,7 +835,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
   - `migrate:fresh` e `db:seed` só com OK explícito e backup antes.
 - **Em aberto para escolher (dono do projeto, 15/10: "deixa em aberto"):**
   1. ~~**Grade real de treinos**~~ ✅ no local, pelo seeder de demonstração (16/10, abaixo); na entrega, cadastrar pelas telas.
-  2. **Fase E — avaliação técnica (peneira):** escolher atletas por faixa de idade quando um clube pede; falta o professor dizer se aparece no site.
+  2. ~~**Fase E — avaliação técnica (peneira)**~~ ✅ feita em 21/10/2026 (só no admin e no app; seção 4, "Menu do dashboard").
   3. **Fase F — site público com mais eventos** (amistosos? treinos?): falta a confirmação do professor.
   4. **Débitos técnicos** da seção 7, por exemplo **CPF único** e **assinaturas** em local protegido.
 
@@ -930,7 +931,8 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **CPF:** migration `2026_10_21_000003_cpf_formatado_e_unico` no `db_futebol` de casa, **batch 5** (ensaiada antes no `db_futebol_test` com o backup: 27 atletas e 26 responsáveis já com máscara e distintos). Backup em `backup/` (só em casa): `db_futebol_antes_cpf_unico_20261021_225018.sql`. Testes: `CpfTest` (4), `CpfMigrationTest` (1, sem transação); o helper `cpfDeTeste()` do `Tests\CriaDadosDeAtleta` gera CPFs válidos e distintos (os testes usavam `000.000.000-00` e `111.111.111-11` repetidos), com ajustes em 9 arquivos de teste. **736 testes passando.**
 - **Roteiro:** editar sem mudar (Claude no navegador; ele não digita números de documento) e a máscara (dono do projeto) ok; recusas de CPF inválido e repetido cobertas pelos testes; o bloco `responsaveis` conferido no tinker (Arthur Mendes: Carla Mendes, Mãe).
 - **Falta publicar no servidor:** as três migrations de 21/10 (`000001` a `000003`); a `000003` para nos atletas 7 e 10 do banco antigo de lá.
-- **Próximo:** Fase E (peneira) e Fase F (amistosos no site).
+- **Fase E (peneira)** ✅ (sem migration): `PeneiraTest` (2). **738 testes passando.** Roteiro no navegador (21/10, 8 passos, pelo Claude no navegador, conferido no banco): "Peneira · São Caetano" (evento 57, 14/11) com 2011–2012 masculino marcando 7 atletas, 7 inscritos e avisados, selo na lista, nada no site, o "Novo evento individual" sem os textos da peneira. **Ficou oculta** no `db_futebol` de casa (ocultar avisou os 7 como cancelamento: regra provisória, pergunta 16).
+- **Próximo:** Fase F (amistosos no site).
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
