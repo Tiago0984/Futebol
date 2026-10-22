@@ -61,10 +61,11 @@
                         {{-- Atletas: caixa com a lista para ticar, por categoria, com busca e "marcar todos" da categoria --}}
                         <div class="col-12">
                             @include('admin.partials.escolher-atletas', [
-                                'prefixo'    => 'ind',
-                                'grupos'     => $atletasParaIndividual,
-                                'escolhidos' => $atletasEscolhidos,
-                                'ajuda'      => 'Tique quem vai fazer. Só os escolhidos veem o evento na agenda.',
+                                'prefixo'          => 'ind',
+                                'grupos'           => $atletasParaIndividual,
+                                'escolhidos'       => $atletasEscolhidos,
+                                'ajuda'            => 'Tique quem vai fazer. Só os escolhidos veem o evento na agenda.',
+                                'comFiltroDeIdade' => true,   // Fase E: peneira por faixa de ano de nascimento e sexo
                             ])
                         </div>
                     </div>
@@ -77,6 +78,34 @@
         </div>
     </div>
 </div>
+
+{{-- Fase E: o botão "Nova peneira" abre este formulário já como peneira (tipo Avaliação, subtipo, título e um
+     modelo de descrição); o "Novo evento individual" limpa o que a peneira tinha posto. O que foi digitado à mão fica --}}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const modal = document.getElementById('modalEventoIndividual');
+    const SUBTIPO = @js(\App\Models\EventoCalendario::SUBTIPO_PENEIRA);
+    const TITULO = 'Peneira · ';
+    const DESCRICAO = 'Avaliação técnica do clube (nome). Traga chuteira, caneleira e documento.';
+    modal?.addEventListener('show.bs.modal', function (e) {
+        const peneira = e.relatedTarget?.dataset.peneira === '1';
+        const campo = id => document.getElementById(id);
+        modal.querySelector('.modal-title').innerHTML = peneira
+            ? '<i class="bi bi-binoculars"></i> Nova peneira (avaliação técnica)'
+            : '<i class="bi bi-person-check"></i> Novo evento individual';
+        if (peneira) {
+            campo('ind_tipo').value = 'AVALIACAO';
+            campo('ind_subtipo').value = SUBTIPO;
+            if (!campo('ind_titulo').value) campo('ind_titulo').value = TITULO;
+            if (!campo('ind_descricao').value) campo('ind_descricao').value = DESCRICAO;
+        } else {
+            if (campo('ind_subtipo').value === SUBTIPO) campo('ind_subtipo').value = '';
+            if (campo('ind_titulo').value === TITULO) campo('ind_titulo').value = '';
+            if (campo('ind_descricao').value === DESCRICAO) campo('ind_descricao').value = '';
+        }
+    });
+});
+</script>
 
 {{-- Voltou com erro de validação: reabre o formulário com o que foi preenchido --}}
 @if($errors->any() && old('_formulario') === 'individual')

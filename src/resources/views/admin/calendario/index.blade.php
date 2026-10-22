@@ -28,6 +28,10 @@
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalEventoIndividual">
                     <i class="bi bi-person-plus"></i> Novo evento individual
                 </button>
+                {{-- Fase E: o mesmo formulário, já preparado para a peneira (avaliação técnica de um clube) --}}
+                <button class="btn-admin-primary js-nova-peneira" data-bs-toggle="modal" data-bs-target="#modalEventoIndividual" data-peneira="1">
+                    <i class="bi bi-binoculars"></i> Nova peneira
+                </button>
                 @else
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalCriarEvento">
                     <i class="bi bi-plus-lg"></i> Novo Evento
@@ -250,7 +254,7 @@
                                     @if($ev->veioDaGrade()) · <i class="bi bi-clock-history"></i> Gerado pela grade @endif
                                 </div>
                             </td>
-                            <td><span class="badge-cat">{{ $ev->tipo_label }}</span></td>
+                            <td><span class="badge-cat">{{ $ev->tipo_label }}</span>@if($ev->ehPeneira()) <span class="badge bg-info text-dark">Peneira</span>@endif</td>
                             <td class="text-muted">{{ $ev->subtipo_evento_calendario ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;">
                                 {{ $ev->horario_texto }}

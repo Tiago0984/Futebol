@@ -91,6 +91,15 @@ class EventoCalendario extends Model
     // reunião com o atleta ou a família, outro compromisso. Ramo "Individuais" = esses tipos SEM categoria
     public const TIPOS_INDIVIDUAIS = ['AVALIACAO', 'REUNIAO', 'EVENTO'];
 
+    // Peneira (Fase E, 21/10/2026): avaliação técnica quando um clube pede atletas de certas idades. É um evento
+    // individual do tipo AVALIACAO com este subtipo (sem coluna nova): só no admin e no app, nunca no site
+    public const SUBTIPO_PENEIRA = 'Avaliação técnica (peneira)';
+
+    public function ehPeneira(): bool
+    {
+        return $this->tipo_evento_calendario === 'AVALIACAO' && $this->subtipo_evento_calendario === self::SUBTIPO_PENEIRA;
+    }
+
     // Tipos do ramo "Outros": a confraternização e os tipos individuais quando o evento tem categoria
     // (ex.: reunião de pais da Sub-13)
     public const TIPOS_OUTROS = ['REUNIAO', 'CONFRATERNIZACAO', 'EVENTO', 'AVALIACAO'];
