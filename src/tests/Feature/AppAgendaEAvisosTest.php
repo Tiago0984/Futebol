@@ -389,7 +389,8 @@ class AppAgendaEAvisosTest extends TestCase
         ]);
 
         return DB::table('tbl_responsavel')->insertGetId([
-            'id_endereco' => $idEndereco, 'nome_responsavel' => 'Responsável', 'cpf_responsavel' => '222.222.222-22',
+            'id_endereco' => $idEndereco, 'nome_responsavel' => 'Responsável',
+            'cpf_responsavel' => $this->cpfDeTeste(400000000 + (int) DB::table('tbl_responsavel')->max('id_responsavel') + 1),
             'rg_responsavel' => '2', 'whatsapp_responsavel' => '(11) 9', 'email_responsavel' => $email,
             'senha_responsavel' => Hash::make(self::SENHA),
         ]);

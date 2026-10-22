@@ -232,7 +232,7 @@ class AtletaCategoriaTest extends TestCase
         $this->comoAdmin()
             ->post(route('admin.atletas.store'), $this->dadosCadastro([
                 'data_nasc_atleta' => ($ano - 17) . '-01-01',
-                'cpf_atleta'       => '333.333.333-33',
+                'cpf_atleta'       => $this->cpfDeTeste(300000003),
                 'id_categoria'     => $this->idCategoria('Sub-17', 'M'),
             ]))
             ->assertSessionHasNoErrors();

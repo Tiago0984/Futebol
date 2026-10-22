@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\AcessaOApp;
+use App\Support\Cpf;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
@@ -58,10 +59,16 @@ class Responsavel extends Authenticatable
         return $email === '' ? null : $email;
     }
 
-    // Só os dígitos do CPF ("034.466.148-26" → "03446614826"): os cadastros têm formatos diferentes
+    // CPF sempre gravado como 000.000.000-00 (21/10/2026; App\Support\Cpf)
+    protected function cpfResponsavel(): Attribute
+    {
+        return Attribute::make(set: fn ($valor) => Cpf::formatar($valor));
+    }
+
+    // Só os dígitos do CPF ("034.466.148-26" → "03446614826"): os cadastros antigos tinham formatos diferentes
     public static function digitosCpf(?string $cpf): string
     {
-        return preg_replace('/\D/', '', (string) $cpf);
+        return Cpf::digitos($cpf);
     }
 
     /**

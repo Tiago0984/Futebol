@@ -8,6 +8,8 @@ use App\Models\Atleta;
 use App\Models\Endereco;
 use App\Models\Responsavel;
 use App\Models\Autorizacao;
+use App\Rules\CpfValido;
+use App\Support\Cpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -23,34 +25,14 @@ class CadastroController extends Controller
         return view('site.cadastro.cadastro');
     }
 
-    // Valida se um CPF é válido (formato e dígitos verificadores)
-    private function cpfValido(?string $cpf): bool
-    {
-        $cpf = preg_replace('/\D/', '', (string) $cpf);
-
-        if (strlen($cpf) !== 11 || preg_match('/^(\d)\1{10}$/', $cpf)) {
-            return false;
-        }
-
-        for ($t = 9; $t < 11; $t++) {
-            $soma = 0;
-            for ($i = 0; $i < $t; $i++) {
-                $soma += (int) $cpf[$i] * (($t + 1) - $i);
-            }
-            $digito = ((10 * $soma) % 11) % 10;
-            if ((int) $cpf[$t] !== $digito) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    // Processa o cadastro
+    // Processa o cadastro (o CPF é conferido pela regra App\Rules\CpfValido, a mesma do admin)
     public function store(Request $request)
     {
-        $cpfRegex = '/^\d{3}\.?\d{3}\.?\d{3}-?\d{2}$/';
         $cepRegex = '/^\d{5}-?\d{3}$/';
+
+        // CPF sempre no formato do banco (000.000.000-00) antes de validar: assim o "único" compara igual,
+        // venha com ou sem pontos (App\Support\Cpf)
+        $request->merge(['cpf_atleta' => Cpf::formatar($request->cpf_atleta), 'cpf_responsavel' => Cpf::formatar($request->cpf_responsavel)]);
         $rgRegex  = '/^[0-9Xx.\-\s]{5,15}$/';
         $foneRegex = '/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/';
 
@@ -66,7 +48,7 @@ class CadastroController extends Controller
             // Atleta
             'nome_atleta'            => 'required|string|max:100',
             'data_nasc_atleta'       => $nascimento['regra'],
-            'cpf_atleta'             => ['required', 'string', 'max:14', 'regex:' . $cpfRegex, 'unique:tbl_atletas,cpf_atleta'],
+            'cpf_atleta'             => ['required', 'string', 'max:14', new CpfValido('Informe um CPF válido para o atleta.'), 'unique:tbl_atletas,cpf_atleta'],
             'rg_atleta'              => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
             'sexo_atleta'            => 'required|in:M,F',
             'escola_atleta'          => 'required|string|max:100',
@@ -82,7 +64,7 @@ class CadastroController extends Controller
             'estado_endereco'        => 'required|string|max:2',
             // Responsável
             'nome_responsavel'       => 'required|string|max:100',
-            'cpf_responsavel'        => ['required', 'string', 'max:14', 'regex:' . $cpfRegex],
+            'cpf_responsavel'        => ['required', 'string', 'max:14', new CpfValido('Informe um CPF válido para o responsável.')],
             'rg_responsavel'         => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
             'email_responsavel'      => ['required', 'email', 'max:150',
                 Rule::unique('tbl_responsavel', 'email_responsavel')->ignore($responsavelExistente?->id_responsavel, 'id_responsavel')],
@@ -99,8 +81,6 @@ class CadastroController extends Controller
         ], [
             'email_atleta.unique'  => 'Este e-mail já está cadastrado.',
             'cpf_atleta.unique'    => 'Este CPF já está cadastrado.',
-            'cpf_atleta.regex'     => 'Informe um CPF válido para o atleta.',
-            'cpf_responsavel.regex'=> 'Informe um CPF válido para o responsável.',
             'email_responsavel.unique' => 'Este e-mail já está cadastrado para outro responsável.',
             'rg_atleta.regex'      => 'Informe um RG válido para o atleta.',
             'rg_responsavel.regex' => 'Informe um RG válido para o responsável.',
@@ -111,14 +91,6 @@ class CadastroController extends Controller
             ...$nascimento['mensagens'],
             ...$periodo['mensagens'],
         ]);
-
-        if (!$this->cpfValido($request->cpf_atleta)) {
-            return back()->withErrors(['cpf_atleta' => 'Informe um CPF válido para o atleta.'])->withInput();
-        }
-
-        if (!$this->cpfValido($request->cpf_responsavel)) {
-            return back()->withErrors(['cpf_responsavel' => 'Informe um CPF válido para o responsável.'])->withInput();
-        }
 
         // CPF já cadastrado: só reaproveita se o e-mail informado for o do cadastro (o formulário é público:
         // quem só sabe o CPF não consegue se pendurar no responsável de outra família)

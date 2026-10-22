@@ -389,6 +389,17 @@
 @endif
 
 <script>
+// Máscara de CPF nos modais de novo atleta e de editar (21/10/2026; a mesma do cadastro do site): só dígitos,
+// até 11, com os pontos e o hífen aparecendo enquanto digita. O servidor confere os dígitos verificadores
+document.addEventListener('input', function (e) {
+    if (!e.target.matches('input[name="cpf_atleta"], input[name="cpf_responsavel"]')) return;
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+    e.target.value = v;
+});
+
 // Período escolar: o turno do treino só aparece (e só é obrigatório) para quem estuda à noite
 function mostrarTurnoDoTreino(selPeriodo) {
     const turno  = document.getElementById(selPeriodo.dataset.turno);

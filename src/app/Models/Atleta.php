@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\AcessaOApp;
 use App\Models\Concerns\SerializaDatasComFuso;
+use App\Support\Cpf;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\DB;
@@ -135,6 +136,12 @@ class Atleta extends Authenticatable
         'peso_atleta'      => 'decimal:2',
         'altura_atleta'    => 'decimal:2',
     ];
+
+    // CPF sempre gravado como 000.000.000-00 (21/10/2026; App\Support\Cpf)
+    public function setCpfAtletaAttribute($valor): void
+    {
+        $this->attributes['cpf_atleta'] = Cpf::formatar($valor);
+    }
 
     public function endereco()
     {

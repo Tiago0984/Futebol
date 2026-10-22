@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Atleta;
 use App\Models\Notificacao;
 use App\Models\Responsavel;
+use App\Support\Cpf;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
@@ -105,15 +106,16 @@ class ResponsavelUnicoTest extends TestCase
         $atleta2 = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
         $atleta3 = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
 
-        // Mesmo CPF em três formatos; o de menor id está sem e-mail
+        // Mesmo CPF em três formatos; o de menor id está sem e-mail (o índice único do CPF, de 21/10/2026, compara o
+        // texto: formatos diferentes passam, como nos cadastros antigos)
         $fica = $this->responsavel('034.466.148-26', null);
         $repetido = $this->responsavel('03446614826', 'Mae@Familia.com ');
-        $outroRepetido = $this->responsavel('034.466.148-26', 'outro@familia.com');
+        $outroRepetido = $this->responsavel('034 466 148 26', 'outro@familia.com');
         $semAtleta = $this->responsavel('22222222222', 'sem.atleta@familia.com');
         // Repetido só depois de normalizar: o índice do banco de testes já existe e aceita o espaço no começo
         $mesmoEmail = $this->responsavel('33333333333', ' mae@familia.com');
         $semCpfA = $this->responsavel('', 'a@familia.com');
-        $semCpfB = $this->responsavel('', 'b@familia.com');
+        $semCpfB = $this->responsavel('-', 'b@familia.com');   // também sem dígitos
 
         $vinculo = fn ($idAtleta, $idResponsavel) => DB::table('tbl_atleta_responsavel')->insert(
             ['id_atleta' => $idAtleta, 'id_responsavel' => $idResponsavel, 'grau_parentesco_responsavel' => 'Mãe']
@@ -246,7 +248,7 @@ class ResponsavelUnicoTest extends TestCase
 
     public function test_admin_vincula_ao_responsavel_do_mesmo_cpf_sem_mudar_os_dados_dele(): void
     {
-        $existente = $this->responsavel('11111111111', null); // o formulário do admin manda 111.111.111-11
+        $existente = $this->responsavel(Cpf::digitos($this->cpfDeTeste(300000002)), null); // só dígitos; o formulário do admin manda com pontos
 
         $this->comoAdmin()->post(route('admin.atletas.store'), $this->dadosCadastro([
             'nome_responsavel' => 'Outro Nome Digitado', 'email_responsavel' => 'Mae@Familia.com',
@@ -262,7 +264,7 @@ class ResponsavelUnicoTest extends TestCase
 
         // Já com e-mail: o digitado diferente não troca o cadastrado
         $this->comoAdmin()->post(route('admin.atletas.store'), $this->dadosCadastro([
-            'cpf_atleta' => '333.333.333-33', 'email_responsavel' => 'outro@familia.com',
+            'cpf_atleta' => $this->cpfDeTeste(300000003), 'email_responsavel' => 'outro@familia.com',
         ]))->assertSessionHas('sucesso', fn ($msg) => str_ends_with($msg, 'os dados do responsável não foram alterados.'));
         $this->assertDatabaseHas('tbl_responsavel', ['id_responsavel' => $existente, 'email_responsavel' => 'mae@familia.com']);
     }
@@ -272,7 +274,7 @@ class ResponsavelUnicoTest extends TestCase
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
         $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M'));
         $idResponsavel = $this->criarResponsavel($idAtleta);
-        $this->responsavel('99999999999', 'ocupado@familia.com');
+        $this->responsavel($this->cpfDeTeste(300000009), 'ocupado@familia.com');
 
         $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['email_responsavel' => "Responsavel{$idAtleta}@teste.com"]))
             ->assertSessionHasNoErrors('edicao');
@@ -287,15 +289,16 @@ class ResponsavelUnicoTest extends TestCase
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
         $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M'));
-        $this->criarResponsavel($idAtleta);                              // CPF 111.111.111-11
-        $this->responsavel('111.111.111-11', 'repetido@familia.com');   // repetido antigo do mesmo CPF
-        $this->responsavel('99999999999', 'outro@familia.com', 'Pai de Outro Atleta');
+        $idResponsavel = $this->criarResponsavel($idAtleta);
+        // Repetido antigo do mesmo CPF (só os dígitos: o índice único compara o texto)
+        $this->responsavel(Cpf::digitos(DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->value('cpf_responsavel')), 'repetido@familia.com');
+        $this->responsavel($this->cpfDeTeste(300000009), 'outro@familia.com', 'Pai de Outro Atleta');
 
         // CPF de sempre (mesmo com um repetido antigo): a edição segue
         $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta))
             ->assertSessionHasNoErrors('edicao');
 
-        $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['cpf_responsavel' => '999.999.999-99']))
+        $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['cpf_responsavel' => $this->cpfDeTeste(300000009)]))
             ->assertSessionHasErrorsIn('edicao', ['cpf_responsavel' => 'Este CPF já é do responsável Pai de Outro Atleta, de outro cadastro. Confira o CPF.']);
     }
 
@@ -303,7 +306,7 @@ class ResponsavelUnicoTest extends TestCase
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
         $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M'));
-        $existente = $this->responsavel('11111111111', 'mae@familia.com');
+        $existente = $this->responsavel(Cpf::digitos($this->cpfDeTeste(300000002)), 'mae@familia.com');
 
         $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['email_responsavel' => 'mae@familia.com']))
             ->assertSessionHasNoErrors('edicao');

@@ -130,7 +130,7 @@ class CategoriasTest extends TestCase
 
         $idAtleta = DB::table('tbl_atletas')->insertGetId([
             'id_endereco' => $idEndereco, 'nome_atleta' => 'Atleta', 'data_nasc_atleta' => $nascimento,
-            'cpf_atleta' => '000.000.000-00', 'rg_atleta' => '0000000', 'sexo_atleta' => 'M',
+            'cpf_atleta' => 'T' . str_pad((string) $idEndereco, 11, '0', STR_PAD_LEFT), 'rg_atleta' => '0000000', 'sexo_atleta' => 'M',   // único (21/10/2026)
             'escola_atleta' => 'Escola', 'status_atleta' => 'ATIVO',
         ]);
 

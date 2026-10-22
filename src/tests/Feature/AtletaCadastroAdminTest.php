@@ -105,8 +105,8 @@ class AtletaCadastroAdminTest extends TestCase
 
         $this->comoAdmin()
             ->post(route('admin.atletas.store'), $this->dadosCadastro([
-                'cpf_atleta' => '333.333.333-33', 'nome_responsavel' => 'Resp Sem Email', 'email_responsavel' => '',
-                'cpf_responsavel' => '444.444.444-44', // outro responsável (o mesmo CPF seria reaproveitado)
+                'cpf_atleta' => $this->cpfDeTeste(300000003), 'nome_responsavel' => 'Resp Sem Email', 'email_responsavel' => '',
+                'cpf_responsavel' => $this->cpfDeTeste(300000004), // outro responsável (o mesmo CPF seria reaproveitado)
             ]))
             ->assertSessionHasNoErrors();
 
@@ -132,7 +132,7 @@ class AtletaCadastroAdminTest extends TestCase
 
         $this->comoAdmin()
             ->post(route('admin.atletas.store'), $this->dadosCadastro([
-                'cpf_atleta' => '333.333.333-33', 'email_responsavel' => 'familia@email.com',
+                'cpf_atleta' => $this->cpfDeTeste(300000003), 'email_responsavel' => 'familia@email.com',
             ]))
             ->assertSessionHasNoErrors();
 
@@ -142,7 +142,7 @@ class AtletaCadastroAdminTest extends TestCase
         // Outro responsável (outro CPF) com o mesmo e-mail: recusado
         $this->comoAdmin()
             ->post(route('admin.atletas.store'), $this->dadosCadastro([
-                'cpf_atleta' => '555.555.555-55', 'cpf_responsavel' => '999.999.999-99', 'email_responsavel' => 'FAMILIA@email.com',
+                'cpf_atleta' => $this->cpfDeTeste(300000005), 'cpf_responsavel' => $this->cpfDeTeste(300000009), 'email_responsavel' => 'FAMILIA@email.com',
             ]))
             ->assertSessionHasErrors(['email_responsavel' => 'Este e-mail já está cadastrado para outro responsável.']);
     }
@@ -191,7 +191,7 @@ class AtletaCadastroAdminTest extends TestCase
         DB::table('tbl_atletas')->where('id_atleta', $idExistente)->update(['numero_matricula_atleta' => 'A007']);
 
         $this->comoAdmin()->post(route('admin.atletas.store'), $this->dadosCadastro())->assertSessionHasNoErrors();
-        $this->comoAdmin()->post(route('admin.atletas.store'), $this->dadosCadastro(['cpf_atleta' => '333.333.333-33']))
+        $this->comoAdmin()->post(route('admin.atletas.store'), $this->dadosCadastro(['cpf_atleta' => $this->cpfDeTeste(300000003)]))
             ->assertSessionHasNoErrors();
 
         $numeros = DB::table('tbl_atletas')->where('nome_atleta', 'Atleta Novo')->orderBy('id_atleta')->pluck('numero_matricula_atleta');

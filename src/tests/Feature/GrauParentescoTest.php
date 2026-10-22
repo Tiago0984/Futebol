@@ -105,7 +105,7 @@ class GrauParentescoTest extends TestCase
         $idResponsavel = DB::table('tbl_responsavel')->insertGetId([
             'id_endereco'          => $idEndereco,
             'nome_responsavel'     => 'Responsável de Teste',
-            'cpf_responsavel'      => '111.111.111-11',
+            'cpf_responsavel'      => $this->cpfDeTeste(400000000 + (int) DB::table('tbl_responsavel')->max('id_responsavel') + 1),
             'rg_responsavel'       => '1111111',
             'whatsapp_responsavel' => '(11) 99999-9999',
         ]);

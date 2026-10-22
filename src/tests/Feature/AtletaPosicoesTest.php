@@ -38,7 +38,7 @@ class AtletaPosicoesTest extends TestCase
             'posicoes' => ['VOLANTE', '', 'MEIA_CENTRAL'],
         ]))->assertSessionHasNoErrors()->assertSessionHas('sucesso');
 
-        $id = DB::table('tbl_atletas')->where('cpf_atleta', '222.222.222-22')->value('id_atleta');
+        $id = DB::table('tbl_atletas')->where('cpf_atleta', $this->cpfDeTeste(300000001))->value('id_atleta');
         $this->assertSame(['VOLANTE', 'MEIA_CENTRAL'], $this->codigos($id));       // o vazio do meio sai
         $this->assertSame([1, 2], DB::table('tbl_atleta_posicao')->where('id_atleta', $id)
             ->orderBy('ordem_atleta_posicao')->pluck('ordem_atleta_posicao')->map(fn ($o) => (int) $o)->all());
@@ -95,7 +95,7 @@ class AtletaPosicoesTest extends TestCase
             ->assertSessionHasErrors('posicoes');
         // Uma mensagem só (antes, uma por select repetido)
         $this->assertSame(['A mesma posição foi escolhida mais de uma vez.'], session('errors')->all());
-        $this->assertDatabaseMissing('tbl_atletas', ['cpf_atleta' => '222.222.222-22']);
+        $this->assertDatabaseMissing('tbl_atletas', ['cpf_atleta' => $this->cpfDeTeste(300000001)]);
     }
 
     public function test_pagina_jogadores_mostra_a_principal_e_filtra_por_qualquer_posicao(): void

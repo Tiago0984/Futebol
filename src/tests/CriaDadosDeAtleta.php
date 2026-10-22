@@ -3,6 +3,7 @@
 namespace Tests;
 
 use App\Models\User;
+use App\Support\Cpf;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -30,6 +31,15 @@ trait CriaDadosDeAtleta
             ->value('id_categoria');
     }
 
+    // CPF fictício válido (dígitos verificadores certos) a partir de um número: o CPF é único no atleta e no
+    // responsável (21/10/2026), então cada registro de teste ganha o seu
+    protected function cpfDeTeste(int $numero): string
+    {
+        $nove = str_pad((string) ($numero % 1000000000), 9, '0', STR_PAD_LEFT);
+
+        return Cpf::formatar($nove . Cpf::verificadores($nove));
+    }
+
     protected function criarAtleta(string $nascimento, string $sexo, string $status): int
     {
         $idEndereco = DB::table('tbl_endereco')->insertGetId([
@@ -41,7 +51,7 @@ trait CriaDadosDeAtleta
             'id_endereco'      => $idEndereco,
             'nome_atleta'      => 'Atleta de Teste',
             'data_nasc_atleta' => $nascimento,
-            'cpf_atleta'       => '000.000.000-00',
+            'cpf_atleta'       => $this->cpfDeTeste(100000000 + (int) DB::table('tbl_atletas')->max('id_atleta') + 1),
             'rg_atleta'        => '00.000.000-0',
             'sexo_atleta'      => $sexo,
             'escola_atleta'    => 'Escola de Teste',
@@ -62,7 +72,7 @@ trait CriaDadosDeAtleta
         $idResponsavel = DB::table('tbl_responsavel')->insertGetId([
             'id_endereco'          => $idEndereco,
             'nome_responsavel'     => 'Responsável de Teste',
-            'cpf_responsavel'      => '111.111.111-11',
+            'cpf_responsavel'      => $this->cpfDeTeste(200000000 + (int) DB::table('tbl_responsavel')->max('id_responsavel') + 1),
             'rg_responsavel'       => '11.111.111-1',
             'whatsapp_responsavel' => '(11) 99999-9999',
             'email_responsavel'    => "responsavel{$idAtleta}@teste.com",
@@ -106,14 +116,14 @@ trait CriaDadosDeAtleta
         return array_merge([
             'nome_atleta'                 => 'Atleta Novo',
             'data_nasc_atleta'            => $this->nascidoComIdade(12),
-            'cpf_atleta'                  => '222.222.222-22',
+            'cpf_atleta'                  => $this->cpfDeTeste(300000001),
             'rg_atleta'                   => '22.222.222-2',
             'escola_atleta'               => 'Escola de Teste',
             'periodo_escolar_atleta'      => 'MANHA',
             'sexo_atleta'                 => 'M',
             'id_categoria'                => $this->idCategoria('Sub-13', 'M'), // obrigatória; combina com 12 anos e M
             'nome_responsavel'            => 'Responsável de Teste',
-            'cpf_responsavel'             => '111.111.111-11',
+            'cpf_responsavel'             => $this->cpfDeTeste(300000002),
             'whatsapp_responsavel'        => '(11) 99999-9999',
             'grau_parentesco_responsavel' => 'Mãe',
             'cep_endereco'                => '01000-000',
@@ -145,7 +155,9 @@ trait CriaDadosDeAtleta
             'sexo_atleta'                 => $atleta->sexo_atleta,
             'status_atleta'               => $atleta->status_atleta,
             'nome_responsavel'            => 'Responsável de Teste',
-            'cpf_responsavel'             => '111.111.111-11',
+            // O CPF do responsável atual (sem responsável, um novo): mudar o CPF para o de outro é recusado
+            'cpf_responsavel'             => DB::table('tbl_responsavel')->join('tbl_atleta_responsavel', 'tbl_atleta_responsavel.id_responsavel', '=', 'tbl_responsavel.id_responsavel')
+                ->where('tbl_atleta_responsavel.id_atleta', $idAtleta)->value('cpf_responsavel') ?? $this->cpfDeTeste(300000002),
             'whatsapp_responsavel'        => '(11) 99999-9999',
             'grau_parentesco_responsavel' => 'Mãe',
             'cep_endereco'                => '01000-000',

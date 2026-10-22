@@ -71,7 +71,7 @@ class AtletaPeriodoEscolarTest extends TestCase
 
         $this->comoAdmin()->post(route('admin.atletas.store'), $this->dadosCadastro(['periodo_escolar_atleta' => 'NOITE', 'turno_treino_atleta' => 'AMBOS']))
             ->assertSessionHasNoErrors();
-        $this->assertDatabaseHas('tbl_atletas', ['cpf_atleta' => '222.222.222-22', 'periodo_escolar_atleta' => 'NOITE', 'turno_treino_atleta' => 'AMBOS']);
+        $this->assertDatabaseHas('tbl_atletas', ['cpf_atleta' => $this->cpfDeTeste(300000001), 'periodo_escolar_atleta' => 'NOITE', 'turno_treino_atleta' => 'AMBOS']);
     }
 
     public function test_edicao_trava_atleta_sem_periodo_ate_preencher(): void

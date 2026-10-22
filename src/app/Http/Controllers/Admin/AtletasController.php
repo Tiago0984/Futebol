@@ -10,6 +10,8 @@ use App\Models\Endereco;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\Notificacao;
+use App\Rules\CpfValido;
+use App\Support\Cpf;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,6 +33,11 @@ class AtletasController extends Controller
 
     // Atleta ATIVO sempre tem categoria: é por ela que entra nos eventos (inscrição automática)
     private const MENSAGEM_SEM_CATEGORIA = 'Escolha a categoria do atleta: todo atleta ativo precisa estar numa categoria.';
+
+    // CPF (21/10/2026): válido pelos dígitos verificadores e único entre os atletas
+    private const MENSAGEM_CPF_ATLETA      = 'Informe um CPF válido para o atleta.';
+    private const MENSAGEM_CPF_RESPONSAVEL = 'Informe um CPF válido para o responsável.';
+    private const MENSAGEM_CPF_REPETIDO    = 'Este CPF já é de outro atleta cadastrado.';
 
     public function index()
     {
@@ -62,6 +69,7 @@ class AtletasController extends Controller
         $nascimento = Atleta::regrasNascimento();
         $periodo    = Atleta::regrasPeriodo();
         $posicoes   = Atleta::regrasPosicoes();
+        $this->formatarCpfs($request);
 
         // Responsável já cadastrado com o CPF (só os dígitos): o atleta é vinculado a ele
         $responsavelExistente = Responsavel::porCpf($request->cpf_responsavel);
@@ -69,7 +77,7 @@ class AtletasController extends Controller
         $request->validate([
             'nome_atleta'                 => 'required|string|max:255',
             'data_nasc_atleta'            => $nascimento['regra'],
-            'cpf_atleta'                  => 'required|string|max:14|unique:tbl_atletas,cpf_atleta',
+            'cpf_atleta'                  => ['required', 'string', 'max:14', new CpfValido(self::MENSAGEM_CPF_ATLETA), 'unique:tbl_atletas,cpf_atleta'],
             'rg_atleta'                   => 'required|string|max:20',
             'numero_matricula_atleta'     => 'nullable|string|max:20|unique:tbl_atletas,numero_matricula_atleta',
             'email_atleta'                => 'nullable|email|max:255|unique:tbl_atletas,email_atleta',
@@ -81,7 +89,7 @@ class AtletasController extends Controller
             'motivo_categoria'            => 'nullable|string|max:500',
             'foto_atleta'                 => 'nullable|image|max:2048',
             'nome_responsavel'            => 'required|string|max:255',
-            'cpf_responsavel'             => 'required|string|max:14',
+            'cpf_responsavel'             => ['required', 'string', 'max:14', new CpfValido(self::MENSAGEM_CPF_RESPONSAVEL)],
             'email_responsavel'           => ['nullable', 'email', 'max:150', $this->emailResponsavelUnico($responsavelExistente)],
             'whatsapp_responsavel'        => 'required|string|max:20',
             'grau_parentesco_responsavel' => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
@@ -92,7 +100,8 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL, 'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA]);
+        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL,
+            'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA, 'cpf_atleta.unique' => self::MENSAGEM_CPF_REPETIDO]);
 
         $this->validarCategoria($request);
 
@@ -111,6 +120,12 @@ class AtletasController extends Controller
         }
 
         return redirect()->route('admin.atletas.index')->with('sucesso', $mensagem);
+    }
+
+    // CPFs no formato do banco (000.000.000-00) antes de validar: o "único" compara igual, com ou sem pontos
+    private function formatarCpfs(Request $request): void
+    {
+        $request->merge(['cpf_atleta' => Cpf::formatar($request->cpf_atleta), 'cpf_responsavel' => Cpf::formatar($request->cpf_responsavel)]);
     }
 
     // E-mail do responsável único entre responsáveis, sem acusar o próprio cadastro dele
@@ -208,6 +223,7 @@ class AtletasController extends Controller
         $nascimento = Atleta::regrasNascimento();
         $periodo    = Atleta::regrasPeriodo();
         $posicoes   = Atleta::regrasPosicoes();
+        $this->formatarCpfs($request);
 
         // Responsável que esta edição altera: o atual do atleta, ou (sem nenhum) o já cadastrado com o CPF
         $responsavelAtual     = $atleta->responsaveis->first();
@@ -217,7 +233,9 @@ class AtletasController extends Controller
         $request->validateWithBag('edicao', [
             'nome_atleta'                 => 'required|string|max:255',
             'data_nasc_atleta'            => $nascimento['regra'],
-            'cpf_atleta'                  => 'required|string|max:14',
+            // CPF único também na edição (antes, só no cadastro: débito "CPF único", 21/10/2026)
+            'cpf_atleta'                  => ['required', 'string', 'max:14', new CpfValido(self::MENSAGEM_CPF_ATLETA),
+                Rule::unique('tbl_atletas', 'cpf_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
             'rg_atleta'                   => 'required|string|max:20',
             'email_atleta'                => ['nullable', 'email', 'max:255', Rule::unique('tbl_atletas', 'email_atleta')->ignore($atleta->id_atleta, 'id_atleta')],
             'escola_atleta'               => 'required|string|max:255',
@@ -228,7 +246,7 @@ class AtletasController extends Controller
             'motivo_categoria'            => 'nullable|string|max:500',
             'status_atleta'               => 'nullable|in:ATIVO,INATIVO',
             'nome_responsavel'            => 'required|string|max:255',
-            'cpf_responsavel'             => 'required|string|max:14',
+            'cpf_responsavel'             => ['required', 'string', 'max:14', new CpfValido(self::MENSAGEM_CPF_RESPONSAVEL)],
             'email_responsavel'           => ['nullable', 'email', 'max:150', $this->emailResponsavelUnico($responsavelAtual ?? $responsavelExistente)],
             'whatsapp_responsavel'        => 'required|string|max:20',
             'grau_parentesco_responsavel' => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
@@ -239,7 +257,8 @@ class AtletasController extends Controller
             'complemento_endereco'        => 'nullable|string|max:100',
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
-        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL]);
+        ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL,
+            'cpf_atleta.unique' => self::MENSAGEM_CPF_REPETIDO]);
 
         // CPF do responsável trocado para o de OUTRO responsável já cadastrado: recusa (viraria um cadastro
         // repetido). Trocar o responsável do atleta por um já cadastrado ainda não é possível pela edição

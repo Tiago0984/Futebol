@@ -117,7 +117,7 @@ class MatriculaExclusaoTest extends TestCase
             'id_endereco'      => $idEndereco,
             'nome_atleta'      => 'Atleta de Teste',
             'data_nasc_atleta' => '2013-05-10',
-            'cpf_atleta'       => '000.000.000-00',
+            'cpf_atleta'       => 'T' . str_pad((string) $idEndereco, 11, '0', STR_PAD_LEFT),   // único (21/10/2026)
             'rg_atleta'        => '00.000.000-0',
             'sexo_atleta'      => 'M',
             'escola_atleta'    => 'Escola de Teste',
