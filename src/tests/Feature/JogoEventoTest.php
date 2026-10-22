@@ -317,8 +317,10 @@ class JogoEventoTest extends TestCase
             ->assertSee($botao, false)
             ->assertSee('<small class="ms-1">2</small>', false);
 
-        // Mesma contagem do Calendário (o inativo continua inscrito, mas não conta)
-        $this->comoAdmin()->get(route('admin.calendario.index'))->assertOk()->assertSee($botao, false);
+        // Mesma contagem do Calendário (o inativo continua inscrito, mas não conta).
+        // A lista abre no mês atual: pede o mês do jogo, que pode cair no seguinte.
+        $mes = substr($this->dia, 0, 7);
+        $this->comoAdmin()->get(route('admin.calendario.index', ['mes' => $mes]))->assertOk()->assertSee($botao, false);
         $this->assertSame(3, $jogo->evento->inscricoes()->count());
     }
 
