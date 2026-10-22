@@ -132,18 +132,7 @@ class JogosController extends Controller
         // precisa contar na classificação (Fase H, Etapa H3)
         $semAcj = ! Jogo::idsInternos($times);
 
-        [$evento, $jogo, $elenco] = DB::transaction(function () use ($dadosJogo, $dadosEvento, $semAcj) {
-            // Responsável = admin logado. A categoria do evento é a do jogo: no campeonato, vale para a idade e a
-            // convocação (Fase H, Etapa H3); no amistoso, só exibição.
-            // Nasce rascunho (Fase 10, Etapa 4): inscritos e escalados, ninguém avisado até publicar
-            $evento = EventoCalendario::criarPor(auth('admin')->id(), $dadosEvento, inscreverCategoria: false, rascunho: ! $semAcj);
-
-            $jogo = Jogo::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
-            $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
-            $evento->setRelation('jogo', $jogo);   // o aviso de categoria sabe que é jogo de campeonato
-
-            return [$evento, $jogo, $jogo->inscreverElenco(auth('admin')->id())];
-        });
+        [$evento, $jogo, $elenco] = DB::transaction(fn () => Jogo::criarComEvento(auth('admin')->id(), $dadosJogo, $dadosEvento));
 
         // Campeonato: os convocados entraram; amistoso: ninguém ainda (escolher na tela do jogo)
         $inscritos = $elenco['inscritos_com_time'] + $elenco['inscritos_sem_time'];
@@ -256,13 +245,8 @@ class JogosController extends Controller
         $evento = $jogo->evento;
         $tela   = redirect()->route('admin.calendario.eventos.show', $evento->id_evento_calendario);
 
-        if (! $evento->estaPublicado()) {
-            $ativos = $evento->inscricoes()->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))->pluck('id_atleta')->all();
-
-            if ($acima = $jogo->acimaDaIdade($ativos)) {
-                return $tela->with('erro', 'Jogo não publicado: ' . implode(', ', $acima) . ' ' . (count($acima) === 1 ? 'passa' : 'passam')
-                    . " da idade do campeonato ({$jogo->limiteDeIdade()}). Remova a inscrição antes de publicar.");
-            }
+        if ($erro = $jogo->erroParaPublicar()) {
+            return $tela->with('erro', "Jogo não publicado: {$erro}");
         }
 
         if (! $evento->publicar(auth('admin')->id())) {

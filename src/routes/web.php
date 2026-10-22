@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\NotificacoesController;
 use App\Http\Controllers\Admin\TimesDoCampeonatoController;
 use App\Http\Controllers\Admin\ConvocacaoController;
 use App\Http\Controllers\Admin\GruposController;
+use App\Http\Controllers\Admin\GeradorDeJogosController;
 use App\Http\Controllers\Admin\AmistososController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
@@ -122,6 +123,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::delete('campeonatos/{id}/grupos/{grupoId}',            [GruposController::class, 'remover'])->name('campeonatos.grupos.remover');
     Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}', [GruposController::class, 'times'])->name('campeonatos.grupos.times');
     Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}/classificados', [GruposController::class, 'classificados'])->name('campeonatos.grupos.classificados');
+    // Gerar os jogos de todos contra todos de uma categoria e publicar uma rodada (Fase I, Etapa I2)
+    Route::get('campeonatos/{id}/categorias/{categoriaId}/gerar-jogos',  [GeradorDeJogosController::class, 'show'])->name('campeonatos.gerar-jogos');
+    Route::post('campeonatos/{id}/categorias/{categoriaId}/gerar-jogos', [GeradorDeJogosController::class, 'gerar'])->name('campeonatos.gerar-jogos.gerar');
+    Route::patch('campeonatos/{id}/rodadas/publicar',                   [GeradorDeJogosController::class, 'publicarRodada'])->name('campeonatos.rodadas.publicar');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento

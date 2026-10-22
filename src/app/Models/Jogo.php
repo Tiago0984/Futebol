@@ -736,6 +736,44 @@ class Jogo extends Model
         return $this->placar_time_casa_jogos !== null && $this->placar_time_visitante_jogos !== null;
     }
 
+    /**
+     * Cria o evento e o jogo, como a tela de Jogos (e o gerador de rodadas, Fase I, Etapa I2): responsável =
+     * $idUsuario; a categoria do evento é a do jogo; jogo com time da AACJ nasce RASCUNHO (Fase 10, Etapa 4), com
+     * os convocados (ou ninguém, no amistoso) inscritos e escalados, sem avisar ninguém; jogo sem time da AACJ
+     * nasce publicado (não há quem avisar, e ele conta na classificação). Chamar dentro de uma transação.
+     * Devolve [evento, jogo, resultado de inscreverElenco()].
+     */
+    public static function criarComEvento(?int $idUsuario, array $dadosJogo, array $dadosEvento): array
+    {
+        $semAcj = ! self::idsInternos([$dadosJogo['id_time_casa'], $dadosJogo['id_time_visitante']]);
+        $evento = EventoCalendario::criarPor($idUsuario, $dadosEvento, inscreverCategoria: false, rascunho: ! $semAcj);
+
+        $jogo = self::create([...$dadosJogo, 'id_evento' => $evento->id_evento_calendario]);
+        $jogo->setRelation('evento', $evento); // a mesma instância conta os notificados
+        $evento->setRelation('jogo', $jogo);   // o aviso de categoria sabe que é jogo de campeonato
+
+        return [$evento, $jogo, $jogo->inscreverElenco($idUsuario)];
+    }
+
+    /**
+     * Por que o rascunho não pode ser publicado (null = pode): inscrito ativo que passa da idade do campeonato
+     * (remover antes). Usado pelo "Publicar" do jogo e pelo "Publicar a rodada" (Fase I, Etapa I2).
+     */
+    public function erroParaPublicar(): ?string
+    {
+        if ($this->evento->estaPublicado()) {
+            return null;
+        }
+
+        $ativos = $this->evento->inscricoes()->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))->pluck('id_atleta')->all();
+        if (! $acima = $this->acimaDaIdade($ativos)) {
+            return null;
+        }
+
+        return implode(', ', $acima) . ' ' . (count($acima) === 1 ? 'passa' : 'passam')
+            . " da idade do campeonato ({$this->limiteDeIdade()}). Remova a inscrição antes de publicar.";
+    }
+
     // ── Rodada, ida e volta, prorrogação e pênaltis (Fase I, Etapa I1b) ────────
     // Regras do dono do projeto (21/10/2026): ida e volta empatada no agregado vai direto para os pênaltis, sem
     // gol fora e sem prorrogação (CBF desde 2023); jogo único empatado no mata-mata tem prorrogação e depois

@@ -81,7 +81,7 @@ class MenuAdminComposer
 
         // Jogos de todos os campeonatos ou de um (e os convocados e os grupos dele): o "Jogos" de Campeonatos
         if ($r->routeIs('admin.campeonatos.jogos', 'admin.campeonatos.times', 'admin.campeonatos.convocados',
-            'admin.campeonatos.grupos')) {
+            'admin.campeonatos.grupos', 'admin.campeonatos.gerar-jogos')) {
             return 'jogos-dos-campeonatos';
         }
 

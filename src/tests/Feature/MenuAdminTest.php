@@ -820,6 +820,7 @@ class MenuAdminTest extends TestCase
             'admin.campeonatos.times'       => $this->emAndamento,
             'admin.campeonatos.convocados'  => [$this->emAndamento, $this->azul],
             'admin.campeonatos.grupos'      => $this->emAndamento,
+            'admin.campeonatos.gerar-jogos' => [$this->emAndamento, DB::table('tbl_campeonato')->where('id_campeonato', $this->emAndamento)->value('id_categoria')],
             'admin.jogos.times.show'        => [$jogoDaCopa->id_jogo, $this->azul],
             'admin.matriculas.show'         => $atleta,
             'admin.atletas.afastamentos'    => $atleta,

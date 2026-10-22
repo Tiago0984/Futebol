@@ -21,14 +21,38 @@
   ];
   $abaInicial = $proximos->isEmpty() && $realizados->isNotEmpty() ? 'realizados' : 'proximos';
   // Jogos em rascunho (Fase 10, Etapa 4): os atletas ainda não foram avisados
-  $rascunhos = $proximos->concat($realizados)->reject(fn ($jogo) => $jogo->evento->estaPublicado())->count();
+  $jogosEmRascunho = $proximos->concat($realizados)->reject(fn ($jogo) => $jogo->evento->estaPublicado());
+  $rascunhos = $jogosEmRascunho->count();
+  // Fase I, Etapa I2: rascunhos de campeonato com rodada, por campeonato, categoria e rodada ("Publicar a rodada N")
+  $rodadasEmRascunho = $jogosEmRascunho->filter(fn ($jogo) => $jogo->id_campeonato && $jogo->rodada_jogo)
+      ->groupBy(fn ($jogo) => "{$jogo->id_campeonato}|{$jogo->evento->id_categoria}|{$jogo->rodada_jogo}")
+      ->sortBy(fn ($jogos) => [$jogos->first()->id_campeonato, $jogos->first()->evento->id_categoria, $jogos->first()->rodada_jogo]);
 @endphp
 @if ($rascunhos > 0)
 <div class="alert alert-warning d-flex align-items-center gap-2 mt-3 mb-0" role="alert" id="avisoRascunhos">
   <i class="bi bi-pencil-square"></i>
   <div>
     <strong>{{ $rascunhos }} {{ $rascunhos === 1 ? $rotulo . ' ainda não publicado' : $plural . ' ainda não publicados' }}:</strong>
-    os atletas não foram avisados. Procure o selo "Rascunho" e use "Revisar e publicar".
+    os atletas não foram avisados. Procure o selo "Rascunho" e use "Revisar e publicar" (um jogo)
+    @if ($rodadasEmRascunho->isNotEmpty()) ou publique a rodada inteira:@else.@endif
+    @if ($rodadasEmRascunho->isNotEmpty())
+    <div class="d-flex flex-wrap gap-2 mt-2" id="publicarRodadas">
+      @foreach ($rodadasEmRascunho as $jogosDaRodada)
+      @php $primeiro = $jogosDaRodada->first(); @endphp
+      <form action="{{ route('admin.campeonatos.rodadas.publicar', $primeiro->id_campeonato) }}" method="POST"
+            onsubmit="return confirm('Publicar {{ $jogosDaRodada->count() }} jogo(s) da Rodada {{ $primeiro->rodada_jogo }} e avisar os atletas?')">
+        @csrf @method('PATCH')
+        <input type="hidden" name="id_categoria" value="{{ $primeiro->evento->id_categoria }}">
+        <input type="hidden" name="rodada_jogo" value="{{ $primeiro->rodada_jogo }}">
+        <input type="hidden" name="voltar" value="{{ url()->full() }}">
+        <button type="submit" class="btn btn-sm btn-warning">
+          <i class="bi bi-send"></i> Publicar a Rodada {{ $primeiro->rodada_jogo }}
+          <span class="small">({{ collect([! empty($campeonato) ? null : $primeiro->campeonato?->nome_campeonato, $primeiro->evento->categoria?->rotulo])->filter()->implode(' · ') }}; {{ $jogosDaRodada->count() }} jogo(s))</span>
+        </button>
+      </form>
+      @endforeach
+    </div>
+    @endif
   </div>
 </div>
 @endif

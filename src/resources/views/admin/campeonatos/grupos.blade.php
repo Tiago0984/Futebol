@@ -46,7 +46,14 @@
     @endphp
     <div class="card shadow-sm mb-4" id="categoria-{{ $categoria->id_categoria }}">
       <div class="card-body">
-        <h2 class="h5 mb-3">{{ $categoria->rotulo }}</h2>
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+          <h2 class="h5 mb-0">{{ $categoria->rotulo }}</h2>
+          {{-- Fase I, Etapa I2: todos contra todos (por grupo, se houver), com prévia antes de gravar --}}
+          <a href="{{ route('admin.campeonatos.gerar-jogos', [$campeonato->id_campeonato, $categoria->id_categoria]) }}"
+             class="btn btn-sm btn-outline-primary js-gerar-jogos">
+            <i class="bi bi-lightning-charge"></i> Gerar jogos (todos contra todos)
+          </a>
+        </div>
 
         <div class="row g-4">
           {{-- Grupos da categoria --}}
