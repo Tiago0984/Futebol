@@ -200,11 +200,11 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - Os commits `59c9743` e `86b8e78` (que gravavam `CONFIRMADO/ALTERADO/CANCELADO`) são desfeitos por **migration nova** na Fase 4, sem `git revert` (a branch já está no remoto).
 
 ### Site público (decisão do dono do projeto, 06/10/2026; seção 8, pergunta 3)
-- **Página Calendário** (lista de eventos e "Próximo Evento") mostra **só eventos do tipo CAMPEONATO e jogos de campeonato** (evento JOGO com `tbl_jogos` e `id_campeonato` preenchido): escopo `EventoCalendario::daAgendaPublica()`.
-- **Ficam de fora:** amistosos, treinos (criados à mão ou gerados pela grade), eventos JOGO antigos sem `tbl_jogos` e todos os outros tipos (EVENTO, REUNIAO, CONFRATERNIZACAO, AVALIACAO).
+- **Página Calendário** (lista de eventos e "Próximo Evento") mostra **eventos do tipo CAMPEONATO, jogos de campeonato ativo e, desde a Fase F (dono do projeto, 21/10/2026), os amistosos publicados** (evento JOGO com `tbl_jogos`; etiqueta "Amistoso"; nunca os atletas): escopo `EventoCalendario::daAgendaPublica()`.
+- **Ficam de fora:** treinos (criados à mão ou gerados pela grade; o dono do projeto decidiu não mostrar), eventos JOGO antigos sem `tbl_jogos` e todos os outros tipos (EVENTO, REUNIAO, CONFRATERNIZACAO, AVALIACAO, inclusive a peneira).
 - **Continua igual:** cancelado aparece com o selo "Cancelado"; oculto (`INATIVO`) e jogo em rascunho não aparecem; o "Próximo Evento" considera só eventos ativos; a **tabela da grade de treinos** continua na página.
 - **Sem nenhum evento público**, a página funciona: sem o bloco "Próximo Evento" e com "Nenhum evento agendado no momento." na lista. O filtro "Treinos Especiais" saiu (ficaram Todos, Jogos e Campeonatos).
-- **Destaque "Próximo jogo" da home segue a mesma regra da agenda:** só jogo de campeonato (amistoso não aparece), ativo, de hoje em diante; sem jogo futuro de campeonato, o último jogo de campeonato visível; sem nenhum, a seção mostra o rótulo padrão "LIGA PREMIERE". A regra fica num lugar só: `Jogo::daAgendaPublica()` delega ao escopo do evento.
+- **Destaque "Próximo jogo" da home segue a mesma regra da agenda:** jogo de campeonato ou amistoso (rótulo "AMISTOSO", desde a Fase F), ativo, de hoje em diante; sem jogo futuro, o último jogo visível; sem nenhum, a seção mostra o rótulo padrão "LIGA PREMIERE". A regra fica num lugar só: `Jogo::daAgendaPublica()` delega ao escopo do evento.
 - **O resto da home e a página do campeonato não mudaram:** listam os jogos de cada campeonato (o amistoso não tem campeonato, então já não entrava).
 - **Página do campeonato com várias categorias** (Fase H, Etapa H5, 15/10/2026): selos das categorias no topo e **uma aba por categoria** (só com mais de uma; JS próprio, como as abas da home: o site usa Bootstrap 3), cada uma com os **times** da categoria, os **jogos** dela (selo da fase quando não é a de grupos: "Final", "Repescagem") e a **classificação de cada grupo (chave)**, com os **classificados destacados** ("Classificado", fundo verde) e a legenda "Passam os N primeiros de cada grupo (chave)." Rascunho e oculto fora; cancelado com o selo. Estilos no `estilo.css`, seção 70.
 - **Home:** a prévia da classificação é a primeira tabela com times da primeira categoria, com o título ("Sub-11 Masculino · Grupo A") e os classificados; "Ver classificação completa" quando há mais times, categorias ou grupos. **Lista de campeonatos:** os selos são as categorias do campeonato (antes, as do cadastro dos times).
@@ -836,7 +836,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Em aberto para escolher (dono do projeto, 15/10: "deixa em aberto"):**
   1. ~~**Grade real de treinos**~~ ✅ no local, pelo seeder de demonstração (16/10, abaixo); na entrega, cadastrar pelas telas.
   2. ~~**Fase E — avaliação técnica (peneira)**~~ ✅ feita em 21/10/2026 (só no admin e no app; seção 4, "Menu do dashboard").
-  3. **Fase F — site público com mais eventos** (amistosos? treinos?): falta a confirmação do professor.
+  3. ~~**Fase F — site público com mais eventos**~~ ✅ feita em 21/10/2026: amistosos sim, treinos não (seção 4, "Site público").
   4. **Débitos técnicos** da seção 7, por exemplo **CPF único** e **assinaturas** em local protegido.
 
 #### Dados de demonstração (computador do Senac, 16/10/2026)
@@ -932,7 +932,13 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Roteiro:** editar sem mudar (Claude no navegador; ele não digita números de documento) e a máscara (dono do projeto) ok; recusas de CPF inválido e repetido cobertas pelos testes; o bloco `responsaveis` conferido no tinker (Arthur Mendes: Carla Mendes, Mãe).
 - **Falta publicar no servidor:** as três migrations de 21/10 (`000001` a `000003`); a `000003` para nos atletas 7 e 10 do banco antigo de lá.
 - **Fase E (peneira)** ✅ (sem migration): `PeneiraTest` (2). **738 testes passando.** Roteiro no navegador (21/10, 8 passos, pelo Claude no navegador, conferido no banco): "Peneira · São Caetano" (evento 57, 14/11) com 2011–2012 masculino marcando 7 atletas, 7 inscritos e avisados, selo na lista, nada no site, o "Novo evento individual" sem os textos da peneira. **Ficou oculta** no `db_futebol` de casa (ocultar avisou os 7 como cancelamento: regra provisória, pergunta 16).
-- **Próximo:** Fase F (amistosos no site).
+- **Fase F (amistosos no site)** ✅ (sem migration): só a regra `EventoCalendario::scopeDaAgendaPublica()` mudou (a etiqueta "Amistoso" e o rótulo "AMISTOSO" da home já existiam); 5 testes do `JogoSiteTest` reescritos para a regra nova (o helper `jogo()` ganhou `rascunho`). **738 testes passando.** Roteiro no navegador não feito (o dono do projeto encerrou o dia): publicar o amistoso da demonstração (AACJ Sub-11 x União Esportiva, em rascunho) e conferir o Calendário e a home do site.
+
+#### Passagem para o outro computador (fim do dia em casa, 21/10/2026)
+- **Código:** commits locais na `feature/agenda-eventos`, **sem push** (fazer pelo Git Bash do Windows, com OK do dono do projeto; o `git` do WSL não tem o login do GitHub). A `main` do GitHub continua em `e193147`.
+- **Banco local de casa:** migrations novas de 21/10 nos batches 3 (`2026_10_21_000001`), 4 (`000002`) e 5 (`000003`, CPF único). **No outro computador:** depois do `git pull`, ou restaurar um dump de casa (não foi feito hoje; fazer em casa com `mysqldump` se quiser os mesmos dados, como os campeonatos de teste), ou rodar o `migrate` normal lá (backup antes; as três não dependem de ids; a `000003` para se houver CPFs repetidos pelos dígitos). Depois, `view:clear`, `config:clear` e a suíte (**738 testes**).
+- **Servidor:** nada de 21/10 foi publicado (as três migrations e todo o código da Fase I, CPF, Fases E e F). A `000003` vai parar nos atletas 7 e 10 do banco antigo de lá.
+- **Pendências:** roteiro da Fase F; publicar no servidor; manual do painel (`docs/manual/`) ainda não cobre a Fase I, a peneira e o CPF; o app (outro repositório) pode trocar o responsável fixo por `data.responsaveis`.
 
 #### Deploy no Plesk e banco de casa (computador de casa, 14/10/2026; endereço e caminhos na seção 1, "Produção")
 - **Servidor antes:** código de junho/julho (sem a API) e banco de 31/07 (44 migrations, em `utf8mb3`/`unicode_ci` misturados).
