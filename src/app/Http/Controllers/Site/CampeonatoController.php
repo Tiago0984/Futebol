@@ -20,8 +20,17 @@ class CampeonatoController extends Controller
             $camp->id_campeonato => $camp->textoDosLocais($jogosPorCampeonato[$camp->id_campeonato] ?? []),
         ]);
 
+        // Campeão de cada categoria no cartão (Fase I, Etapa I4): ["Sub-15 Masculino" => "Botafogo da Vila"], só os definidos
+        $campeoes = $campeonatos->mapWithKeys(function ($camp) {
+            $porCategoria = $camp->campeoes();
+
+            return [$camp->id_campeonato => $camp->categorias
+                ->mapWithKeys(fn ($cat) => [$cat->rotulo => Campeonato::textoDoCampeao($porCategoria[(int) $cat->id_categoria] ?? null)])
+                ->filter()->all()];
+        });
+
         $videos = Video::doSite('campeonatos')->get();
-        return view('site.campeonatos.campeonatos', compact('campeonatos', 'locais', 'videos'));
+        return view('site.campeonatos.campeonatos', compact('campeonatos', 'locais', 'campeoes', 'videos'));
     }
 
     /**
@@ -43,9 +52,11 @@ class CampeonatoController extends Controller
 
         $participantes  = $campeonato->participantesComGrupo()->groupBy('id_categoria');
         $classificacoes = collect($campeonato->classificacoes())->keyBy(fn ($c) => $c['categoria']->id_categoria);
+        $campeoes       = $campeonato->campeoes($classificacoes->all());   // Fase I, Etapa I4
 
         $abas = $campeonato->categorias->map(fn ($categoria) => [
             'categoria' => $categoria,
+            'campeao'   => $campeoes[(int) $categoria->id_categoria] ?? null,
             'times'     => $campeonato->times->whereIn('id_time', ($participantes[$categoria->id_categoria] ?? collect())->pluck('id_time'))->values(),
             'jogos'     => $jogos->filter(fn ($jogo) => (int) $jogo->evento->id_categoria === (int) $categoria->id_categoria)->values(),
             'tabelas'   => $classificacoes[$categoria->id_categoria]['tabelas'] ?? [],
@@ -53,7 +64,7 @@ class CampeonatoController extends Controller
 
         // Por segurança, campeonato sem a lista de categorias: uma aba só, com tudo
         if ($abas->isEmpty()) {
-            $abas = collect([['categoria' => null, 'times' => $campeonato->times, 'jogos' => $jogos,
+            $abas = collect([['categoria' => null, 'campeao' => null, 'times' => $campeonato->times, 'jogos' => $jogos,
                 'tabelas' => [['grupo' => null, 'classificados' => null, 'tabela' => Jogo::classificacao($jogos)]]]]);
         }
 

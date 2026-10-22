@@ -24,6 +24,7 @@ class GruposController extends Controller
         $participantes  = $campeonato->participantesComGrupo()->groupBy('id_categoria');
         $grupos         = $campeonato->grupos()->get()->groupBy('id_categoria');
         $classificacoes = collect($campeonato->classificacoes())->keyBy(fn ($c) => $c['categoria']->id_categoria);
+        $campeoes       = $campeonato->campeoes($classificacoes->all());   // Fase I, Etapa I4
         $timesPorGrupo  = DB::table('tbl_campeonato_time')->where('id_campeonato', $campeonato->id_campeonato)
             ->whereNotNull('id_campeonato_grupo')->groupBy('id_campeonato_grupo')
             ->selectRaw('id_campeonato_grupo, COUNT(*) AS total')->pluck('total', 'id_campeonato_grupo');
@@ -35,7 +36,7 @@ class GruposController extends Controller
             ['Grupos (chaves) e classificação', null],
         ];
 
-        return view('admin.campeonatos.grupos', compact('campeonato', 'participantes', 'grupos', 'classificacoes', 'timesPorGrupo', 'caminho'));
+        return view('admin.campeonatos.grupos', compact('campeonato', 'participantes', 'grupos', 'classificacoes', 'campeoes', 'timesPorGrupo', 'caminho'));
     }
 
     // Cria um grupo numa categoria do campeonato (nome sem repetir na categoria)

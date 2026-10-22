@@ -58,6 +58,8 @@
                         @endif
                     </div>
 
+                    @include('partials.campeoes', ['campeoes' => $campeoes[$camp->id_campeonato] ?? [], 'classe' => 'camp-campeao-linha'])
+
                     <a href="{{ route('campeonato.show', $camp->id_campeonato) }}" class="btn-camp-card">
                         Ver Campeonato <i class="fa fa-arrow-right"></i>
                     </a>

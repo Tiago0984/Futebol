@@ -106,6 +106,7 @@
                             $classif       = $previa['linhas'];
                             $classifPrevia = array_slice($classif, 0, 4);
                         @endphp
+                        @include('partials.campeoes', ['campeoes' => $previa['campeoes'] ?? [], 'classe' => 'camp-campeao-linha'])
                         @if(empty($classifPrevia))
                         <p class="home-tab-empty">Nenhum dado de classificação ainda.</p>
                         @else

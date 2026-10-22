@@ -66,20 +66,27 @@ class HomeController extends Controller
 
         // Prévia da classificação (Fase H, Etapa H5): a primeira tabela com times da primeira categoria do
         // campeonato (só a fase de grupos), com o título ("Sub-15 Masculino · Grupo 01") e os classificados
+        // e os campeões já definidos de cada categoria (Fase I, Etapa I4: ["Sub-15 Masculino" => "Botafogo da Vila"])
         $classificacaoPorCampeonato = $campeonatos->mapWithKeys(function ($camp) {
-            foreach ($camp->classificacoes() as $categoria) {
+            $classificacoes = $camp->classificacoes();
+            $porCategoria   = $camp->campeoes($classificacoes);
+            $campeoes = collect($classificacoes)->mapWithKeys(fn ($c) => [$c['categoria']->rotulo
+                => Campeonato::textoDoCampeao($porCategoria[(int) $c['categoria']->id_categoria] ?? null)])->filter()->all();
+
+            foreach ($classificacoes as $categoria) {
                 foreach ($categoria['tabelas'] as $tabela) {
                     if ($tabela['tabela']) {
                         return [$camp->id_campeonato => [
                             'titulo'        => collect([$categoria['categoria']->rotulo, $tabela['grupo']])->filter()->implode(' · '),
                             'classificados' => $tabela['classificados'],
                             'linhas'        => $tabela['tabela'],
+                            'campeoes'      => $campeoes,
                         ]];
                     }
                 }
             }
 
-            return [$camp->id_campeonato => ['titulo' => null, 'classificados' => null, 'linhas' => []]];
+            return [$camp->id_campeonato => ['titulo' => null, 'classificados' => null, 'linhas' => [], 'campeoes' => $campeoes]];
         })->all();
 
         $videos = Video::doSite('home')->get();

@@ -11183,3 +11183,29 @@ body.lp-body {
 }
 .match-resultado strong { color: #1e7e34; }
 .match-info-fase { font-weight: 700; color: #111111; }
+
+/* ==========================================================================
+   75. CAMPEÃO DO CAMPEONATO (21/10/2026, Fase I, Etapa I4)
+   ========================================================================== */
+.camp-campeao-section { padding: 40px 0 0; }
+.camp-campeao-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: linear-gradient(135deg, #111111 0%, #2a0707 100%);
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 22px 26px;
+}
+.camp-campeao-taca { font-size: 3rem; color: #f5c518; flex-shrink: 0; }
+.camp-campeao-nome { color: #ffffff; margin: 4px 0; font-size: 1.6rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.camp-campeao-logo { width: 40px; height: 40px; object-fit: contain; }
+.camp-campeao-detalhe { margin: 0; color: #dddddd; font-size: 0.9rem; }
+.camp-campeao-linha { margin: 8px 0; font-size: 0.85rem; color: #333333; }
+.camp-campeao-linha .fa { color: #d4a017; margin-right: 4px; }
+@media (max-width: 600px) {
+    .camp-campeao-card { padding: 18px; gap: 14px; }
+    .camp-campeao-taca { font-size: 2.2rem; }
+    .camp-campeao-nome { font-size: 1.25rem; }
+}
+.camp-campeao-tag { background: #d4a017 !important; color: #111111 !important; }

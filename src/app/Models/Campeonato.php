@@ -255,6 +255,101 @@ class Campeonato extends Model
     }
 
     /**
+     * Campeão de cada categoria (Fase I, Etapa I4; dono do projeto, 21/10/2026), calculado (nada é gravado):
+     * - com final (publicada e ativa): o vencedor da final (Jogo::resultadoDoConfronto, no jogo único ou na volta), o vice e,
+     *   se houver a disputa de 3º com vencedor, o 3º lugar. Final sem vencedor ainda: null;
+     * - sem mata-mata, numa tabela única (pontos corridos): o 1º, quando TODOS os jogos da fase de grupos (ativos)
+     *   estão publicados e com placar. Empatado em tudo com outro(s) no 1º lugar (a marca de sorteio): "a definir", com os nomes;
+     * - mata-mata sem final, ou grupos sem mata-mata: null (em andamento).
+     * Devolve [id_categoria => null ou ['situacao' => 'campeao'|'sorteio', 'modo' => 'final'|'tabela', 'campeao', 'vice', 'terceiro' (cada um
+     * ['id_time', 'nome', 'logo'] ou null), 'como' (texto), 'empatados' (nomes, no sorteio)]]. $classificacoes:
+     * o resultado de classificacoes(), quando quem chama já o tem (evita calcular de novo).
+     */
+    public function campeoes(?array $classificacoes = null): array
+    {
+        $classificacoes ??= $this->classificacoes();
+        $time = fn ($t) => $t ? ['id_time' => (int) $t->id_time, 'nome' => $t->nome_time, 'logo' => $t->logo_time] : null;
+
+        $mataMata = Jogo::with(['evento', 'timeCasa', 'timeVisitante', 'jogoIda', 'jogoVolta'])
+            ->where('id_campeonato', $this->id_campeonato)
+            ->whereNotNull('fase_jogo')->where('fase_jogo', '<>', Jogo::FASE_PADRAO)
+            ->whereHas('evento', fn ($q) => $q->publicados()->where('status_evento_calendario', 'ATIVO'))
+            ->get()
+            ->groupBy(fn ($jogo) => (int) $jogo->evento->id_categoria);
+
+        $campeoes = [];
+        foreach ($classificacoes as $c) {
+            $idCategoria = (int) $c['categoria']->id_categoria;
+            $doMataMata  = $mataMata[$idCategoria] ?? collect();
+
+            if ($doMataMata->isNotEmpty()) {
+                // A final que decide (jogo único ou volta); a ida decide na volta
+                $decide = fn (string $fase) => $doMataMata->where('fase_jogo', $fase)->first(fn ($jogo) => ! $jogo->jogoVolta);
+                $final  = $decide('FINAL');
+                $resultado = $final?->resultadoDoConfronto();
+                if (! $resultado) {
+                    $campeoes[$idCategoria] = null;
+                    continue;
+                }
+
+                $casaVenceu = (int) $resultado['id_time'] === (int) $final->id_time_casa;
+                $terceiro   = $decide('TERCEIRO');
+                $doTerceiro = $terceiro?->resultadoDoConfronto();
+                $campeoes[$idCategoria] = [
+                    'situacao'  => 'campeao',
+                    'modo'      => 'final',
+                    'campeao'   => $time($casaVenceu ? $final->timeCasa : $final->timeVisitante),
+                    'vice'      => $time($casaVenceu ? $final->timeVisitante : $final->timeCasa),
+                    'terceiro'  => $doTerceiro ? $time((int) $doTerceiro['id_time'] === (int) $terceiro->id_time_casa ? $terceiro->timeCasa : $terceiro->timeVisitante) : null,
+                    'como'      => 'Final: ' . $resultado['texto'],
+                    'empatados' => [],
+                ];
+                continue;
+            }
+
+            // Pontos corridos: tabela única e todos os jogos da fase de grupos com placar
+            $tabela = count($c['tabelas']) === 1 ? $c['tabelas'][0]['tabela'] : [];
+            $jogos  = Jogo::where('id_campeonato', $this->id_campeonato)
+                ->where(fn ($q) => $q->where('fase_jogo', Jogo::FASE_PADRAO)->orWhereNull('fase_jogo'))
+                ->whereHas('evento', fn ($q) => $q->where('id_categoria', $idCategoria)->where('status_evento_calendario', 'ATIVO'));
+            $total     = (clone $jogos)->count();
+            // Pendente: sem placar ou ainda em rascunho (o rascunho fica fora da classificação)
+            $semPlacar = (clone $jogos)->where(fn ($q) => $q->whereNull('placar_time_casa_jogos')->orWhereNull('placar_time_visitante_jogos')
+                ->orWhereHas('evento', fn ($e) => $e->whereNull('data_publicacao_evento_calendario')))->count();
+            if (! $tabela || ! $total || $semPlacar) {
+                $campeoes[$idCategoria] = null;
+                continue;
+            }
+
+            $primeiro = $tabela[0];
+            $comoTime = fn (array $linha) => ['id_time' => $linha['id_time'], 'nome' => $linha['nome'], 'logo' => $linha['logo']];
+            if ($primeiro['sorteio']) {
+                $chave = fn ($l) => [$l['pontos'], $l['v'], $l['gm'] - $l['gc'], $l['gm']];
+                $empatados = array_values(array_filter($tabela, fn ($l) => $l['sorteio'] && $chave($l) === $chave($primeiro)));
+                $campeoes[$idCategoria] = ['situacao' => 'sorteio', 'modo' => 'tabela', 'campeao' => null, 'vice' => null, 'terceiro' => null,
+                    'como' => 'Empate em todos os critérios no 1º lugar: decidir por sorteio',
+                    'empatados' => array_column($empatados, 'nome')];
+                continue;
+            }
+
+            $campeoes[$idCategoria] = ['situacao' => 'campeao', 'modo' => 'tabela', 'campeao' => $comoTime($primeiro), 'vice' => null, 'terceiro' => null,
+                'como' => '1º na tabela (pontos corridos)', 'empatados' => []];
+        }
+
+        return $campeoes;
+    }
+
+    // Texto curto do campeão de uma categoria (campeoes()): "Botafogo da Vila" ou "a definir (sorteio entre X e Y)"
+    public static function textoDoCampeao(?array $campeao): ?string
+    {
+        return match ($campeao['situacao'] ?? null) {
+            'campeao' => $campeao['campeao']['nome'],
+            'sorteio' => 'a definir (sorteio entre ' . collect($campeao['empatados'])->join(', ', ' e ') . ')',
+            default   => null,
+        };
+    }
+
+    /**
      * Classificação por categoria e grupo (Fase H, Etapa H4): para cada categoria do campeonato,
      * ['categoria' => Categoria, 'classificados' => N ou null, 'tabelas' => [['grupo' => nome ou null,
      * 'classificados' => quantos passam nesta tabela (null na "Sem grupo"), 'tabela' => linhas de Jogo::classificacao]]].

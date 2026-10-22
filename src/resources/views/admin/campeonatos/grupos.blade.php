@@ -62,6 +62,22 @@
           </div>
         </div>
 
+        {{-- Campeão da categoria (Fase I, Etapa I4; Campeonato::campeoes) --}}
+        @if ($campeao = $campeoes[(int) $categoria->id_categoria] ?? null)
+        <div class="alert {{ $campeao['situacao'] === 'campeao' ? 'alert-success' : 'alert-warning' }} d-flex align-items-center gap-2 js-campeao">
+          <i class="bi bi-trophy-fill"></i>
+          <div>
+            @if ($campeao['situacao'] === 'campeao')
+            <strong>Campeão: {{ $campeao['campeao']['nome'] }}</strong>
+            <span class="small">· {{ $campeao['como'] }}@if ($campeao['vice']) · Vice: {{ $campeao['vice']['nome'] }}@endif
+              @if ($campeao['terceiro']) · 3º lugar: {{ $campeao['terceiro']['nome'] }}@endif</span>
+            @else
+            <strong>Campeão a definir:</strong> sorteio entre {{ collect($campeao['empatados'])->join(', ', ' e ') }} (empatados em todos os critérios no 1º lugar).
+            @endif
+          </div>
+        </div>
+        @endif
+
         <div class="row g-4">
           {{-- Grupos da categoria --}}
           <div class="col-lg-4">

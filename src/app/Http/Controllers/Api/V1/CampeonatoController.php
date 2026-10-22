@@ -62,9 +62,18 @@ class CampeonatoController extends Controller
         // A tabela de ligação (pivot) é interna: fica fora do JSON
         $campeonato->times->each->makeHidden('pivot');
 
-        $classificacao = collect($campeonato->classificacoes())->map(fn ($c) => [
+        $classificacoes = $campeonato->classificacoes();
+        $campeoes       = $campeonato->campeoes($classificacoes);   // Fase I, Etapa I4
+        $time = fn (?array $t) => $t ? [...$t, 'logo_url' => Time::urlDaImagem($t['logo'], 'team')] : null;
+
+        $classificacao = collect($classificacoes)->map(fn ($c) => [
             'id_categoria'  => (int) $c['categoria']->id_categoria,
             'categoria'     => $c['categoria']->rotulo,
+            'campeao'       => ($campeao = $campeoes[(int) $c['categoria']->id_categoria] ?? null) ? [
+                'situacao' => $campeao['situacao'], 'modo' => $campeao['modo'], 'como' => $campeao['como'],
+                'campeao'  => $time($campeao['campeao']), 'vice' => $time($campeao['vice']), 'terceiro' => $time($campeao['terceiro']),
+                'empatados' => $campeao['empatados'],
+            ] : null,
             'classificados' => $c['classificados'],
             'grupos'        => array_map(fn ($tabela) => [
                 'grupo'         => $tabela['grupo'],

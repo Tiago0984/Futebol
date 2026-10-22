@@ -85,6 +85,36 @@
 <div class="{{ $comAbas ? 'camp-cat-panel' . ($i === 0 ? ' is-active' : '') : '' }}"
      @if($comAbas) id="cat-{{ $aba['categoria']->id_categoria }}" role="tabpanel" @endif>
 
+{{-- Campeão da categoria (Fase I, Etapa I4; Campeonato::campeoes): o vencedor da final (com vice e 3º) ou, nos
+     pontos corridos, o 1º da tabela com todos os jogos jogados; empate em tudo no topo = "a definir (sorteio)" --}}
+@if($aba['campeao'])
+@php $c = $aba['campeao']; @endphp
+<section class="camp-campeao-section">
+    <div class="camp-show-container">
+        <div class="camp-campeao-card">
+            <i class="fa fa-trophy camp-campeao-taca"></i>
+            <div>
+                <span class="section-subtitle-tag">{{ $aba['categoria']?->rotulo ?? 'Campeonato' }}</span>
+                @if($c['situacao'] === 'campeao')
+                <h2 class="camp-campeao-nome">
+                    @if($c['campeao']['logo'])<img src="{{ \App\Models\Time::urlDaImagem($c['campeao']['logo'], 'team') }}" alt="" class="camp-campeao-logo">@endif
+                    Campeão: {{ $c['campeao']['nome'] }}
+                </h2>
+                <p class="camp-campeao-detalhe">
+                    {{ $c['como'] }}
+                    @if($c['vice']) · Vice: {{ $c['vice']['nome'] }}@endif
+                    @if($c['terceiro']) · 3º lugar: {{ $c['terceiro']['nome'] }}@endif
+                </p>
+                @else
+                <h2 class="camp-campeao-nome">Campeão a definir</h2>
+                <p class="camp-campeao-detalhe">Sorteio entre {{ collect($c['empatados'])->join(', ', ' e ') }}: empatados em todos os critérios no 1º lugar.</p>
+                @endif
+            </div>
+        </div>
+    </div>
+</section>
+@endif
+
 {{-- Times participantes da categoria --}}
 <section class="camp-teams-section">
     <div class="camp-show-container">
@@ -266,6 +296,8 @@
                                  class="camp-table-logo">
                             @endif
                             <span class="camp-table-team-name">{{ $time['nome'] }}@if($time['sorteio'])<span class="camp-sorteio" title="Empatado em todos os critérios: no fim, decidido por sorteio">*</span>@endif</span>
+                            {{-- Pontos corridos: o campeão na tabela (Fase I, Etapa I4) --}}
+                            @if(($aba['campeao']['modo'] ?? null) === 'tabela' && ($aba['campeao']['campeao']['id_time'] ?? null) === $time['id_time'])<span class="camp-classificado-tag camp-campeao-tag"><i class="fa fa-trophy"></i> Campeão</span>@endif
                             @if($classificado)<span class="camp-classificado-tag">Classificado</span>@endif
                         </td>
                         <td><strong>{{ $time['pontos'] }}</strong></td>
