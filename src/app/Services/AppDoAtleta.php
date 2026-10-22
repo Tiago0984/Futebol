@@ -51,8 +51,15 @@ class AppDoAtleta
             'posicoes',
         ])->setRelation('times', collect());
 
+        // Responsáveis (21/10/2026, para o app parar de mostrar um nome fixo): só o nome e o grau de parentesco
+        // (decisão do dono do projeto; CPF, e-mail e telefone são dados de outra pessoa e ficam fora)
+        $responsaveis = $atleta->responsaveis()->orderBy('nome_responsavel')->get()
+            ->map(fn ($r) => ['nome' => $r->nome_responsavel, 'grau_parentesco' => $r->pivot->grau_parentesco_responsavel])
+            ->values()->all();
+
         return $atleta->setAttribute('posicao_atleta', $atleta->posicoes->first()?->posicao)
-            ->setAttribute('foto_url', $atleta->urlFoto());
+            ->setAttribute('foto_url', $atleta->urlFoto())
+            ->setAttribute('responsaveis', $responsaveis);
     }
 
     // ── Agenda ──────────────────────────────────────────────────────────────

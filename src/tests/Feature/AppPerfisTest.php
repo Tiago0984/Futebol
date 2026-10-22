@@ -182,7 +182,7 @@ class AppPerfisTest extends TestCase
         $dados = $this->comToken($token)->getJson('/api/v1/responsavel')->assertOk()->json('data');
 
         $this->assertSame($idResponsavel, $dados['id_responsavel']);
-        $this->assertSame('111.111.111-11', $dados['cpf_responsavel']);
+        $this->assertSame(DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->value('cpf_responsavel'), $dados['cpf_responsavel']);
         $this->assertSame('(11) 99999-9999', $dados['whatsapp_responsavel']);
         $this->assertSame('Rua do Responsável', $dados['endereco']['rua_endereco']);
         $this->assertSame([$idFilho], array_column($dados['atletas'], 'id_atleta'));
@@ -194,6 +194,7 @@ class AppPerfisTest extends TestCase
     {
         [$idResponsavel] = $this->responsavelComSenha('mae@exemplo.com');
         [$outro] = $this->responsavelComSenha('ocupado@exemplo.com');
+        $cpfAntes = DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->value('cpf_responsavel');
         $token = $this->login('mae@exemplo.com', self::SENHA_RESPONSAVEL, 'responsavel');
 
         $this->comToken($token)->patchJson('/api/v1/responsavel', [
@@ -203,7 +204,7 @@ class AppPerfisTest extends TestCase
 
         $this->assertDatabaseHas('tbl_responsavel', [
             'id_responsavel' => $idResponsavel, 'email_responsavel' => 'nova@exemplo.com', 'telefone_responsavel' => '(11) 3333-4444',
-            'whatsapp_responsavel' => '(11) 98888-7777', 'nome_responsavel' => 'Responsável de Teste', 'cpf_responsavel' => '111.111.111-11',
+            'whatsapp_responsavel' => '(11) 98888-7777', 'nome_responsavel' => 'Responsável de Teste', 'cpf_responsavel' => $cpfAntes,
         ]);
 
         // E-mail continua único entre responsáveis (comparando já normalizado)
@@ -235,6 +236,30 @@ class AppPerfisTest extends TestCase
     }
 
     // ---------- helpers ----------
+
+    // 21/10/2026: o atleta (e o responsável, ao abrir o filho) vê os responsáveis só com o nome e o parentesco
+    public function test_dados_do_atleta_trazem_os_responsaveis_so_com_nome_e_parentesco(): void
+    {
+        [$idResponsavel, $idFilho] = $this->responsavelComSenha('mae@teste.com');
+        DB::table('tbl_atletas')->where('id_atleta', $idFilho)->update(['email_atleta' => 'filho@teste.com', 'password' => Hash::make(self::SENHA_ATLETA)]);
+
+        $esperado = [['nome' => 'Responsável de Teste', 'grau_parentesco' => 'Mãe']];
+
+        $doAtleta = $this->comToken($this->login('filho@teste.com', self::SENHA_ATLETA, 'atleta'))
+            ->getJson('/api/v1/atleta')->assertOk()->json('data');
+        $this->assertSame($esperado, $doAtleta['responsaveis']);
+
+        $doResponsavel = $this->comToken($this->login('mae@teste.com', self::SENHA_RESPONSAVEL, 'responsavel'))
+            ->getJson("/api/v1/responsavel/atletas/{$idFilho}")->assertOk()->json('data');
+        $this->assertSame($esperado, $doResponsavel['responsaveis']);
+
+        // Nada de CPF nem contato do responsável no JSON do atleta
+        $json = json_encode($doAtleta);
+        $this->assertStringNotContainsString('111.111.111-11', $json);
+        $this->assertStringNotContainsString('mae@teste.com', $json);
+        $this->assertStringNotContainsString('99999-9999', $json);
+        $this->assertNotNull($idResponsavel);
+    }
 
     private function atletaComSenha(string $email): int
     {

@@ -272,7 +272,7 @@ Content-Type: application/json
 
     <div class="card">
         <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Dados do atleta logado, com o endereço e a categoria atual. O atleta é da AACJ, na categoria dele: <code>times</code> vem sempre vazio (mantido para não quebrar o app); o time de cada jogo vem na agenda, em <code>time_do_atleta</code>. Posições: <code>posicoes</code> (até 3, a principal primeiro; <code>posicao</code> é o código fixo, <code>sigla</code> e <code>nome</code> são para mostrar) e <code>posicao_atleta</code> com o código da principal (<code>null</code> sem posição). Códigos: {{ implode(', ', array_keys(\App\Models\Atleta::POSICOES)) }}.</p>
+        <p>Dados do atleta logado, com o endereço e a categoria atual. O atleta é da AACJ, na categoria dele: <code>times</code> vem sempre vazio (mantido para não quebrar o app); o time de cada jogo vem na agenda, em <code>time_do_atleta</code>. Posições: <code>posicoes</code> (até 3, a principal primeiro; <code>posicao</code> é o código fixo, <code>sigla</code> e <code>nome</code> são para mostrar) e <code>posicao_atleta</code> com o código da principal (<code>null</code> sem posição). Códigos: {{ implode(', ', array_keys(\App\Models\Atleta::POSICOES)) }}. Responsáveis: <code>responsaveis</code>, só com <code>nome</code> e <code>grau_parentesco</code> (lista vazia quando não há; CPF e contatos do responsável não vêm).</p>
 <pre>200 {
   "success": true,
   "data": {
@@ -292,6 +292,9 @@ Content-Type: application/json
     "posicoes": [
       { "posicao": "VOLANTE", "sigla": "VOL", "nome": "Volante", "ordem_atleta_posicao": 1 },
       { "posicao": "MEIA_CENTRAL", "sigla": "MC", "nome": "Meia-central", "ordem_atleta_posicao": 2 }
+    ],
+    "responsaveis": [
+      { "nome": "Carla Exemplo", "grau_parentesco": "Mãe" }
     ],
     "times": []
   }
