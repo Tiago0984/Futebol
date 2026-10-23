@@ -538,6 +538,11 @@
                 @endif
             </div>
 
+            {{-- Súmula (Etapa S1): só no jogo com time da AACJ --}}
+            @if ($sumula)
+                @include('admin.calendario._sumula')
+            @endif
+
             {{-- Notificações enviadas aos atletas sobre este evento (só no admin: dados de menores).
                  As de AGENDA (resumo do mês, mover inscrições) não têm evento: ficam na página geral. --}}
             <div class="card shadow-sm mt-4">

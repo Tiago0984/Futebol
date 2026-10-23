@@ -222,6 +222,9 @@ class JogosController extends Controller
         if ($erros = Jogo::errosDoResultado($dados, $jogo)) {
             throw ValidationException::withMessages($erros);
         }
+        if ($erro = $jogo->erroDaSumulaNaEdicao($dados)) {
+            throw ValidationException::withMessages(['placar_time_casa_jogos' => $erro]);
+        }
 
         $jogo->update($placar);
 
@@ -430,6 +433,11 @@ class JogosController extends Controller
         // Rodada, ida e volta, prorrogação e pênaltis (Fase I, Etapa I1b)
         if ($erros = Jogo::errosDoResultado([...$dadosJogo, 'id_categoria' => $request->filled('id_categoria') ? (int) $request->id_categoria : null], $evento?->jogo)) {
             throw ValidationException::withMessages($erros);
+        }
+
+        // Súmula (Etapa S1): com gols ou cartões lançados, os times não mudam e o placar não fica abaixo dos gols
+        if ($evento?->jogo && ($erro = $evento->jogo->erroDaSumulaNaEdicao($dadosJogo))) {
+            throw ValidationException::withMessages(['placar_time_casa_jogos' => $erro]);
         }
 
         return $dadosJogo;

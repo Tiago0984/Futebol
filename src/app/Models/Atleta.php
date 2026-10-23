@@ -699,6 +699,9 @@ class Atleta extends Authenticatable
             $this->posicoes()->delete();            // tbl_atleta_posicao (FK sem cascade)
             $this->afastamentos()->delete();        // tbl_atleta_afastamento (FK sem cascade)
             $this->historico()->delete();           // tbl_atleta_historico (FK sem cascade)
+            // Súmula (FKs sem cascade): o gol continua no placar, sem autor (ou sem assistência)
+            JogoGol::where('id_atleta', $this->id_atleta)->update(['id_atleta' => null]);
+            JogoGol::where('id_atleta_assistencia', $this->id_atleta)->update(['id_atleta_assistencia' => null]);
             // tbl_notificacao_leitura e tbl_notificacao (FKs sem cascade): primeiro as leituras dos responsáveis
             NotificacaoLeitura::whereIn('id_notificacao', Notificacao::where('id_atleta', $this->id_atleta)->select('id_notificacao'))->delete();
             $this->notificacoes()->delete();

@@ -284,6 +284,7 @@ class CalendarioController extends Controller
             $jogo->setRelation('evento', $evento);
             $campeonatosDoJogo = JogosController::campeonatosDoFormulario();
             $timesDoJogo       = Time::orderBy('nome_time')->get();
+            $sumula            = $this->dadosDaSumula($jogo);
         } else {
             $evento->load('historico.usuario');
             $categoriasInativasEmUso = $evento->categoria && $evento->categoria->status_categoria !== 'ATIVO'
@@ -299,7 +300,36 @@ class CalendarioController extends Controller
             'campeonatosDoJogo'       => $campeonatosDoJogo ?? collect(),
             'timesDoJogo'             => $timesDoJogo ?? collect(),
             'categoriasInativasEmUso' => $categoriasInativasEmUso ?? collect(),
+            'sumula'                  => $sumula ?? null,
         ]);
+    }
+
+    /**
+     * Bloco "Súmula" da tela do jogo (Etapa S1): os gols e cartões lançados, a situação de cada time da AACJ e os
+     * escalados de cada um (para os selects). null = jogo sem time da AACJ (dois externos: ninguém para lançar).
+     */
+    private function dadosDaSumula(Jogo $jogo): ?array
+    {
+        $internos = $jogo->timesEscalaveis();
+        if ($internos->isEmpty()) {
+            return null;
+        }
+
+        $escalados = $internos->mapWithKeys(fn (Time $time) => [$time->id_time => [
+            'nome'    => $time->nome_time,
+            'atletas' => $jogo->escaladosDoTime($time->id_time)->sortBy('nome_atleta', SORT_NATURAL | SORT_FLAG_CASE)
+                ->map(fn ($a) => ['id' => (int) $a->id_atleta, 'nome' => $a->nome_atleta, 'camisa' => $a->camisa_convocacao])->values()->all(),
+        ]]);
+        $idsEscalados = $escalados->flatMap(fn ($t) => array_column($t['atletas'], 'id'))->all();
+
+        return [
+            'gols'          => $jogo->gols()->with(['time', 'atleta', 'assistente', 'usuario'])
+                ->orderBy('periodo_jogo_gol')->orderByRaw('minuto_jogo_gol IS NULL')->orderBy('minuto_jogo_gol')->orderBy('id_jogo_gol')->get(),
+            'cartoes'       => $jogo->cartoes()->with(['atleta', 'usuario'])->orderBy('id_cartao')->get(),
+            'resumo'        => $jogo->resumoDaSumula(),
+            'escalados'     => $escalados->all(),
+            'id_escalados'  => $idsEscalados,
+        ];
     }
 
     /**

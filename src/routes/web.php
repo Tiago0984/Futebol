@@ -38,6 +38,7 @@ use App\Http\Controllers\Admin\ConvocacaoController;
 use App\Http\Controllers\Admin\GruposController;
 use App\Http\Controllers\Admin\GeradorDeJogosController;
 use App\Http\Controllers\Admin\AmistososController;
+use App\Http\Controllers\Admin\SumulaController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
 
@@ -136,6 +137,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
     Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo
     Route::patch('jogos/{id}/publicar', [JogosController::class, 'publicar'])->name('jogos.publicar'); // rascunho → publicado, avisa os atletas
+    // Súmula do jogo (Etapa S1): gols, assistências e cartões dos atletas da AACJ, na tela do jogo
+    Route::post('jogos/{id}/gols',                 [SumulaController::class, 'storeGol'])->name('jogos.gols.store');
+    Route::delete('jogos/{id}/gols/{idGol}',       [SumulaController::class, 'destroyGol'])->name('jogos.gols.destroy');
+    Route::post('jogos/{id}/cartoes',              [SumulaController::class, 'storeCartao'])->name('jogos.cartoes.store');
+    Route::delete('jogos/{id}/cartoes/{idCartao}', [SumulaController::class, 'destroyCartao'])->name('jogos.cartoes.destroy');
     // Times dos amistosos, separados por jogo, e jogadores de um time: só leitura, pelo subitem "Times" do menu
     Route::get('amistosos/times',          [AmistososController::class, 'times'])->name('amistosos.times');
     // Jogadores escalados por um time num jogo (cartão do time nas telas de times por jogo): só leitura

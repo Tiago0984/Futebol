@@ -116,6 +116,12 @@ class Jogo extends Model
         return $this->hasMany(Cartao::class, 'id_jogo', 'id_jogo');
     }
 
+    // Súmula (Etapa S1): quem fez cada gol dos times da AACJ (e os gols contra)
+    public function gols()
+    {
+        return $this->hasMany(JogoGol::class, 'id_jogo', 'id_jogo');
+    }
+
     // ── Consultas ───────────────────────────────────────────────────────────
 
     // Jogos que o site e a API de campeonatos mostram: evento publicado, ativo ou cancelado (oculto e
@@ -734,6 +740,85 @@ class Jogo extends Model
     public function temPlacar(): bool
     {
         return $this->placar_time_casa_jogos !== null && $this->placar_time_visitante_jogos !== null;
+    }
+
+    public function temProrrogacao(): bool
+    {
+        return $this->prorrogacao_time_casa_jogos !== null && $this->prorrogacao_time_visitante_jogos !== null;
+    }
+
+    // ── Súmula (Etapa S1, 22/10/2026) ───────────────────────────────────────
+
+    // Gols do time no placar, no tempo normal ou na prorrogação (a disputa de pênaltis não conta)
+    public function golsNoPlacar(int $idTime, string $periodo = 'TEMPO_NORMAL'): int
+    {
+        $casa = $idTime === (int) $this->id_time_casa;
+
+        return (int) ($periodo === 'PRORROGACAO'
+            ? ($casa ? $this->prorrogacao_time_casa_jogos : $this->prorrogacao_time_visitante_jogos)
+            : ($casa ? $this->placar_time_casa_jogos : $this->placar_time_visitante_jogos));
+    }
+
+    // O atleta (ATIVO) está escalado neste time da AACJ, neste jogo
+    public function escalouNoTime(int $idAtleta, int $idTime): bool
+    {
+        return $this->timesEscalaveis()->contains('id_time', $idTime)
+            && EventoAtleta::where('id_evento_calendario', $this->id_evento)->where('id_atleta', $idAtleta)->where('id_time', $idTime)
+                ->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))->exists();
+    }
+
+    /**
+     * Situação da súmula de cada time da AACJ no jogo: gols no placar (tempo normal + prorrogação), lançados e quantos
+     * faltam (só aviso: o admin pode deixar sem autor). [id_time => ['nome', 'placar', 'lancados', 'faltam']]
+     */
+    public function resumoDaSumula(): array
+    {
+        $lancados = $this->gols()->selectRaw('id_time, COUNT(*) as total')->groupBy('id_time')->pluck('total', 'id_time');
+
+        return $this->timesEscalaveis()->mapWithKeys(function (Time $time) use ($lancados) {
+            $placar = $this->golsNoPlacar($time->id_time) + $this->golsNoPlacar($time->id_time, 'PRORROGACAO');
+            $feitos = (int) ($lancados[$time->id_time] ?? 0);
+
+            return [$time->id_time => ['nome' => $time->nome_time, 'placar' => $placar, 'lancados' => $feitos, 'faltam' => max(0, $placar - $feitos)]];
+        })->all();
+    }
+
+    /**
+     * Por que a edição do jogo não pode mudar os times ou o placar sem mexer na súmula (null = pode): com gols ou
+     * cartões lançados, os times não mudam; o placar de cada time não fica abaixo dos gols já lançados nele (em cada
+     * período). Usado pelo placar rápido e pelo formulário do jogo.
+     *
+     * @param array $dados id_time_casa, id_time_visitante e as colunas de placar e prorrogação (novos valores)
+     */
+    public function erroDaSumulaNaEdicao(array $dados): ?string
+    {
+        $gols = $this->gols()->get(['id_time', 'periodo_jogo_gol']);
+        if ($gols->isEmpty() && ! $this->cartoes()->exists()) {
+            return null;
+        }
+
+        $mudouTimes = (int) $dados['id_time_casa'] !== (int) $this->id_time_casa
+            || (int) $dados['id_time_visitante'] !== (int) $this->id_time_visitante;
+        if ($mudouTimes) {
+            return 'Este jogo tem súmula (gols ou cartões lançados): remova-os na tela do jogo antes de trocar os times.';
+        }
+
+        $colunas = [
+            (int) $this->id_time_casa      => ['TEMPO_NORMAL' => 'placar_time_casa_jogos', 'PRORROGACAO' => 'prorrogacao_time_casa_jogos'],
+            (int) $this->id_time_visitante => ['TEMPO_NORMAL' => 'placar_time_visitante_jogos', 'PRORROGACAO' => 'prorrogacao_time_visitante_jogos'],
+        ];
+        foreach ($gols->groupBy(fn ($g) => $g->id_time . '|' . $g->periodo_jogo_gol) as $chave => $doGrupo) {
+            [$idTime, $periodo] = explode('|', $chave);
+            $novo = $dados[$colunas[(int) $idTime][$periodo]] ?? null;
+            if ($novo === null || (int) $novo < $doGrupo->count()) {
+                $time = (int) $idTime === (int) $this->id_time_casa ? $this->timeCasa : $this->timeVisitante;
+
+                return "A súmula já tem {$doGrupo->count()} gol(s) do {$time->nome_time} ("
+                    . mb_strtolower(JogoGol::PERIODOS[$periodo]) . '): o placar não pode ficar abaixo disso. Remova gols da súmula antes.';
+            }
+        }
+
+        return null;
     }
 
     /**
