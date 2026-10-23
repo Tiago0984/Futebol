@@ -331,12 +331,13 @@ Content-Type: application/json
 
     <div class="card">
         <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/atleta/estatisticas</code><span class="acesso atleta">Atleta</span></div>
-        <p>Os números do atleta desde que entrou na escolinha, no <code>total</code> e <code>por_time</code> (cada time em que jogou ou foi convocado, do que tem mais partidas para o que tem menos):</p>
+        <p>Os números do atleta desde que entrou na escolinha, no <code>total</code> e <code>por_time</code> (cada time em que jogou ou foi convocado, do que tem mais partidas para o que tem menos), e os da <code>categoria_atual</code> dele:</p>
         <ul>
             <li><code>partidas</code>: jogos (campeonato ou amistoso) em que ele foi <strong>escalado num time</strong>, publicados, não cancelados e já realizados. Inscrito sem time não conta.</li>
             <li><code>convocacoes</code>: convocações para campeonatos (uma por campeonato e categoria).</li>
             <li><code>cartoes_amarelos</code>, <code>cartoes_vermelhos</code>: no time em que ele estava escalado naquele jogo.</li>
             <li><code>gols</code>, <code>assistencias</code>: <strong><code>null</code> por enquanto</strong> (o painel ainda não registra quem fez cada gol). <code>null</code> = não registrado, diferente de <code>0</code>: mostre "—". Quando passarem a ser registrados, viram números, sem mudar o formato.</li>
+            <li><code>categoria_atual</code>: os mesmos números, só os da categoria em que o atleta está hoje (a mesma de <code>GET /atleta</code>; uma só). Contam os jogos <strong>daquela categoria</strong> (a categoria do jogo; no amistoso sem categoria, a do time em que ele jogou) e as convocações nela: o Sub-13 que sobe para jogar no Sub-15 tem essas partidas no <code>total</code>, não na <code>categoria_atual</code>. <code>nome_categoria</code> é o nome curto ("Sub-13") e <code>categoria</code> traz o sexo ("Sub-13 Masculino"). Sem categoria: <code>null</code>.</li>
         </ul>
 <pre>200 {
   "success": true,
@@ -345,7 +346,9 @@ Content-Type: application/json
     "por_time": [
       { "id_time": 3, "nome_time": "AACJ Sub-17 A", "logo_url": "https://.../images/times/sub17.png", "categoria": "Sub-17 Masculino",
         "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": null, "assistencias": null }
-    ]
+    ],
+    "categoria_atual": { "id_categoria": 9, "nome_categoria": "Sub-17", "categoria": "Sub-17 Masculino",
+      "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": null, "assistencias": null }
   }
 }</pre>
         <p>Atleta que ainda não jogou: tudo <code>0</code> no <code>total</code> e <code>por_time</code> vazio. O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/estatisticas</code>.</p>

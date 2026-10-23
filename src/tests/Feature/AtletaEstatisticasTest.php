@@ -14,7 +14,8 @@ use Tests\TestCase;
 
 /**
  * GET /api/v1/atleta/estatisticas (22/10/2026): partidas (escalado num time, em jogo publicado, ativo e já
- * realizado), convocações e cartões, no total e por time; gols e assistências null até existir a súmula.
+ * realizado), convocações e cartões, no total, por time e na categoria atual; gols e assistências null até
+ * existir a súmula.
  * O responsável vê a mesma coisa do filho.
  */
 class AtletaEstatisticasTest extends TestCase
@@ -106,6 +107,45 @@ class AtletaEstatisticasTest extends TestCase
             ->assertJsonPath('data.por_time.0.convocacoes', 1);
     }
 
+    public function test_categoria_atual_conta_so_os_jogos_e_convocacoes_dela(): void
+    {
+        $idSub15 = $this->idCategoria('Sub-15', 'M');
+        $idSub17 = $this->idCategoria('Sub-17', 'M');
+        $this->participantes($this->idCampeonato, [$this->sub17], $idSub17);
+
+        $noSub15 = $this->jogo(-14, $this->sub15, idCategoria: $idSub15);
+        $this->jogo(-10, $this->sub15);                                   // jogo sem categoria (amistoso): vale a do time
+        $subiu = $this->jogo(-7, $this->sub17, idCategoria: $idSub17);   // sobe para o Sub-17: só no total
+        $this->jogo(-3, $this->sub15, idCategoria: $idSub15, status: 'CANCELADO');
+
+        $this->convocacaoDireta($this->idCampeonato, $this->sub15, $this->id, 10);
+        $this->convocacaoDireta($this->idCampeonato, $this->sub17, $this->id, 4);
+        DB::table('tbl_cartoes')->insert([
+            ['id_atleta' => $this->id, 'id_jogo' => $noSub15->id_jogo, 'id_campeonato' => $this->idCampeonato, 'tipo_cartao' => 'AMARELO'],
+            ['id_atleta' => $this->id, 'id_jogo' => $subiu->id_jogo, 'id_campeonato' => $this->idCampeonato, 'tipo_cartao' => 'VERMELHO'],
+        ]);
+
+        Sanctum::actingAs(Atleta::find($this->id));
+        $dados = $this->getJson('/api/v1/atleta/estatisticas')->assertOk()->json('data');
+
+        $this->assertSame([
+            'id_categoria' => $idSub15, 'nome_categoria' => 'Sub-15', 'categoria' => 'Sub-15 Masculino',
+            'partidas' => 2, 'convocacoes' => 1, 'cartoes_amarelos' => 1, 'cartoes_vermelhos' => 0, 'gols' => null, 'assistencias' => null,
+        ], $dados['categoria_atual']);
+        $this->assertSame([3, 2, 1, 1], [$dados['total']['partidas'], $dados['total']['convocacoes'], $dados['total']['cartoes_amarelos'], $dados['total']['cartoes_vermelhos']]);
+    }
+
+    public function test_sem_categoria_ativa_categoria_atual_e_null(): void
+    {
+        $this->jogo(-7, $this->sub15);
+        Atleta::find($this->id)->trocarCategoria(null);   // só encerra a linha ativa
+        Sanctum::actingAs(Atleta::find($this->id));
+
+        $this->getJson('/api/v1/atleta/estatisticas')->assertOk()
+            ->assertJsonPath('data.categoria_atual', null)
+            ->assertJsonPath('data.total.partidas', 1);
+    }
+
     public function test_responsavel_ve_as_do_filho_e_nao_as_de_outro_atleta(): void
     {
         $this->jogo(-7, $this->sub15);
@@ -113,7 +153,10 @@ class AtletaEstatisticasTest extends TestCase
         $outro = $this->criarAtleta($this->nascidoComIdade(14), 'M', 'ATIVO');
         Sanctum::actingAs(Responsavel::find($idResponsavel));
 
-        $this->getJson("/api/v1/responsavel/atletas/{$this->id}/estatisticas")->assertOk()->assertJsonPath('data.total.partidas', 1);
+        $this->getJson("/api/v1/responsavel/atletas/{$this->id}/estatisticas")->assertOk()
+            ->assertJsonPath('data.total.partidas', 1)
+            ->assertJsonPath('data.categoria_atual.nome_categoria', 'Sub-15')
+            ->assertJsonPath('data.categoria_atual.partidas', 1);
         $this->getJson("/api/v1/responsavel/atletas/{$outro}/estatisticas")->assertNotFound();
         $this->getJson('/api/v1/atleta/estatisticas')->assertForbidden(); // rota do perfil atleta
     }
@@ -124,9 +167,10 @@ class AtletaEstatisticasTest extends TestCase
     }
 
     // Jogo do time da AACJ contra o externo, com o atleta escalado nele (ou só inscrito, sem time)
-    private function jogo(int $dias, int $idTime, string $status = 'ATIVO', bool $rascunho = false, bool $escalar = true): Jogo
+    private function jogo(int $dias, int $idTime, string $status = 'ATIVO', bool $rascunho = false, bool $escalar = true, ?int $idCategoria = null): Jogo
     {
         $evento = EventoCalendario::criarPor(null, rascunho: $rascunho, inscreverCategoria: false, dados: [
+            'id_categoria'                     => $idCategoria,
             'titulo_evento_calendario'         => 'Jogo de teste',
             'tipo_evento_calendario'           => 'JOGO',
             'data_evento_calendario'           => now()->addDays($dias)->toDateString(),
