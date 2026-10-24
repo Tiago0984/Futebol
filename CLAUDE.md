@@ -10,8 +10,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Todos os dados são fictícios, no local e no servidor** (dono do projeto, 14/10/2026): atletas, responsáveis, times (Azul, Verde, Preto, Visitante), campeonatos (inclusive Liga das comunidades e Copa Escola), jogos, eventos, grade, notificações, notícias, banners, galeria, vídeos e usuários do admin. **Na entrega ao professor, o sistema começa do zero** (plano em "Entrega: começar do zero", seção 7).
 - **Produção (Plesk, no ar desde 14/10/2026):**
   - Site em `https://coderatech.tipi5.smpsistema.com.br/AACJ` (admin em `/AACJ/admin`; documentação da API em `/AACJ/api/documentacao`, entregue ao professor como atividade).
-  - Código em `~/coderatech.tipi5.smpsistema.com.br/futebol` (clone do GitHub, branch **`main`**); a pasta `AACJ` da raiz do documento aponta para `futebol/src/public`. Sem repositório configurado no Git do Plesk: atualizar pelo Terminal SSH.
-  - PHP pelo caminho completo: `/opt/plesk/php/8.4/bin/php artisan ...`. Composer pelo **PHP Composer** do painel (pasta `/coderatech.tipi5.smpsistema.com.br/futebol/src`, botão Instalar), só quando o `composer.lock` muda.
+  - Código em `~/coderatech.tipi5.smpsistema.com.br/futebol` (clone do GitHub, branch **`main`**); a pasta `AACJ` da raiz do documento aponta para `futebol/src/public`. Sem repositório configurado no Git do Plesk: atualizar pelo Terminal SSH. **No servidor, só `git pull`**: nunca `git add`/`commit` lá (há arquivos soltos que não vão para o repositório: `composer.phar`, `composer-setup.php`, imagens enviadas, o backup do `.env`).
+  - PHP pelo caminho completo: `/opt/plesk/php/8.4/bin/php artisan ...` (o site usa o **8.4.27**, conferido no painel em 24/10/2026; o `php` sem caminho no SSH é o 7.2 e falha; o 8.3 também está instalado e roda o artisan, porque o `composer.json` pede `^8.3`, mas usar o 8.4, igual ao site). Composer pelo **PHP Composer** do painel (pasta `/coderatech.tipi5.smpsistema.com.br/futebol/src`, botão Instalar), só quando o `composer.lock` muda.
   - Banco **`db_futebol` em MariaDB 10.11** (não MySQL 8): conferir SQL cru novo (só funções que os dois aceitam). Collation do banco `utf8mb4_general_ci`.
   - **Para publicar:** `git push origin feature/agenda-eventos:main` (fast-forward, com OK do dono do projeto); no servidor, `git pull --ff-only origin main`, `artisan migrate --pretend --force` e `migrate --force` (com backup pelo phpMyAdmin antes; em produção, o `--pretend` sem `--force` para numa confirmação "APPLICATION IN PRODUCTION"), `artisan optimize:clear`. Página pública de campeonatos: `/AACJ/campeonato` (singular).
   - **Conteúdo do site cadastrado lá** (notícias, galeria, vídeos, banners, usuários do admin) e **fotos enviadas** (`public/futebol/images/...`, fora do Git) existem só no servidor. São fictícios (sai tudo na entrega), mas, enquanto o desenvolvimento continua, guardar antes de trocar o banco do servidor por um dump local (como em 14/10).
@@ -28,7 +28,9 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Deploy precisa rodar `php artisan storage:link`** (cria `public/storage`, fora do Git). Sem ele, as fotos enviadas pelo site ficam quebradas. Localmente já foi criado (link absoluto `/var/www/html/...`, válido dentro dos containers).
 - **Fuso horário de Brasília:** app em `America/Sao_Paulo` (`APP_TIMEZONE`, padrão em `config/app.php`) e sessão MySQL em `-03:00` (`DB_TIMEZONE`, em `config/database.php`), para `CURRENT_TIMESTAMP`/`NOW()` do banco baterem com o `now()` do Laravel. Datas no JSON da API em ISO 8601 com o deslocamento e sem milissegundos (`2099-05-01T19:00:00-03:00`), pelo trait `App\Models\Concerns\SerializaDatasComFuso`. Colunas DATETIME gravadas antes da troca estão em UTC (3 horas adiantadas; dados de teste).
 - **App do atleta:** fica em outro repositório (a tela Agenda ainda usa dados fixos). A API dos **dois perfis de login, atleta e responsável**, está pronta (Fase 9); o app ainda precisa ser adaptado (seção 7).
-- **E-mail:** hoje `MAIL_MAILER=log` (os e-mails vão para `storage/logs/laravel.log`, em quoted-printable). Para tirar o último link de senha do log:
+- **E-mail:**
+  - **Produção (desde 24/10/2026):** SMTP da caixa `contato@coderatech.tipi5.smpsistema.com.br` (`MAIL_MAILER=smtp`, `MAIL_SCHEME=smtps`, porta 465, remetente "AACJ Futebol"), só no `.env` do servidor (fora do Git; cópia anterior em `src/.env.bak-20261024-1251` lá). Convite e "Esqueci minha senha" conferidos chegando no Gmail. **Nunca copiar o `.env` local por cima do do servidor** (os e-mails voltam a não sair). Envio continua síncrono (sem fila). Se não chegar, procurar "Falha ao enviar o link de senha do app" no `storage/logs/laravel.log` do servidor.
+  - **Local:** `MAIL_MAILER=log` de propósito (nada sai de verdade nos testes; os e-mails vão para `storage/logs/laravel.log`, em quoted-printable). Para tirar o último link de senha do log:
   `docker compose exec php php -r '$l = quoted_printable_decode(file_get_contents("storage/logs/laravel.log")); preg_match_all("#http://localhost:8080/senha/[^\"<\s]+#", $l, $m); echo end($m[0]), "\n";'`
 - **Branch de trabalho:** `feature/agenda-eventos`. **Nunca fazer push sem autorização.**
 - **Dois computadores (casa e Senac):** o código vai pelo **GitHub** e o banco por **dump** (`backup/db_futebol_para_senac.sql` e similares). Os backups de `backup/` ficam **só no computador onde foram feitos** (a pasta é ignorada pelo Git). Num computador novo: criar o `db_futebol_test` (seção 6, "Testes") e rodar o `storage:link`.
@@ -992,7 +994,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 ### O que falta para o sistema entrar em uso (resumo de 15/10/2026)
 O painel, o site e a API estão prontos no essencial e publicados. Para a escolinha usar de verdade, faltam:
 1. **Aplicativo** (outro repositório) adaptado à API: login com perfil, escolha do filho, agenda e avisos (item "App no outro repositório", abaixo). Sem ele, o atleta não vê o que o painel faz.
-2. **E-mail de verdade** no servidor (SMTP no Plesk e fila; item "SMTP de verdade e worker de fila", abaixo). Hoje os convites e o "Esqueci minha senha" só funcionam copiando o link.
+2. ~~**E-mail de verdade** no servidor~~ ✅ SMTP configurado em 24/10/2026 (seção 1, "E-mail"). Falta só a fila (item "SMTP de verdade e worker de fila", abaixo).
 3. **Grade real de treinos** cadastrada pelas telas na entrega (ter/qui 09:00–11:00 e 14:00–17:00 sem categoria, sábado LIVRE 13:00–17:00; no local, já vem do seeder de demonstração).
 4. **Começar do zero na entrega** (item seguinte).
 
@@ -1012,7 +1014,7 @@ Melhorias que não impedem o uso: Fases E e F (seção 6, "Passagem para o Senac
   - **Banco:** montar o banco do zero pelas migrations (elas criam toda a estrutura e as 10 categorias oficiais; conferido na Fase 9) num banco vazio, ou apagar todas as tabelas e rodar o `migrate --force`. Nada do banco atual é aproveitado.
   - **Usuário do admin:** criar só o(s) do professor/associação, com senha definida por ele (sem os usuários de teste).
   - **Arquivos enviados** (fora do Git, só no servidor): fotos de atletas (`storage/app/public/atletas`, `public/futebol/images/our-teams` menos o `default-player.jpg`), assinaturas (`public/futebol/images/Assinaturas`, menos o `.gitkeep`) e imagens enviadas de notícias, banners, galeria e campeonatos. As imagens que estão no Git (logos e banners do layout) ficam.
-  - **Conferir antes:** o site e o painel funcionando **vazios** (sem banner, notícia, foto, vídeo, campeonato, jogo ou grade), o e-mail de verdade configurado (SMTP; hoje `MAIL_MAILER=log`) e o `storage:link`.
+  - **Conferir antes:** o site e o painel funcionando **vazios** (sem banner, notícia, foto, vídeo, campeonato, jogo ou grade), o e-mail de verdade funcionando (SMTP configurado em 24/10/2026; trocar a caixa se a associação quiser outra) e o `storage:link`.
   - **Depois:** quem administra segue o roteiro R1 do manual (`docs/manual/`): times reais, campeonatos, grade real e matrículas pelo site.
 
 - ~~**CPF único**~~ ✅ **Resolvido em 21/10/2026** (seção 4, "App", item CPF; seção 3). No servidor, aplicada em 22/10/2026, depois de corrigir os repetidos de lá (seção 6, "Passagem para o outro computador").
@@ -1032,7 +1034,7 @@ Melhorias que não impedem o uso: Fases E e F (seção 6, "Passagem para o Senac
   - **Limpeza das notificações antigas** (comando agendado): definir o prazo.
   - **Jogos anteriores à regra do elenco** (ex.: jogo de 06/10) ficaram com inscritos pela categoria; o "Mover inscrições" não mexe neles.
 - **App e e-mail (Fase 9):**
-  - **SMTP de verdade e worker de fila:** hoje `MAIL_MAILER=log` e o envio é síncrono (convites, links de senha, assinatura). Em produção: configurar o SMTP no Plesk, mandar os e-mails para a fila e manter um worker (`queue:work`) rodando.
+  - **SMTP de verdade e worker de fila:** ✅ SMTP no servidor desde 24/10/2026. Falta: o envio ainda é síncrono (convites, links de senha, assinatura); mandar os e-mails para a fila e manter um worker (`queue:work`) rodando.
   - **Tempo de resposta do esqueci-senha com e-mail real:** a resposta é sempre igual, mas demora mais quando o e-mail existe (o envio é síncrono), o que deixa adivinhar quem está cadastrado. Resolve junto com a fila (ou com um tempo mínimo de resposta).
   - **Notificações push:** não existem; o aviso só aparece quando o app consulta `/v1/notificacoes`.
   - **Limpeza de tokens vencidos (agendador):** tokens do Sanctum vencidos (`sanctum:prune-expired`) e links de senha vencidos (`auth:clear-resets`) ficam no banco; falta o agendador (`schedule:run` no cron do Plesk).
