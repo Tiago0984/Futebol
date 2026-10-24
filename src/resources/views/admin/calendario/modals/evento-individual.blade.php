@@ -64,10 +64,7 @@
                                 placeholder="Ex: Clínica São Lucas" value="{{ old('local_evento_calendario') }}">
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label" for="ind_responsavel">Responsável pela atividade</label>
-                            <input type="text" name="responsavel_evento_calendario" id="ind_responsavel" class="form-control" maxlength="100" list="responsaveisUsados" autocomplete="off"
-                                placeholder="Ex: Prof. Carlos, Dra. Ana" value="{{ old('responsavel_evento_calendario') }}">
-                            <small class="text-muted">Quem conduz. Opcional; aparece no app.</small>
+                            @include('admin.partials.select-responsavel', ['idCampo' => 'ind_responsavel'])
                         </div>
                         <div class="col-12">
                             <label class="form-label" for="ind_descricao">O que o atleta vai fazer</label>

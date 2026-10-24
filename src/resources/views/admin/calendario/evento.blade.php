@@ -200,8 +200,14 @@
                     <div><span class="text-muted small d-block">Resultado</span><span class="text-success fw-semibold">{{ $confronto['texto'] }}</span></div>
                     @endif
                     {{-- O jogo não tem o campo no formulário: só aparece se tiver sido gravado --}}
-                    @if (! $jogo || $evento->responsavel_evento_calendario)
-                    <div><span class="text-muted small d-block">Responsável pela atividade</span>{{ $evento->responsavel_evento_calendario ?? '—' }}</div>
+                    @if (! $jogo || $evento->nomeDoResponsavel())
+                    <div><span class="text-muted small d-block">Responsável pela atividade</span>
+                        @if ($evento->comissaoTecnica)
+                            <a href="{{ route('admin.comissao.edit', $evento->id_comissao_tecnica) }}">{{ $evento->comissaoTecnica->nome_comissao_tecnica }}</a>@unless ($evento->comissaoTecnica->estaAtivo()) <span class="text-muted">(inativo)</span>@endunless
+                        @else
+                            {{ $evento->responsavel_evento_calendario ?? '—' }}@if ($evento->responsavel_evento_calendario) <span class="text-muted small">(texto antigo)</span>@endif
+                        @endif
+                    </div>
                     @endif
                     <div><span class="text-muted small d-block">Criado por</span>{{ $evento->responsavel?->nome_usuario ?? '—' }}</div>
                     <div><span class="text-muted small d-block">Situação</span><span class="badge-status {{ $classeSituacao }}">{{ $evento->situacao_label }}</span></div>

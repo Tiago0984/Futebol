@@ -56,7 +56,7 @@ class AppAgendaEAvisosTest extends TestCase
             'descricao' => null, 'categoria' => null, 'data' => '2026-10-12T00:00:00-03:00',
             'horario_inicio' => '18:00', 'horario_fim' => '19:30',
             'inicio' => '2026-10-12T18:00:00-03:00', 'fim' => '2026-10-12T19:30:00-03:00',
-            'local' => 'Campo B', 'responsavel' => null, 'situacao' => 'CONFIRMADO', 'concluido' => false, 'jogo' => null,
+            'local' => 'Campo B', 'responsavel' => null, 'responsavel_id' => null, 'situacao' => 'CONFIRMADO', 'concluido' => false, 'jogo' => null,
         ], $agenda['proximos'][1]);
         $this->assertSame([null, null, null, null], [
             $agenda['proximos'][2]['horario_inicio'], $agenda['proximos'][2]['horario_fim'], $agenda['proximos'][2]['inicio'], $agenda['proximos'][2]['fim'],

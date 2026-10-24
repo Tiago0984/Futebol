@@ -33,7 +33,10 @@ class GradeTreino extends Model
         'horario_fim_grade_treino',
         'horario_obs_grade_treino',
         'local_grade_treino',
-        'responsavel_grade_treino', // quem conduz o treino (texto livre; vai para os eventos gerados)
+        // Quem conduz o treino (vai para os eventos gerados): o profissional da comissão técnica (C2) ou o texto
+        // antigo de 24/10/2026, só mantido (o controller grava os dois pela ComissaoTecnica::daEscolha())
+        'id_comissao_tecnica',
+        'responsavel_grade_treino',
         'ordem_grade_treino',
         'status_grade_treino',
     ];
@@ -77,6 +80,18 @@ class GradeTreino extends Model
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
+    }
+
+    // Responsável pelo treino (Etapa C2; inativo continua aqui)
+    public function comissaoTecnica()
+    {
+        return $this->belongsTo(ComissaoTecnica::class, 'id_comissao_tecnica', 'id_comissao_tecnica');
+    }
+
+    // Nome de quem conduz: o profissional escolhido, ou o texto antigo, ou null
+    public function nomeDoResponsavel(): ?string
+    {
+        return $this->comissaoTecnica?->nome_comissao_tecnica ?? $this->responsavel_grade_treino;
     }
 
     // Eventos gerados a partir desta linha (Fase 7)
@@ -188,7 +203,8 @@ class GradeTreino extends Model
             'horario_inicio_evento_calendario' => $this->horario_inicio_grade_treino,
             'horario_fim_evento_calendario'    => $this->horario_fim_grade_treino,
             'local_evento_calendario'          => $this->local_grade_treino,
-            'responsavel_evento_calendario'    => $this->responsavel_grade_treino,
+            'id_comissao_tecnica'              => $this->id_comissao_tecnica,
+            'responsavel_evento_calendario'    => $this->responsavel_grade_treino, // o texto antigo, se a linha ainda tem
             'status_evento_calendario'         => 'ATIVO',
         ];
     }

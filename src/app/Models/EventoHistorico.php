@@ -64,6 +64,7 @@ class EventoHistorico extends Model
             'status_evento_calendario'          => EventoCalendario::STATUS[$valor] ?? $valor,
             'tipo_evento_calendario'            => EventoCalendario::TIPOS[$valor] ?? $valor,
             'id_categoria'                      => Categoria::find($valor)?->rotulo ?? "#{$valor}",
+            'id_comissao_tecnica'               => ComissaoTecnica::find($valor)?->nome_comissao_tecnica ?? "#{$valor}",
             default                             => $valor,
         };
     }

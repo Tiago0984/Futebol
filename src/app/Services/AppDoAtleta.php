@@ -284,7 +284,7 @@ class AppDoAtleta
     private function eventosInscritos(array $tipos = [])
     {
         return EventoCalendario::query()
-            ->with(['categoria', 'jogo.campeonato', 'jogo.timeCasa', 'jogo.timeVisitante'])
+            ->with(['categoria', 'comissaoTecnica', 'jogo.campeonato', 'jogo.timeCasa', 'jogo.timeVisitante'])
             ->publicados() // rascunho (jogo sendo montado) fica fora até publicar
             ->whereIn('status_evento_calendario', ['ATIVO', 'CANCELADO'])
             ->whereHas('inscricoes', fn ($q) => $q->where('id_atleta', $this->atleta->id_atleta))
@@ -339,7 +339,10 @@ class AppDoAtleta
             'inicio'         => $momento($evento->horario_inicio_evento_calendario),
             'fim'            => $momento($evento->horario_fim_evento_calendario),
             'local'          => $evento->local_evento_calendario,
-            'responsavel'    => $evento->responsavel_evento_calendario, // quem conduz (texto do admin), não quem criou
+            // Quem conduz (não quem criou): o nome do profissional da comissão técnica, ou o texto antigo de antes da
+            // Etapa C2, ou null; responsavel_id só com o profissional (inativo também: o perfil dele dá 404)
+            'responsavel'    => $evento->nomeDoResponsavel(),
+            'responsavel_id' => $evento->id_comissao_tecnica,
             'situacao'       => $evento->estaCancelado() ? 'CANCELADO' : 'CONFIRMADO',
             'concluido'      => $evento->estaConcluido(),
             'jogo'         => $evento->jogo ? $this->jogo($evento->jogo, $idTimeDoAtleta, $evento, $momento) : null,

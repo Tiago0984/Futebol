@@ -40,7 +40,9 @@ class EventoCalendario extends Model
         'horario_inicio_evento_calendario'  => 'Horário de início',
         'horario_fim_evento_calendario'     => 'Horário de fim',
         'local_evento_calendario'           => 'Local',
-        'responsavel_evento_calendario'     => 'Responsável pela atividade', // não conta para "Alterado" nem avisa
+        // Os dois não contam para "Alterado" nem avisam. Escolher da lista um evento com texto antigo grava as duas linhas
+        'id_comissao_tecnica'               => 'Responsável pela atividade',
+        'responsavel_evento_calendario'     => 'Responsável pela atividade (texto antigo)',
         'status_evento_calendario'          => 'Status',
         'data_publicacao_evento_calendario' => 'Publicação', // só publicar() grava (fora do $fillable)
     ];
@@ -122,7 +124,10 @@ class EventoCalendario extends Model
         'horario_inicio_evento_calendario',
         'horario_fim_evento_calendario',
         'local_evento_calendario',
-        'responsavel_evento_calendario', // quem conduz (texto livre; 24/10/2026), diferente do id_usuario (quem criou)
+        // Quem conduz, diferente do id_usuario (quem criou): o profissional da comissão técnica (C2) ou o texto antigo
+        // (texto livre de 24/10/2026, só mantido); o controller grava os dois pela ComissaoTecnica::daEscolha()
+        'id_comissao_tecnica',
+        'responsavel_evento_calendario',
         'destaque_evento_calendario',
         'status_evento_calendario',
     ];
@@ -748,19 +753,6 @@ class EventoCalendario extends Model
             ->all();
     }
 
-    // Responsáveis pela atividade já usados em eventos e na grade (sugestões do campo), sem repetir, em ordem
-    public static function responsaveisUsados(): array
-    {
-        $nomes = DB::table('tbl_evento_calendario')->select('responsavel_evento_calendario as nome')
-            ->union(DB::table('tbl_grade_treino')->select('responsavel_grade_treino'));
-
-        return DB::query()->fromSub($nomes, 'r')
-            ->whereNotNull('nome')->where('nome', '<>', '')
-            ->orderBy('nome')
-            ->pluck('nome')
-            ->all();
-    }
-
     // Ramo do menu deste evento (a mesma regra de scopeDoRamo), para marcar o item ativo na tela do evento
     public function ramo(): ?string
     {
@@ -841,10 +833,22 @@ class EventoCalendario extends Model
         return $this->belongsTo(GradeTreino::class, 'id_grade_treino', 'id_grade_treino');
     }
 
-    // Usuário do admin que criou o evento; null nos eventos anteriores à Fase 4
+    // Usuário do admin que criou o evento; null nos eventos anteriores à Fase 4 (na tela, "Criado por")
     public function responsavel()
     {
         return $this->belongsTo(User::class, 'id_usuario', 'id_usuario');
+    }
+
+    // Responsável pela atividade: o profissional da comissão técnica (Etapa C2; inativo continua aqui)
+    public function comissaoTecnica()
+    {
+        return $this->belongsTo(ComissaoTecnica::class, 'id_comissao_tecnica', 'id_comissao_tecnica');
+    }
+
+    // Nome de quem conduz: o profissional escolhido, ou o texto antigo (24/10/2026), ou null
+    public function nomeDoResponsavel(): ?string
+    {
+        return $this->comissaoTecnica?->nome_comissao_tecnica ?? $this->responsavel_evento_calendario;
     }
 
     // Notificações enviadas aos atletas sobre o evento, da mais nova para a mais antiga (tela do evento)

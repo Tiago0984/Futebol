@@ -69,6 +69,45 @@ class ComissaoTecnica extends Model
         return $query->where('status_comissao_tecnica', 'ATIVO');
     }
 
+    // ── Responsável pela atividade (Etapa C2) ───────────────────────────────
+
+    // Valor do select para manter o texto livre de antes (24/10/2026) num evento ou linha da grade que ainda o tem
+    public const TEXTO_ANTIGO = 'texto-antigo';
+
+    // Ativos para o select "Responsável pela atividade", pelo nome; uma consulta por requisição (vários formulários na tela)
+    public static function paraEscolher()
+    {
+        return once(fn () => self::ativos()->orderBy('nome_comissao_tecnica')->get());
+    }
+
+    /**
+     * O que gravar a partir do select "Responsável pela atividade": [id_comissao_tecnica, texto antigo], ou a
+     * mensagem de erro. Vazio = sem responsável; TEXTO_ANTIGO = mantém o texto que o registro já tem; um id = o
+     * profissional (ativo, ou o inativo que já estava: continua onde estava, mas não é escolhido de novo). Escolher
+     * da lista limpa o texto antigo.
+     */
+    public static function daEscolha(?string $valor, ?int $idAtual, ?string $textoAtual): array|string
+    {
+        if ($valor === null || $valor === '') {
+            return [null, null];
+        }
+
+        if ($valor === self::TEXTO_ANTIGO) {
+            return filled($textoAtual) ? [$idAtual, $textoAtual] : 'Escolha um profissional da lista.';
+        }
+
+        if (! ctype_digit($valor)) {
+            return 'Escolha um profissional da lista.';
+        }
+
+        $id = (int) $valor;
+        if ($id === $idAtual || self::ativos()->whereKey($id)->exists()) {
+            return [$id, null];
+        }
+
+        return 'Escolha um profissional ativo da comissão técnica.';
+    }
+
     public function estaAtivo(): bool
     {
         return $this->status_comissao_tecnica === 'ATIVO';
