@@ -44,8 +44,11 @@ class AppServiceProvider extends ServiceProvider
         // e do header herdam do layout; uma vez por página)
         View::composer('layout.admin', MenuAdminComposer::class);
 
-        // Sugestões dos formulários do admin (campo Local)
-        View::composer('admin.partials.sugestoes', fn ($view) => $view->with('locaisUsados', EventoCalendario::locaisUsados()));
+        // Sugestões dos formulários do admin (campos Local e Responsável pela atividade)
+        View::composer('admin.partials.sugestoes', fn ($view) => $view->with([
+            'locaisUsados'       => EventoCalendario::locaisUsados(),
+            'responsaveisUsados' => EventoCalendario::responsaveisUsados(),
+        ]));
 
         URL::forceRootUrl(config('app.url'));
 

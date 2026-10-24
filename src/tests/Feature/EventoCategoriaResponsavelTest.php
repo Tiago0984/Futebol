@@ -140,12 +140,12 @@ class EventoCategoriaResponsavelTest extends TestCase
         $this->comoAdmin()
             ->get(route('admin.calendario.index', ['mes' => now()->addWeek()->format('Y-m')]))
             ->assertOk()
-            ->assertSee('Sub-15 Masculino · Responsável: Fulana Criadora');
+            ->assertSee('Sub-15 Masculino · Criado por: Fulana Criadora'); // desde 24/10/2026, "Responsável" é quem conduz
 
         $this->comoAdmin()
             ->get(route('admin.calendario.index', ['mes' => '2026-06']))
             ->assertOk()
-            ->assertSee('Sem categoria · Responsável: —');
+            ->assertSee('Sem categoria · Criado por: —');
     }
 
     public function test_tipos_das_colunas_novas(): void

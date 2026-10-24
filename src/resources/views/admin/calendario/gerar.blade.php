@@ -143,6 +143,7 @@
                                     <span class="fw-semibold">{{ $grade->rotulo }}</span>
                                     <div class="text-muted" style="font-size:0.75rem;">
                                         {{ $grade->horario_texto }} · {{ $grade->local_grade_treino }}
+                                        @if ($grade->responsavel_grade_treino) · {{ $grade->responsavel_grade_treino }} @endif
                                     </div>
                                 </td>
                                 @if ($linha['motivo'])

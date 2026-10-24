@@ -63,6 +63,12 @@
                             <input type="text" name="local_evento_calendario" id="ind_local" class="form-control" list="locaisUsados" autocomplete="off"
                                 placeholder="Ex: Clínica São Lucas" value="{{ old('local_evento_calendario') }}">
                         </div>
+                        <div class="col-md-8">
+                            <label class="form-label" for="ind_responsavel">Responsável pela atividade</label>
+                            <input type="text" name="responsavel_evento_calendario" id="ind_responsavel" class="form-control" maxlength="100" list="responsaveisUsados" autocomplete="off"
+                                placeholder="Ex: Prof. Carlos, Dra. Ana" value="{{ old('responsavel_evento_calendario') }}">
+                            <small class="text-muted">Quem conduz. Opcional; aparece no app.</small>
+                        </div>
                         <div class="col-12">
                             <label class="form-label" for="ind_descricao">O que o atleta vai fazer</label>
                             <textarea name="descricao_evento_calendario" id="ind_descricao" class="form-control" rows="3"

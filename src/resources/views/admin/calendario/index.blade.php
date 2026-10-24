@@ -246,7 +246,7 @@
                             <td>
                                 <span class="fw-semibold">{{ $ev->titulo_evento_calendario }}</span>
                                 <div class="text-muted" style="font-size:0.75rem;">
-                                    {{ $ev->categoria?->rotulo ?? 'Sem categoria' }} · Responsável: {{ $ev->responsavel?->nome_usuario ?? '—' }}
+                                    {{ $ev->categoria?->rotulo ?? 'Sem categoria' }}@if($ev->responsavel_evento_calendario) · Responsável: {{ $ev->responsavel_evento_calendario }}@endif · Criado por: {{ $ev->responsavel?->nome_usuario ?? '—' }}
                                     @if($ev->veioDaGrade()) · <i class="bi bi-clock-history"></i> Gerado pela grade @endif
                                 </div>
                             </td>
@@ -287,6 +287,7 @@
                                         data-inicio="{{ $ev->horario_inicio_evento_calendario }}"
                                         data-fim="{{ $ev->horario_fim_evento_calendario }}"
                                         data-local="{{ $ev->local_evento_calendario }}"
+                                        data-responsavel-atividade="{{ $ev->responsavel_evento_calendario }}"
                                         data-descricao="{{ $ev->descricao_evento_calendario }}"
                                         data-id-categoria="{{ $ev->id_categoria }}"
                                         data-responsavel="{{ $ev->responsavel?->nome_usuario ?? '—' }}"
@@ -374,7 +375,10 @@
                             <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
                                 {{ $g->horario_texto }}
                             </td>
-                            <td class="text-muted">{{ $g->local_grade_treino ?? '—' }}</td>
+                            <td class="text-muted">
+                                {{ $g->local_grade_treino ?? '—' }}
+                                @if($g->responsavel_grade_treino)<div style="font-size:0.75rem;"><i class="bi bi-person"></i> {{ $g->responsavel_grade_treino }}</div>@endif
+                            </td>
                             <td class="text-muted" style="font-size:0.8rem;">{{ $g->horario_obs_grade_treino ?? '—' }}</td>
                             <td class="text-center">
                                 @if(strtoupper($g->status_grade_treino) === 'ATIVO')
@@ -395,7 +399,8 @@
                                         data-inicio="{{ $g->horario_inicio_grade_treino }}"
                                         data-fim="{{ $g->horario_fim_grade_treino }}"
                                         data-obs="{{ $g->horario_obs_grade_treino }}"
-                                        data-local="{{ $g->local_grade_treino }}">
+                                        data-local="{{ $g->local_grade_treino }}"
+                                        data-responsavel="{{ $g->responsavel_grade_treino }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form action="{{ route('admin.calendario.grade.toggleStatus', $g->id_grade_treino) }}" method="POST" style="display:inline">
@@ -496,6 +501,12 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Responsável pela atividade</label>
+                            <input type="text" name="responsavel_evento_calendario" class="form-control" maxlength="100"
+                                placeholder="Ex: Prof. Carlos" list="responsaveisUsados" autocomplete="off">
+                            <small class="text-muted">Quem conduz (professor, técnico). Opcional; aparece no app.</small>
+                        </div>
                         <div class="col-12">
                             <label class="form-label">Descrição</label>
                             <textarea name="descricao_evento_calendario" class="form-control" rows="2"
@@ -585,6 +596,12 @@
                                 placeholder="Ex: Campo A" value="{{ old('local_grade_treino') }}">
                         </div>
                         <div class="col-12">
+                            <label class="form-label">Responsável pelo treino</label>
+                            <input type="text" name="responsavel_grade_treino" class="form-control" maxlength="100" list="responsaveisUsados" autocomplete="off"
+                                placeholder="Ex: Prof. Carlos" value="{{ old('responsavel_grade_treino') }}">
+                            <small class="text-muted">Opcional. Vai para os treinos gerados pelo "Gerar agenda do mês" e aparece no app.</small>
+                        </div>
+                        <div class="col-12">
                             <label class="form-label">Observação do horário</label>
                             <input type="text" name="horario_obs_grade_treino" class="form-control"
                                 placeholder="Ex: Somente com confirmação">
@@ -659,6 +676,11 @@
                         <div class="col-md-8">
                             <label class="form-label">Local <span class="text-danger">*</span></label>
                             <input type="text" id="edit_g_local" name="local_grade_treino" class="form-control" required list="locaisUsados" autocomplete="off">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Responsável pelo treino</label>
+                            <input type="text" id="edit_g_responsavel" name="responsavel_grade_treino" class="form-control" maxlength="100" list="responsaveisUsados" autocomplete="off">
+                            <small class="text-muted">Vale para os próximos treinos gerados; os já gerados não mudam (edite-os na lista de eventos).</small>
                         </div>
                         <div class="col-12">
                             <label class="form-label">Observação do horário</label>
@@ -778,6 +800,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_ev_inicio').value   = this.dataset.inicio  || '';
             document.getElementById('edit_ev_fim').value      = this.dataset.fim     || '';
             document.getElementById('edit_ev_local').value    = this.dataset.local   || '';
+            document.getElementById('edit_ev_responsavel_atividade').value = this.dataset.responsavelAtividade || '';
             document.getElementById('edit_ev_descricao').value = this.dataset.descricao || '';
             const sel = document.getElementById('edit_ev_tipo');
             // JOGO só aparece para o evento JOGO antigo (sem tbl_jogos); o servidor confere de novo
@@ -839,6 +862,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_g_fim').value       = this.dataset.fim       || '';
             document.getElementById('edit_g_obs').value       = this.dataset.obs       || '';
             document.getElementById('edit_g_local').value     = this.dataset.local     || '';
+            document.getElementById('edit_g_responsavel').value = this.dataset.responsavel || '';
             const selDia  = document.getElementById('edit_g_dia');
             for (let opt of selDia.options)  opt.selected = opt.value === this.dataset.dia;
             const selTipo = document.getElementById('edit_g_tipo');

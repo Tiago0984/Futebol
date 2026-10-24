@@ -455,6 +455,7 @@ Content-Type: application/json
         "inicio": "2026-10-12T18:00:00-03:00",
         "fim": "2026-10-12T19:30:00-03:00",
         "local": "Campo AACJ",
+        "responsavel": "Prof. Carlos",
         "situacao": "CONFIRMADO",
         "concluido": false,
         "jogo": null
@@ -473,6 +474,7 @@ Content-Type: application/json
         "inicio": "2026-10-15T10:00:00-03:00",
         "fim": null,
         "local": "Campo AACJ",
+        "responsavel": null,
         "situacao": "CONFIRMADO",
         "concluido": false,
         "jogo": {
@@ -562,6 +564,7 @@ Content-Type: application/json
             <tr><td><code>data</code></td><td>Dia do evento, com fuso (meia-noite)</td></tr>
             <tr><td><code>horario_inicio</code> / <code>horario_fim</code></td><td><code>"HH:MM"</code> ou <code>null</code> ("A definir")</td></tr>
             <tr><td><code>inicio</code> / <code>fim</code></td><td>Data e hora completas com fuso; <code>null</code> quando o horário não está definido</td></tr>
+            <tr><td><code>responsavel</code></td><td>Quem conduz a atividade (professor, técnico), como a secretaria escreveu ("Prof. Carlos"), ou <code>null</code> quando não foi informado. Mostre como "Responsável: Prof. Carlos"</td></tr>
             <tr><td><code>situacao</code></td><td><code>CONFIRMADO</code> ou <code>CANCELADO</code></td></tr>
             <tr><td><code>concluido</code></td><td><code>true</code> quando o evento já terminou (regra acima)</td></tr>
             <tr><td><code>jogo</code></td><td><code>null</code> fora de jogo. No jogo: <code>amistoso</code>; <code>campeonato</code> (<code>null</code> no amistoso); <code>time_casa</code> e <code>time_visitante</code>; <code>placar</code> <code>{ "casa": 2, "visitante": 1 }</code> ou <code>null</code> se ainda não jogado; <code>time_do_atleta</code>, o time em que o atleta está escalado, ou <code>null</code> se ainda não foi escalado; <code>horario_chegada</code> (<code>"09:00"</code>) e <code>chegada</code> (data e hora), a hora em que o atleta deve chegar, 1 hora antes do início, ou <code>null</code> se o jogo ainda não tem horário. Mostre como "Chegar às 09:00"</td></tr>

@@ -306,6 +306,7 @@ class AppDoAtleta
             'inicio'         => $momento($evento->horario_inicio_evento_calendario),
             'fim'            => $momento($evento->horario_fim_evento_calendario),
             'local'          => $evento->local_evento_calendario,
+            'responsavel'    => $evento->responsavel_evento_calendario, // quem conduz (texto do admin), não quem criou
             'situacao'       => $evento->estaCancelado() ? 'CANCELADO' : 'CONFIRMADO',
             'concluido'      => $evento->estaConcluido(),
             'jogo'         => $evento->jogo ? $this->jogo($evento->jogo, $idTimeDoAtleta, $evento, $momento) : null,

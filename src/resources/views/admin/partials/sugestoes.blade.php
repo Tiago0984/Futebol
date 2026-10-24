@@ -2,6 +2,7 @@
     Sugestões dos formulários do admin (Fase 10), incluídas uma vez por página:
     - Local: os locais já usados em eventos, grade e campeonatos (input com list="locaisUsados");
       $locaisUsados vem do composer registrado no AppServiceProvider;
+    - Responsável pela atividade: os nomes já usados em eventos e na grade (list="responsaveisUsados"; também do composer);
     - Subtipo: "Exame médico" e "Avaliação física" quando o tipo do evento é Avaliação. O input do subtipo
       (.js-subtipo) só ganha a lista enquanto o select do tipo (.js-tipo-evento) do mesmo formulário está em
       AVALIACAO. Os campos continuam livres.
@@ -9,6 +10,12 @@
 <datalist id="locaisUsados">
     @foreach ($locaisUsados as $local)
     <option value="{{ $local }}"></option>
+    @endforeach
+</datalist>
+
+<datalist id="responsaveisUsados">
+    @foreach ($responsaveisUsados as $nome)
+    <option value="{{ $nome }}"></option>
     @endforeach
 </datalist>
 

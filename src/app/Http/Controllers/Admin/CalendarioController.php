@@ -708,8 +708,9 @@ class CalendarioController extends Controller
             return $confirmar;
         }
 
-        // Nem o status (só pelas ações de cancelar e ocultar) nem o responsável mudam pela edição.
-        // O que mudar em data, horário, local, título, tipo ou categoria vai para o histórico; mudou de
+        // Nem o status (só pelas ações de cancelar e ocultar) nem quem criou (id_usuario) mudam pela edição.
+        // O que mudar em data, horário, local, responsável pela atividade, título, tipo ou categoria vai para o
+        // histórico (só data, horário e local avisam os atletas); mudou de
         // categoria, as inscrições automáticas acompanham (concluído não muda); os atletas são avisados.
         $mensagem = 'Evento atualizado.' . $this->salvarEdicaoDoEvento($evento, $dados);
 
@@ -739,16 +740,18 @@ class CalendarioController extends Controller
             'horario_inicio_evento_calendario'  => 'nullable|date_format:H:i,H:i:s',
             'horario_fim_evento_calendario'     => 'nullable|date_format:H:i,H:i:s',
             'local_evento_calendario'           => 'nullable|string|max:255',
+            'responsavel_evento_calendario'     => 'nullable|string|max:100',
             'subtipo_evento_calendario'         => 'nullable|string|max:60',
             'descricao_evento_calendario'       => 'nullable|string',
         ], [
-            'id_categoria.exists' => 'Escolha uma categoria ativa, ou deixe sem categoria para evento individual.',
+            'id_categoria.exists'               => 'Escolha uma categoria ativa, ou deixe sem categoria para evento individual.',
+            'responsavel_evento_calendario.max' => 'O responsável pela atividade pode ter no máximo 100 caracteres.',
         ]);
 
         return $request->only([
             'titulo_evento_calendario', 'tipo_evento_calendario', 'id_categoria',
             'data_evento_calendario', 'horario_inicio_evento_calendario',
-            'horario_fim_evento_calendario', 'local_evento_calendario',
+            'horario_fim_evento_calendario', 'local_evento_calendario', 'responsavel_evento_calendario',
             'subtipo_evento_calendario', 'descricao_evento_calendario',
         ]);
     }
@@ -947,7 +950,7 @@ class CalendarioController extends Controller
     // Campos da grade que mudam os eventos gerados (observação e ordem não mudam)
     private const CAMPOS_GRADE_DO_EVENTO = [
         'dia_semana_grade_treino', 'horario_inicio_grade_treino', 'horario_fim_grade_treino',
-        'local_grade_treino', 'id_categoria', 'categoria_grade_treino', 'tipo_grade_treino',
+        'local_grade_treino', 'responsavel_grade_treino', 'id_categoria', 'categoria_grade_treino', 'tipo_grade_treino',
     ];
 
     public function updateGrade(Request $request, $id)
@@ -1006,10 +1009,12 @@ class CalendarioController extends Controller
             'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
             'horario_obs_grade_treino'       => 'nullable|string|max:60',
             'local_grade_treino'             => 'required|string|max:255',
+            'responsavel_grade_treino'       => 'nullable|string|max:100',
             'ordem_grade_treino'             => 'nullable|integer|min:0',
         ], [
             'categoria_grade_treino.required_without' => 'Escolha uma categoria ou, para um item geral, informe o nome (ex.: Integrado).',
             'id_categoria.exists'                     => 'Escolha uma categoria ativa.',
+            'responsavel_grade_treino.max'            => 'O responsável pelo treino pode ter no máximo 100 caracteres.',
         ]);
 
         $categoria = $request->filled('id_categoria') ? Categoria::find($request->id_categoria) : null;
@@ -1018,7 +1023,7 @@ class CalendarioController extends Controller
             ...$request->only([
                 'tipo_grade_treino',
                 'horario_inicio_grade_treino', 'horario_fim_grade_treino',
-                'horario_obs_grade_treino', 'local_grade_treino',
+                'horario_obs_grade_treino', 'local_grade_treino', 'responsavel_grade_treino',
             ]),
             'id_categoria'           => $categoria?->id_categoria,
             'categoria_grade_treino' => $categoria?->nome_categoria ?? $request->categoria_grade_treino,

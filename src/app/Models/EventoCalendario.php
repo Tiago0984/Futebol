@@ -40,6 +40,7 @@ class EventoCalendario extends Model
         'horario_inicio_evento_calendario'  => 'Horário de início',
         'horario_fim_evento_calendario'     => 'Horário de fim',
         'local_evento_calendario'           => 'Local',
+        'responsavel_evento_calendario'     => 'Responsável pela atividade', // não conta para "Alterado" nem avisa
         'status_evento_calendario'          => 'Status',
         'data_publicacao_evento_calendario' => 'Publicação', // só publicar() grava (fora do $fillable)
     ];
@@ -121,6 +122,7 @@ class EventoCalendario extends Model
         'horario_inicio_evento_calendario',
         'horario_fim_evento_calendario',
         'local_evento_calendario',
+        'responsavel_evento_calendario', // quem conduz (texto livre; 24/10/2026), diferente do id_usuario (quem criou)
         'destaque_evento_calendario',
         'status_evento_calendario',
     ];
@@ -743,6 +745,19 @@ class EventoCalendario extends Model
             ->whereNotNull('local')->where('local', '<>', '')
             ->orderBy('local')
             ->pluck('local')
+            ->all();
+    }
+
+    // Responsáveis pela atividade já usados em eventos e na grade (sugestões do campo), sem repetir, em ordem
+    public static function responsaveisUsados(): array
+    {
+        $nomes = DB::table('tbl_evento_calendario')->select('responsavel_evento_calendario as nome')
+            ->union(DB::table('tbl_grade_treino')->select('responsavel_grade_treino'));
+
+        return DB::query()->fromSub($nomes, 'r')
+            ->whereNotNull('nome')->where('nome', '<>', '')
+            ->orderBy('nome')
+            ->pluck('nome')
             ->all();
     }
 

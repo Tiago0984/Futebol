@@ -199,7 +199,11 @@
                     @if ($jogo && ($confronto = $jogo->resultadoDoConfronto()))
                     <div><span class="text-muted small d-block">Resultado</span><span class="text-success fw-semibold">{{ $confronto['texto'] }}</span></div>
                     @endif
-                    <div><span class="text-muted small d-block">Responsável</span>{{ $evento->responsavel?->nome_usuario ?? '—' }}</div>
+                    {{-- O jogo não tem o campo no formulário: só aparece se tiver sido gravado --}}
+                    @if (! $jogo || $evento->responsavel_evento_calendario)
+                    <div><span class="text-muted small d-block">Responsável pela atividade</span>{{ $evento->responsavel_evento_calendario ?? '—' }}</div>
+                    @endif
+                    <div><span class="text-muted small d-block">Criado por</span>{{ $evento->responsavel?->nome_usuario ?? '—' }}</div>
                     <div><span class="text-muted small d-block">Situação</span><span class="badge-status {{ $classeSituacao }}">{{ $evento->situacao_label }}</span></div>
                 </div>
             </div>

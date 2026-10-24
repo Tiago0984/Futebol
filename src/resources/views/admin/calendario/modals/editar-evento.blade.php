@@ -90,8 +90,14 @@
                                 @endforeach
                             </select>
                         </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Responsável pela atividade</label>
+                            <input type="text" id="edit_ev_responsavel_atividade" name="responsavel_evento_calendario" class="form-control" maxlength="100"
+                                list="responsaveisUsados" autocomplete="off" value="{{ $valorEv('responsavel_evento_calendario') }}">
+                            <small class="text-muted">Quem conduz (professor, técnico). Opcional; aparece no app.</small>
+                        </div>
                         <div class="col-12">
-                            <div class="form-text"><i class="bi bi-person"></i> Responsável (quem criou): <strong id="edit_ev_responsavel">{{ $ev?->responsavel?->nome_usuario ?? '—' }}</strong></div>
+                            <div class="form-text"><i class="bi bi-person"></i> Criado por: <strong id="edit_ev_responsavel">{{ $ev?->responsavel?->nome_usuario ?? '—' }}</strong></div>
                         </div>
                         <div class="col-12">
                             <label class="form-label mb-1"><i class="bi bi-clock-history"></i> Histórico de alterações</label>

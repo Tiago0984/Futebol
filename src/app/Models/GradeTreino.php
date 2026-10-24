@@ -33,6 +33,7 @@ class GradeTreino extends Model
         'horario_fim_grade_treino',
         'horario_obs_grade_treino',
         'local_grade_treino',
+        'responsavel_grade_treino', // quem conduz o treino (texto livre; vai para os eventos gerados)
         'ordem_grade_treino',
         'status_grade_treino',
     ];
@@ -187,6 +188,7 @@ class GradeTreino extends Model
             'horario_inicio_evento_calendario' => $this->horario_inicio_grade_treino,
             'horario_fim_evento_calendario'    => $this->horario_fim_grade_treino,
             'local_evento_calendario'          => $this->local_grade_treino,
+            'responsavel_evento_calendario'    => $this->responsavel_grade_treino,
             'status_evento_calendario'         => 'ATIVO',
         ];
     }
