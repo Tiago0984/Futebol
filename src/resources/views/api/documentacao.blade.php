@@ -433,7 +433,9 @@ Content-Type: application/json
             <li><code>situacao</code>: <code>CONFIRMADO</code> ou <code>CANCELADO</code>. Mudanças de data, horário ou local chegam pelos <a href="#avisos">avisos</a>; a agenda já mostra os dados novos.</li>
             <li><code>proximos</code>: o que ainda não terminou (inclusive o de hoje em andamento e os cancelados), do mais perto ao mais longe, <strong>paginado</strong>. No mesmo dia, evento sem horário vem por último.</li>
             <li><code>passados</code>: os <strong>3 últimos concluídos e não cancelados</strong>, do mais recente ao mais antigo; iguais em todas as páginas.</li>
-            <li>Concluído: dia anterior a hoje, ou hoje com o horário de fim já passado (sem fim, vale o início; sem nenhum dos dois, só no dia seguinte).</li>
+            <li>Concluído: dia anterior a hoje, ou hoje com o horário de fim já passado (sem fim, vale o início; sem nenhum dos dois, só no dia seguinte). Cada evento traz <code>concluido</code> (<code>true</code>/<code>false</code>) com essa regra.</li>
+            <li><code>?tipo=JOGO</code> (opcional): só os eventos desses tipos, em <code>proximos</code> e <code>passados</code>. Aceita vários separados por vírgula (<code>?tipo=JOGO,CAMPEONATO</code>), sem diferenciar maiúsculas. Tipo desconhecido: 422. Use para achar o próximo jogo sem passar pelas páginas de treinos.</li>
+            <li><code>totais</code>: quantos <code>proximos</code> existem de cada tipo, somando <strong>todas as páginas</strong> (todos os tipos, com 0). <strong>Não considera o <code>?tipo</code></strong>, para os contadores dos outros filtros continuarem certos; o total da lista filtrada está em <code>paginacao.total</code>.</li>
         </ul>
 <pre>200 {
   "success": true,
@@ -454,6 +456,7 @@ Content-Type: application/json
         "fim": "2026-10-12T19:30:00-03:00",
         "local": "Campo AACJ",
         "situacao": "CONFIRMADO",
+        "concluido": false,
         "jogo": null
       },
       {
@@ -471,6 +474,7 @@ Content-Type: application/json
         "fim": null,
         "local": "Campo AACJ",
         "situacao": "CONFIRMADO",
+        "concluido": false,
         "jogo": {
           "id_jogo": 12,
           "amistoso": false,
@@ -485,9 +489,33 @@ Content-Type: application/json
       }
     ],
     "paginacao": { "pagina_atual": 1, "ultima_pagina": 3, "por_pagina": 20, "total": 47 },
-    "passados": [ { ...mesmo formato... } ]
+    "passados": [ { ...mesmo formato... } ],
+    "totais": { "JOGO": 3, "TREINO": 12, "CAMPEONATO": 0, "EVENTO": 0, "REUNIAO": 1, "CONFRATERNIZACAO": 0, "AVALIACAO": 0 }
   }
-}</pre>
+}
+422 { "success": false, "message": "Tipo desconhecido: FESTA. Use JOGO, TREINO, CAMPEONATO, EVENTO, REUNIAO, CONFRATERNIZACAO, AVALIACAO.", "errors": { "tipo": ["..."] } }</pre>
+
+        <h3>Agenda de um período (semana, mês)</h3>
+        <div class="rota">
+            <span class="metodo GET">GET</span><code>/api/v1/agenda?de=2026-11-01&amp;ate=2026-11-30</code><span class="acesso atleta">Atleta</span>
+            <code>/api/v1/responsavel/atletas/{idAtleta}/agenda?de=2026-11-01&amp;ate=2026-11-30</code><span class="acesso responsavel">Responsável</span>
+        </div>
+        <ul>
+            <li>Com <code>de</code> e <code>ate</code> (os dois, em <code>AAAA-MM-DD</code>, dias de Brasília, inclusive), a resposta muda: <code>eventos</code> traz <strong>todos</strong> os eventos do período, já concluídos ou não, confirmados ou cancelados, do mais antigo ao mais novo (no mesmo dia, sem horário por último), <strong>sem paginação</strong> (<code>page</code> é ignorado). Mesmas regras de inscrição, oculto e rascunho.</li>
+            <li>Período de no máximo <strong>{{ \App\Http\Controllers\Api\V1\AppDoAtletaController::PERIODO_MAX_DIAS }} dias</strong> (um mês com as semanas das pontas cabe com folga).</li>
+            <li>Aceita o mesmo <code>?tipo=</code>. <code>totais</code> conta os eventos do período por tipo, sem o filtro de tipo.</li>
+            <li>Cada evento no mesmo formato da lista acima; use <code>concluido</code> para separar o que já passou.</li>
+        </ul>
+<pre>200 {
+  "success": true,
+  "data": {
+    "periodo": { "de": "2026-11-01", "ate": "2026-11-30" },
+    "eventos": [ { "id_evento": 51, ..., "situacao": "CONFIRMADO", "concluido": true, "jogo": null }, ... ],
+    "totais": { "JOGO": 2, "TREINO": 9, "CAMPEONATO": 0, "EVENTO": 0, "REUNIAO": 0, "CONFRATERNIZACAO": 0, "AVALIACAO": 1 }
+  }
+}
+422 { "success": false, "message": "Informe a data \"até\" no formato AAAA-MM-DD (ex.: 2026-11-01).", "errors": { "ate": ["..."] } }
+422 ... "A data \"até\" não pode ser antes da data \"de\"."  /  "O período pode ter no máximo {{ \App\Http\Controllers\Api\V1\AppDoAtletaController::PERIODO_MAX_DIAS }} dias."</pre>
         <h3>Campos do evento</h3>
         <div class="tabela">
         <table>
@@ -498,6 +526,7 @@ Content-Type: application/json
             <tr><td><code>horario_inicio</code> / <code>horario_fim</code></td><td><code>"HH:MM"</code> ou <code>null</code> ("A definir")</td></tr>
             <tr><td><code>inicio</code> / <code>fim</code></td><td>Data e hora completas com fuso; <code>null</code> quando o horário não está definido</td></tr>
             <tr><td><code>situacao</code></td><td><code>CONFIRMADO</code> ou <code>CANCELADO</code></td></tr>
+            <tr><td><code>concluido</code></td><td><code>true</code> quando o evento já terminou (regra acima)</td></tr>
             <tr><td><code>jogo</code></td><td><code>null</code> fora de jogo. No jogo: <code>amistoso</code>; <code>campeonato</code> (<code>null</code> no amistoso); <code>time_casa</code> e <code>time_visitante</code>; <code>placar</code> <code>{ "casa": 2, "visitante": 1 }</code> ou <code>null</code> se ainda não jogado; <code>time_do_atleta</code>, o time em que o atleta está escalado, ou <code>null</code> se ainda não foi escalado; <code>horario_chegada</code> (<code>"09:00"</code>) e <code>chegada</code> (data e hora), a hora em que o atleta deve chegar, 1 hora antes do início, ou <code>null</code> se o jogo ainda não tem horário. Mostre como "Chegar às 09:00"</td></tr>
         </table>
         </div>
@@ -591,7 +620,7 @@ Content-Type: application/json
             ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],
             ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
             ['GET',   '/atleta/estatisticas', 'Atleta', '—'],
-            ['GET',   '/agenda', 'Atleta', 'page?'],
+            ['GET',   '/agenda', 'Atleta', 'page?, tipo?, de?, ate?'],
             ['GET',   '/notificacoes', 'Atleta', 'page?'],
             ['GET',   '/notificacoes/nao-lidas', 'Atleta', '—'],
             ['PATCH', '/notificacoes/{idNotificacao}/lida', 'Atleta', '{idNotificacao}'],
@@ -603,7 +632,7 @@ Content-Type: application/json
             ['GET',   '/responsavel/atletas', 'Responsável', '—'],
             ['GET',   '/responsavel/atletas/{idAtleta}', 'Responsável', '{idAtleta}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/estatisticas', 'Responsável', '{idAtleta}'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?, tipo?, de?, ate?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes', 'Responsável', '{idAtleta}, page?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes/nao-lidas', 'Responsável', '{idAtleta}'],
             ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/{idNotificacao}/lida', 'Responsável', '{idAtleta}, {idNotificacao}'],

@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
+use App\Models\EventoCalendario;
 use App\Models\Responsavel;
 use App\Services\AppDoAtleta;
 use Illuminate\Http\Exceptions\HttpResponseException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Agenda, avisos e dados do atleta no app (Fase 9), para os dois perfis com as mesmas regras
@@ -19,6 +22,9 @@ use Illuminate\Http\Request;
  */
 class AppDoAtletaController extends Controller
 {
+    // Maior período da agenda por ?de=&ate= (sem paginação): três meses cobrem a tela de mês com as semanas das pontas
+    public const PERIODO_MAX_DIAS = 93;
+
     // GET /responsavel/atletas - os filhos ATIVO, cada um com os avisos não lidos pelo responsável
     public function filhos(Request $request)
     {
@@ -45,10 +51,19 @@ class AppDoAtletaController extends Controller
         return response()->json(['success' => true, 'data' => $this->app($request)->estatisticas()]);
     }
 
-    // GET /agenda?page=N
+    // GET /agenda?page=N&tipo=JOGO,TREINO, ou GET /agenda?de=AAAA-MM-DD&ate=AAAA-MM-DD&tipo=... (período, sem página)
     public function agenda(Request $request)
     {
-        return response()->json(['success' => true, 'data' => $this->app($request)->agenda($this->pagina($request))]);
+        $app = $this->app($request);
+        $tipos = $this->tiposDaAgenda($request);
+
+        if ($request->query('de') !== null || $request->query('ate') !== null) {
+            [$de, $ate] = $this->periodoDaAgenda($request);
+
+            return response()->json(['success' => true, 'data' => $app->agendaDoPeriodo($de, $ate, $tipos)]);
+        }
+
+        return response()->json(['success' => true, 'data' => $app->agenda($this->pagina($request), $tipos)]);
     }
 
     // GET /notificacoes?page=N
@@ -105,6 +120,47 @@ class AppDoAtletaController extends Controller
         }
 
         return new AppDoAtleta($filho, $usuario);
+    }
+
+    // ?tipo=JOGO ou ?tipo=JOGO,TREINO (sem diferenciar maiúsculas); vazio = todos; tipo desconhecido: 422
+    private function tiposDaAgenda(Request $request): array
+    {
+        $tipos = collect(explode(',', (string) $request->query('tipo', '')))
+            ->map(fn ($tipo) => mb_strtoupper(trim($tipo)))->filter()->unique()->values();
+
+        $desconhecidos = $tipos->diff(array_keys(EventoCalendario::TIPOS));
+        if ($desconhecidos->isNotEmpty()) {
+            throw ValidationException::withMessages(['tipo' => 'Tipo desconhecido: ' . $desconhecidos->implode(', ')
+                . '. Use ' . implode(', ', array_keys(EventoCalendario::TIPOS)) . '.']);
+        }
+
+        return $tipos->all();
+    }
+
+    // ?de= e ?ate= juntos, em AAAA-MM-DD, "até" não antes de "de" e no máximo PERIODO_MAX_DIAS dias
+    private function periodoDaAgenda(Request $request): array
+    {
+        $data = function (string $campo, string $nome) use ($request) {
+            $valor = (string) $request->query($campo, '');
+            $dia = preg_match('/^\d{4}-\d{2}-\d{2}$/', $valor) ? Carbon::createFromFormat('!Y-m-d', $valor) : null;
+
+            if (! $dia || $dia->format('Y-m-d') !== $valor) {
+                throw ValidationException::withMessages([$campo => "Informe a data \"{$nome}\" no formato AAAA-MM-DD (ex.: 2026-11-01)."]);
+            }
+
+            return $dia;
+        };
+
+        [$de, $ate] = [$data('de', 'de'), $data('ate', 'até')];
+
+        if ($ate->lt($de)) {
+            throw ValidationException::withMessages(['ate' => 'A data "até" não pode ser antes da data "de".']);
+        }
+        if ((int) $de->diffInDays($ate) + 1 > self::PERIODO_MAX_DIAS) {
+            throw ValidationException::withMessages(['ate' => 'O período pode ter no máximo ' . self::PERIODO_MAX_DIAS . ' dias.']);
+        }
+
+        return [$de, $ate];
     }
 
     private function pagina(Request $request): int

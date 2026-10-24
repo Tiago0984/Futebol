@@ -173,18 +173,18 @@ class AppDoAtleta
      * que ainda não terminaram, paginados, do mais perto ao mais longe (cancelado aparece com a situação
      * CANCELADO). "passados": os 3 últimos concluídos e não cancelados. Nunca "Alterado": a alteração chega
      * pelos avisos.
+     *
+     * Pedidos do app (24/10/2026): $tipos filtra próximos e passados (vazio = todos); "totais" conta os próximos
+     * (todas as páginas) por tipo, sem o filtro de tipo, para os contadores dos filtros do app.
+     *
+     * @param string[] $tipos chaves de EventoCalendario::TIPOS
      */
-    public function agenda(int $pagina = 1): array
+    public function agenda(int $pagina = 1, array $tipos = []): array
     {
-        $proximos = $this->eventosInscritos()
-            ->naoConcluidos()
-            ->orderBy('data_evento_calendario')
-            ->orderByRaw('horario_inicio_evento_calendario IS NULL')   // sem horário: no fim do dia
-            ->orderBy('horario_inicio_evento_calendario')
-            ->orderBy('id_evento_calendario')
+        $proximos = self::doMaisPerto($this->eventosInscritos($tipos)->naoConcluidos())
             ->paginate(self::POR_PAGINA, ['*'], 'page', $pagina);
 
-        $passados = $this->eventosInscritos()
+        $passados = $this->eventosInscritos($tipos)
             ->concluidos()
             ->where('status_evento_calendario', 'ATIVO')
             ->orderByDesc('data_evento_calendario')
@@ -194,25 +194,71 @@ class AppDoAtleta
             ->limit(self::PASSADOS)
             ->get();
 
-        // Time do atleta em cada jogo (escalação), numa consulta só
-        $times = EventoAtleta::where('id_atleta', $this->atleta->id_atleta)
-            ->whereIn('id_evento_calendario', $proximos->getCollection()->concat($passados)->pluck('id_evento_calendario'))
-            ->pluck('id_time', 'id_evento_calendario');
+        $times = $this->timesDoAtleta($proximos->getCollection()->concat($passados));
 
         return [
             'proximos'  => $proximos->getCollection()->map(fn ($evento) => $this->evento($evento, $times[$evento->id_evento_calendario] ?? null))->all(),
             'paginacao' => self::paginacao($proximos),
             'passados'  => $passados->map(fn ($evento) => $this->evento($evento, $times[$evento->id_evento_calendario] ?? null))->values()->all(),
+            'totais'    => $this->totais($this->eventosInscritos()->naoConcluidos()),
         ];
     }
 
-    private function eventosInscritos()
+    /**
+     * Agenda de um período (pedido do app, 24/10/2026, para navegar por semana e mês): todos os eventos de $de a
+     * $ate (dias de Brasília), já concluídos ou não, ATIVO ou CANCELADO, do mais antigo ao mais novo, sem
+     * paginação (o controller limita o tamanho do período). "totais" sem o filtro de tipo, como em agenda().
+     */
+    public function agendaDoPeriodo(Carbon $de, Carbon $ate, array $tipos = []): array
+    {
+        $noPeriodo = fn ($query) => $query->whereBetween('data_evento_calendario', [$de->toDateString(), $ate->toDateString()]);
+
+        $eventos = self::doMaisPerto($noPeriodo($this->eventosInscritos($tipos)))->get();
+        $times = $this->timesDoAtleta($eventos);
+
+        return [
+            'periodo' => ['de' => $de->toDateString(), 'ate' => $ate->toDateString()],
+            'eventos' => $eventos->map(fn ($evento) => $this->evento($evento, $times[$evento->id_evento_calendario] ?? null))->values()->all(),
+            'totais'  => $this->totais($noPeriodo($this->eventosInscritos())),
+        ];
+    }
+
+    private function eventosInscritos(array $tipos = [])
     {
         return EventoCalendario::query()
             ->with(['categoria', 'jogo.campeonato', 'jogo.timeCasa', 'jogo.timeVisitante'])
             ->publicados() // rascunho (jogo sendo montado) fica fora até publicar
             ->whereIn('status_evento_calendario', ['ATIVO', 'CANCELADO'])
-            ->whereHas('inscricoes', fn ($q) => $q->where('id_atleta', $this->atleta->id_atleta));
+            ->whereHas('inscricoes', fn ($q) => $q->where('id_atleta', $this->atleta->id_atleta))
+            ->when($tipos, fn ($q) => $q->whereIn('tipo_evento_calendario', $tipos));
+    }
+
+    // Do mais perto ao mais longe; no mesmo dia, sem horário no fim
+    private static function doMaisPerto($query)
+    {
+        return $query->orderBy('data_evento_calendario')
+            ->orderByRaw('horario_inicio_evento_calendario IS NULL')
+            ->orderBy('horario_inicio_evento_calendario')
+            ->orderBy('id_evento_calendario');
+    }
+
+    // Time do atleta em cada jogo (escalação), numa consulta só: id_evento => id_time
+    private function timesDoAtleta($eventos)
+    {
+        return EventoAtleta::where('id_atleta', $this->atleta->id_atleta)
+            ->whereIn('id_evento_calendario', $eventos->pluck('id_evento_calendario'))
+            ->pluck('id_time', 'id_evento_calendario');
+    }
+
+    // Quantos eventos de cada tipo (todos os tipos, com 0), numa consulta só
+    private function totais($query): array
+    {
+        $porTipo = $query->toBase()->reorder()
+            ->groupBy('tipo_evento_calendario')
+            ->selectRaw('tipo_evento_calendario AS tipo, COUNT(*) AS quantos')
+            ->pluck('quantos', 'tipo');
+
+        return collect(EventoCalendario::TIPOS)->map(fn ($rotulo, $tipo) => (int) ($porTipo[$tipo] ?? 0))->all();
     }
 
     private function evento(EventoCalendario $evento, ?int $idTimeDoAtleta): array
@@ -236,7 +282,8 @@ class AppDoAtleta
             'fim'            => $momento($evento->horario_fim_evento_calendario),
             'local'          => $evento->local_evento_calendario,
             'situacao'       => $evento->estaCancelado() ? 'CANCELADO' : 'CONFIRMADO',
-            'jogo'           => $evento->jogo ? $this->jogo($evento->jogo, $idTimeDoAtleta, $evento, $momento) : null,
+            'concluido'      => $evento->estaConcluido(),
+            'jogo'         => $evento->jogo ? $this->jogo($evento->jogo, $idTimeDoAtleta, $evento, $momento) : null,
         ];
     }
 
