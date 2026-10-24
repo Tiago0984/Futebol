@@ -6,6 +6,7 @@ use App\Models\Atleta;
 use App\Models\EventoAtleta;
 use App\Models\EventoCalendario;
 use App\Models\Jogo;
+use App\Models\JogoGol;
 use App\Models\Notificacao;
 use App\Models\NotificacaoLeitura;
 use App\Models\Responsavel;
@@ -71,9 +72,10 @@ class AppDoAtleta
      * - partidas: jogos (campeonato ou amistoso) em que foi ESCALADO num time, publicados, ativos e já realizados
      *   (inscrito sem time não conta: foi chamado, mas não se sabe se jogou);
      * - convocações: uma por campeonato e categoria (inclusive de quando estava inativo: é histórico);
-     * - cartões: tbl_cartoes (sem tela para lançar ainda), no time da escalação daquele jogo;
-     * - gols e assistências: null = ainda não registrados (a súmula do jogo é a próxima etapa). null, e não 0,
-     *   para o app mostrar "—" e passar a mostrar o número sem mudar o formato.
+     * - cartões: tbl_cartoes (lançados na súmula do jogo), no time da escalação daquele jogo;
+     * - gols e assistências (Etapa S2, 24/10/2026): da súmula, só nos jogos que contam como partida e que têm
+     *   súmula (algum gol lançado, de qualquer time). Gol contra não conta para o autor. null, e não 0, quando
+     *   nenhum jogo do recorte (total, time ou categoria) tem súmula: o app mostra "—" ("ainda não registrado").
      *
      * "categoria_atual" (22/10/2026, pedido do app): os mesmos números, só os da categoria atual do atleta (linha
      * ATIVO de tbl_categoria_atleta; null sem ela). Conta a categoria em que cada jogo foi jogado (a do jogo, no
@@ -106,13 +108,16 @@ class AppDoAtleta
                 'id_time'   => $escalacoes[$eventoDoJogo[$c->id_jogo] ?? 0] ?? null,
             ]);
 
-        $numeros = fn (int $partidas, int $convocacoes, $cartoesDoTime) => [
+        $sumula = $this->sumulaDosJogos($escalacoes->only($idsJogados->all()));
+
+        // $sumulaDoRecorte: as linhas de sumulaDosJogos() dos jogos do recorte (vazio = nenhum com súmula: null)
+        $numeros = fn (int $partidas, int $convocacoes, $cartoesDoTime, $sumulaDoRecorte) => [
             'partidas'          => $partidas,
             'convocacoes'       => $convocacoes,
             'cartoes_amarelos'  => $cartoesDoTime->where('tipo', 'AMARELO')->count(),
             'cartoes_vermelhos' => $cartoesDoTime->where('tipo', 'VERMELHO')->count(),
-            'gols'              => null,
-            'assistencias'      => null,
+            'gols'              => $sumulaDoRecorte->isEmpty() ? null : $sumulaDoRecorte->sum('gols'),
+            'assistencias'      => $sumulaDoRecorte->isEmpty() ? null : $sumulaDoRecorte->sum('assistencias'),
         ];
 
         $convocacoesPorTime = $convocacoes->pluck('id_time')->countBy()->all();
@@ -124,15 +129,42 @@ class AppDoAtleta
                 'nome_time' => $time->nome_time,
                 'logo_url'  => $time->logo_url,
                 'categoria' => $time->categoria?->rotulo,
-            ] + $numeros($partidas[$time->id_time] ?? 0, $convocacoesPorTime[$time->id_time] ?? 0, $cartoes->where('id_time', $time->id_time)))
+            ] + $numeros($partidas[$time->id_time] ?? 0, $convocacoesPorTime[$time->id_time] ?? 0, $cartoes->where('id_time', $time->id_time),
+                $sumula->where('id_time', $time->id_time)))
             ->sortBy([['partidas', 'desc'], ['convocacoes', 'desc'], ['nome_time', 'asc']])
             ->values()->all();
 
         return [
-            'total'           => $numeros(array_sum($partidas), $convocacoes->count(), $cartoes),
+            'total'           => $numeros(array_sum($partidas), $convocacoes->count(), $cartoes, $sumula),
             'por_time'        => $porTime,
-            'categoria_atual' => $this->naCategoriaAtual($escalacoes->only($idsJogados->all()), $convocacoes, $cartoes, $numeros),
+            'categoria_atual' => $this->naCategoriaAtual($escalacoes->only($idsJogados->all()), $convocacoes, $cartoes, $sumula, $numeros),
         ];
+    }
+
+    /**
+     * Súmula dos jogos que contam como partida e têm algum gol lançado (de qualquer time): id_evento =>
+     * ['id_time' (da escalação), 'gols' (do atleta, sem os contra), 'assistencias']. Jogo sem súmula fica de fora
+     * (o placar dele pode ter gols do atleta que ninguém lançou). Duas consultas, qualquer que seja o número de jogos.
+     *
+     * @param \Illuminate\Support\Collection $jogados id_evento => id_time
+     */
+    private function sumulaDosJogos($jogados)
+    {
+        $idAtleta = $this->atleta->id_atleta;
+        $eventoDoJogo = Jogo::whereIn('id_evento', $jogados->keys())->pluck('id_evento', 'id_jogo');
+        $gols = JogoGol::whereIn('id_jogo', $eventoDoJogo->keys())->get(['id_jogo', 'id_atleta', 'id_atleta_assistencia', 'tipo_jogo_gol'])
+            ->groupBy('id_jogo');
+
+        return $gols->mapWithKeys(function ($doJogo, $idJogo) use ($eventoDoJogo, $jogados, $idAtleta) {
+            $validos = $doJogo->reject(fn (JogoGol $gol) => $gol->ehContra());
+            $idEvento = $eventoDoJogo[$idJogo];
+
+            return [$idEvento => [
+                'id_time'      => $jogados[$idEvento],
+                'gols'         => $validos->where('id_atleta', $idAtleta)->count(),
+                'assistencias' => $validos->where('id_atleta_assistencia', $idAtleta)->count(),
+            ]];
+        });
     }
 
     /**
@@ -141,7 +173,7 @@ class AppDoAtleta
      *
      * @param \Illuminate\Support\Collection $jogados id_evento => id_time, só os jogos que contam como partida
      */
-    private function naCategoriaAtual($jogados, $convocacoes, $cartoes, callable $numeros): ?array
+    private function naCategoriaAtual($jogados, $convocacoes, $cartoes, $sumula, callable $numeros): ?array
     {
         $categoria = $this->atleta->categoriasAtivas()->wherePivotNull('data_fim_categoria_atleta')->first();
         if (! $categoria) {
@@ -162,7 +194,8 @@ class AppDoAtleta
         ] + $numeros(
             $jogados->filter(fn ($idTime, $idEvento) => $nela($idEvento, $idTime))->count(),
             $convocacoes->where('id_categoria', $categoria->id_categoria)->count(),
-            $cartoes->filter(fn ($c) => $nela($c['id_evento'], $c['id_time']))
+            $cartoes->filter(fn ($c) => $nela($c['id_evento'], $c['id_time'])),
+            $sumula->filter(fn ($s, $idEvento) => $nela($idEvento, $s['id_time']))
         );
     }
 

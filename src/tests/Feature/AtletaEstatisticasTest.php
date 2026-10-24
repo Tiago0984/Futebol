@@ -14,8 +14,8 @@ use Tests\TestCase;
 
 /**
  * GET /api/v1/atleta/estatisticas (22/10/2026): partidas (escalado num time, em jogo publicado, ativo e já
- * realizado), convocações e cartões, no total, por time e na categoria atual; gols e assistências null até
- * existir a súmula.
+ * realizado), convocações e cartões, no total, por time e na categoria atual; gols e assistências da súmula
+ * (Etapa S2), null quando nenhum jogo do recorte tem súmula.
  * O responsável vê a mesma coisa do filho.
  */
 class AtletaEstatisticasTest extends TestCase
@@ -133,6 +133,56 @@ class AtletaEstatisticasTest extends TestCase
             'partidas' => 2, 'convocacoes' => 1, 'cartoes_amarelos' => 1, 'cartoes_vermelhos' => 0, 'gols' => null, 'assistencias' => null,
         ], $dados['categoria_atual']);
         $this->assertSame([3, 2, 1, 1], [$dados['total']['partidas'], $dados['total']['convocacoes'], $dados['total']['cartoes_amarelos'], $dados['total']['cartoes_vermelhos']]);
+    }
+
+    public function test_gols_e_assistencias_vem_da_sumula_so_nos_jogos_com_sumula(): void
+    {
+        $idSub15 = $this->idCategoria('Sub-15', 'M');
+        $idSub17 = $this->idCategoria('Sub-17', 'M');
+        $this->participantes($this->idCampeonato, [$this->sub17], $idSub17);
+        $colega = $this->criarAtleta($this->nascidoComIdade(14), 'M', 'ATIVO');
+
+        $comSumula = $this->jogo(-14, $this->sub15, idCategoria: $idSub15);
+        $semSumula = $this->jogo(-10, $this->sub15, idCategoria: $idSub15);       // placar sem gols lançados
+        $subiu = $this->jogo(-7, $this->sub17, idCategoria: $idSub17);           // súmula sem gol dele: 0, não null
+        $rascunho = $this->jogo(-5, $this->sub15, rascunho: true, idCategoria: $idSub15);
+        $this->jogo(-3, $this->sub17, idCategoria: $idSub17);                    // Sub-17 sem súmula
+
+        $gol = fn (Jogo $jogo, int $idTime, ?int $autor, ?int $assistencia = null, string $tipo = 'NORMAL') => [
+            'id_jogo' => $jogo->id_jogo, 'id_time' => $idTime, 'id_atleta' => $autor, 'id_atleta_assistencia' => $assistencia,
+            'tipo_jogo_gol' => $tipo, 'periodo_jogo_gol' => 'TEMPO_NORMAL',
+        ];
+        DB::table('tbl_jogo_gol')->insert([
+            $gol($comSumula, $this->sub15, $this->id, $colega),
+            $gol($comSumula, $this->sub15, $this->id, null, 'PENALTI'),
+            $gol($comSumula, $this->sub15, $colega, $this->id),
+            $gol($comSumula, $this->externo, $this->id, null, 'CONTRA'),          // contra dele: não conta
+            $gol($comSumula, $this->sub15, null, null, 'CONTRA'),                // contra do adversário
+            $gol($subiu, $this->sub17, $colega),
+            $gol($subiu, $this->sub17, null),                                    // autor não identificado
+            $gol($rascunho, $this->sub15, $this->id),                            // rascunho não conta como partida
+        ]);
+        DB::table('tbl_jogos')->where('id_jogo', $semSumula->id_jogo)->update(['placar_time_casa_jogos' => 3, 'placar_time_visitante_jogos' => 0]);
+
+        Sanctum::actingAs(Atleta::find($this->id));
+        $dados = $this->getJson('/api/v1/atleta/estatisticas')->assertOk()->json('data');
+
+        $this->assertSame([4, 2, 1], [$dados['total']['partidas'], $dados['total']['gols'], $dados['total']['assistencias']]);
+        $porTime = collect($dados['por_time'])->keyBy('nome_time');
+        $this->assertSame([2, 1], [$porTime['AACJ Sub-15']['gols'], $porTime['AACJ Sub-15']['assistencias']]);
+        $this->assertSame([0, 0], [$porTime['AACJ Sub-17 A']['gols'], $porTime['AACJ Sub-17 A']['assistencias']]);
+        $this->assertSame([2, 2, 1], [$dados['categoria_atual']['partidas'], $dados['categoria_atual']['gols'], $dados['categoria_atual']['assistencias']]);
+
+        // Sem nenhum jogo com súmula no recorte: null (não registrado), e não 0
+        DB::table('tbl_jogo_gol')->where('id_jogo', $comSumula->id_jogo)->delete();
+        $dados = $this->getJson('/api/v1/atleta/estatisticas')->assertOk()->json('data');
+        $this->assertSame([0, 0], [$dados['total']['gols'], $dados['total']['assistencias']]);   // o Sub-17 ainda tem súmula
+        $this->assertSame([null, null], [$dados['categoria_atual']['gols'], $dados['categoria_atual']['assistencias']]);
+        $this->assertNull(collect($dados['por_time'])->firstWhere('nome_time', 'AACJ Sub-15')['gols']);
+
+        // O responsável vê os mesmos números
+        Sanctum::actingAs(Responsavel::find($this->criarResponsavel($this->id)));
+        $this->assertSame($dados, $this->getJson("/api/v1/responsavel/atletas/{$this->id}/estatisticas")->assertOk()->json('data'));
     }
 
     public function test_sem_categoria_ativa_categoria_atual_e_null(): void

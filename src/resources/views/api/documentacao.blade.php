@@ -336,22 +336,25 @@ Content-Type: application/json
             <li><code>partidas</code>: jogos (campeonato ou amistoso) em que ele foi <strong>escalado num time</strong>, publicados, não cancelados e já realizados. Inscrito sem time não conta.</li>
             <li><code>convocacoes</code>: convocações para campeonatos (uma por campeonato e categoria).</li>
             <li><code>cartoes_amarelos</code>, <code>cartoes_vermelhos</code>: no time em que ele estava escalado naquele jogo.</li>
-            <li><code>gols</code>, <code>assistencias</code>: <strong><code>null</code> por enquanto</strong> (o painel ainda não registra quem fez cada gol). <code>null</code> = não registrado, diferente de <code>0</code>: mostre "—". Quando passarem a ser registrados, viram números, sem mudar o formato.</li>
+            <li><code>gols</code>, <code>assistencias</code>: da <strong>súmula</strong> que a secretaria lança no painel, só nos jogos que contam como partida e que têm súmula (algum gol lançado). Gol contra não conta como gol do atleta. Jogo sem súmula não entra (o placar pode ter gols dele que ninguém lançou). <strong><code>null</code> quando nenhum jogo daquele recorte (<code>total</code>, cada time, <code>categoria_atual</code>) tem súmula</strong>: não registrado, diferente de <code>0</code> (jogou com súmula e não marcou). Mostre "—" no <code>null</code>.</li>
             <li><code>categoria_atual</code>: os mesmos números, só os da categoria em que o atleta está hoje (a mesma de <code>GET /atleta</code>; uma só). Contam os jogos <strong>daquela categoria</strong> (a categoria do jogo; no amistoso sem categoria, a do time em que ele jogou) e as convocações nela: o Sub-13 que sobe para jogar no Sub-15 tem essas partidas no <code>total</code>, não na <code>categoria_atual</code>. <code>nome_categoria</code> é o nome curto ("Sub-13") e <code>categoria</code> traz o sexo ("Sub-13 Masculino"). Sem categoria: <code>null</code>.</li>
         </ul>
 <pre>200 {
   "success": true,
   "data": {
-    "total": { "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": null, "assistencias": null },
+    "total": { "partidas": 12, "convocacoes": 6, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": 4, "assistencias": 2 },
     "por_time": [
       { "id_time": 3, "nome_time": "AACJ Sub-17 A", "logo_url": "https://.../images/times/sub17.png", "categoria": "Sub-17 Masculino",
-        "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": null, "assistencias": null }
+        "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": 4, "assistencias": 2 },
+      { "id_time": 5, "nome_time": "AACJ Sub-15", "logo_url": "https://.../images/times/sub15.png", "categoria": "Sub-15 Masculino",
+        "partidas": 2, "convocacoes": 1, "cartoes_amarelos": 0, "cartoes_vermelhos": 0, "gols": null, "assistencias": null }
     ],
     "categoria_atual": { "id_categoria": 9, "nome_categoria": "Sub-17", "categoria": "Sub-17 Masculino",
-      "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": null, "assistencias": null }
+      "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": 4, "assistencias": 2 }
   }
 }</pre>
-        <p>Atleta que ainda não jogou: tudo <code>0</code> no <code>total</code> e <code>por_time</code> vazio. O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/estatisticas</code>.</p>
+        <p>No exemplo, os 2 jogos pelo AACJ Sub-15 não têm súmula: <code>null</code> nesse time, e o <code>total</code> soma só o que foi lançado.</p>
+        <p>Atleta que ainda não jogou: <code>0</code> no <code>total</code> (gols e assistências <code>null</code>) e <code>por_time</code> vazio. O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/estatisticas</code>.</p>
     </div>
 
     {{-- ================================================================== --}}
