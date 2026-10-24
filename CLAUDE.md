@@ -263,8 +263,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Estatísticas do atleta** (22/10/2026; dono do projeto: "mostrar algo já" e, depois, o total de gols desde que entrou na escolinha): `GET /api/v1/atleta/estatisticas` e `GET /api/v1/responsavel/atletas/{idAtleta}/estatisticas` (`AppDoAtleta::estatisticas()`), sem migration, com `total` e `por_time` (time, logo, categoria; do que tem mais partidas para o que tem menos):
   - **partidas** = jogos (campeonato ou amistoso) em que foi **escalado num time**, publicados, ATIVO e concluídos (inscrito sem time não conta);
   - **convocações** = linhas de `tbl_convocacao` (inclusive as de quando estava inativo);
-  - **cartões** = `tbl_cartoes` (AMARELO/VERMELHO), no time da escalação daquele jogo; **sem tela para lançar** (hoje sempre 0);
-  - **gols e assistências = `null`** ("ainda não registrado", diferente de 0; o app mostra "—"): o sistema não guarda quem fez cada gol (o jogo só tem o placar do time; os "Gols/Partidas/Defesas" digitados no elenco fixo saíram com ele na Fase G, Etapa 4). Viram números com a **súmula** (seção 7, "Súmula do jogo"), sem mudar o formato.
+  - **cartões** = `tbl_cartoes` (AMARELO/VERMELHO), no time da escalação daquele jogo; lançados no bloco "Súmula" da tela do jogo (S1);
+  - **gols e assistências da súmula** (Etapa S2, 24/10/2026, `AppDoAtleta::sumulaDosJogos()`): só nos jogos que contam como partida e **têm súmula** (algum gol lançado em `tbl_jogo_gol`, de qualquer time); gol contra não conta para o autor. **`null` quando nenhum jogo do recorte** (total, cada time, `categoria_atual`) tem súmula ("ainda não registrado"; o app mostra "—"); 0 = jogou com súmula e não marcou. Limitação: jogo 0 × 0 sem gol lançado não tem como "ter súmula" (não muda a soma, só o null).
   - **`categoria_atual`** (22/10/2026, pedido do app, `67c137f`): os mesmos 6 números só da categoria atual do atleta (linha ATIVO sem data de fim em `tbl_categoria_atleta`), com `id_categoria`, `nome_categoria` ("Sub-13") e `categoria` ("Sub-13 Feminino": o nome curto não diz o sexo); `null` sem categoria. Um objeto, não lista: só o `trocarCategoria()` grava a categoria e ele encerra a ativa antes de abrir outra (o banco não tem índice único para isso). Conta a **categoria do jogo** (evento; no amistoso sem categoria, a do time da escalação) e a da convocação: o Sub-13 que sobe para o Sub-15 tem essas partidas no `total`, não na `categoria_atual`. `total` e `por_time` não mudaram (a Home do app usa o `total`). `AtletaEstatisticasTest` (7).
 - **Agenda: filtros e detalhe** (pedidos do app, 24/10/2026; `AppAgendaFiltrosTest`, `AppAgendaDetalheTest`):
   - `?tipo=JOGO,TREINO` (sem diferenciar maiúsculas; desconhecido = 422) filtra `proximos` e `passados`; `totais` = próximos por tipo, de todas as páginas, **sem** o filtro de tipo (para os contadores do app); `concluido` em cada evento;
@@ -996,10 +996,10 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 #### Em casa, 24/10/2026 — agenda do app (pedidos do outro repositório; regras na seção 4, "App")
 - **Etapa 1** (`4aefe3a`, push feito): `?tipo`, `?de&ate`, `totais` e `concluido`. Sem migration.
 - **Etapa 2:** `304dcef` (detalhe do evento, sem migration) e `d96a55e` (responsável pela atividade, **com migration** `2026_10_24_000001_responsavel_pela_atividade`; seções 3 e 4, "Usuários").
-- **Migration ainda não rodada no `db_futebol` de casa** (só o `--pretend`; o código já está na pasta e as telas do Calendário dão erro até rodar). Para rodar: backup (`mysqldump`, regra 5) e `migrate`. Servidor: backup pelo phpMyAdmin, `migrate --pretend --force` só com ela e `migrate --force`.
-- **774 testes passando.**
-- **Não publicado no servidor** (combinado com o dono do projeto). A `main` do GitHub continua em `6397fbe` (já com a S1).
-- **Súmula:** gols e assistências de `GET /atleta/estatisticas` continuam `null` (a S1 só lança; mostrar é a S2).
+- **Migration no `db_futebol` de casa: batch 6.** Backup antes em `backup/db_futebol_antes_responsavel_atividade_20261024_191106.sql` (só em casa). Conferidos depois: Calendário, grade e tela do evento do admin e `GET /agenda` (lista, período e detalhe) respondendo 200.
+- **Súmula, Etapa S2** (`9cd66e4`, sem migration): gols e assistências nas estatísticas (seção 4, "Estatísticas do atleta"). Conferido com a súmula de teste do evento 2 (Rafael Antunes 1 gol, Nicolas Farias 1 assistência).
+- **775 testes passando.**
+- **Push da `feature/agenda-eventos` feito até `7eb16fc`** (a S2 e este registro ainda não). **Não publicado no servidor** (combinado com o dono do projeto). A `main` do GitHub continua em `6397fbe` (já com a S1). Servidor: entram as migrations `2026_10_22_000002` (S1, se ainda não rodou lá) e `2026_10_24_000001`.
 
 ---
 
@@ -1023,7 +1023,7 @@ Melhorias que não impedem o uso: Fases E e F (seção 6, "Passagem para o Senac
   6. **artilheiros no site: depois** (S3), só os da AACJ, a decidir com o professor (nomes de menores);
   7. **cartões na mesma tela**, só de escalado da AACJ: até 2 amarelos e 1 vermelho por jogo (`Cartao::AMARELOS_MAX`).
   - **Travas:** com súmula (gols ou cartões), o placar não baixa abaixo dos gols lançados de cada time (em cada período) nem é apagado, e os times do jogo não mudam (`Jogo::erroDaSumulaNaEdicao`, no placar rápido e no formulário do jogo). Corrigir = remover e lançar de novo. A exclusão definitiva do atleta deixa o gol sem autor/assistência.
-  - **Etapas:** **S1** lançar (feita, `792a2e9`); **S2** mostrar: `gols` e `assistencias` com número na API (`GET /atleta/estatisticas` e do responsável, no `total`, `por_time` e `categoria_atual`, contando só jogos que contam como partida e sem gol contra) e gols no modal do jogador do site; **S3** (opcional) artilharia da AACJ na página do campeonato.
+  - **Etapas:** **S1** lançar (feita, `792a2e9`); **S2** mostrar na API (feita, `9cd66e4`: `gols` e `assistencias` em `GET /atleta/estatisticas` e do responsável; seção 4, "Estatísticas do atleta"). **Falta da S2:** os gols no modal do jogador do site (o dono do projeto pediu só a API em 24/10). **S3** (opcional) artilharia da AACJ na página do campeonato.
 - **Entrega: começar do zero** (dono do projeto, 14/10/2026: tudo o que existe é fictício). Fazer só na hora da entrega, com OK e backup:
   - **Banco:** montar o banco do zero pelas migrations (elas criam toda a estrutura e as 10 categorias oficiais; conferido na Fase 9) num banco vazio, ou apagar todas as tabelas e rodar o `migrate --force`. Nada do banco atual é aproveitado.
   - **Usuário do admin:** criar só o(s) do professor/associação, com senha definida por ele (sem os usuários de teste).
