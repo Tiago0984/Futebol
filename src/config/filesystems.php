@@ -30,6 +30,15 @@ return [
 
     'disks' => [
 
+        // Imagens enviadas pelo admin que o site serve direto de public/futebol/images (sem o storage:link),
+        // como a foto da comissão técnica (pasta "comissao"). Nos testes, Storage::fake('imagens')
+        'imagens' => [
+            'driver' => 'local',
+            'root' => public_path('futebol/images'),
+            'throw' => false,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

@@ -36,3 +36,7 @@ chat_*.md
 # (o .gitkeep mantém a pasta no clone, porque o AssinaturaController grava nela sem criá-la)
 /src/public/futebol/images/Assinaturas/*
 !/src/public/futebol/images/Assinaturas/.gitkeep
+
+# Fotos da comissão técnica enviadas pelo admin (dados pessoais; cada servidor tem as suas)
+/src/public/futebol/images/comissao/*
+!/src/public/futebol/images/comissao/.gitkeep

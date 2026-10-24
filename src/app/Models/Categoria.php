@@ -68,6 +68,7 @@ class Categoria extends Model
                 ->count(),
             'evento(s)'           => EventoCalendario::where('id_categoria', $this->id_categoria)->count(),
             'horário(s) da grade' => GradeTreino::where('id_categoria', $this->id_categoria)->count(),
+            'profissional(is) da comissão técnica' => DB::table('tbl_comissao_tecnica_categoria')->where('id_categoria', $this->id_categoria)->count(),
         ]);
 
         if (! $usos) {

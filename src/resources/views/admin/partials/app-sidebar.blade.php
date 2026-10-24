@@ -168,6 +168,14 @@
           </a>
         </li>
 
+        {{-- Comissão técnica (Etapa C1): o perfil que o app abre pelo responsável do compromisso --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.comissao.index') }}" class="nav-link {{ $ativo('comissao') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-person-badge"></i>
+            <p>Comissão técnica</p>
+          </a>
+        </li>
+
         <li class="nav-header">PESSOAS</li>
 
         {{-- Atletas, sem subitens --}}

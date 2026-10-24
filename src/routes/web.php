@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\BannersController;
 use App\Http\Controllers\Admin\GaleriaController;
 use App\Http\Controllers\Admin\CampeonatosController;
 use App\Http\Controllers\Admin\TimesController;
+use App\Http\Controllers\Admin\ComissaoTecnicaController;
 use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
 use App\Http\Controllers\Admin\AtletasController as AdminAtletasController;
@@ -133,6 +134,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::patch('campeonatos/{id}/rodadas/publicar',                  [GeradorDeJogosController::class, 'publicarRodada'])->name('campeonatos.rodadas.publicar');
     Route::resource('times',       TimesController::class)->only($acoesDaLista);
     Route::patch('times/{id}/toggle-status', [TimesController::class, 'toggleStatus'])->name('times.toggleStatus');
+    // Comissão técnica (Etapa C1): sem exclusão, só ativar/desativar (fica nos eventos em que já está)
+    Route::resource('comissao-tecnica', ComissaoTecnicaController::class)->only(['index', 'create', 'store', 'edit', 'update'])
+        ->parameters(['comissao-tecnica' => 'id'])->names('comissao');
+    Route::patch('comissao-tecnica/{id}/toggle-status', [ComissaoTecnicaController::class, 'toggleStatus'])->name('comissao.toggleStatus');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
     Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo

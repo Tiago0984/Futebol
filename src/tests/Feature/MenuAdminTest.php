@@ -825,6 +825,9 @@ class MenuAdminTest extends TestCase
             'admin.jogos.times.show'        => [$jogoDaCopa->id_jogo, $this->azul],
             'admin.matriculas.show'         => $atleta,
             'admin.atletas.afastamentos'    => $atleta,
+            'admin.comissao.edit'           => DB::table('tbl_comissao_tecnica')->insertGetId([
+                'nome_comissao_tecnica' => 'Carlos Mendes', 'cargo_comissao_tecnica' => 'TREINADOR_TECNICO',
+            ]),
         ];
 
         $rotas = collect(Route::getRoutes()->getRoutes())
