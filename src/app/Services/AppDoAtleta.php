@@ -223,6 +223,31 @@ class AppDoAtleta
         ];
     }
 
+    /**
+     * Detalhe de um evento da agenda (GET /agenda/{idEvento}, pedido do app, 24/10/2026, para o "Ver detalhes"): os
+     * mesmos campos da lista e, no jogo, também o adversário, a fase, a rodada, a perna, a prorrogação, os pênaltis
+     * e o confronto. Só o que já é público ou do próprio atleta: sem os colegas, a escalação, a posição e o titular
+     * (decisão do dono do projeto: dados de outros menores, e posição e titular ficam só no admin). null (404) para
+     * evento em que o atleta não está inscrito, oculto ou em rascunho: as mesmas regras da lista.
+     */
+    public function detalhe(int $idEvento): ?array
+    {
+        $evento = $this->eventosInscritos()->with(['jogo.jogoIda', 'jogo.jogoVolta'])->find($idEvento);
+
+        if (! $evento) {
+            return null;
+        }
+
+        $idTime = $this->timesDoAtleta(collect([$evento]))[$evento->id_evento_calendario] ?? null;
+        $dados = $this->evento($evento, $idTime);
+
+        if ($evento->jogo) {
+            $dados['jogo'] += $this->detalheDoJogo($evento->jogo, $idTime);
+        }
+
+        return $dados;
+    }
+
     private function eventosInscritos(array $tipos = [])
     {
         return EventoCalendario::query()
@@ -294,29 +319,77 @@ class AppDoAtleta
     {
         $chegada = Jogo::chegadaPara($evento->horario_inicio_evento_calendario);
 
-        $time = fn ($t) => $t ? ['id_time' => $t->id_time, 'nome_time' => $t->nome_time, 'logo_time' => $t->logo_time, 'logo_url' => $t->logo_url] : null;
-        $doAtleta = match ($idTimeDoAtleta) {
-            null                     => null,
-            $jogo->id_time_casa      => $jogo->timeCasa,
-            $jogo->id_time_visitante => $jogo->timeVisitante,
-            default                  => null,
-        };
-
         return [
             'id_jogo'         => $jogo->id_jogo,
             'amistoso'        => $jogo->ehAmistoso(),
             'campeonato'      => $jogo->campeonato
                 ? ['id_campeonato' => $jogo->campeonato->id_campeonato, 'nome_campeonato' => $jogo->campeonato->nome_campeonato]
                 : null,
-            'time_casa'       => $time($jogo->timeCasa),
-            'time_visitante'  => $time($jogo->timeVisitante),
+            'time_casa'       => self::time($jogo->timeCasa),
+            'time_visitante'  => self::time($jogo->timeVisitante),
             'placar'          => $jogo->temPlacar()
                 ? ['casa' => (int) $jogo->placar_time_casa_jogos, 'visitante' => (int) $jogo->placar_time_visitante_jogos]
                 : null,
-            'time_do_atleta'  => $time($doAtleta),
+            'time_do_atleta'  => self::time(self::timeDoAtleta($jogo, $idTimeDoAtleta)),
             'horario_chegada' => $chegada,
             'chegada'         => $momento($chegada),
         ];
+    }
+
+    /**
+     * O que o detalhe acrescenta ao bloco do jogo:
+     * - adversario: o outro time do jogo, pelo time em que o atleta está escalado; sem time, o outro do único time
+     *   da AACJ do jogo (null quando os dois são da AACJ e o atleta está sem time);
+     * - fase_jogo e fase (null no amistoso), fase_completa ("Oitavas de final · volta"), rodada (só na fase de
+     *   grupos) e perna (IDA, VOLTA ou null: jogo único);
+     * - prorrogacao e penaltis ({casa, visitante} ou null) e confronto (quem passa no mata-mata, o mesmo bloco da
+     *   API de campeonatos; null fora do mata-mata, na ida ou sem o resultado).
+     */
+    private function detalheDoJogo(Jogo $jogo, ?int $idTimeDoAtleta): array
+    {
+        $doAtleta = self::timeDoAtleta($jogo, $idTimeDoAtleta);
+        if (! $doAtleta && ($internos = $jogo->timesEscalaveis())->count() === 1) {
+            $doAtleta = $internos->first();
+        }
+        $adversario = match (true) {
+            $doAtleta === null                                    => null,
+            (int) $doAtleta->id_time === (int) $jogo->id_time_casa => $jogo->timeVisitante,
+            default                                               => $jogo->timeCasa,
+        };
+
+        $par = fn ($casa, $visitante) => $casa === null ? null : ['casa' => (int) $casa, 'visitante' => (int) $visitante];
+
+        return [
+            'adversario'    => self::time($adversario),
+            'fase_jogo'     => $jogo->fase_jogo,
+            'fase'          => $jogo->fase_label,
+            'fase_completa' => $jogo->fase_completa,
+            'rodada'        => $jogo->rodada_jogo === null ? null : (int) $jogo->rodada_jogo,
+            'perna'         => match (true) {
+                $jogo->id_jogo_ida !== null                      => 'VOLTA',
+                $jogo->ehMataMata() && $jogo->jogoVolta !== null => 'IDA',
+                default                                          => null,
+            },
+            'prorrogacao'   => $par($jogo->prorrogacao_time_casa_jogos, $jogo->prorrogacao_time_visitante_jogos),
+            'penaltis'      => $par($jogo->penaltis_time_casa_jogos, $jogo->penaltis_time_visitante_jogos),
+            'confronto'     => $jogo->resultadoDoConfronto(),
+        ];
+    }
+
+    private static function time(?Time $time): ?array
+    {
+        return $time ? ['id_time' => $time->id_time, 'nome_time' => $time->nome_time, 'logo_time' => $time->logo_time, 'logo_url' => $time->logo_url] : null;
+    }
+
+    // O time do jogo em que o atleta está escalado (null = inscrito sem time)
+    private static function timeDoAtleta(Jogo $jogo, ?int $idTimeDoAtleta): ?Time
+    {
+        return match ($idTimeDoAtleta) {
+            null                     => null,
+            $jogo->id_time_casa      => $jogo->timeCasa,
+            $jogo->id_time_visitante => $jogo->timeVisitante,
+            default                  => null,
+        };
     }
 
     // ── Avisos (notificações) ───────────────────────────────────────────────

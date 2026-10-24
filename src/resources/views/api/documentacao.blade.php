@@ -413,7 +413,7 @@ Content-Type: application/json
         <p>As mesmas rotas do atleta, sob <code>/api/v1/responsavel/atletas/{idAtleta}</code>, com as mesmas respostas:</p>
         <ul>
             <li><code>GET .../estatisticas</code></li>
-            <li><code>GET .../agenda</code></li>
+            <li><code>GET .../agenda</code>, <code>GET .../agenda/{idEvento}</code></li>
             <li><code>GET .../notificacoes</code>, <code>GET .../notificacoes/nao-lidas</code></li>
             <li><code>PATCH .../notificacoes/{idNotificacao}/lida</code>, <code>PATCH .../notificacoes/lidas</code></li>
         </ul>
@@ -516,6 +516,43 @@ Content-Type: application/json
 }
 422 { "success": false, "message": "Informe a data \"até\" no formato AAAA-MM-DD (ex.: 2026-11-01).", "errors": { "ate": ["..."] } }
 422 ... "A data \"até\" não pode ser antes da data \"de\"."  /  "O período pode ter no máximo {{ \App\Http\Controllers\Api\V1\AppDoAtletaController::PERIODO_MAX_DIAS }} dias."</pre>
+
+        <h3>Detalhe de um evento ("Ver detalhes")</h3>
+        <div class="rota">
+            <span class="metodo GET">GET</span><code>/api/v1/agenda/{idEvento}</code><span class="acesso atleta">Atleta</span>
+            <code>/api/v1/responsavel/atletas/{idAtleta}/agenda/{idEvento}</code><span class="acesso responsavel">Responsável</span>
+        </div>
+        <ul>
+            <li>O evento com <strong>os mesmos campos da lista</strong> (<code>id_evento</code> é o mesmo da agenda e do <code>id_evento</code> dos avisos).</li>
+            <li>No jogo, o bloco <code>jogo</code> traz também: <code>adversario</code> (o outro time, pelo time em que o atleta está escalado; sem escalação, o adversário do time da AACJ; <code>null</code> quando os dois times são da AACJ e o atleta ainda não foi escalado), <code>fase_jogo</code> e <code>fase</code> (<code>null</code> no amistoso), <code>fase_completa</code> ("Oitavas de final · volta"), <code>rodada</code> (só na fase de grupos), <code>perna</code> (<code>IDA</code>, <code>VOLTA</code> ou <code>null</code> no jogo único), <code>prorrogacao</code> e <code>penaltis</code> (<code>{ "casa", "visitante" }</code> ou <code>null</code>) e <code>confronto</code> (quem passa no mata-mata, o mesmo bloco da <a href="#campeonatos">API de campeonatos</a>; <code>null</code> fora do mata-mata, na ida ou sem o resultado).</li>
+            <li>Não traz os colegas inscritos, a escalação, a posição nem titular/reserva (dados de outros atletas; posição e titular ficam com o técnico).</li>
+            <li>Evento em que o atleta não está inscrito, oculto, jogo em rascunho ou inexistente: 404 (as mesmas regras da lista).</li>
+        </ul>
+<pre>200 {
+  "success": true,
+  "data": {
+    "id_evento": 81,
+    "titulo": "Rival FC x AACJ Sub-13",
+    "tipo": "JOGO",
+    ...os mesmos campos da lista...,
+    "jogo": {
+      "id_jogo": 13,
+      ...os mesmos campos da lista...,
+      "placar": { "casa": 1, "visitante": 1 },
+      "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", ... },
+      "adversario": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png" },
+      "fase_jogo": "SEMIFINAL",
+      "fase": "Semifinal",
+      "fase_completa": "Semifinal · volta",
+      "rodada": null,
+      "perna": "VOLTA",
+      "prorrogacao": null,
+      "penaltis": { "casa": 3, "visitante": 4 },
+      "confronto": { "id_time": 3, "como": "pênaltis", "agregado": [3, 3], "texto": "AACJ Sub-13 passa nos pênaltis (4 × 3), depois do agregado 3 × 3" }
+    }
+  }
+}
+404 { "success": false, "message": "Evento não encontrado." }</pre>
         <h3>Campos do evento</h3>
         <div class="tabela">
         <table>
@@ -621,6 +658,7 @@ Content-Type: application/json
             ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
             ['GET',   '/atleta/estatisticas', 'Atleta', '—'],
             ['GET',   '/agenda', 'Atleta', 'page?, tipo?, de?, ate?'],
+            ['GET',   '/agenda/{idEvento}', 'Atleta', '{idEvento}'],
             ['GET',   '/notificacoes', 'Atleta', 'page?'],
             ['GET',   '/notificacoes/nao-lidas', 'Atleta', '—'],
             ['PATCH', '/notificacoes/{idNotificacao}/lida', 'Atleta', '{idNotificacao}'],
@@ -633,6 +671,7 @@ Content-Type: application/json
             ['GET',   '/responsavel/atletas/{idAtleta}', 'Responsável', '{idAtleta}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/estatisticas', 'Responsável', '{idAtleta}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?, tipo?, de?, ate?'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/agenda/{idEvento}', 'Responsável', '{idAtleta}, {idEvento}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes', 'Responsável', '{idAtleta}, page?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes/nao-lidas', 'Responsável', '{idAtleta}'],
             ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/{idNotificacao}/lida', 'Responsável', '{idAtleta}, {idNotificacao}'],

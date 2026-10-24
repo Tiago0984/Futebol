@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\AppDoAtletaController;
 // /responsavel/atletas). As regras ficam em App\Services\AppDoAtleta
 $rotasDaAgendaEDosAvisos = function (string $prefixo) {
     Route::get("{$prefixo}/agenda", [AppDoAtletaController::class, 'agenda']);
+    Route::get("{$prefixo}/agenda/{idEvento}", [AppDoAtletaController::class, 'evento'])->whereNumber('idEvento');
     Route::get("{$prefixo}/notificacoes", [AppDoAtletaController::class, 'notificacoes']);
     Route::get("{$prefixo}/notificacoes/nao-lidas", [AppDoAtletaController::class, 'naoLidas']);
     Route::patch("{$prefixo}/notificacoes/lidas", [AppDoAtletaController::class, 'marcarTodasLidas']);

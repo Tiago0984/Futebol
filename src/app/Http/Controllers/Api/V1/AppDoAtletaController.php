@@ -66,6 +66,18 @@ class AppDoAtletaController extends Controller
         return response()->json(['success' => true, 'data' => $app->agenda($this->pagina($request), $tipos)]);
     }
 
+    // GET /agenda/{idEvento} - o evento com o detalhe do jogo; 404 se o atleta não está inscrito, oculto ou rascunho
+    public function evento(Request $request)
+    {
+        $evento = $this->app($request)->detalhe((int) $request->route('idEvento'));
+
+        if (! $evento) {
+            return $this->naoEncontrado('Evento não encontrado.');
+        }
+
+        return response()->json(['success' => true, 'data' => $evento]);
+    }
+
     // GET /notificacoes?page=N
     public function notificacoes(Request $request)
     {
