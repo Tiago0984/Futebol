@@ -147,7 +147,8 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Foto:** só vai para o app com **"Autorizou mostrar a foto no app"** marcada (`fotoParaOApp()`; sem ela, `foto_url` null); no painel aparece sempre, com o aviso "foto sem autorização". Nome de arquivo gerado (não o original); a antiga é apagada depois do commit.
 - **Contato só institucional** (telefone e e-mail da escolinha), opcional, com o aviso no formulário para não usar o pessoal; dispensa autorização.
 - Sem o selo "Confirmado" (decisão do dono do projeto: o app tira). A página "Sobre" do site continua fixa (etapa à parte, depois).
-- **Etapas:** C1 cadastro (feita); C2 select do responsável no evento e na grade (feita; seção 4, "Usuários"); C3 rota `GET /api/v1/comissao-tecnica/{id}`.
+- **Etapas:** C1 cadastro (feita); C2 select do responsável no evento e na grade (feita; seção 4, "Usuários"); C3 perfil no app (feita, abaixo).
+- **Perfil no app (Etapa C3, 25/10/2026):** `GET /api/v1/comissao-tecnica/{id}` e `GET /api/v1/responsavel/atletas/{idAtleta}/comissao-tecnica/{id}` (`AppDoAtletaController::comissaoTecnica`, `ComissaoTecnica::paraOApp()`), **sem lista** (o app abre pelo `responsavel_id` da agenda): `nome`, `cargo`/`cargo_label`, `foto_url` (só autorizada), `categoria_principal` e `categorias_atendidas` (`id_categoria`, `nome_categoria`, `categoria`), `data_inicio`, `tempo_na_aacj` (`{anos, meses, texto}`, "2 anos e 7 meses"/"Menos de 1 mês"; null sem a data ou com ela no futuro), `licenca`, `especialidade`, `contato` (`{telefone, email}` institucionais; null sem os dois). Desativado ou inexistente: 404 "Profissional não encontrado."; no responsável, o filho é conferido antes (404 "Atleta não encontrado."). `AppComissaoTecnicaTest` (5).
 
 ### Eventos (tudo vira evento)
 - Treinos, jogos (campeonato e amistoso), eventos individuais (exame médico, avaliação física) e outros (reunião, viagem, café da manhã) são **eventos**.
@@ -1019,7 +1020,9 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 
 #### Em casa, 25/10/2026 — comissão técnica (seção 4, "Comissão técnica")
 - **C1** (`c021610`): migration `2026_10_25_000001_create_tbl_comissao_tecnica_table`, model, tela, menu, disco `imagens` (`config/filesystems.php`) e a pasta `public/futebol/images/comissao` (`.gitkeep`; as fotos ficam fora do Git). `ComissaoTecnicaTest` (6). No `db_futebol` de casa: **batch 7**, backup antes em `backup/db_futebol_antes_comissao_tecnica_20261024_203504.sql` (só em casa).
-- **C2** (`74ab136`): migration `2026_10_25_000002_comissao_tecnica_no_evento_e_na_grade` **não rodada no `db_futebol`** (só o `--pretend`; o Calendário, a grade e a agenda do app dão erro até rodar). `ResponsavelPelaAtividadeTest` reescrito (5). **782 testes passando.**
+- **C2** (`74ab136`): migration `2026_10_25_000002_comissao_tecnica_no_evento_e_na_grade` no `db_futebol` de casa, **batch 8** (25/10), backup antes em `backup/db_futebol_antes_comissao_c2_20261025_104746.sql` (só em casa). Conferidos depois: Calendário (com a aba Grade), prévia da geração, tela do evento e `GET /api/v1/agenda` (lista e período) respondendo 200. `ResponsavelPelaAtividadeTest` reescrito (5).
+- **C3** (perfil no app, sem migration; seção 4, "Comissão técnica"). **781 testes passando + 6 que falham só pela data** (de 25/10 ao fim do mês: `EventoStatusTest` (2), `EventoFluxoTest`, `EventoHistoricoTest`, `EventoInscricaoTest` e `EventoCategoriaResponsavelTest` criam o evento "daqui a uma semana" e abrem a lista do Calendário sem `?mes=`, que mostra o mês atual; mesmo débito já corrigido em outros testes).
+- **Falta publicar** (push e servidor): C1, C2 e C3 juntas, com as duas migrations da comissão técnica.
 - **Testes com imagem:** o GD do container não tem JPEG; use `UploadedFile::fake()->image('x.png')`.
 
 ---
