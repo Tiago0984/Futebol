@@ -136,6 +136,39 @@ class ComissaoTecnicaTest extends TestCase
         $this->assertSame(0, ComissaoTecnica::count());
     }
 
+    public function test_telefone_com_ddd_de_10_ou_11_digitos_gravado_so_com_os_digitos(): void
+    {
+        $casos = [
+            '(11) 4000-000'     => null,           // 9 dígitos
+            '(11) 4000-0000'    => '1140000000',   // 10
+            '11 94000-0000'     => '11940000000',  // 11
+            '(11) 95843-51174'  => null,           // 12
+        ];
+
+        foreach ($casos as $digitado => $gravado) {
+            ComissaoTecnica::query()->delete();
+            $resposta = $this->comoAdmin()->post(route('admin.comissao.store'), $this->dados(['telefone_institucional_comissao_tecnica' => $digitado]));
+
+            if ($gravado === null) {
+                $resposta->assertSessionHasErrors(['telefone_institucional_comissao_tecnica' => 'Informe o telefone com DDD: 10 ou 11 dígitos.']);
+                $this->assertSame(0, ComissaoTecnica::count(), $digitado);
+            } else {
+                $resposta->assertSessionHasNoErrors();
+                $this->assertSame($gravado, ComissaoTecnica::firstOrFail()->telefone_institucional_comissao_tecnica, $digitado);
+            }
+        }
+
+        // Continua opcional; no admin aparece formatado (lista e campo do Editar)
+        ComissaoTecnica::query()->delete();
+        $this->comoAdmin()->post(route('admin.comissao.store'), $this->dados(['telefone_institucional_comissao_tecnica' => '']))->assertSessionHasNoErrors();
+        $this->assertNull(ComissaoTecnica::firstOrFail()->telefone_institucional_comissao_tecnica);
+
+        $p = ComissaoTecnica::firstOrFail();
+        $p->update(['telefone_institucional_comissao_tecnica' => '11940000000']);
+        $this->comoAdmin()->get(route('admin.comissao.index'))->assertSee('(11) 94000-0000');
+        $this->comoAdmin()->get(route('admin.comissao.edit', $p->id_comissao_tecnica))->assertSee('value="(11) 94000-0000"', false);
+    }
+
     private function dados(array $extra = []): array
     {
         return array_merge([

@@ -145,8 +145,8 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="ct_telefone">Telefone institucional</label>
-                            <input type="text" id="ct_telefone" name="telefone_institucional_comissao_tecnica" class="form-control" maxlength="20"
-                                placeholder="Ex: (11) 4000-0000" value="{{ old('telefone_institucional_comissao_tecnica', $profissional->telefone_institucional_comissao_tecnica) }}">
+                            <input type="text" id="ct_telefone" name="telefone_institucional_comissao_tecnica" class="form-control" maxlength="20" inputmode="numeric"
+                                placeholder="Ex: (11) 4000-0000" value="{{ old('telefone_institucional_comissao_tecnica', $profissional->telefone_formatado) }}">
                         </div>
                         <div class="col-md-8">
                             <label class="form-label" for="ct_email">E-mail institucional</label>
@@ -166,4 +166,16 @@
 
     </div>
 </main>
+
+<script>
+// Máscara do telefone institucional: só dígitos, até 11, como "(11) 4000-0000" ou "(11) 94000-0000" enquanto digita.
+// O servidor confere 10 ou 11 dígitos e grava só os dígitos
+document.getElementById('ct_telefone').addEventListener('input', function (e) {
+    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
+    if (v.length > 10)     v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+    else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
+    else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,4})/, '($1) $2');
+    e.target.value = v;
+});
+</script>
 @endsection

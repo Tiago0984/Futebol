@@ -113,6 +113,26 @@ class ComissaoTecnica extends Model
         return $this->status_comissao_tecnica === 'ATIVO';
     }
 
+    // Telefone institucional: gravado só com os dígitos (DDD + número, 10 ou 11); o app formata na tela
+    public static function digitosDoTelefone(?string $telefone): ?string
+    {
+        $digitos = preg_replace('/\D/', '', (string) $telefone);
+
+        return $digitos === '' ? null : $digitos;
+    }
+
+    // No admin: "(11) 4000-0000" / "(11) 94000-0000"; fora de 10 ou 11 dígitos (gravado antes da regra), como está
+    public function getTelefoneFormatadoAttribute(): ?string
+    {
+        $digitos = self::digitosDoTelefone($this->telefone_institucional_comissao_tecnica);
+
+        return match (strlen((string) $digitos)) {
+            10      => preg_replace('/(\d{2})(\d{4})(\d{4})/', '($1) $2-$3', $digitos),
+            11      => preg_replace('/(\d{2})(\d{5})(\d{4})/', '($1) $2-$3', $digitos),
+            default => $this->telefone_institucional_comissao_tecnica,
+        };
+    }
+
     public function getCargoLabelAttribute(): string
     {
         return self::CARGOS[$this->cargo_comissao_tecnica] ?? (string) $this->cargo_comissao_tecnica;
@@ -142,7 +162,7 @@ class ComissaoTecnica extends Model
             'nome_categoria' => $c->nome_categoria,
             'categoria'      => $c->rotulo,
         ];
-        $telefone = $this->telefone_institucional_comissao_tecnica ?: null;
+        $telefone = self::digitosDoTelefone($this->telefone_institucional_comissao_tecnica);
         $email = $this->email_institucional_comissao_tecnica ?: null;
 
         return [

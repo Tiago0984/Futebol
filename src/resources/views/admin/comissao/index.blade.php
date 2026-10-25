@@ -71,7 +71,7 @@
                             </td>
                             <td class="text-muted">{{ $p->data_inicio_comissao_tecnica?->format('d/m/Y') ?? '—' }}</td>
                             <td class="text-muted" style="font-size:0.82rem;">
-                                @if($p->telefone_institucional_comissao_tecnica)<div><i class="bi bi-telephone"></i> {{ $p->telefone_institucional_comissao_tecnica }}</div>@endif
+                                @if($p->telefone_institucional_comissao_tecnica)<div><i class="bi bi-telephone"></i> {{ $p->telefone_formatado }}</div>@endif
                                 @if($p->email_institucional_comissao_tecnica)<div><i class="bi bi-envelope"></i> {{ $p->email_institucional_comissao_tecnica }}</div>@endif
                                 @if(! $p->telefone_institucional_comissao_tecnica && ! $p->email_institucional_comissao_tecnica)—@endif
                             </td>

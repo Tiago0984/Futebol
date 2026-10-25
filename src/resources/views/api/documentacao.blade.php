@@ -570,7 +570,7 @@ Content-Type: application/json
         <ul>
             <li>O <code>{id}</code> é o <code>responsavel_id</code> do evento da agenda. Não há lista: o app abre o perfil pelo evento.</li>
             <li><code>foto_url</code> só quando o profissional autorizou mostrar a foto no app; senão <code>null</code> (mostre as iniciais).</li>
-            <li><code>contato</code> é só o institucional (da escolinha): <code>{ "telefone", "email" }</code>, cada um podendo vir <code>null</code>; o bloco inteiro é <code>null</code> sem nenhum dos dois (esconda o "Entrar em contato").</li>
+            <li><code>contato</code> é só o institucional (da escolinha): <code>{ "telefone", "email" }</code>, cada um podendo vir <code>null</code>; o telefone vem <strong>só com os dígitos</strong> (DDD + número, 10 ou 11: formate como "(11) 4000-0000" / "(11) 94000-0000"); o bloco inteiro é <code>null</code> sem nenhum dos dois (esconda o "Entrar em contato").</li>
             <li><code>tempo_na_aacj</code> é contado da <code>data_inicio</code> até hoje; <code>null</code> sem a data (ou com a data no futuro). <code>licenca</code> e <code>especialidade</code> podem vir <code>null</code>.</li>
             <li>Profissional desativado ou inexistente: 404. No responsável, o filho também precisa ser dele e estar ativo (senão, 404 "Atleta não encontrado.").</li>
         </ul>
@@ -591,7 +591,7 @@ Content-Type: application/json
     "tempo_na_aacj": { "anos": 2, "meses": 7, "texto": "2 anos e 7 meses" },
     "licenca": "Licença C CBF",
     "especialidade": "Categorias de base",
-    "contato": { "telefone": "(11) 3333-4444", "email": "carlos@aacj.com.br" }
+    "contato": { "telefone": "1133334444", "email": "carlos@aacj.com.br" }
   }
 }
 404 { "success": false, "message": "Profissional não encontrado." }</pre>

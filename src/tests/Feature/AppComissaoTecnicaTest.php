@@ -47,7 +47,8 @@ class AppComissaoTecnicaTest extends TestCase
         $this->assertSame('2024-03-01', $data['data_inicio']);
         $this->assertSame(['anos' => 2, 'meses' => 7, 'texto' => '2 anos e 7 meses'], $data['tempo_na_aacj']);
         $this->assertSame(['Licença C CBF', 'Categorias de base'], [$data['licenca'], $data['especialidade']]);
-        $this->assertSame(['telefone' => '(11) 3333-4444', 'email' => 'carlos@aacj.com.br'], $data['contato']);
+        // Só os dígitos, mesmo gravado com máscara antes da regra (o app formata)
+        $this->assertSame(['telefone' => '1133334444', 'email' => 'carlos@aacj.com.br'], $data['contato']);
     }
 
     public function test_sem_autorizacao_sem_contato_e_sem_data_vem_null(): void

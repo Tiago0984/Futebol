@@ -109,7 +109,12 @@ class ComissaoTecnicaController extends Controller
             'data_inicio_comissao_tecnica'            => 'nullable|date|before_or_equal:today',
             'licenca_comissao_tecnica'                => 'nullable|string|max:100',
             'especialidade_comissao_tecnica'          => 'nullable|string|max:100',
-            'telefone_institucional_comissao_tecnica' => ['nullable', 'string', 'max:20', 'regex:/^[0-9()+\-\s]+$/'],
+            'telefone_institucional_comissao_tecnica' => ['nullable', 'string', 'max:20', 'regex:/^[0-9()+\-\s]+$/',
+                function ($campo, $valor, $falha) {
+                    if (! in_array(strlen((string) ComissaoTecnica::digitosDoTelefone($valor)), [10, 11], true)) {
+                        $falha('Informe o telefone com DDD: 10 ou 11 dígitos.');
+                    }
+                }],
             'email_institucional_comissao_tecnica'    => 'nullable|email|max:255',
             'foto_comissao_tecnica'                   => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
         ], [
@@ -139,6 +144,7 @@ class ComissaoTecnicaController extends Controller
                 'licenca_comissao_tecnica', 'especialidade_comissao_tecnica',
                 'telefone_institucional_comissao_tecnica', 'email_institucional_comissao_tecnica',
             ]),
+            'telefone_institucional_comissao_tecnica' => ComissaoTecnica::digitosDoTelefone($request->input('telefone_institucional_comissao_tecnica')),
             'foto_autorizada_comissao_tecnica' => $request->boolean('foto_autorizada_comissao_tecnica'),
         ];
     }
