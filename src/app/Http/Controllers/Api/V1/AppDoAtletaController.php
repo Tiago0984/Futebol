@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
+use App\Models\ComissaoTecnica;
 use App\Models\EventoCalendario;
 use App\Models\Responsavel;
 use App\Services\AppDoAtleta;
@@ -76,6 +77,21 @@ class AppDoAtletaController extends Controller
         }
 
         return response()->json(['success' => true, 'data' => $evento]);
+    }
+
+    // GET /comissao-tecnica/{id} - perfil do profissional (Etapa C3); sem lista; 404 para desativado ou inexistente.
+    // No responsável, o filho da rota é conferido antes, como nas outras rotas
+    public function comissaoTecnica(Request $request)
+    {
+        $this->app($request);
+
+        $profissional = ComissaoTecnica::ativos()->with(['categoriaPrincipal', 'categorias'])
+            ->find((int) $request->route('id'));
+        if (! $profissional) {
+            return $this->naoEncontrado('Profissional não encontrado.');
+        }
+
+        return response()->json(['success' => true, 'data' => $profissional->paraOApp()]);
     }
 
     // GET /notificacoes?page=N

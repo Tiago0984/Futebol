@@ -417,6 +417,7 @@ Content-Type: application/json
         <ul>
             <li><code>GET .../estatisticas</code></li>
             <li><code>GET .../agenda</code>, <code>GET .../agenda/{idEvento}</code></li>
+            <li><code>GET .../comissao-tecnica/{id}</code> (o perfil do responsável pela atividade)</li>
             <li><code>GET .../notificacoes</code>, <code>GET .../notificacoes/nao-lidas</code></li>
             <li><code>PATCH .../notificacoes/{idNotificacao}/lida</code>, <code>PATCH .../notificacoes/lidas</code></li>
         </ul>
@@ -560,6 +561,40 @@ Content-Type: application/json
   }
 }
 404 { "success": false, "message": "Evento não encontrado." }</pre>
+
+        <h3 id="comissao-tecnica">Perfil do responsável pela atividade (comissão técnica)</h3>
+        <div class="rota">
+            <span class="metodo GET">GET</span><code>/api/v1/comissao-tecnica/{id}</code><span class="acesso atleta">Atleta</span>
+            <code>/api/v1/responsavel/atletas/{idAtleta}/comissao-tecnica/{id}</code><span class="acesso responsavel">Responsável</span>
+        </div>
+        <ul>
+            <li>O <code>{id}</code> é o <code>responsavel_id</code> do evento da agenda. Não há lista: o app abre o perfil pelo evento.</li>
+            <li><code>foto_url</code> só quando o profissional autorizou mostrar a foto no app; senão <code>null</code> (mostre as iniciais).</li>
+            <li><code>contato</code> é só o institucional (da escolinha): <code>{ "telefone", "email" }</code>, cada um podendo vir <code>null</code>; o bloco inteiro é <code>null</code> sem nenhum dos dois (esconda o "Entrar em contato").</li>
+            <li><code>tempo_na_aacj</code> é contado da <code>data_inicio</code> até hoje; <code>null</code> sem a data (ou com a data no futuro). <code>licenca</code> e <code>especialidade</code> podem vir <code>null</code>.</li>
+            <li>Profissional desativado ou inexistente: 404. No responsável, o filho também precisa ser dele e estar ativo (senão, 404 "Atleta não encontrado.").</li>
+        </ul>
+<pre>200 {
+  "success": true,
+  "data": {
+    "id_comissao_tecnica": 3,
+    "nome": "Carlos Mendes",
+    "cargo": "TREINADOR_TECNICO",
+    "cargo_label": "Treinador técnico",
+    "foto_url": "https://.../futebol/images/comissao/a1b2c3.png",
+    "categoria_principal": { "id_categoria": 3, "nome_categoria": "Sub-13", "categoria": "Sub-13 Masculino" },
+    "categorias_atendidas": [
+      { "id_categoria": 3, "nome_categoria": "Sub-13", "categoria": "Sub-13 Masculino" },
+      { "id_categoria": 4, "nome_categoria": "Sub-15", "categoria": "Sub-15 Masculino" }
+    ],
+    "data_inicio": "2024-03-01",
+    "tempo_na_aacj": { "anos": 2, "meses": 7, "texto": "2 anos e 7 meses" },
+    "licenca": "Licença C CBF",
+    "especialidade": "Categorias de base",
+    "contato": { "telefone": "(11) 3333-4444", "email": "carlos@aacj.com.br" }
+  }
+}
+404 { "success": false, "message": "Profissional não encontrado." }</pre>
         <h3>Campos do evento</h3>
         <div class="tabela">
         <table>
@@ -668,6 +703,7 @@ Content-Type: application/json
             ['GET',   '/atleta/estatisticas', 'Atleta', '—'],
             ['GET',   '/agenda', 'Atleta', 'page?, tipo?, de?, ate?'],
             ['GET',   '/agenda/{idEvento}', 'Atleta', '{idEvento}'],
+            ['GET',   '/comissao-tecnica/{id}', 'Atleta', '{id}'],
             ['GET',   '/notificacoes', 'Atleta', 'page?'],
             ['GET',   '/notificacoes/nao-lidas', 'Atleta', '—'],
             ['PATCH', '/notificacoes/{idNotificacao}/lida', 'Atleta', '{idNotificacao}'],
@@ -681,6 +717,7 @@ Content-Type: application/json
             ['GET',   '/responsavel/atletas/{idAtleta}/estatisticas', 'Responsável', '{idAtleta}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?, tipo?, de?, ate?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/agenda/{idEvento}', 'Responsável', '{idAtleta}, {idEvento}'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/comissao-tecnica/{id}', 'Responsável', '{idAtleta}, {id}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes', 'Responsável', '{idAtleta}, page?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes/nao-lidas', 'Responsável', '{idAtleta}'],
             ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/{idNotificacao}/lida', 'Responsável', '{idAtleta}, {idNotificacao}'],

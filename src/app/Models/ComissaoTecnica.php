@@ -129,6 +129,56 @@ class ComissaoTecnica extends Model
         return $this->foto_autorizada_comissao_tecnica ? $this->urlFoto() : null;
     }
 
+    // ── Perfil no app (Etapa C3) ────────────────────────────────────────────
+
+    /**
+     * O perfil que o app abre pelo responsável do compromisso (GET /comissao-tecnica/{id}). Foto só autorizada;
+     * contato só o institucional (null sem telefone e e-mail). Quem chama já filtrou os ativos.
+     */
+    public function paraOApp(): array
+    {
+        $categoria = fn (Categoria $c) => [
+            'id_categoria'   => $c->id_categoria,
+            'nome_categoria' => $c->nome_categoria,
+            'categoria'      => $c->rotulo,
+        ];
+        $telefone = $this->telefone_institucional_comissao_tecnica ?: null;
+        $email = $this->email_institucional_comissao_tecnica ?: null;
+
+        return [
+            'id_comissao_tecnica'  => $this->id_comissao_tecnica,
+            'nome'                 => $this->nome_comissao_tecnica,
+            'cargo'                => $this->cargo_comissao_tecnica,
+            'cargo_label'          => $this->cargo_label,
+            'foto_url'             => $this->fotoParaOApp(),
+            'categoria_principal'  => $this->categoriaPrincipal ? $categoria($this->categoriaPrincipal) : null,
+            'categorias_atendidas' => $this->categorias->map($categoria)->values()->all(),
+            'data_inicio'          => $this->data_inicio_comissao_tecnica?->format('Y-m-d'),
+            'tempo_na_aacj'        => $this->tempoNaAacj(),
+            'licenca'              => $this->licenca_comissao_tecnica ?: null,
+            'especialidade'        => $this->especialidade_comissao_tecnica ?: null,
+            'contato'              => ($telefone || $email) ? ['telefone' => $telefone, 'email' => $email] : null,
+        ];
+    }
+
+    // Desde a data de início: { anos, meses, texto: "2 anos e 3 meses" }; null sem a data ou com a data no futuro
+    public function tempoNaAacj(): ?array
+    {
+        $inicio = $this->data_inicio_comissao_tecnica;
+        if (! $inicio || $inicio->isAfter(today())) {
+            return null;
+        }
+
+        $diferenca = $inicio->diff(today());
+        [$anos, $meses] = [$diferenca->y, $diferenca->m];
+        $partes = array_filter([
+            $anos ? $anos . ($anos === 1 ? ' ano' : ' anos') : null,
+            $meses ? $meses . ($meses === 1 ? ' mês' : ' meses') : null,
+        ]);
+
+        return ['anos' => $anos, 'meses' => $meses, 'texto' => $partes ? implode(' e ', $partes) : 'Menos de 1 mês'];
+    }
+
     /**
      * Grava as categorias atendidas; a principal entra sempre na lista (se o admin não marcou, o servidor acrescenta).
      *
