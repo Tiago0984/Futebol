@@ -83,7 +83,7 @@ class Campeonato extends Model
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class, 'tbl_campeonato_categoria', 'id_campeonato', 'id_categoria')
-            ->withPivot('classificados_campeonato_categoria')
+            ->withPivot('classificados_campeonato_categoria', 'data_encerramento_campeonato_categoria')
             ->orderBy('sexo_categoria', 'desc')->orderBy('idade_min_categoria');
     }
 
@@ -258,8 +258,9 @@ class Campeonato extends Model
      * Campeão de cada categoria (Fase I, Etapa I4; dono do projeto, 21/10/2026), calculado (nada é gravado):
      * - com final (publicada e ativa): o vencedor da final (Jogo::resultadoDoConfronto, no jogo único ou na volta), o vice e,
      *   se houver a disputa de 3º com vencedor, o 3º lugar. Final sem vencedor ainda: null;
-     * - sem mata-mata, numa tabela única (pontos corridos): o 1º, quando TODOS os jogos da fase de grupos (ativos)
-     *   estão publicados e com placar. Empatado em tudo com outro(s) no 1º lugar (a marca de sorteio): "a definir", com os nomes;
+     * - sem mata-mata, numa tabela única (pontos corridos): o 1º, depois que o admin ENCERRA a categoria (25/10/2026: o sistema
+     *   não sabe se ainda vem um returno) e se ainda pode ser encerrada (erroParaEncerrar: sem "classificam N", TODOS os jogos da fase de grupos (ativos)
+     *   publicados e com placar). Empatado em tudo com outro(s) no 1º lugar (a marca de sorteio): "a definir", com os nomes;
      * - mata-mata sem final, ou grupos sem mata-mata: null (em andamento).
      * Devolve [id_categoria => null ou ['situacao' => 'campeao'|'sorteio', 'modo' => 'final'|'tabela', 'campeao', 'vice', 'terceiro' (cada um
      * ['id_time', 'nome', 'logo'] ou null), 'como' (texto), 'empatados' (nomes, no sorteio)]]. $classificacoes:
@@ -307,20 +308,13 @@ class Campeonato extends Model
                 continue;
             }
 
-            // Pontos corridos: tabela única e todos os jogos da fase de grupos com placar
-            $tabela = count($c['tabelas']) === 1 ? $c['tabelas'][0]['tabela'] : [];
-            $jogos  = Jogo::where('id_campeonato', $this->id_campeonato)
-                ->where(fn ($q) => $q->where('fase_jogo', Jogo::FASE_PADRAO)->orWhereNull('fase_jogo'))
-                ->whereHas('evento', fn ($q) => $q->where('id_categoria', $idCategoria)->where('status_evento_calendario', 'ATIVO'));
-            $total     = (clone $jogos)->count();
-            // Pendente: sem placar ou ainda em rascunho (o rascunho fica fora da classificação)
-            $semPlacar = (clone $jogos)->where(fn ($q) => $q->whereNull('placar_time_casa_jogos')->orWhereNull('placar_time_visitante_jogos')
-                ->orWhereHas('evento', fn ($e) => $e->whereNull('data_publicacao_evento_calendario')))->count();
-            if (! $tabela || ! $total || $semPlacar) {
+            // Pontos corridos: só com a categoria encerrada pelo admin (e ainda em condições de encerrar)
+            if (! $c['categoria']->pivot->data_encerramento_campeonato_categoria || $this->erroParaEncerrar($c)) {
                 $campeoes[$idCategoria] = null;
                 continue;
             }
 
+            $tabela   = $c['tabelas'][0]['tabela'];
             $primeiro = $tabela[0];
             $comoTime = fn (array $linha) => ['id_time' => $linha['id_time'], 'nome' => $linha['nome'], 'logo' => $linha['logo']];
             if ($primeiro['sorteio']) {
@@ -337,6 +331,47 @@ class Campeonato extends Model
         }
 
         return $campeoes;
+    }
+
+    /**
+     * Por que a categoria não pode ser encerrada como pontos corridos (null = pode), a partir de uma linha de
+     * classificacoes(). O campeão pela tabela exige: sem mata-mata (jogo de outra fase ou "classificam N", que
+     * anuncia o mata-mata), uma tabela só e todos os jogos da fase de grupos (ativos) publicados e com placar.
+     */
+    public function erroParaEncerrar(array $classificacao): ?string
+    {
+        $idCategoria = (int) $classificacao['categoria']->id_categoria;
+        $daCategoria = fn () => Jogo::where('id_campeonato', $this->id_campeonato)
+            ->whereHas('evento', fn ($q) => $q->where('id_categoria', $idCategoria)->where('status_evento_calendario', 'ATIVO'));
+
+        if ($daCategoria()->whereNotNull('fase_jogo')->where('fase_jogo', '<>', Jogo::FASE_PADRAO)->exists()) {
+            return 'A categoria tem mata-mata: o campeão sai da final.';
+        }
+        if ($classificacao['classificados'] !== null) {
+            return "Com \"classificam {$classificacao['classificados']} por grupo\", ainda vem o mata-mata: o campeão sai da final. "
+                . 'Nos pontos corridos, deixe o campo vazio.';
+        }
+        if (count($classificacao['tabelas']) !== 1) {
+            return 'Com mais de um grupo (chave), o campeão sai do mata-mata.';
+        }
+
+        $jogos = $daCategoria()->where(fn ($q) => $q->where('fase_jogo', Jogo::FASE_PADRAO)->orWhereNull('fase_jogo'));
+        if (! (clone $jogos)->exists()) {
+            return 'A categoria ainda não tem jogos.';
+        }
+        // Pendente: sem placar ou ainda em rascunho (o rascunho fica fora da classificação)
+        $pendentes = $jogos->where(fn ($q) => $q->whereNull('placar_time_casa_jogos')->orWhereNull('placar_time_visitante_jogos')
+            ->orWhereHas('evento', fn ($e) => $e->whereNull('data_publicacao_evento_calendario')))->count();
+
+        return $pendentes ? "Ainda há {$pendentes} jogo(s) da fase de grupos sem placar ou em rascunho." : null;
+    }
+
+    // Encerrar (agora) ou reabrir (null) a categoria: o campeão dos pontos corridos só aparece encerrada
+    public function definirEncerramento(int $idCategoria, bool $encerrada): void
+    {
+        DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->id_campeonato)->where('id_categoria', $idCategoria)
+            ->update(['data_encerramento_campeonato_categoria' => $encerrada ? now() : null]);
+        $this->unsetRelation('categorias');
     }
 
     // Texto curto do campeão de uma categoria (campeoes()): "Botafogo da Vila" ou "a definir (sorteio entre X e Y)"

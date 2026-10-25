@@ -61,6 +61,13 @@ class CampeaoTest extends TestCase
         $this->assertNull($this->campeao());
 
         DB::table('tbl_evento_calendario')->where('id_evento_calendario', $ultimo->id_evento)->update(['data_publicacao_evento_calendario' => now()]);
+
+        // Todos jogados, mas pode vir um returno: só com a categoria encerrada pelo admin
+        $this->assertNull($this->campeao());
+        $this->get(route('campeonato.show', $this->copa))->assertOk()->assertDontSee('camp-campeao-card', false);
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))->assertOk()->assertSee('Encerrar categoria');
+        $this->encerramento()->assertSessionHas('sucesso');
+
         $campeao = $this->campeao();
         $this->assertSame(['campeao', 'tabela', 'Alfa', '1º na tabela (pontos corridos)'],
             [$campeao['situacao'], $campeao['modo'], $campeao['campeao']['nome'], $campeao['como']]);
@@ -80,9 +87,51 @@ class CampeaoTest extends TestCase
             ->assertJsonPath('data.classificacao.0.campeao.vice', null);
     }
 
+    public function test_encerrar_reabrir_e_jogo_novo_depois_de_encerrar(): void
+    {
+        $jogo = $this->jogo('GRUPOS', 'Alfa', 'Beta', null, null);
+
+        // Jogo sem placar: recusa
+        $this->encerramento()->assertSessionHas('erro', 'Não dá para encerrar: Ainda há 1 jogo(s) da fase de grupos sem placar ou em rascunho.');
+        $this->assertNull($this->encerradaEm());
+
+        $jogo->update(['placar_time_casa_jogos' => 2, 'placar_time_visitante_jogos' => 0]);
+        $this->encerramento();
+        $this->assertNotNull($this->encerradaEm());
+        $this->assertSame('Alfa', $this->campeao()['campeao']['nome']);
+
+        // Um returno cadastrado depois: o campeão some até o placar, e o admin vê o motivo
+        $returno = $this->jogo('GRUPOS', 'Beta', 'Alfa', null, null);
+        $this->assertNull($this->campeao());
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))
+            ->assertSee('O campeão não aparece: Ainda há 1 jogo(s)');
+        $returno->update(['placar_time_casa_jogos' => 0, 'placar_time_visitante_jogos' => 0]);
+        $this->assertSame('Alfa', $this->campeao()['campeao']['nome']);
+
+        // Reabrir tira o campeão
+        $this->encerramento('reabrir')->assertSessionHas('sucesso');
+        $this->assertNull($this->encerradaEm());
+        $this->assertNull($this->campeao());
+    }
+
+    public function test_com_classificados_por_grupo_o_campeao_sai_da_final(): void
+    {
+        $this->jogo('GRUPOS', 'Alfa', 'Beta', 1, 0);
+        Campeonato::find($this->copa)->definirClassificados($this->idSub15M, 2);
+
+        $this->encerramento()->assertSessionHas('erro', fn ($erro) => str_contains($erro, 'ainda vem o mata-mata'));
+        $this->assertNull($this->encerradaEm());
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))->assertDontSee('Encerrar categoria');
+
+        // Mesmo encerrada antes de definir os classificados, a tabela não declara campeão
+        Campeonato::find($this->copa)->definirEncerramento($this->idSub15M, true);
+        $this->assertNull($this->campeao());
+    }
+
     public function test_empate_em_tudo_no_primeiro_lugar_fica_a_definir(): void
     {
         $this->jogo('GRUPOS', 'Alfa', 'Beta', 1, 1);
+        $this->encerramento();
 
         $campeao = $this->campeao();
         $this->assertSame(['sorteio', ['Alfa', 'Beta']], [$campeao['situacao'], $campeao['empatados']]);
@@ -129,7 +178,20 @@ class CampeaoTest extends TestCase
         $this->jogo('GRUPOS', 'Alfa', 'Beta', 1, 0);
         $this->jogo('GRUPOS', 'Gama', 'Delta', 1, 0);
 
+        $this->encerramento()->assertSessionHas('erro', 'Não dá para encerrar: Com mais de um grupo (chave), o campeão sai do mata-mata.');
         $this->assertNull($this->campeao());
+    }
+
+    private function encerramento(?string $acao = null)
+    {
+        return $this->actingAs($this->admin, 'admin')
+            ->patch(route('admin.campeonatos.grupos.encerramento', [$this->copa, $this->idSub15M]), array_filter(['acao' => $acao]));
+    }
+
+    private function encerradaEm(): ?string
+    {
+        return DB::table('tbl_campeonato_categoria')->where('id_campeonato', $this->copa)->where('id_categoria', $this->idSub15M)
+            ->value('data_encerramento_campeonato_categoria');
     }
 
     // ---------- auxiliares ----------

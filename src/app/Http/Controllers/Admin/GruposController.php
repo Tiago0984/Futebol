@@ -25,6 +25,7 @@ class GruposController extends Controller
         $grupos         = $campeonato->grupos()->get()->groupBy('id_categoria');
         $classificacoes = collect($campeonato->classificacoes())->keyBy(fn ($c) => $c['categoria']->id_categoria);
         $campeoes       = $campeonato->campeoes($classificacoes->all());   // Fase I, Etapa I4
+        $paraEncerrar   = $classificacoes->map(fn ($c) => $campeonato->erroParaEncerrar($c));   // null = pode encerrar
         $timesPorGrupo  = DB::table('tbl_campeonato_time')->where('id_campeonato', $campeonato->id_campeonato)
             ->whereNotNull('id_campeonato_grupo')->groupBy('id_campeonato_grupo')
             ->selectRaw('id_campeonato_grupo, COUNT(*) AS total')->pluck('total', 'id_campeonato_grupo');
@@ -36,7 +37,7 @@ class GruposController extends Controller
             ['Grupos (chaves) e classificação', null],
         ];
 
-        return view('admin.campeonatos.grupos', compact('campeonato', 'participantes', 'grupos', 'classificacoes', 'campeoes', 'timesPorGrupo', 'caminho'));
+        return view('admin.campeonatos.grupos', compact('campeonato', 'participantes', 'grupos', 'classificacoes', 'campeoes', 'paraEncerrar', 'timesPorGrupo', 'caminho'));
     }
 
     // Cria um grupo numa categoria do campeonato (nome sem repetir na categoria)
@@ -124,6 +125,28 @@ class GruposController extends Controller
         return $this->voltar($campeonato, (int) $categoriaId)->with('sucesso', $classificados
             ? "{$classificados} classificado(s) por grupo (chave)."
             : 'Classificados por grupo (chave) sem definição.');
+    }
+
+    // Encerrar a categoria (pontos corridos: declara o campeão pela tabela) ou reabrir (acao=reabrir)
+    public function encerramento(Request $request, $id, $categoriaId)
+    {
+        $campeonato = Campeonato::findOrFail($id);
+        $classificacao = collect($campeonato->classificacoes())->first(fn ($c) => (int) $c['categoria']->id_categoria === (int) $categoriaId);
+        abort_unless($classificacao, 404);
+
+        if ($request->input('acao') === 'reabrir') {
+            $campeonato->definirEncerramento((int) $categoriaId, false);
+
+            return $this->voltar($campeonato, (int) $categoriaId)->with('sucesso', 'Categoria reaberta: o campeão sai do site até encerrar de novo.');
+        }
+
+        if ($erro = $campeonato->erroParaEncerrar($classificacao)) {
+            return $this->voltar($campeonato, (int) $categoriaId)->with('erro', "Não dá para encerrar: {$erro}");
+        }
+
+        $campeonato->definirEncerramento((int) $categoriaId, true);
+
+        return $this->voltar($campeonato, (int) $categoriaId)->with('sucesso', 'Categoria encerrada: o campeão aparece no site, no app e aqui.');
     }
 
     private function campeonatoEGrupo($id, $grupoId): array

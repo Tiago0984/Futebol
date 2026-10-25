@@ -78,6 +78,34 @@
         </div>
         @endif
 
+        {{-- Encerramento (pontos corridos, 25/10/2026): o campeão pela tabela só aparece com a categoria encerrada --}}
+        @php
+          $encerradaEm   = $categoria->pivot->data_encerramento_campeonato_categoria;
+          $erroEncerrar  = $paraEncerrar[$categoria->id_categoria] ?? null;
+          $rotaEncerrar  = route('admin.campeonatos.grupos.encerramento', [$campeonato->id_campeonato, $categoria->id_categoria]);
+        @endphp
+        @if ($encerradaEm)
+        <div class="alert alert-secondary d-flex flex-wrap align-items-center justify-content-between gap-2 js-encerramento">
+          <span>
+            <i class="bi bi-flag-fill"></i> Categoria encerrada em {{ \Illuminate\Support\Carbon::parse($encerradaEm)->format('d/m/Y H:i') }}.
+            @if ($erroEncerrar)<br><span class="text-danger small">O campeão não aparece: {{ $erroEncerrar }}</span>@endif
+          </span>
+          <form action="{{ $rotaEncerrar }}" method="POST" onsubmit="return confirm('Reabrir a categoria? O campeão sai do site até encerrar de novo.')">
+            @csrf @method('PATCH')
+            <input type="hidden" name="acao" value="reabrir">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> Reabrir</button>
+          </form>
+        </div>
+        @elseif (! $erroEncerrar)
+        <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 js-encerramento">
+          <span><i class="bi bi-info-circle"></i> Todos os jogos têm placar. Se o campeonato acabou (sem returno nem mata-mata), encerre a categoria para declarar o campeão.</span>
+          <form action="{{ $rotaEncerrar }}" method="POST" onsubmit="return confirm('Encerrar a categoria? O 1º da tabela aparece como campeão no site e no app.')">
+            @csrf @method('PATCH')
+            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-flag"></i> Encerrar categoria</button>
+          </form>
+        </div>
+        @endif
+
         <div class="row g-4">
           {{-- Grupos da categoria --}}
           <div class="col-lg-4">

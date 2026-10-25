@@ -125,6 +125,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::delete('campeonatos/{id}/grupos/{grupoId}',            [GruposController::class, 'remover'])->name('campeonatos.grupos.remover');
     Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}', [GruposController::class, 'times'])->name('campeonatos.grupos.times');
     Route::put('campeonatos/{id}/grupos/categoria/{categoriaId}/classificados', [GruposController::class, 'classificados'])->name('campeonatos.grupos.classificados');
+    Route::patch('campeonatos/{id}/grupos/categoria/{categoriaId}/encerramento', [GruposController::class, 'encerramento'])->name('campeonatos.grupos.encerramento');
     // Gerar os jogos de todos contra todos de uma categoria e publicar uma rodada (Fase I, Etapa I2)
     Route::get('campeonatos/{id}/categorias/{categoriaId}/gerar-jogos',  [GeradorDeJogosController::class, 'show'])->name('campeonatos.gerar-jogos');
     Route::post('campeonatos/{id}/categorias/{categoriaId}/gerar-jogos', [GeradorDeJogosController::class, 'gerar'])->name('campeonatos.gerar-jogos.gerar');
