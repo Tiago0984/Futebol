@@ -8,7 +8,7 @@ use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Tests\CriaDadosDeAtleta;
 use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
@@ -36,6 +36,8 @@ class CampeonatoCategoriasTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        // A logo e o banner enviados são tratados e gravados com nome gerado (26/10/2026): no disco falso
+        Storage::fake('imagens');
 
         $this->admin    = User::factory()->admin()->create();
         $this->idSub11M = $this->idCategoria('Sub-11', 'M');
@@ -272,13 +274,6 @@ class CampeonatoCategoriasTest extends TestCase
                 'banner_evento' => UploadedFile::fake()->image(self::IMAGEM_DE_TESTE),
             ] : []),
         ];
-    }
-
-    protected function tearDown(): void
-    {
-        File::delete(public_path('futebol/images/campeonatos/' . self::IMAGEM_DE_TESTE));
-
-        parent::tearDown();
     }
 
     private function campeonato(string $nome, int $idCategoria, string $status = 'ATIVO'): int
