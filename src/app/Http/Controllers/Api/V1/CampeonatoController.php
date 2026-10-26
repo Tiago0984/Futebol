@@ -9,7 +9,7 @@ use App\Models\Time;
 class CampeonatoController extends Controller
 {
     // GET /api/v1/campeonatos - campeonatos ativos, com as categorias (Fase H, Etapa H5; "categoria" continua sendo
-    // a de referência, para não quebrar o app)
+    // a de referência, para não quebrar o app) e o tipo_label (Campeonato::$appends)
     public function index()
     {
         $campeonatos = Campeonato::with(['categoria:id_categoria,nome_categoria', 'categorias'])
@@ -30,7 +30,7 @@ class CampeonatoController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $campeonatos->map(fn ($camp) => [...$camp->toArray(), 'categorias' => $this->categorias($camp)]),
+            'data'    => $campeonatos->map(fn ($camp) => [...$camp->toArray(), 'categorias' => $camp->categoriasNaApi()]),
         ]);
     }
 
@@ -92,18 +92,7 @@ class CampeonatoController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [...$campeonato->toArray(), 'categorias' => $this->categorias($campeonato), 'classificacao' => $classificacao],
+            'data'    => [...$campeonato->toArray(), 'categorias' => $campeonato->categoriasNaApi(), 'classificacao' => $classificacao],
         ]);
-    }
-
-    // Categorias do campeonato no JSON: [{id_categoria, nome_categoria, sexo_categoria, rotulo}]
-    private function categorias(Campeonato $campeonato): array
-    {
-        return $campeonato->categorias->map(fn ($categoria) => [
-            'id_categoria'   => (int) $categoria->id_categoria,
-            'nome_categoria' => $categoria->nome_categoria,
-            'sexo_categoria' => $categoria->sexo_categoria,
-            'rotulo'         => $categoria->rotulo,
-        ])->all();
     }
 }

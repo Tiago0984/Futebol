@@ -14,8 +14,9 @@ use App\Http\Controllers\Api\V1\AppDoAtletaController;
 
 // Agenda e avisos (Fase 9): as mesmas rotas para o atleta ("") e para o responsável ("/{idAtleta}", sob
 // /responsavel/atletas). As regras ficam em App\Services\AppDoAtleta. Junto, o perfil do responsável pela
-// atividade (Etapa C3), aberto pelo responsavel_id da agenda
+// atividade (Etapa C3), aberto pelo responsavel_id da agenda, e os campeonatos do atleta (26/10/2026, Home do app)
 $rotasDaAgendaEDosAvisos = function (string $prefixo) {
+    Route::get("{$prefixo}/campeonatos-do-atleta", [AppDoAtletaController::class, 'campeonatos']);
     Route::get("{$prefixo}/agenda", [AppDoAtletaController::class, 'agenda']);
     Route::get("{$prefixo}/agenda/{idEvento}", [AppDoAtletaController::class, 'evento'])->whereNumber('idEvento');
     Route::get("{$prefixo}/comissao-tecnica/{id}", [AppDoAtletaController::class, 'comissaoTecnica'])->whereNumber('id');

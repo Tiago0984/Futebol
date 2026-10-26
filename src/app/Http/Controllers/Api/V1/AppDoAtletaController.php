@@ -52,6 +52,13 @@ class AppDoAtletaController extends Controller
         return response()->json(['success' => true, 'data' => $this->app($request)->estatisticas()]);
     }
 
+    // GET /campeonatos-do-atleta (e /responsavel/atletas/{idAtleta}/campeonatos-do-atleta): os campeonatos ativos e
+    // não terminados de que o atleta participa (convocado ou pela categoria atual), só com as categorias dele
+    public function campeonatos(Request $request)
+    {
+        return response()->json(['success' => true, 'data' => $this->app($request)->campeonatos()]);
+    }
+
     // GET /agenda?page=N&tipo=JOGO,TREINO, ou GET /agenda?de=AAAA-MM-DD&ate=AAAA-MM-DD&tipo=... (período, sem página)
     public function agenda(Request $request)
     {

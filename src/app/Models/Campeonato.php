@@ -14,8 +14,9 @@ class Campeonato extends Model
     use SerializaDatasComFuso; // datas no JSON da API: 2025-01-01T00:00:00-03:00
     use UrlDeImagem;
 
-    // Endereço completo da logo e do banner no JSON da API (o banco guarda só o nome do arquivo)
-    protected $appends = ['logo_url', 'banner_url'];
+    // Endereço completo da logo e do banner no JSON da API (o banco guarda só o nome do arquivo) e o rótulo do
+    // tipo ("Pontos Corridos"; 26/10/2026, pedido do app)
+    protected $appends = ['logo_url', 'banner_url', 'tipo_label'];
 
     protected $table = 'tbl_campeonato';
     protected $primaryKey = 'id_campeonato';
@@ -103,6 +104,20 @@ class Campeonato extends Model
             ->orderByDesc('idade_max_categoria')->orderByDesc('sexo_categoria')->value('id_categoria');
 
         return $id === null ? null : (int) $id;
+    }
+
+    // Categorias no JSON da API: [{id_categoria, nome_categoria, sexo_categoria, rotulo}]; com $ids, só essas
+    // (campeonatos do atleta: só as dele)
+    public function categoriasNaApi(?array $ids = null): array
+    {
+        return $this->categorias
+            ->when($ids !== null, fn ($categorias) => $categorias->whereIn('id_categoria', $ids))
+            ->map(fn ($categoria) => [
+                'id_categoria'   => (int) $categoria->id_categoria,
+                'nome_categoria' => $categoria->nome_categoria,
+                'sexo_categoria' => $categoria->sexo_categoria,
+                'rotulo'         => $categoria->rotulo,
+            ])->values()->all();
     }
 
     // "Sub-11 Masculino, Sub-15 Masculino" (a lista de Campeonatos)

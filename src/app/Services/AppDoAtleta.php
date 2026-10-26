@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Atleta;
+use App\Models\Campeonato;
 use App\Models\EventoAtleta;
 use App\Models\EventoCalendario;
 use App\Models\Jogo;
@@ -13,6 +14,7 @@ use App\Models\Responsavel;
 use App\Models\Time;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 /**
  * O que o app mostra de um atleta (Fase 9): dados, agenda e avisos. Uma classe só para os dois perfis:
@@ -197,6 +199,62 @@ class AppDoAtleta
             $cartoes->filter(fn ($c) => $nela($c['id_evento'], $c['id_time'])),
             $sumula->filter(fn ($s, $idEvento) => $nela($idEvento, $s['id_time']))
         );
+    }
+
+    // ── Campeonatos do atleta ───────────────────────────────────────────────
+
+    /**
+     * GET /campeonatos-do-atleta (26/10/2026, carrossel da Home do app): os campeonatos ativos e ainda não
+     * terminados (data de fim hoje ou depois) de que o atleta participa (decisão do dono do projeto):
+     * - convocado no campeonato, em qualquer categoria (cobre quem joga numa categoria acima); ou
+     * - a categoria atual dele está no campeonato com um time da AACJ (INTERNO) participante, antes da convocação.
+     * "categorias": só as dele no campeonato (as das convocações e a atual, pela segunda regra); "convocacoes":
+     * categoria e camisa de cada convocação, sem o time. Em andamento primeiro (do que termina antes), depois os
+     * próximos pela data de início.
+     */
+    public function campeonatos(): array
+    {
+        $hoje = now()->toDateString();
+        $convocacoes = $this->atleta->convocacoes()->with('categoria')->get()->groupBy('id_campeonato');
+
+        $idCategoriaAtual = $this->atleta->categoriasAtivas()->wherePivotNull('data_fim_categoria_atleta')->value('tbl_categoria.id_categoria');
+        // A FK composta do participante já garante que a categoria é do campeonato
+        $pelaCategoria = $idCategoriaAtual === null ? collect() : DB::table('tbl_campeonato_time as ct')
+            ->join('tbl_time as t', 't.id_time', '=', 'ct.id_time')
+            ->where('ct.id_categoria', $idCategoriaAtual)->where('t.tipo_time', 'INTERNO')
+            ->distinct()->pluck('ct.id_campeonato')->map(fn ($id) => (int) $id);
+
+        return Campeonato::with('categorias')->ativos()
+            ->whereIn('id_campeonato', $convocacoes->keys()->merge($pelaCategoria)->unique()->values())
+            ->whereDate('data_fim_campeonato', '>=', $hoje)
+            ->get()
+            ->sortBy(fn (Campeonato $c) => [
+                $c->data_inicio_campeonato->toDateString() <= $hoje ? 0 : 1,
+                $c->data_inicio_campeonato->toDateString() <= $hoje ? $c->data_fim_campeonato->toDateString() : $c->data_inicio_campeonato->toDateString(),
+                $c->id_campeonato,
+            ])
+            ->map(function (Campeonato $campeonato) use ($convocacoes, $pelaCategoria, $idCategoriaAtual, $hoje) {
+                $doCampeonato = $convocacoes->get($campeonato->id_campeonato, collect());
+                $ids = $doCampeonato->pluck('id_categoria')->map(fn ($id) => (int) $id)
+                    ->when($pelaCategoria->contains($campeonato->id_campeonato), fn ($ids) => $ids->push((int) $idCategoriaAtual))
+                    ->unique()->all();
+
+                return collect($campeonato->toArray())->only([
+                    'id_campeonato', 'nome_campeonato', 'organizador_campeonato', 'descricao_campeonato', 'tipo_campeonato', 'tipo_label',
+                    'logo_evento', 'logo_url', 'banner_evento', 'banner_url', 'data_inicio_campeonato', 'data_fim_campeonato', 'local_evento',
+                ])->all() + [
+                    'situacao'     => $campeonato->data_inicio_campeonato->toDateString() <= $hoje ? 'EM_ANDAMENTO' : 'PROXIMO',
+                    'categorias'   => $campeonato->categoriasNaApi($ids),
+                    'convocada'    => $doCampeonato->isNotEmpty(),
+                    'convocacoes'  => $doCampeonato->sortBy(fn ($c) => [$c->categoria?->idade_max_categoria, $c->id_convocacao])
+                        ->map(fn ($c) => [
+                            'id_categoria' => (int) $c->id_categoria,
+                            'rotulo'       => $c->categoria?->rotulo,
+                            'camisa'       => $c->camisa_convocacao,
+                        ])->values()->all(),
+                ];
+            })
+            ->values()->all();
     }
 
     // ── Agenda ──────────────────────────────────────────────────────────────

@@ -161,6 +161,7 @@
         <table>
             <tr><th>Campo</th><th>Descrição</th></tr>
             <tr><td><code>categorias</code></td><td>As categorias do campeonato: <code>[{ "id_categoria": 2, "nome_categoria": "Sub-15", "sexo_categoria": "M", "rotulo": "Sub-15 Masculino" }]</code>. O campo antigo <code>categoria</code> continua (uma delas), para não quebrar o app; use <code>categorias</code></td></tr>
+            <tr><td><code>tipo_campeonato</code> / <code>tipo_label</code></td><td>O tipo (<code>LIGA</code>, <code>COPA</code>, <code>TORNEIO</code>, <code>MATA-MATA</code>, <code>PONTOS CORRIDOS</code>, <code>AMISTOSO</code>) e o rótulo para mostrar ("Pontos Corridos")</td></tr>
             <tr><td><code>local_evento</code>, <code>organizador_campeonato</code>, <code>logo_evento</code> / <code>logo_url</code>, <code>banner_evento</code> / <code>banner_url</code></td><td>Opcionais: podem vir <code>null</code>. <code>local_evento</code> é só o local principal; cada jogo tem o seu, em <code>jogos[].local_jogo</code> (os jogos de um campeonato podem ser em locais diferentes)</td></tr>
             <tr><td><code>jogos[].fase_jogo</code> / <code>jogos[].fase</code></td><td>A fase do jogo: <code>GRUPOS</code>, <code>REPESCAGEM</code>, <code>DEZESSEIS_AVOS</code>, <code>OITAVAS</code>, <code>QUARTAS</code>, <code>SEMIFINAL</code>, <code>TERCEIRO</code>, <code>FINAL</code>; <code>fase</code> é o rótulo ("Fase de grupos", "Disputa de 3º lugar")</td></tr>
             <tr><td><code>jogos[].rodada_jogo</code></td><td>A rodada na fase de grupos (<code>null</code> sem rodada e no mata-mata)</td></tr>
@@ -357,6 +358,44 @@ Content-Type: application/json
         <p>Atleta que ainda não jogou: <code>0</code> no <code>total</code> (gols e assistências <code>null</code>) e <code>por_time</code> vazio. O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/estatisticas</code>.</p>
     </div>
 
+    <div class="card">
+        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/campeonatos-do-atleta</code><span class="acesso atleta">Atleta</span></div>
+        <p>Os campeonatos de que o atleta participa (para o carrossel da Home): só campeonatos <strong>ativos</strong> e <strong>ainda não terminados</strong> (data de fim hoje ou depois). O atleta participa quando:</p>
+        <ul>
+            <li>foi <strong>convocado</strong> no campeonato, em qualquer categoria (inclusive numa categoria acima da dele); ou</li>
+            <li>a <strong>categoria atual</strong> dele está no campeonato e a AACJ tem time participante nela (o campeonato já aparece antes da convocação).</li>
+        </ul>
+        <p>Ordem: os <strong>em andamento</strong> primeiro (do que termina antes), depois os <strong>próximos</strong> pela data de início. Sem paginação. Nenhum campeonato: <code>data</code> vazio.</p>
+        <div class="tabela">
+        <table>
+            <tr><th>Campo</th><th>Descrição</th></tr>
+            <tr><td><code>id_campeonato</code>, <code>nome_campeonato</code>, <code>tipo_campeonato</code> / <code>tipo_label</code>, <code>data_inicio_campeonato</code>, <code>data_fim_campeonato</code></td><td>Os mesmos de <code>GET /campeonatos</code>; <code>tipo_label</code> é o rótulo ("Pontos Corridos")</td></tr>
+            <tr><td><code>descricao_campeonato</code>, <code>organizador_campeonato</code>, <code>local_evento</code></td><td>Podem vir <code>null</code></td></tr>
+            <tr><td><code>logo_evento</code> / <code>logo_url</code>, <code>banner_evento</code> / <code>banner_url</code></td><td>Podem vir <code>null</code> (campeonato sem imagem): use uma imagem padrão</td></tr>
+            <tr><td><code>situacao</code></td><td><code>EM_ANDAMENTO</code> (já começou) ou <code>PROXIMO</code></td></tr>
+            <tr><td><code>categorias</code></td><td><strong>Só as do atleta</strong> no campeonato (as das convocações e a categoria atual, quando a AACJ joga nela), no formato de <code>GET /campeonatos</code></td></tr>
+            <tr><td><code>convocada</code></td><td><code>true</code> se o atleta foi convocado no campeonato; <code>false</code> quando aparece só pela categoria (convocação ainda não feita ou não chamado)</td></tr>
+            <tr><td><code>convocacoes</code></td><td>Cada convocação: <code>{ id_categoria, rotulo, camisa }</code> (sem o time). A camisa é sempre definida na convocação (1 a 99). Vazio quando <code>convocada</code> é <code>false</code></td></tr>
+        </table>
+        </div>
+<pre>200 {
+  "success": true,
+  "data": [
+    {
+      "id_campeonato": 1, "nome_campeonato": "Copa Regional de Base", "organizador_campeonato": "Liga Regional",
+      "descricao_campeonato": "Campeonato de base com as categorias Sub-13 e Sub-15.", "tipo_campeonato": "COPA", "tipo_label": "Copa",
+      "logo_evento": "copa.png", "logo_url": "https://.../futebol/images/campeonatos/copa.png", "banner_evento": null, "banner_url": null,
+      "data_inicio_campeonato": "2026-10-03T00:00:00-03:00", "data_fim_campeonato": "2026-11-28T00:00:00-03:00", "local_evento": "Arena Norte",
+      "situacao": "EM_ANDAMENTO",
+      "categorias": [ { "id_categoria": 3, "nome_categoria": "Sub-13", "sexo_categoria": "M", "rotulo": "Sub-13 Masculino" } ],
+      "convocada": true,
+      "convocacoes": [ { "id_categoria": 3, "rotulo": "Sub-13 Masculino", "camisa": 8 } ]
+    }
+  ]
+}</pre>
+        <p>No exemplo, o atleta é do Sub-11 e foi convocado para jogar no Sub-13: o slide pode mostrar "Convocado no Sub-13 · camisa 8". O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/campeonatos-do-atleta</code>.</p>
+    </div>
+
     {{-- ================================================================== --}}
     <h2 id="responsavel">Área do responsável</h2>
     <p class="nota">Rotas com o token do perfil <strong>responsavel</strong> e pelo menos um filho <code>ATIVO</code>. Em todas as rotas de um filho, o servidor confere que o atleta é filho do responsável logado e está <code>ATIVO</code>; senão responde <code>404</code> (o mesmo para atleta de outra família, inativado ou inexistente).</p>
@@ -416,6 +455,7 @@ Content-Type: application/json
         <p>As mesmas rotas do atleta, sob <code>/api/v1/responsavel/atletas/{idAtleta}</code>, com as mesmas respostas:</p>
         <ul>
             <li><code>GET .../estatisticas</code></li>
+            <li><code>GET .../campeonatos-do-atleta</code></li>
             <li><code>GET .../agenda</code>, <code>GET .../agenda/{idEvento}</code></li>
             <li><code>GET .../comissao-tecnica/{id}</code> (o perfil do responsável pela atividade)</li>
             <li><code>GET .../notificacoes</code>, <code>GET .../notificacoes/nao-lidas</code></li>
@@ -701,6 +741,7 @@ Content-Type: application/json
             ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],
             ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
             ['GET',   '/atleta/estatisticas', 'Atleta', '—'],
+            ['GET',   '/campeonatos-do-atleta', 'Atleta', '—'],
             ['GET',   '/agenda', 'Atleta', 'page?, tipo?, de?, ate?'],
             ['GET',   '/agenda/{idEvento}', 'Atleta', '{idEvento}'],
             ['GET',   '/comissao-tecnica/{id}', 'Atleta', '{id}'],
@@ -715,6 +756,7 @@ Content-Type: application/json
             ['GET',   '/responsavel/atletas', 'Responsável', '—'],
             ['GET',   '/responsavel/atletas/{idAtleta}', 'Responsável', '{idAtleta}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/estatisticas', 'Responsável', '{idAtleta}'],
+            ['GET',   '/responsavel/atletas/{idAtleta}/campeonatos-do-atleta', 'Responsável', '{idAtleta}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?, tipo?, de?, ate?'],
             ['GET',   '/responsavel/atletas/{idAtleta}/agenda/{idEvento}', 'Responsável', '{idAtleta}, {idEvento}'],
             ['GET',   '/responsavel/atletas/{idAtleta}/comissao-tecnica/{id}', 'Responsável', '{idAtleta}, {id}'],
