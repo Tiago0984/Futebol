@@ -141,6 +141,14 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
   - histórico com o nome ("Responsável pela atividade: Carlos → Bruna"), **sem aviso aos atletas e sem "Alterado"**; o formulário do jogo não tem o campo (decisão do dono do projeto, 24/10);
   - **API:** `responsavel` (nome do profissional, ou o texto antigo, ou `null`; `EventoCalendario::nomeDoResponsavel()`) e `responsavel_id` (id do profissional ou `null`) em todo evento da agenda (lista, período e detalhe).
 
+### Imagens do painel (dono do projeto, 26/10/2026: quem não entende de imagem pode usar qualquer foto)
+- **Tratadas no envio** (`App\Services\TratadorDeImagem`, Intervention Image 3 com GD; rotação do EXIF acertada na leitura): **Banners da home 1920×1080** (16:9; a própria imagem define a altura do carrossel) e **banner do campeonato 1920×960** (2:1; o app usa ~2,1:1 e o cartão da lista ~1,6:1), recortados e reduzidos, em **JPG 82** (WebP fica para depois: o Docker local e outros servidores podem não ter); **logo do campeonato** inteira, sem cortar, num quadrado de até **512×512** com fundo transparente, em **PNG**. Menor que o formato **não é ampliada**.
+- **Recorte no formulário** (partial `admin.partials.campo-de-imagem`, Cropper.js 1.6.2 pelo jsdelivr): travado na proporção, começando pelo centro, com as prévias do site e do app (logo: num fundo claro e num escuro). As coordenadas vão em `recorte_{campo}` e o servidor confere (sem JavaScript, fora da imagem ou noutra proporção: o centro). O topo da página do campeonato passou de `center top` para `center` (`estilo.css`), para cortar igual.
+- **Aviso, sem bloquear:** capa com menos de 1200 px de largura no recorte, logo com menos de 256 px (na prévia e depois de salvar, partial `admin.partials.avisos-imagem`). Envio até **10 MB** (`TratadorDeImagem::ENVIO_MAX_KB`).
+- **Nome gerado** (`banner-campeonato-20261026-141500-a1b2c3.jpg`); o antigo é apagado só se tem nome gerado e nenhum outro registro usa (os que vieram no Git, como `logo.png`, ficam).
+- **Já cadastradas:** `php artisan imagens:reprocessar` (`--campeonatos`, `--banners`, `--simular`, `--forcar`): copia os originais para `storage/app/imagens-originais/AAAAMMDD-HHMMSS/`, recorta pelo centro, grava com nome novo e atualiza o banco (o original fica); pula o já tratado, o que não existe e a capa que perderia mais da metade (`--forcar` trata). **No servidor, só com OK do dono do projeto e backup antes.**
+- **API:** `logo_url` e `banner_url` iguais (só o nome do arquivo muda).
+
 ### Comissão técnica (dono do projeto, 25/10/2026; pedido do app: perfil do responsável pelo compromisso)
 - **Cadastro próprio** (CADASTROS › Comissão técnica, `ComissaoTecnicaController`), separado de `tbl_usuarios` (login do admin; os cargos de lá estavam vazios e sem tela). Criar, editar, ativar/desativar; **sem exclusão** (fica nos eventos em que já está; desativado não aparece para novas escolhas nem no app).
 - **Cargo de lista fixa** (`ComissaoTecnica::CARGOS`: Treinador técnico, Auxiliar técnico, Preparador físico, Preparador de goleiros, Coordenador, Fisioterapeuta, Nutricionista; ampliável no model).
@@ -1031,7 +1039,13 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 
 #### Em casa, 26/10/2026 — campeonatos do atleta no app (seção 4, "App")
 - Rota `campeonatos-do-atleta` (atleta e responsável) e `tipo_label` no `GET /campeonatos`. **Sem migration.** **791 testes passando + os 6 que falham só pela data** (os mesmos de 25/10).
-- **Falta publicar** (push da feature e da `main`; no servidor, só `git pull --ff-only` e `optimize:clear`), com OK do dono do projeto. Junto vão `cd6d96d` e `fd6d0b1` (este com a migration `2026_10_25_000003`).
+- **Publicado no servidor (26/10/2026):** push da feature e da `main` até `86f6d10` (a `main` estava em `cd6d96d`); lá, `git pull`, a migration `2026_10_25_000003` e `optimize:clear`, pelo dono do projeto. Conferido pelo Claude com o `curl`: `tipo_label` no `GET /campeonatos`, rota nova com 401 sem token e a documentação. O teste com token não foi feito (o login do Tiago Silva, `teste8@teste.com`, recusou a senha informada).
+
+#### Em casa, 26/10/2026 — imagens enviadas pelo painel (seção 4, "Imagens do painel")
+- **Docker local:** o `docker/php/Dockerfile` tinha um segundo `docker-php-ext-install ... gd` que recompilava o GD sem JPEG (só PNG); saiu, e o GD ganhou WebP. Container reconstruído (`docker compose build php`); backup antes em `backup/db_futebol_antes_tratamento_imagens_20261026_141102.sql`. **Num computador novo, ou no Senac: `docker compose build php` e `up -d`** (sem isso, o tratamento de JPG falha nos testes).
+- **Composer:** `intervention/image` 3.11 (o `composer.lock` mudou: no servidor, "Instalar" no PHP Composer do painel). Servidor (PHP 8.4, conferido pelo dono do projeto em 26/10): GD com JPEG, PNG, WebP e AVIF, Imagick instalado, `upload_max_filesize`/`post_max_size`/`memory_limit` 1024M.
+- **Sem migration.** `TratamentoDeImagemTest` (8). **799 testes passando + os 6 que falham só pela data.**
+- **Falta:** roteiro no navegador (recorte e prévias, que os testes não cobrem); publicar (Composer pelo painel) e, só com OK e backup, o `imagens:reprocessar` no servidor.
 
 ---
 
