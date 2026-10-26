@@ -6298,7 +6298,8 @@ body {
     min-height: 65vh;
     background-color: #0a0a0a;
     background-size: cover;
-    background-position: center top;
+    /* center (26/10/2026): corta igual ao recorte do painel, que parte do centro */
+    background-position: center;
     color: #ffffff;
     overflow: hidden;
     display: flex;

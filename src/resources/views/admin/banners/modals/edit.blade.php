@@ -31,10 +31,8 @@
                                 <option value="inativo">Inativo</option>
                             </select>
                         </div>
-                        <div class="col-md-7">
-                            <label class="form-label">Alterar Imagem <span class="text-muted fw-normal">(opcional)</span></label>
-                            <input type="file" name="foto_banner" class="form-control" accept="image/*">
-                            <span class="form-text">Deixe vazio para manter a imagem atual</span>
+                        <div class="col-12">
+                            @include('admin.banners.modals._foto', ['rotulo' => 'Alterar imagem (opcional)', 'ajuda' => ' Deixe vazio para manter a imagem atual.'])
                         </div>
                     </div>
                 </div>

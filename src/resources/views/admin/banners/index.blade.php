@@ -28,6 +28,8 @@
         </div>
         @endif
 
+        @include('admin.partials.avisos-imagem')
+
         @if ($errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Ops! Verifique os campos do formulário:</strong>

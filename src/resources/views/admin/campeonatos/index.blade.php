@@ -71,6 +71,8 @@
         </div>
         @endif
 
+        @include('admin.partials.avisos-imagem')
+
         @if(session('erro'))
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Erro!</strong> {{ session('erro') }}
@@ -277,16 +279,7 @@
 
                         <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-image"></i> Imagens</p></div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">Logo / Escudo</label>
-                            <input type="file" name="logo_evento" class="form-control" accept="image/*">
-                            <span class="form-text">JPG, PNG, WEBP. Máx. 2MB.</span>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Banner</label>
-                            <input type="file" name="banner_evento" class="form-control" accept="image/*">
-                            <span class="form-text">JPG, PNG. Máx. 4MB.</span>
-                        </div>
+                        @include('admin.campeonatos._imagens')
 
                         <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-tags"></i> Categorias e Times Participantes</p></div>
 
@@ -364,18 +357,7 @@
 
                         <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-image"></i> Imagens</p></div>
 
-                        <div class="col-md-6">
-                            <label class="form-label">Logo / Escudo</label>
-                            <small id="edit_logo_atual" class="d-block text-muted mb-1"></small>
-                            <input type="file" name="logo_evento" class="form-control" accept="image/*">
-                            <span class="form-text">Deixe em branco para manter o atual.</span>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Banner</label>
-                            <small id="edit_banner_atual" class="d-block text-muted mb-1"></small>
-                            <input type="file" name="banner_evento" class="form-control" accept="image/*">
-                            <span class="form-text">Deixe em branco para manter o atual.</span>
-                        </div>
+                        @include('admin.campeonatos._imagens', ['editando' => true, 'idLogoAtual' => 'edit_logo_atual', 'idBannerAtual' => 'edit_banner_atual'])
 
                         <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-tags"></i> Categorias e Times Participantes</p></div>
 

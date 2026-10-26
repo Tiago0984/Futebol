@@ -90,28 +90,11 @@
                 </div>
                 <div class="p-4">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Logo / Escudo</label>
-                            @if($campeonato->logo_evento)
-                            <div class="d-flex align-items-center gap-2 mb-2">
-                                <img src="{{ asset('futebol/images/campeonatos/' . $campeonato->logo_evento) }}"
-                                     style="width:48px;height:48px;object-fit:contain;border:1px solid #eee;border-radius:4px;">
-                                <small class="text-muted">Atual: {{ $campeonato->logo_evento }}</small>
-                            </div>
-                            @endif
-                            <input type="file" name="logo_evento" class="form-control" accept="image/*">
-                            <span class="form-text">Deixe em branco para manter o atual.</span>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Banner (imagem de destaque)</label>
-                            @if($campeonato->banner_evento)
-                            <div class="mb-2">
-                                <small class="text-muted">Atual: {{ $campeonato->banner_evento }}</small>
-                            </div>
-                            @endif
-                            <input type="file" name="banner_evento" class="form-control" accept="image/*">
-                            <span class="form-text">Deixe em branco para manter o atual.</span>
-                        </div>
+                        @include('admin.campeonatos._imagens', [
+                            'editando'    => true,
+                            'logoAtual'   => $campeonato->logo_evento ? 'Atual: ' . $campeonato->logo_evento : null,
+                            'bannerAtual' => $campeonato->banner_evento ? 'Atual: ' . $campeonato->banner_evento : null,
+                        ])
                     </div>
                 </div>
             </div>

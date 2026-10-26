@@ -85,16 +85,7 @@
                 </div>
                 <div class="p-4">
                     <div class="row g-3">
-                        <div class="col-md-6">
-                            <label class="form-label">Logo / Escudo</label>
-                            <input type="file" name="logo_evento" class="form-control" accept="image/*">
-                            <span class="form-text">JPG, PNG, WEBP. Máx. 2MB. Exibido nos cards.</span>
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Banner (imagem de destaque)</label>
-                            <input type="file" name="banner_evento" class="form-control" accept="image/*">
-                            <span class="form-text">JPG, PNG. Máx. 4MB. Exibido no hero do campeonato.</span>
-                        </div>
+                        @include('admin.campeonatos._imagens')
                     </div>
                 </div>
             </div>

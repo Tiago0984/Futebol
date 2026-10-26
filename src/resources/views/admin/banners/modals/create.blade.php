@@ -30,10 +30,8 @@
                                 <option value="inativo">Inativo</option>
                             </select>
                         </div>
-                        <div class="col-md-7">
-                            <label class="form-label">Imagem <span class="text-danger">*</span></label>
-                            <input type="file" name="foto_banner" class="form-control" accept="image/*" required>
-                            <span class="form-text">Máx. 2MB · Recomendado: 1920×600px</span>
+                        <div class="col-12">
+                            @include('admin.banners.modals._foto', ['rotulo' => 'Imagem', 'obrigatorio' => true, 'ajuda' => ''])
                         </div>
                     </div>
                 </div>

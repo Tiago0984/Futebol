@@ -6,12 +6,16 @@ use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
 use App\Models\Categoria;
 use App\Models\Time;
+use App\Services\TratadorDeImagem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class CampeonatosController extends Controller
 {
+    // Pasta da logo e do banner no disco "imagens" (public/futebol/images)
+    public const PASTA_IMAGENS = 'campeonatos';
+
     /**
      * Lista de campeonatos. ?campeonato=ID (o nome do campeonato no menu) mostra só aquele, com o aviso e
      * o "Ver todos"; ID inexistente ou inválido é ignorado (lista todos).
@@ -58,15 +62,8 @@ class CampeonatosController extends Controller
             'descricao_campeonato',
         ]);
 
-        if ($request->hasFile('logo_evento')) {
-            $dados['logo_evento'] = $request->file('logo_evento')->getClientOriginalName();
-            $request->file('logo_evento')->move(public_path('futebol/images/campeonatos'), $dados['logo_evento']);
-        }
-
-        if ($request->hasFile('banner_evento')) {
-            $dados['banner_evento'] = $request->file('banner_evento')->getClientOriginalName();
-            $request->file('banner_evento')->move(public_path('futebol/images/campeonatos'), $dados['banner_evento']);
-        }
+        [$imagens, $avisosImagem] = $this->tratarImagens($request);
+        $dados += $imagens;
 
         $dados['status_campeonato'] = 'ATIVO';
         $dados['id_categoria'] = Campeonato::categoriaDeReferencia($idsCategorias);
@@ -76,7 +73,8 @@ class CampeonatosController extends Controller
             $campeonato->gravarCategoriasEParticipantes($idsCategorias, $participantes);
         });
 
-        return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato criado com sucesso.');
+        return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato criado com sucesso.')
+            ->with('avisos_imagem', $avisosImagem);
     }
 
     public function edit($id)
@@ -119,15 +117,9 @@ class CampeonatosController extends Controller
             'descricao_campeonato',
         ]);
 
-        if ($request->hasFile('logo_evento')) {
-            $dados['logo_evento'] = $request->file('logo_evento')->getClientOriginalName();
-            $request->file('logo_evento')->move(public_path('futebol/images/campeonatos'), $dados['logo_evento']);
-        }
-
-        if ($request->hasFile('banner_evento')) {
-            $dados['banner_evento'] = $request->file('banner_evento')->getClientOriginalName();
-            $request->file('banner_evento')->move(public_path('futebol/images/campeonatos'), $dados['banner_evento']);
-        }
+        [$imagens, $avisosImagem] = $this->tratarImagens($request);
+        $dados += $imagens;
+        $antigas = $campeonato->only(array_keys($imagens));
 
         $dados['id_categoria'] = Campeonato::categoriaDeReferencia($idsCategorias, (int) $campeonato->id_categoria);
 
@@ -137,7 +129,14 @@ class CampeonatosController extends Controller
             $campeonato->gravarCategoriasEParticipantes($idsCategorias, $participantes);
         });
 
-        return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato atualizado com sucesso.');
+        // A logo e o banner antigos saem depois de gravar, se nenhum outro campeonato usa o mesmo arquivo
+        foreach ($antigas as $antiga) {
+            TratadorDeImagem::apagarSeNinguemUsa(self::PASTA_IMAGENS, $antiga, fn ($arquivo) => Campeonato::where('logo_evento', $arquivo)
+                ->orWhere('banner_evento', $arquivo)->exists());
+        }
+
+        return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato atualizado com sucesso.')
+            ->with('avisos_imagem', $avisosImagem);
     }
 
     public function toggleStatus($id)
@@ -189,8 +188,10 @@ class CampeonatosController extends Controller
             'descricao_campeonato'   => 'nullable|string',
             'categorias'             => 'required|array|min:1',
             'categorias.*'           => 'integer|exists:tbl_categoria,id_categoria',
-            'logo_evento'            => 'nullable|image|max:2048',
-            'banner_evento'          => 'nullable|image|max:4096',
+            // A logo e o banner são reduzidos no servidor (TratadorDeImagem): a foto pode vir direto do celular
+            'logo_evento'            => 'nullable|image|max:' . TratadorDeImagem::ENVIO_MAX_KB,
+            'banner_evento'          => 'nullable|image|max:' . TratadorDeImagem::ENVIO_MAX_KB,
+            'recorte_banner_evento'  => 'nullable|string|max:60',
             'participantes'          => 'nullable|array',
             'participantes.*'        => 'array',
             'participantes.*.*'      => 'integer|exists:tbl_time,id_time',
@@ -200,7 +201,35 @@ class CampeonatosController extends Controller
             'nome_campeonato.max'        => 'O nome do campeonato pode ter no máximo 100 caracteres.',
             'local_evento.max'           => 'O local principal pode ter no máximo 100 caracteres.',
             'organizador_campeonato.max' => 'O organizador pode ter no máximo 100 caracteres.',
+            'logo_evento.max'            => 'A logo pode ter no máximo 10 MB.',
+            'banner_evento.max'          => 'O banner pode ter no máximo 10 MB.',
         ]);
+    }
+
+    /**
+     * Logo (512×512 PNG, inteira, fundo transparente) e banner (1920×960 JPG, pelo recorte do formulário ou pelo
+     * centro), tratados pelo TratadorDeImagem: [colunas => arquivo, avisos de imagem pequena].
+     */
+    private function tratarImagens(Request $request): array
+    {
+        $imagens = [];
+        $avisos = [];
+
+        if ($request->hasFile('logo_evento')) {
+            $logo = TratadorDeImagem::logo($request->file('logo_evento')->getRealPath(), self::PASTA_IMAGENS, 'logo-campeonato');
+            $imagens['logo_evento'] = $logo['arquivo'];
+            $avisos[] = $logo['aviso'];
+        }
+
+        if ($request->hasFile('banner_evento')) {
+            [$largura, $altura] = TratadorDeImagem::BANNER_CAMPEONATO;
+            $banner = TratadorDeImagem::capa($request->file('banner_evento')->getRealPath(), self::PASTA_IMAGENS, 'banner-campeonato',
+                $largura, $altura, $request->input('recorte_banner_evento'));
+            $imagens['banner_evento'] = $banner['arquivo'];
+            $avisos[] = $banner['aviso'];
+        }
+
+        return [$imagens, array_values(array_filter($avisos))];
     }
 
     // Categorias marcadas (todas valem igual na tela; a de referência sai delas: Campeonato::categoriaDeReferencia)
