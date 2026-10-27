@@ -174,6 +174,15 @@ class TratamentoDeImagemTest extends TestCase
             file_get_contents(public_path('coderatech/css/estilo.css')));
     }
 
+    public function test_banner_sem_subtitulo_nao_mostra_o_bloco_vazio(): void
+    {
+        Banner::create(['titulo_banner' => 'Só título', 'subtitulo_banner' => null, 'foto_banner' => 'a.jpg', 'ordem_banner' => 1, 'status_banner' => 'ativo']);
+        $this->get('/')->assertOk()->assertSee('Só título')->assertDontSee('class="caption-desc"', false);
+
+        Banner::create(['titulo_banner' => 'Com subtítulo', 'subtitulo_banner' => 'Matrículas abertas', 'foto_banner' => 'b.jpg', 'ordem_banner' => 2, 'status_banner' => 'ativo']);
+        $this->get('/')->assertOk()->assertSee('<div class="caption-desc">Matrículas abertas</div>', false);
+    }
+
     public function test_envio_acima_de_10_mb_e_recusado(): void
     {
         $this->comoAdmin()->post(route('admin.banners.store'), ['titulo_banner' => 'B', 'ordem_banner' => 1, 'status_banner' => 'ativo',

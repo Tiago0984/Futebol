@@ -16,7 +16,10 @@
 					<div class="container">
 						<div class="wrap-caption">
 							<div class="caption-heading">{{ $banner->titulo_banner }}</div>
+							{{-- Sem subtítulo, sem o bloco (o fundo preto aparecia vazio) --}}
+							@if (filled($banner->subtitulo_banner))
 							<div class="caption-desc">{{ $banner->subtitulo_banner }}</div>
+							@endif
 						</div>
 					</div>
 				</div>
