@@ -281,7 +281,7 @@
                         'logo'       => $par[0]->logo_time,
                         'papel'      => $par[1],
                         'externo'    => $par[0]->tipo_time !== 'INTERNO',
-                        // Categoria do cadastro do time; outra que não a do jogo vira "Time: …" com a dica
+                        // Categoria do cadastro do time; outra que não a do jogo: a do jogo em destaque e a do cadastro embaixo
                         'categoria'  => $par[0]->categoria?->rotulo,
                         'outra_categoria' => $par[0]->categoria && $jogo->categoriaDoJogo()
                             && (int) $par[0]->id_categoria !== (int) $jogo->categoriaDoJogo()->id_categoria,
@@ -446,8 +446,8 @@
                                 </div>
                                 <div class="px-3 py-3 text-muted small">
                                     @if ($bloco['outra_categoria'])
-                                        <div class="js-categoria-do-time" title="Categoria do cadastro do time. No campeonato, ele joga no {{ $jogo->categoriaDoJogo()->rotulo }}.">
-                                            Time: {{ $bloco['categoria'] }} <i class="bi bi-info-circle"></i></div>
+                                        <div class="fw-semibold js-categoria-do-time">{{ $jogo->categoriaDoJogo()->rotulo }}</div>
+                                        <div>Cadastro do time: {{ $bloco['categoria'] }}</div>
                                     @elseif ($bloco['categoria'])<div>{{ $bloco['categoria'] }}</div>@endif
                                     <i class="bi bi-lock-fill"></i> <em>Elenco não disponível nesta associação</em>
                                 </div>

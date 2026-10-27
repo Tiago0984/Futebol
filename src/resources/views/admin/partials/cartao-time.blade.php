@@ -3,9 +3,8 @@
     $time (com categoria); $link = jogadores do time no jogo ou convocados do time no campeonato, ignorado no
     externo, que fica bloqueado (sem atletas na associação); $contagem = texto do número, por exemplo
     "3 escalado(s) no jogo" ou "5 convocado(s)".
-    $categoriaDoCampeonato (opcional): quando a categoria do time é outra, o rótulo vira "Time: …" com a dica
-    de que é a do cadastro do time (o mesmo time joga campeonatos de faixas diferentes; a idade segue a do
-    campeonato).
+    $categoriaDoCampeonato (opcional): quando a categoria do time é outra, ela aparece em destaque e a do cadastro
+    do time embaixo, menor (o mesmo time joga campeonatos de faixas diferentes; a idade segue a do campeonato).
 --}}
 @php
   $categoriaDoCampeonato ??= null;

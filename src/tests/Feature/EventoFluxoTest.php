@@ -379,17 +379,19 @@ class EventoFluxoTest extends TestCase
             ->assertSee('Sub-11 Masculino')
             ->assertDontSee('js-categoria-do-time');
 
-        // Jogo Sub-15, times Sub-11: "Time: …" com a dica, nos cartões e na tela do jogo (Fase H, Etapa H3: a do jogo)
+        // Jogo Sub-15, times Sub-11: a do jogo em destaque e a do cadastro embaixo (26/10/2026; antes, "Time: …" com
+        // uma dica escondida), nos cartões e na tela do jogo (Fase H, Etapa H3: a do jogo)
         $jogo->evento->update(['id_categoria' => $this->idCategoria('Sub-15', 'M')]);
-        $dica = 'title="Categoria do cadastro do time. No campeonato, ele joga no Sub-15 Masculino."';
+        $destaque = '<span class="escal-team-cat escal-team-cat-joga js-categoria-do-time">Sub-15 Masculino</span>';
         $this->comoAdmin()->get(route('admin.campeonatos.times', $this->copa))
-            ->assertSee('Time: Sub-11 Masculino')
-            ->assertSee($dica, false);
-        $this->comoAdmin()->get(route('admin.campeonatos.jogos'))->assertSee('Time: Sub-11 Masculino');
+            ->assertSee($destaque, false)
+            ->assertSee('Cadastro do time: Sub-11 Masculino')
+            ->assertDontSee('Time: Sub-11 Masculino');
+        $this->comoAdmin()->get(route('admin.campeonatos.jogos'))->assertSee($destaque, false)->assertSee('Cadastro do time: Sub-11 Masculino');
 
         $jogo = Jogo::where('id_campeonato', $this->copa)->first();
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
-            ->assertSee($dica, false);
+            ->assertSee('Cadastro do time: Sub-11 Masculino');
     }
 
     public function test_tipo_antigo_fora_da_lista_continua_aceito_na_edicao(): void

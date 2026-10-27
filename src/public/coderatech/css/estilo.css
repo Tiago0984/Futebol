@@ -10835,6 +10835,11 @@ body.lp-body {
     font-size: .72rem;
     color: var(--aacj-text-muted);
 }
+/* Categoria em que o time joga no campeonato, quando é outra que a do cadastro (26/10/2026) */
+.escal-team-cat-joga {
+    font-weight: 600;
+    color: var(--aacj-text-secondary);
+}
 .escal-team-count {
     font-size: .72rem;
     color: var(--aacj-text-secondary);
