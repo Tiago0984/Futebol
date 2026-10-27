@@ -31,6 +31,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
+# Limites de envio e memória para as fotos do painel (o PHP da imagem oficial vem sem php.ini: 2M, 8M e 128M)
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Instala o Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
