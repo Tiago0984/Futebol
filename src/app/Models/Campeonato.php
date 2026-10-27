@@ -191,6 +191,37 @@ class Campeonato extends Model
             : [];
     }
 
+    /**
+     * Times da AACJ (INTERNO) masculinos, pela categoria do cadastro, marcados numa categoria feminina
+     * ($participantes: [id_categoria => [id_time]]): uma mensagem por caso (26/10/2026, dono do projeto). O contrário
+     * (time feminino numa categoria masculina) continua permitido, com o aviso de sexo da convocação, até o
+     * professor responder a pergunta 14 (a base pode ter time misto). O externo fica livre: um cadastro só
+     * ("Botafogo") pode jogar no masculino e no feminino.
+     */
+    public static function masculinosEmCategoriaFeminina(array $participantes): array
+    {
+        $femininas = Categoria::whereIn('id_categoria', array_keys($participantes))->where('sexo_categoria', 'F')->get()->keyBy('id_categoria');
+        $idsTimes = collect($participantes)->only($femininas->keys()->all())->flatten()->map(fn ($id) => (int) $id)->unique();
+        if ($idsTimes->isEmpty()) {
+            return [];
+        }
+
+        $masculinos = Time::with('categoria')->whereIn('id_time', $idsTimes)->where('tipo_time', 'INTERNO')->get()
+            ->filter(fn (Time $time) => $time->categoria?->sexo_categoria === 'M')->keyBy('id_time');
+
+        $erros = [];
+        foreach ($femininas as $idCategoria => $categoria) {
+            foreach (array_map('intval', (array) $participantes[$idCategoria]) as $idTime) {
+                if ($time = $masculinos->get($idTime)) {
+                    $erros[] = "{$time->nome_time} é Masculino e não pode jogar no {$categoria->rotulo}. "
+                        . "Cadastre um time feminino (ex.: {$time->nome_time} F).";
+                }
+            }
+        }
+
+        return $erros;
+    }
+
     // Categoria do time no campeonato (o time interno está numa só; null se não participa), guardada por time
     private array $categoriasDosTimes = [];
 

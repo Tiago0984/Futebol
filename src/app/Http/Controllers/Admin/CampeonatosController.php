@@ -241,11 +241,15 @@ class CampeonatosController extends Controller
     private function erroDosInternos(array $participantes): ?string
     {
         $repetidos = Campeonato::internosEmVariasCategorias($participantes);
+        if ($repetidos) {
+            return 'Cada time da AACJ joga em uma categoria só do campeonato: ' . implode(', ', $repetidos)
+                . ' está(ão) marcado(s) em mais de uma. Para outra categoria, use outro time da AACJ (ex.: "AACJ Sub-17").';
+        }
 
-        return $repetidos
-            ? 'Cada time da AACJ joga em uma categoria só do campeonato: ' . implode(', ', $repetidos)
-                . ' está(ão) marcado(s) em mais de uma. Para outra categoria, use outro time da AACJ (ex.: "AACJ Sub-17").'
-            : null;
+        // Time da AACJ masculino em categoria feminina (26/10/2026); o contrário continua permitido
+        $masculinos = Campeonato::masculinosEmCategoriaFeminina($participantes);
+
+        return $masculinos ? implode(' ', $masculinos) : null;
     }
 
     // Participantes de cada categoria marcada: [id_categoria => [id_time]]; o bloco de categoria desmarcada é ignorado

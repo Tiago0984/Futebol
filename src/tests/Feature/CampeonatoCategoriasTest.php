@@ -146,6 +146,31 @@ class CampeonatoCategoriasTest extends TestCase
             ->assertSee('data-participantes="' . e(json_encode([$this->idSub15M => [$this->botafogo, $this->aacj15], $this->idSub17M => [$this->botafogo, $this->aacj17]])) . '"', false);
     }
 
+    public function test_time_da_aacj_masculino_nao_joga_em_categoria_feminina(): void
+    {
+        // 26/10/2026, dono do projeto: só o masculino da AACJ é barrado; feminino no masculino e o externo continuam
+        $sub15F = $this->idCategoria('Sub-15', 'F');
+        $aacj15F = $this->time('AACJ Sub-15 F', 'INTERNO', $sub15F);
+        $dados = [...$this->dados('Copa Mista'), 'categorias' => [$this->idSub15M, $sub15F]];
+
+        $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$dados, 'participantes' => [$sub15F => [$this->aacj15, $this->botafogo]]])
+            ->assertSessionHasErrors(['participantes' => 'AACJ Sub-15 é Masculino e não pode jogar no Sub-15 Feminino. '
+                . 'Cadastre um time feminino (ex.: AACJ Sub-15 F).']);
+        $this->assertSame(0, Campeonato::where('nome_campeonato', 'Copa Mista')->count());
+
+        // O externo (cadastro masculino) no feminino e o time feminino da AACJ no masculino: aceitos
+        $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$dados, 'participantes' => [
+            $sub15F => [$this->botafogo], $this->idSub15M => [$aacj15F, $this->botafogo],
+        ]])->assertSessionHasNoErrors()->assertSessionHas('sucesso');
+
+        // Na edição, a mesma regra
+        $copa = Campeonato::where('nome_campeonato', 'Copa Mista')->sole();
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), [...$dados, 'participantes' => [$sub15F => [$this->aacj15]]])
+            ->assertSessionHasErrors('participantes');
+        $this->assertEquals([$sub15F => [$this->botafogo], $this->idSub15M => [$this->botafogo, $aacj15F]],
+            $copa->participantesPorCategoria(), 'nada mudou');
+    }
+
     public function test_ao_menos_uma_categoria_e_obrigatoria(): void
     {
         $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$this->dados('Liga', true), 'categorias' => [$this->idSub15M]])
