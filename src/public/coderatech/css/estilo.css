@@ -11210,3 +11210,11 @@ body.lp-body {
     .camp-campeao-nome { font-size: 1.25rem; }
 }
 .camp-campeao-tag { background: #d4a017 !important; color: #111111 !important; }
+
+/* ==========================================================================
+   76. CARROSSEL DA HOME SEMPRE NA LARGURA DA TELA (26/10/2026)
+   A imagem do slide fica invisível e só define a altura (a foto aparece como fundo, pelo script.js). Com o
+   max-width do Bootstrap, uma foto mais estreita que a tela deixava o slide baixo (264 px de largura = faixa de
+   148 px). Na largura toda, o slide fica em 16:9 (o formato dos Banners, 1920×1080) com qualquer arquivo.
+   ========================================================================== */
+.banner .carousel-inner > .item > img { width: 100%; }

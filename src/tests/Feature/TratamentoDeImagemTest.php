@@ -143,6 +143,16 @@ class TratamentoDeImagemTest extends TestCase
         Storage::disk('imagens')->assertExists('banner/' . $banner->refresh()->foto_banner);
     }
 
+    public function test_carrossel_da_home_ocupa_a_largura_da_tela(): void
+    {
+        Banner::create(['titulo_banner' => 'Bem-vindo', 'foto_banner' => 'banner-site-20261026-210942-9ddj4g.jpg', 'ordem_banner' => 1, 'status_banner' => 'ativo']);
+
+        // A imagem invisível do slide define a altura: na largura toda, 16:9 com qualquer arquivo (estilo.css, seção 76)
+        $this->get('/')->assertOk()->assertSee('futebol/images/banner/banner-site-20261026-210942-9ddj4g.jpg');
+        $this->assertStringContainsString('.banner .carousel-inner > .item > img { width: 100%; }',
+            file_get_contents(public_path('coderatech/css/estilo.css')));
+    }
+
     public function test_envio_acima_de_10_mb_e_recusado(): void
     {
         $this->comoAdmin()->post(route('admin.banners.store'), ['titulo_banner' => 'B', 'ordem_banner' => 1, 'status_banner' => 'ativo',
