@@ -112,6 +112,6 @@ class BannersController extends Controller
 
     private function mensagens(): array
     {
-        return ['foto_banner.max' => 'A foto pode ter no máximo 10 MB.', 'foto_banner.image' => 'Envie uma imagem (JPG, PNG, WebP ou GIF).'];
+        return ['foto_banner.image' => 'Envie uma imagem (JPG, PNG, WebP ou GIF).', ...TratadorDeImagem::mensagensDoEnvio(['foto_banner'])];
     }
 }

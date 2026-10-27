@@ -175,8 +175,33 @@ class TratamentoDeImagemTest extends TestCase
     {
         $this->comoAdmin()->post(route('admin.banners.store'), ['titulo_banner' => 'B', 'ordem_banner' => 1, 'status_banner' => 'ativo',
             'foto_banner' => UploadedFile::fake()->image('grande.jpg', 100, 100)->size(TratadorDeImagem::ENVIO_MAX_KB + 1)])
-            ->assertSessionHasErrors(['foto_banner' => 'A foto pode ter no máximo 10 MB.']);
+            ->assertSessionHasErrors(['foto_banner' => 'Não foi possível enviar a imagem. Use um arquivo de até 10 MB.']);
         $this->assertSame(0, Banner::count());
+    }
+
+    public function test_falha_de_envio_tem_mensagem_em_portugues_em_todos_os_campos_de_imagem(): void
+    {
+        // Arquivo que o PHP recusou (acima do upload_max_filesize): UPLOAD_ERR_INI_SIZE
+        $recusado = fn (string $nome) => new UploadedFile($this->imagem(10, 10), $nome, 'image/jpeg', UPLOAD_ERR_INI_SIZE, true);
+
+        $this->comoAdmin()->post(route('admin.banners.store'), ['titulo_banner' => 'B', 'ordem_banner' => 1, 'status_banner' => 'ativo',
+            'foto_banner' => $recusado('foto.jpg')])
+            ->assertSessionHasErrors(['foto_banner' => 'Não foi possível enviar a imagem. Use um arquivo de até 10 MB.']);
+
+        $this->comoAdmin()->post(route('admin.campeonatos.store'), ['nome_campeonato' => 'Copa', 'tipo_campeonato' => 'COPA',
+            'data_inicio_campeonato' => now()->toDateString(), 'data_fim_campeonato' => now()->toDateString(),
+            'categorias' => [$this->idCategoria('Sub-15', 'M')], 'logo_evento' => $recusado('logo.jpg'), 'banner_evento' => $recusado('banner.jpg')])
+            ->assertSessionHasErrors([
+                'logo_evento'   => 'Não foi possível enviar a imagem. Use um arquivo de até 10 MB.',
+                'banner_evento' => 'Não foi possível enviar a imagem. Use um arquivo de até 10 MB.',
+            ]);
+
+        $this->comoAdmin()->post(route('admin.noticias.store'), ['foto_noticia' => $recusado('n.jpg')])
+            ->assertSessionHasErrors(['foto_noticia' => 'Não foi possível enviar a imagem. Use um arquivo de até 2 MB.']);
+        $this->comoAdmin()->post(route('admin.times.store'), ['logo_time' => $recusado('t.jpg')])
+            ->assertSessionHasErrors(['logo_time' => 'Não foi possível enviar a imagem. Use um arquivo de até 1 MB.']);
+        $this->comoAdmin()->post(route('admin.galeria.store'), ['foto_galeria' => $recusado('g.jpg')])
+            ->assertSessionHasErrors(['foto_galeria' => 'Não foi possível enviar a imagem. Use um arquivo de até 4 MB.']);
     }
 
     public function test_comando_simula_trata_copia_os_originais_e_pula_o_que_corta_demais(): void

@@ -136,6 +136,7 @@ class ComissaoTecnicaController extends Controller
             'foto_comissao_tecnica.image'                   => 'A foto precisa ser uma imagem (JPG, PNG ou WEBP).',
             'foto_comissao_tecnica.mimes'                   => 'A foto precisa ser uma imagem (JPG, PNG ou WEBP).',
             'foto_comissao_tecnica.max'                     => 'A foto pode ter no máximo 2 MB.',
+            'foto_comissao_tecnica.uploaded'                => 'Não foi possível enviar a imagem. Use um arquivo de até 2 MB.',
         ]);
 
         return [

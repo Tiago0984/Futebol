@@ -31,6 +31,17 @@ class TratadorDeImagem
     // Limite de envio (KB) na validação: a foto é reduzida aqui, então pode vir direto do celular
     public const ENVIO_MAX_KB = 10240;
 
+    /**
+     * Mensagens de validação dos campos de imagem, em português (o admin usa o idioma padrão do Laravel): "uploaded"
+     * (o PHP recusou o arquivo, acima do upload_max_filesize) e "max" (acima do limite do campo) dizem o mesmo.
+     */
+    public static function mensagensDoEnvio(array $campos, int $maxKb = self::ENVIO_MAX_KB): array
+    {
+        $texto = 'Não foi possível enviar a imagem. Use um arquivo de até ' . round($maxKb / 1024) . ' MB.';
+
+        return collect($campos)->flatMap(fn ($campo) => ["{$campo}.uploaded" => $texto, "{$campo}.max" => $texto])->all();
+    }
+
     // Diferença aceita entre a proporção do recorte enviado e a do formato (o Cropper arredonda os pixels)
     private const TOLERANCIA_PROPORCAO = 0.02;
 

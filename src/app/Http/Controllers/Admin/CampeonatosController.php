@@ -201,8 +201,7 @@ class CampeonatosController extends Controller
             'nome_campeonato.max'        => 'O nome do campeonato pode ter no máximo 100 caracteres.',
             'local_evento.max'           => 'O local principal pode ter no máximo 100 caracteres.',
             'organizador_campeonato.max' => 'O organizador pode ter no máximo 100 caracteres.',
-            'logo_evento.max'            => 'A logo pode ter no máximo 10 MB.',
-            'banner_evento.max'          => 'O banner pode ter no máximo 10 MB.',
+            ...TratadorDeImagem::mensagensDoEnvio(['logo_evento', 'banner_evento']),
         ]);
     }
 

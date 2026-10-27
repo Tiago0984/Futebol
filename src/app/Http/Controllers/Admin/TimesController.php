@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Categoria;
 use App\Models\Time;
+use App\Services\TratadorDeImagem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +26,7 @@ class TimesController extends Controller
             'tipo_time'    => 'required|in:INTERNO,EXTERNO',
             'id_categoria' => 'nullable|integer|exists:tbl_categoria,id_categoria',
             'logo_time'    => 'nullable|image|max:1024',
-        ]);
+        ], TratadorDeImagem::mensagensDoEnvio(['logo_time'], 1024));
 
         $dados = $request->only(['nome_time', 'tipo_time', 'id_categoria']);
 
@@ -49,7 +50,7 @@ class TimesController extends Controller
             'tipo_time'    => 'required|in:INTERNO,EXTERNO',
             'id_categoria' => 'nullable|integer|exists:tbl_categoria,id_categoria',
             'logo_time'    => 'nullable|image|max:1024',
-        ]);
+        ], TratadorDeImagem::mensagensDoEnvio(['logo_time'], 1024));
 
         $dados = $request->only(['nome_time', 'tipo_time', 'id_categoria']);
 

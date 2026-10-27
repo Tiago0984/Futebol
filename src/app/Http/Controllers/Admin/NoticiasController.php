@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Noticia;
+use App\Services\TratadorDeImagem;
 use Illuminate\Http\Request;
 
 class NoticiasController extends Controller
@@ -25,7 +26,7 @@ class NoticiasController extends Controller
             'autor_noticia'           => 'required|string|max:100',
             'data_publicacao_noticia' => 'required|date',
             'foto_noticia'            => 'nullable|image|max:2048',
-        ]);
+        ], TratadorDeImagem::mensagensDoEnvio(['foto_noticia'], 2048));
 
         $dados = $request->only([
             'titulo_noticia',
@@ -59,7 +60,7 @@ class NoticiasController extends Controller
             'autor_noticia'           => 'required|string|max:100',
             'data_publicacao_noticia' => 'required|date',
             'foto_noticia'            => 'nullable|image|max:2048',
-        ]);
+        ], TratadorDeImagem::mensagensDoEnvio(['foto_noticia'], 2048));
 
         $dados = $request->only([
             'titulo_noticia',

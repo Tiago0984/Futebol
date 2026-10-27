@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Galeria;
+use App\Services\TratadorDeImagem;
 use Illuminate\Http\Request;
 
 class GaleriaController extends Controller
@@ -33,7 +34,7 @@ class GaleriaController extends Controller
             'ordem_galeria'          => 'required|integer|min:1',
             'status_galeria'         => 'required|in:ATIVO,INATIVO',
             'foto_galeria'           => 'required|image|max:4096',
-        ]);
+        ], TratadorDeImagem::mensagensDoEnvio(['foto_galeria'], 4096));
 
         $dados = $request->only(['titulo_galeria', 'ordem_galeria', 'status_galeria']);
 
@@ -64,7 +65,7 @@ class GaleriaController extends Controller
             'ordem_galeria'          => 'required|integer|min:1',
             'status_galeria'         => 'required|in:ATIVO,INATIVO',
             'foto_galeria'           => 'nullable|image|max:4096',
-        ]);
+        ], TratadorDeImagem::mensagensDoEnvio(['foto_galeria'], 4096));
 
         $dados = $request->only(['titulo_galeria', 'ordem_galeria', 'status_galeria']);
 

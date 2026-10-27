@@ -11,6 +11,7 @@ use App\Models\Categoria;
 use App\Models\EventoCalendario;
 use App\Models\Notificacao;
 use App\Rules\CpfValido;
+use App\Services\TratadorDeImagem;
 use App\Support\Cpf;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -102,7 +103,7 @@ class AtletasController extends Controller
             'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
         ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL,
-            'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA, 'cpf_atleta.unique' => self::MENSAGEM_CPF_REPETIDO]);
+            'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA, 'cpf_atleta.unique' => self::MENSAGEM_CPF_REPETIDO, ...TratadorDeImagem::mensagensDoEnvio(['foto_atleta'], 2048)]);
 
         $this->validarCategoria($request);
 
