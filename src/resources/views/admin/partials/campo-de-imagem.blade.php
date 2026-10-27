@@ -12,7 +12,8 @@
   $tipo = $tipo ?? 'capa';
   $previas = $previas ?? [];
 @endphp
-<div class="js-campo-imagem" data-tipo="{{ $tipo }}" data-proporcao="{{ $proporcao ?? 1 }}" data-minimo="{{ $minimo }}">
+<div class="js-campo-imagem" data-tipo="{{ $tipo }}" data-proporcao="{{ $proporcao ?? 1 }}" data-minimo="{{ $minimo }}"
+     data-max-kb="{{ \App\Services\TratadorDeImagem::ENVIO_MAX_KB }}">
   <label class="form-label">{{ $rotulo }} @if(!empty($obrigatorio))<span class="text-danger">*</span>@endif</label>
   {{-- Imagem atual em miniatura (quem usa o painel não entende o nome do arquivo); no modal, o JavaScript da tela
        preenche pelo id (idAtual) --}}
@@ -27,6 +28,8 @@
     <input type="hidden" name="recorte_{{ $name }}" class="js-recorte">
   @endif
   <span class="form-text">{{ $ajuda }}</span>
+  {{-- Arquivo acima do limite: avisado já ao escolher (o servidor confere de novo) --}}
+  <div class="alert alert-danger py-1 px-2 small mt-2 mb-0 js-erro-tamanho" hidden></div>
 
   <div class="js-area-imagem mt-2" hidden>
     @if($tipo === 'capa')
@@ -98,9 +101,23 @@
           espera = setTimeout(() => mostrar(cropper.getCroppedCanvas({ maxWidth: 640, maxHeight: 640 }).toDataURL('image/jpeg', 0.8)), 120);
         }
 
+        const erroTamanho = campo.querySelector('.js-erro-tamanho');
+        const maxKb = parseInt(campo.dataset.maxKb, 10);
+
         arquivo.addEventListener('change', function () {
           limpar();
+          erroTamanho.hidden = true;
           const escolhido = arquivo.files && arquivo.files[0];
+
+          // Acima do limite: avisa já e descarta o arquivo (sem esperar o envio do formulário)
+          if (escolhido && escolhido.size > maxKb * 1024) {
+            const mb = (escolhido.size / 1048576).toFixed(1).replace('.', ',');
+            erroTamanho.textContent = 'Esta imagem tem ' + mb + ' MB. Use um arquivo de até ' + Math.round(maxKb / 1024) + ' MB.';
+            erroTamanho.hidden = false;
+            arquivo.value = '';
+            return;
+          }
+
           if (!escolhido || !escolhido.type.startsWith('image/') || typeof Cropper === 'undefined' && campo.dataset.tipo === 'capa') {
             return;
           }
@@ -133,7 +150,7 @@
         // Modal fechado: limpa o recorte (o arquivo é escolhido de novo ao reabrir)
         const modal = campo.closest('.modal');
         if (modal) {
-          modal.addEventListener('hidden.bs.modal', () => { arquivo.value = ''; limpar(); });
+          modal.addEventListener('hidden.bs.modal', () => { arquivo.value = ''; erroTamanho.hidden = true; limpar(); });
         }
       }
 
