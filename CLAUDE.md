@@ -1050,7 +1050,9 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Roteiro no navegador e app conferidos pelo dono do projeto** (26/10/2026; app com a API local: o slide do campeonato e o banner novo certos). Ajustes depois: miniatura da imagem atual na edição do campeonato (página e modal); aviso de logo pequena pelo lado maior; carrossel da home sempre na largura da tela (`estilo.css`, seção 76) e sem o bloco preto do subtítulo vazio; imagem acima de 10 MB avisada já ao escolher o arquivo (o servidor confere de novo).
 - **Limpeza dos dados de teste no `db_futebol` de casa** (backup antes: `backup/db_futebol_antes_limpeza_teste_imagens_20261026_221715.sql`): apagados o banner 8 ("TESTE - apagar"), a convocação 18 (Joana, camisa 8) e o "Campeonato Teste Imagens" (id 2, sem jogos), com as imagens deles. Ficou o banner 7 ("Jogo Emocionante", 1920×1080), cadastrado pelo dono do projeto.
 - **A altura do carrossel varia ~1,4%** entre os 3 banners antigos (1384×768) e os novos (1920×1080): aceito. Se quiser igualar, `imagens:reprocessar --banners` depois da publicação, com OK e backup.
-- **Falta:** publicar (`git pull`, logo em seguida o **Instalar** do PHP Composer do painel, depois `optimize:clear`; entre o pull e o Instalar só falha salvar campeonato ou Banner com imagem nova).
+- **Publicado no servidor (26/10/2026):** push da feature e da `main` até `8b181cd`; lá, `git pull`, o **Instalar** do PHP Composer do painel (`intervention/image` 3.11.10) e `optimize:clear`, pelo dono do projeto (`ls vendor/intervention` mostra `gif` e `image`). Sem migration. Conferido pelo Claude com o `curl`: home, campeonatos, login do admin, documentação e `GET /api/v1/campeonatos` em 200, `estilo.css` com a seção 76. Falta o teste de envio de imagem no painel do servidor (precisa de login).
+- **Terminal SSH do Plesk:** cada sessão começa na pasta inicial; o projeto fica em `~/coderatech.tipi5.smpsistema.com.br/futebol` (o `artisan` e o `vendor` em `futebol/src`). Usar sempre o `cd` com o caminho completo.
+- **Depois, só com OK e backup:** `imagens:reprocessar --simular` e, se quiser, `--banners` no servidor.
 
 ---
 
