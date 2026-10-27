@@ -182,8 +182,8 @@
                                         data-local="{{ $camp->local_evento }}"
                                         data-organizador="{{ $camp->organizador_campeonato }}"
                                         data-descricao="{{ $camp->descricao_campeonato }}"
-                                        data-logo="{{ $camp->logo_evento }}"
-                                        data-banner="{{ $camp->banner_evento }}"
+                                        data-logo="{{ $camp->logo_url }}"
+                                        data-banner="{{ $camp->banner_url }}"
                                         data-categorias="{{ json_encode($camp->categorias->pluck('id_categoria')->map(fn ($id) => (int) $id)->all()) }}"
                                         data-participantes="{{ json_encode((object) ($participantes[$camp->id_campeonato] ?? [])) }}">
                                         <i class="bi bi-pencil"></i>
@@ -426,11 +426,12 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_organizador').value     = this.dataset.organizador  || '';
             document.getElementById('edit_descricao').value       = this.dataset.descricao    || '';
 
-            const logoEl = document.getElementById('edit_logo_atual');
-            logoEl.textContent = this.dataset.logo ? 'Atual: ' + this.dataset.logo : '';
-
-            const bannerEl = document.getElementById('edit_banner_atual');
-            bannerEl.textContent = this.dataset.banner ? 'Atual: ' + this.dataset.banner : '';
+            // Logo e banner atuais em miniatura (data-logo e data-banner: o endereço completo; vazio = sem imagem)
+            [['edit_logo_atual', this.dataset.logo], ['edit_banner_atual', this.dataset.banner]].forEach(([id, url]) => {
+                const bloco = document.getElementById(id);
+                bloco.hidden = !url;
+                bloco.querySelector('img').src = url || '';
+            });
 
             // Tipo gravado em maiúsculas (Campeonato::TIPOS); valor antigo fora da lista entra como opção
             const selTipo = document.getElementById('edit_tipo_campeonato');

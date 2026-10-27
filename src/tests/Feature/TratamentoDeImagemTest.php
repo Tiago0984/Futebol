@@ -143,6 +143,24 @@ class TratamentoDeImagemTest extends TestCase
         Storage::disk('imagens')->assertExists('banner/' . $banner->refresh()->foto_banner);
     }
 
+    public function test_edicao_do_campeonato_mostra_a_imagem_atual_em_miniatura(): void
+    {
+        $id = DB::table('tbl_campeonato')->insertGetId(['id_categoria' => $this->idCategoria('Sub-15', 'M'), 'nome_campeonato' => 'Copa',
+            'tipo_campeonato' => 'COPA', 'data_inicio_campeonato' => now(), 'data_fim_campeonato' => now(), 'status_campeonato' => 'ATIVO',
+            'logo_evento' => 'logo-campeonato-20261026-150000-aaaaaa.png', 'banner_evento' => 'banner-campeonato-20261026-150000-bbbbbb.jpg']);
+        $copa = Campeonato::find($id);
+
+        // Página de edição: a miniatura, não o nome do arquivo
+        $this->comoAdmin()->get(route('admin.campeonatos.edit', $id))->assertOk()
+            ->assertSee('src="' . $copa->logo_url . '"', false)->assertSee('src="' . $copa->banner_url . '"', false)
+            ->assertSee('Imagem atual')->assertDontSee('Atual: logo-campeonato');
+
+        // Modal "Editar" da lista: o endereço vai no botão, para o JavaScript montar a miniatura
+        $this->comoAdmin()->get(route('admin.campeonatos.index'))->assertOk()
+            ->assertSee('data-logo="' . $copa->logo_url . '"', false)->assertSee('data-banner="' . $copa->banner_url . '"', false)
+            ->assertSee('id="edit_logo_atual"', false);
+    }
+
     public function test_carrossel_da_home_ocupa_a_largura_da_tela(): void
     {
         Banner::create(['titulo_banner' => 'Bem-vindo', 'foto_banner' => 'banner-site-20261026-210942-9ddj4g.jpg', 'ordem_banner' => 1, 'status_banner' => 'ativo']);

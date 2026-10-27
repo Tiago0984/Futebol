@@ -92,8 +92,8 @@
                     <div class="row g-3">
                         @include('admin.campeonatos._imagens', [
                             'editando'    => true,
-                            'logoAtual'   => $campeonato->logo_evento ? 'Atual: ' . $campeonato->logo_evento : null,
-                            'bannerAtual' => $campeonato->banner_evento ? 'Atual: ' . $campeonato->banner_evento : null,
+                            'logoAtual'   => $campeonato->logo_url,
+                            'bannerAtual' => $campeonato->banner_url,
                         ])
                     </div>
                 </div>

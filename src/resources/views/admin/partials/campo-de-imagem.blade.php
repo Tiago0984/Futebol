@@ -5,8 +5,8 @@
   - tipo "logo": sem recorte (a logo vai inteira, num quadrado com fundo transparente); só a prévia.
   Aviso (sem bloquear) para imagem pequena, igual ao do servidor.
   Parâmetros: name, rotulo, tipo, proporcao (largura/altura, na capa), previas ([rótulo, proporção]), minimo
-  (px: largura do recorte na capa, maior lado na logo), ajuda, atual (texto) ou idAtual (id do texto que o JavaScript
-  da tela preenche), obrigatorio.
+  (px: largura do recorte na capa, maior lado na logo), ajuda, miniatura (endereço da imagem atual) ou idAtual (id do
+  bloco da imagem atual, que o JavaScript da tela preenche), obrigatorio.
 --}}
 @php
   $tipo = $tipo ?? 'capa';
@@ -14,11 +14,13 @@
 @endphp
 <div class="js-campo-imagem" data-tipo="{{ $tipo }}" data-proporcao="{{ $proporcao ?? 1 }}" data-minimo="{{ $minimo }}">
   <label class="form-label">{{ $rotulo }} @if(!empty($obrigatorio))<span class="text-danger">*</span>@endif</label>
-  @if(!empty($atual))
-    <small class="d-block text-muted mb-1">{{ $atual }}</small>
-  @elseif(!empty($idAtual))
-    {{-- Preenchido pelo JavaScript da tela (modal de edição) --}}
-    <small id="{{ $idAtual }}" class="d-block text-muted mb-1"></small>
+  {{-- Imagem atual em miniatura (quem usa o painel não entende o nome do arquivo); no modal, o JavaScript da tela
+       preenche pelo id (idAtual) --}}
+  @if(!empty($miniatura) || !empty($idAtual))
+    <div class="d-flex align-items-center gap-2 mb-2" @if(!empty($idAtual)) id="{{ $idAtual }}" @endif @if(empty($miniatura)) hidden @endif>
+      <img src="{{ $miniatura ?? '' }}" alt="Imagem atual" class="recorte-imagem-atual {{ $tipo === 'logo' ? 'logo' : '' }}">
+      <small class="text-muted">Imagem atual</small>
+    </div>
   @endif
   <input type="file" name="{{ $name }}" class="form-control js-arquivo" accept="image/*" @if(!empty($obrigatorio)) required @endif>
   @if($tipo === 'capa')
@@ -51,6 +53,8 @@
     .recorte-imagem-palco { max-height: 320px; background: var(--bs-tertiary-bg); }
     .recorte-imagem-palco img { display: block; max-width: 100%; }
     .recorte-imagem-previa-fig { width: 170px; }
+    .recorte-imagem-atual { height: 64px; max-width: 160px; object-fit: cover; border-radius: 6px; border: 1px solid var(--bs-border-color); }
+    .recorte-imagem-atual.logo { width: 64px; object-fit: contain; background: #fff; }
     .recorte-imagem-previa { width: 100%; border-radius: 6px; background: #0a0a0a center / cover no-repeat; border: 1px solid var(--bs-border-color); }
     /* Logo: inteira (contain), num fundo claro e num escuro, para ver como fica a transparência */
     .recorte-imagem-previa.logo { background-color: #fff; background-size: contain; }
