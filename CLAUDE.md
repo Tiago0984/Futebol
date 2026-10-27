@@ -1054,6 +1054,15 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Terminal SSH do Plesk:** cada sessão começa na pasta inicial; o projeto fica em `~/coderatech.tipi5.smpsistema.com.br/futebol` (o `artisan` e o `vendor` em `futebol/src`). Usar sempre o `cd` com o caminho completo.
 - **Depois, só com OK e backup:** `imagens:reprocessar --simular` e, se quiser, `--banners` no servidor.
 
+#### Passagem para o Senac (fim do dia em casa, 26/10/2026)
+- **Código:** `feature/agenda-eventos` e `main` do GitHub iguais (este registro incluído); o servidor em `8b181cd` (o que vem depois é só documentação).
+- **No Senac, antes de começar:**
+  1. `git switch feature/agenda-eventos` e `git pull`;
+  2. **reconstruir o container do PHP** (o `docker/php/Dockerfile` e o `uploads.ini` mudaram): `docker compose build php` e `docker compose up -d` (parar antes o `tipi05-davilla`, mesma porta 3308). Sem isso, o GD fica sem JPEG e o envio volta a 2 MB;
+  3. **`docker compose exec php composer install`** (o `composer.lock` ganhou o `intervention/image`; a pasta `vendor` não vai pelo Git). **Pedir o OK do dono do projeto antes** (regra 3);
+  4. `php artisan view:clear` e `config:clear`, e a suíte (6 testes falham só pela data até o fim do mês: `EventoStatusTest` (2), `EventoFluxoTest`, `EventoHistoricoTest`, `EventoInscricaoTest`, `EventoCategoriaResponsavelTest`).
+- **Banco:** sem migration desde o dump de 25/10 (`backup/db_futebol_para_senac_20261025.sql`, batch 9): o do Senac serve como está. Só não tem o banner 7 ("Jogo Emocionante"; a foto só existe no PC de casa) nem a limpeza do campeonato de teste, que é só de casa.
+
 ---
 
 ## 7. Débitos técnicos conhecidos (planejar, não implementar sem OK)
