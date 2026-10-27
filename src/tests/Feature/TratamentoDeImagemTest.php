@@ -86,7 +86,10 @@ class TratamentoDeImagemTest extends TestCase
 
         $pequena = TratadorDeImagem::logo($this->imagem(200, 100), 'campeonatos', 'logo-campeonato');
         $this->assertSame([200, 200, IMAGETYPE_PNG], $this->medidas('campeonatos', $pequena['arquivo']));
-        $this->assertStringContainsString('Logo pequena (200 px)', $pequena['aviso']);
+        $this->assertStringContainsString('Logo pequena: o lado maior tem 200 px.', $pequena['aviso']);
+
+        // Vale o lado maior (a logo é mostrada inteira, num quadrado): 189 × 280 não avisa
+        $this->assertNull(TratadorDeImagem::logo($this->imagem(189, 280), 'campeonatos', 'logo-campeonato')['aviso']);
     }
 
     public function test_campeonato_trata_logo_e_banner_e_apaga_o_antigo_so_se_e_gerado_e_ninguem_usa(): void

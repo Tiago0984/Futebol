@@ -112,7 +112,7 @@
             const teste = new Image();
             teste.onload = () => {
               const maior = Math.max(teste.naturalWidth, teste.naturalHeight);
-              avisar(maior, 'Logo pequena (' + maior + ' px): pode ficar sem nitidez no site. O ideal é pelo menos ' + minimo + ' px.');
+              avisar(maior, 'Logo pequena: o lado maior tem ' + maior + ' px. Pode ficar sem nitidez no site; o ideal é o lado maior com pelo menos ' + minimo + ' px.');
               mostrar(url);
             };
             teste.src = url;

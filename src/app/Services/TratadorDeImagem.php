@@ -100,7 +100,7 @@ class TratadorDeImagem
             'largura' => $lado,
             'altura'  => $lado,
             'aviso'   => $maior < self::LADO_MINIMO_LOGO
-                ? "Logo pequena ({$maior} px): pode ficar sem nitidez no site. O ideal é uma imagem com pelo menos " . self::LADO_MINIMO_LOGO . ' px.'
+                ? "Logo pequena: o lado maior tem {$maior} px. Pode ficar sem nitidez no site; o ideal é o lado maior com pelo menos " . self::LADO_MINIMO_LOGO . ' px.'
                 : null,
         ];
     }

@@ -12,7 +12,7 @@
     'name' => 'logo_evento', 'rotulo' => 'Logo / Escudo', 'tipo' => 'logo', 'minimo' => $tratador::LADO_MINIMO_LOGO,
     'previas' => [['No site', '1'], ['No app (fundo escuro)', '1']],
     'miniatura' => $logoAtual ?? null, 'idAtual' => $idLogoAtual ?? null,
-    'ajuda' => 'Qualquer imagem até 10 MB. Vai inteira, sem cortar, num quadrado de até 512 px.' . $manter,
+    'ajuda' => 'Qualquer imagem até 10 MB, de preferência com o lado maior de 256 px ou mais. Vai inteira, sem cortar, num quadrado de até 512 px.' . $manter,
   ])
 </div>
 <div class="col-md-6">
