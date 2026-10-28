@@ -7,28 +7,21 @@
             </div>
             <form id="formEditarTime" method="POST" enctype="multipart/form-data">
                 @csrf @method('PUT')
+                <input type="hidden" name="_editar_id" id="edit_editar_id">
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Nome do Time <span class="text-danger">*</span></label>
-                            <input type="text" id="edit_nome_time" name="nome_time" class="form-control" required>
+                            <input type="text" id="edit_nome_time" name="nome_time" class="form-control" maxlength="50" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select id="edit_tipo_time" name="tipo_time" class="form-select" required>
-                                <option value="INTERNO">Interno</option>
+                                <option value="INTERNO">Interno (AACJ)</option>
                                 <option value="EXTERNO">Externo</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Categoria</label>
-                            <select id="edit_id_categoria" name="id_categoria" class="form-select">
-                                <option value="">— Nenhuma —</option>
-                                @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
-                                @endforeach
-                            </select>
-                        </div>
+                        @include('admin.times._categorias', ['prefixo' => 'editar', 'marcadas' => []])
                         <div class="col-12">
                             <label class="form-label">Logo / Escudo</label>
                             <small id="edit_logo_atual" class="d-block text-muted mb-1"></small>

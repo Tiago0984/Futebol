@@ -41,7 +41,7 @@
                         <select id="filtroCategoria" class="form-select form-select-sm">
                             <option value="">Todas</option>
                             @foreach($categorias as $cat)
-                            <option value="{{ $cat->id_categoria }}">{{ $cat->nome_categoria }}</option>
+                            <option value="{{ $cat->id_categoria }}">{{ $cat->rotulo }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -98,17 +98,18 @@
                             <th style="width:60px">Logo</th>
                             <th>Nome</th>
                             <th>Tipo</th>
-                            <th>Categoria</th>
+                            <th>Categorias</th>
                             <th class="text-center">Status</th>
                             <th class="text-center" style="width:150px">Ações</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($times as $time)
+                        @php $idsCategorias = $time->categorias->pluck('id_categoria')->map(fn ($id) => (int) $id)->all(); @endphp
                         <tr class="linha-time"
                             data-nome="{{ strtolower($time->nome_time) }}"
                             data-tipo="{{ strtoupper($time->tipo_time) }}"
-                            data-categoria="{{ $time->id_categoria }}"
+                            data-categorias=",{{ implode(',', $idsCategorias) }},"
                             data-status="{{ strtoupper($time->status_time) }}">
                             <td>
                                 @if($time->logo_time)
@@ -129,7 +130,14 @@
                                     <span class="badge-status inativo">Externo</span>
                                 @endif
                             </td>
-                            <td class="text-muted">{{ $time->categoria->nome_categoria ?? '—' }}</td>
+                            <td>
+                                @forelse($time->categorias as $cat)
+                                    <span class="badge bg-body-secondary text-body border fw-normal me-1 mb-1"
+                                          title="{{ $cat->rotulo }}">{{ $cat->nome_categoria }} {{ $cat->sexo_categoria }}</span>
+                                @empty
+                                    <span class="text-muted">—</span>
+                                @endforelse
+                            </td>
                             <td class="text-center">
                                 @if(strtoupper($time->status_time) === 'ATIVO')
                                     <span class="badge-status ativo">Ativo</span>
@@ -145,7 +153,7 @@
                                         data-id="{{ $time->id_time }}"
                                         data-nome="{{ $time->nome_time }}"
                                         data-tipo="{{ $time->tipo_time }}"
-                                        data-categoria="{{ $time->id_categoria }}"
+                                        data-categorias="{{ json_encode($idsCategorias) }}"
                                         data-logo="{{ $time->logo_time }}"
                                         title="Editar">
                                         <i class="bi bi-pencil"></i>
@@ -203,7 +211,7 @@ document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.linha-time').forEach(row => {
             const ok = (!nome      || row.dataset.nome.includes(nome))
                     && (!tipo      || row.dataset.tipo === tipo)
-                    && (!categoria || row.dataset.categoria === categoria)
+                    && (!categoria || row.dataset.categorias.includes(`,${categoria},`))
                     && (!status    || row.dataset.status === status);
             row.style.display = ok ? '' : 'none';
             if (ok) visiveis++;
@@ -225,16 +233,42 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+// Preenche o modal de edição: nome, tipo e as caixas das categorias (a inativa só aparece se o time a tem)
+function preencherEdicaoDoTime(id, nome, tipo, categorias, logo) {
+    const f = document.getElementById('formEditarTime');
+    f.action = `{{ url('admin/times') }}/${id}`;
+    document.getElementById('edit_editar_id').value = id;
+    document.getElementById('edit_nome_time').value = nome;
+    document.getElementById('edit_tipo_time').value = tipo;
+    const marcadas = categorias.map(Number);
+    f.querySelectorAll('.js-categoria-time').forEach(cx => {
+        cx.checked = marcadas.includes(Number(cx.value));
+        cx.closest('.js-cat-inativa')?.classList.toggle('d-none', !cx.checked);
+    });
+    const logoInfo = document.getElementById('edit_logo_atual');
+    logoInfo.textContent = logo ? `Atual: ${logo}` : 'Sem logo cadastrado';
+}
+
 document.querySelectorAll('.btn-editar-time').forEach(btn => {
     btn.addEventListener('click', function () {
-        const f = document.getElementById('formEditarTime');
-        f.action = `{{ url('admin/times') }}/${this.dataset.id}`;
-        document.getElementById('edit_nome_time').value    = this.dataset.nome;
-        document.getElementById('edit_tipo_time').value    = this.dataset.tipo;
-        document.getElementById('edit_id_categoria').value = this.dataset.categoria;
-        const logoInfo = document.getElementById('edit_logo_atual');
-        logoInfo.textContent = this.dataset.logo ? `Atual: ${this.dataset.logo}` : 'Sem logo cadastrado';
+        preencherEdicaoDoTime(this.dataset.id, this.dataset.nome, this.dataset.tipo,
+            JSON.parse(this.dataset.categorias || '[]'), this.dataset.logo);
     });
 });
+
+@if($errors->any() && old('_editar_id'))
+// Erro na edição (ex.: categoria que o time ainda usa num campeonato): reabre o modal com o que foi digitado
+document.addEventListener('DOMContentLoaded', function () {
+    const btn = document.querySelector('.btn-editar-time[data-id="{{ (int) old('_editar_id') }}"]');
+    if (!btn) return;
+    preencherEdicaoDoTime(btn.dataset.id, @json(old('nome_time')), @json(old('tipo_time')),
+        @json(array_map('intval', old('categorias', []))), btn.dataset.logo);
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalEditarTime')).show();
+});
+@elseif($errors->any())
+document.addEventListener('DOMContentLoaded', function () {
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalCriarTime')).show();
+});
+@endif
 </script>
 @endsection

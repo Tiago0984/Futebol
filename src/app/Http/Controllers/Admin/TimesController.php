@@ -8,27 +8,31 @@ use App\Models\Time;
 use App\Services\TratadorDeImagem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
+/**
+ * Times (27/10/2026, dono do projeto): um cadastro só para a AACJ e para cada adversário, com as categorias de que
+ * ele participa marcadas (tbl_time_categoria), no lugar de um time por categoria. O nome não se repete.
+ */
 class TimesController extends Controller
 {
     public function index()
     {
-        $times      = Time::with('categoria')->orderBy('nome_time')->get();
-        $categorias = Categoria::orderBy('nome_categoria')->get();
+        $times = Time::with('categorias')->orderBy('nome_time')->get();
+
+        // Todas, inclusive as inativas: a edição mostra a inativa só no time que já a tem marcada
+        $categorias = Categoria::orderByDesc('sexo_categoria')->orderBy('idade_min_categoria')->get();
 
         return view('admin.times.index', compact('times', 'categorias'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nome_time'    => 'required|string|max:255',
-            'tipo_time'    => 'required|in:INTERNO,EXTERNO',
-            'id_categoria' => 'nullable|integer|exists:tbl_categoria,id_categoria',
-            'logo_time'    => 'nullable|image|max:1024',
-        ], TratadorDeImagem::mensagensDoEnvio(['logo_time'], 1024));
+        $this->validar($request);
 
-        $dados = $request->only(['nome_time', 'tipo_time', 'id_categoria']);
+        // Sem logo, texto vazio (a coluna não aceita NULL; a lista mostra o escudo genérico): antes dava erro 500
+        $dados = [...$request->only(['nome_time', 'tipo_time']), 'logo_time' => ''];
 
         if ($request->hasFile('logo_time')) {
             $dados['logo_time'] = $request->file('logo_time')->getClientOriginalName();
@@ -36,7 +40,7 @@ class TimesController extends Controller
         }
 
         $dados['status_time'] = 'ATIVO';
-        Time::create($dados);
+        DB::transaction(fn () => Time::create($dados)->definirCategorias($request->input('categorias')));
 
         return redirect()->route('admin.times.index')->with('sucesso', 'Time criado com sucesso.');
     }
@@ -45,23 +49,52 @@ class TimesController extends Controller
     {
         $time = Time::findOrFail($id);
 
-        $request->validate([
-            'nome_time'    => 'required|string|max:255',
-            'tipo_time'    => 'required|in:INTERNO,EXTERNO',
-            'id_categoria' => 'nullable|integer|exists:tbl_categoria,id_categoria',
-            'logo_time'    => 'nullable|image|max:1024',
-        ], TratadorDeImagem::mensagensDoEnvio(['logo_time'], 1024));
+        $this->validar($request, $time);
 
-        $dados = $request->only(['nome_time', 'tipo_time', 'id_categoria']);
+        if ($erros = $time->errosDasCategoriasQueSaem($request->input('categorias'))) {
+            return back()->withErrors(['categorias' => $erros])->withInput();
+        }
+
+        $dados = $request->only(['nome_time', 'tipo_time']);
 
         if ($request->hasFile('logo_time')) {
             $dados['logo_time'] = $request->file('logo_time')->getClientOriginalName();
             $request->file('logo_time')->move(public_path('futebol/images/team'), $dados['logo_time']);
         }
 
-        $time->update($dados);
+        DB::transaction(function () use ($time, $dados, $request) {
+            $time->update($dados);
+            $time->definirCategorias($request->input('categorias'));
+        });
 
         return redirect()->route('admin.times.index')->with('sucesso', 'Time atualizado com sucesso.');
+    }
+
+    // Nome único (a collation ignora maiúsculas e acentos), ao menos uma categoria e, entre as que o time ainda não
+    // tem, só categorias ativas (a inativa que ele já tem pode continuar marcada)
+    private function validar(Request $request, ?Time $time = null): void
+    {
+        $request->validate([
+            'nome_time'    => ['required', 'string', 'max:50', Rule::unique('tbl_time', 'nome_time')->ignore($time?->id_time, 'id_time')],
+            'tipo_time'    => 'required|in:INTERNO,EXTERNO',
+            'categorias'   => 'required|array|min:1',
+            'categorias.*' => 'integer|exists:tbl_categoria,id_categoria',
+            'logo_time'    => 'nullable|image|max:1024',
+        ], [
+            'nome_time.unique'    => 'Já existe um time com este nome. Marque as categorias nele, em vez de cadastrar outro.',
+            'nome_time.max'       => 'O nome do time pode ter até 50 caracteres.',
+            'categorias.required' => 'Marque ao menos uma categoria de que o time participa.',
+            'categorias.min'      => 'Marque ao menos uma categoria de que o time participa.',
+            ...TratadorDeImagem::mensagensDoEnvio(['logo_time'], 1024),
+        ]);
+
+        $jaTem = $time ? $time->categorias()->pluck('tbl_categoria.id_categoria')->map(fn ($id) => (int) $id)->all() : [];
+        $inativas = Categoria::whereIn('id_categoria', array_diff(array_map('intval', $request->input('categorias')), $jaTem))
+            ->where('status_categoria', '!=', 'ATIVO')->get();
+        if ($inativas->isNotEmpty()) {
+            throw ValidationException::withMessages(['categorias' =>
+                'Categoria inativa não pode ser marcada: ' . $inativas->pluck('rotulo')->implode(', ') . '.']);
+        }
     }
 
     public function toggleStatus($id)
@@ -73,8 +106,8 @@ class TimesController extends Controller
         return back()->with('sucesso', "Time {$novo} com sucesso.");
     }
 
-    // Time com jogos ou elenco não é excluído (mensagem em vez do erro de FK); a participação nos
-    // campeonatos (tbl_campeonato_time) sai junto
+    // Time com jogos ou convocados não é excluído (mensagem em vez do erro de FK); a participação nos
+    // campeonatos (tbl_campeonato_time) e as categorias do cadastro (tbl_time_categoria) saem junto
     public function destroy($id)
     {
         $time = Time::findOrFail($id);
@@ -85,6 +118,7 @@ class TimesController extends Controller
 
         DB::transaction(function () use ($time) {
             $time->campeonatos()->detach();
+            $time->categorias()->detach();
             $time->delete();
         });
 

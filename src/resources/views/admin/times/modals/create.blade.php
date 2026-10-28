@@ -11,28 +11,18 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label class="form-label">Nome do Time <span class="text-danger">*</span></label>
-                            <input type="text" name="nome_time" class="form-control"
-                                placeholder="Ex: AACJ Sub-13" required value="{{ old('nome_time') }}">
+                            <input type="text" name="nome_time" class="form-control" maxlength="50"
+                                placeholder="Ex: AACJ, Botafogo" required value="{{ old('_editar_id') ? '' : old('nome_time') }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
                             <select name="tipo_time" class="form-select" required>
                                 <option value="">— Selecionar —</option>
-                                <option value="INTERNO" {{ old('tipo_time') == 'INTERNO' ? 'selected' : '' }}>Interno</option>
-                                <option value="EXTERNO" {{ old('tipo_time') == 'EXTERNO' ? 'selected' : '' }}>Externo</option>
+                                <option value="INTERNO" {{ ! old('_editar_id') && old('tipo_time') == 'INTERNO' ? 'selected' : '' }}>Interno (AACJ)</option>
+                                <option value="EXTERNO" {{ ! old('_editar_id') && old('tipo_time') == 'EXTERNO' ? 'selected' : '' }}>Externo</option>
                             </select>
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Categoria</label>
-                            <select name="id_categoria" class="form-select">
-                                <option value="">— Nenhuma —</option>
-                                @foreach($categorias as $cat)
-                                <option value="{{ $cat->id_categoria }}" {{ old('id_categoria') == $cat->id_categoria ? 'selected' : '' }}>
-                                    {{ $cat->nome_categoria }}
-                                </option>
-                                @endforeach
-                            </select>
-                        </div>
+                        @include('admin.times._categorias', ['prefixo' => 'criar', 'marcadas' => old('_editar_id') ? [] : old('categorias', [])])
                         <div class="col-12">
                             <label class="form-label">Logo / Escudo</label>
                             <input type="file" name="logo_time" class="form-control" accept="image/*">

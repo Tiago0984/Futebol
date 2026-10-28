@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Models\Concerns\UrlDeImagem;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Time extends Model
 {
@@ -35,7 +36,51 @@ class Time extends Model
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class, 'tbl_time_categoria', 'id_time', 'id_categoria')
-            ->orderBy('tbl_categoria.idade_max_categoria')->orderByDesc('tbl_categoria.sexo_categoria');
+            ->orderByDesc('tbl_categoria.sexo_categoria')->orderBy('tbl_categoria.idade_min_categoria');
+    }
+
+    /**
+     * Grava as categorias marcadas no cadastro (tbl_time_categoria). Até a coluna tbl_time.id_categoria sair, ela
+     * recebe a primeira marcada (masculino antes, a mais nova antes), para quem ainda lê categoria() não ficar sem.
+     *
+     * @param int[] $ids
+     */
+    public function definirCategorias(array $ids): void
+    {
+        $ids = array_values(array_unique(array_map('intval', $ids)));
+
+        DB::transaction(function () use ($ids) {
+            $this->categorias()->sync($ids);
+            $this->update(['id_categoria' => $this->categorias()->value('tbl_categoria.id_categoria')]);
+        });
+
+        $this->unsetRelation('categorias');
+    }
+
+    /**
+     * Por que as categorias desmarcadas não podem sair (uma mensagem por categoria, vazio = podem): o time é
+     * participante de algum campeonato nela (tbl_campeonato_time). Tirar do campeonato antes (o que também confere
+     * jogos e convocados).
+     *
+     * @param int[] $idsNovos as categorias que ficam marcadas
+     */
+    public function errosDasCategoriasQueSaem(array $idsNovos): array
+    {
+        $saem = $this->categorias()->whereNotIn('tbl_categoria.id_categoria', array_map('intval', $idsNovos))->get();
+        if ($saem->isEmpty()) {
+            return [];
+        }
+
+        $participacoes = DB::table('tbl_campeonato_time as ct')
+            ->join('tbl_campeonato as c', 'c.id_campeonato', '=', 'ct.id_campeonato')
+            ->where('ct.id_time', $this->id_time)->whereIn('ct.id_categoria', $saem->pluck('id_categoria'))
+            ->orderBy('c.nome_campeonato')->get(['ct.id_categoria', 'c.nome_campeonato'])->groupBy('id_categoria');
+
+        return $saem->filter(fn (Categoria $categoria) => $participacoes->has($categoria->id_categoria))
+            ->map(fn (Categoria $categoria) => "O {$this->nome_time} joga no {$categoria->rotulo} do campeonato "
+                . $participacoes[$categoria->id_categoria]->pluck('nome_campeonato')->implode(', ')
+                . '. Tire-o do campeonato nessa categoria antes de desmarcá-la.')
+            ->values()->all();
     }
 
     public function campeonatos()
