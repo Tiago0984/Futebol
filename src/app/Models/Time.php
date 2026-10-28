@@ -17,19 +17,14 @@ class Time extends Model
     protected $primaryKey = 'id_time';
     public $timestamps = false;
 
+    // tbl_time.id_categoria (a categoria única do cadastro antigo) ficou sem uso em 28/10/2026: aceita NULL, nada lê
+    // nem grava nela; a remoção está nos débitos do CLAUDE.md
     protected $fillable = [
         'logo_time',
         'nome_time',
         'tipo_time',
-        'id_categoria',
         'status_time',
     ];
-
-    // Categoria única do cadastro antigo: sai quando o código passar a usar só categorias() (a coluna aceita NULL)
-    public function categoria()
-    {
-        return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
-    }
 
     // Categorias de que o time participa (tbl_time_categoria, 27/10/2026): um cadastro só para a AACJ e para cada
     // adversário, com as categorias marcadas, no lugar de um time por categoria
@@ -40,20 +35,13 @@ class Time extends Model
     }
 
     /**
-     * Grava as categorias marcadas no cadastro (tbl_time_categoria). Até a coluna tbl_time.id_categoria sair, ela
-     * recebe a primeira marcada (masculino antes, a mais nova antes), para quem ainda lê categoria() não ficar sem.
+     * Grava as categorias marcadas no cadastro (tbl_time_categoria).
      *
      * @param int[] $ids
      */
     public function definirCategorias(array $ids): void
     {
-        $ids = array_values(array_unique(array_map('intval', $ids)));
-
-        DB::transaction(function () use ($ids) {
-            $this->categorias()->sync($ids);
-            $this->update(['id_categoria' => $this->categorias()->value('tbl_categoria.id_categoria')]);
-        });
-
+        $this->categorias()->sync(array_values(array_unique(array_map('intval', $ids))));
         $this->unsetRelation('categorias');
     }
 

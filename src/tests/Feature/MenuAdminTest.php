@@ -42,10 +42,16 @@ class MenuAdminTest extends TestCase
         $this->encerrado   = $campeonato('Taça Encerrada', now()->subYear()->toDateString(), now()->subYear()->addMonth()->toDateString());
         $campeonato('Taça Inativa', now()->subWeek()->toDateString(), now()->addWeek()->toDateString(), 'INATIVO');
 
-        $time = fn (string $nome, string $tipo) => DB::table('tbl_time')->insertGetId([
-            'id_categoria' => $this->idSub11M, 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo,
-            'status_time' => 'ATIVO',
-        ]);
+        // Times com o Sub-11 marcado no cadastro (tbl_time_categoria, 27/10/2026)
+        $time = function (string $nome, string $tipo) {
+            $id = DB::table('tbl_time')->insertGetId([
+                'id_categoria' => $this->idSub11M, 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo,
+                'status_time' => 'ATIVO',
+            ]);
+            DB::table('tbl_time_categoria')->insert(['id_time' => $id, 'id_categoria' => $this->idSub11M]);
+
+            return $id;
+        };
         $this->azul      = $time('Time Azul', 'INTERNO');
         $this->visitante = $time('Time Visitante', 'EXTERNO');
     }

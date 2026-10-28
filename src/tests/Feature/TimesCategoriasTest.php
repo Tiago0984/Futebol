@@ -37,8 +37,8 @@ class TimesCategoriasTest extends TestCase
 
         $time = Time::where('nome_time', 'AACJ')->firstOrFail();
         $this->assertSame([$this->sub13, $this->sub15], $this->idsDas($time));
-        // A coluna antiga recebe a primeira marcada até sair (T4)
-        $this->assertSame($this->sub13, (int) $time->id_categoria);
+        // A coluna antiga ficou sem uso (28/10/2026): o time novo não a preenche
+        $this->assertNull($time->id_categoria);
     }
 
     public function test_exige_categoria_e_nao_repete_o_nome(): void

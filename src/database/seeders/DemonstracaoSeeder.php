@@ -185,21 +185,24 @@ class DemonstracaoSeeder extends Seeder
 
     // ── Times, campeonato e amistoso ───────────────────────────────────────
 
-    // Um time da AACJ por categoria; os adversários têm um cadastro só (entram em cada categoria em que jogam)
+    // Um time da AACJ por categoria (cadastro antigo; o EscolinhaSeeder tem o de hoje, com a AACJ Masculino em várias);
+    // os adversários têm um cadastro só, com as categorias em que jogam marcadas (tbl_time_categoria)
     private function criarTimes(): array
     {
-        $time = fn (string $nome, string $tipo, string $categoria, string $logo) => Time::create([
-            'nome_time' => $nome, 'tipo_time' => $tipo, 'logo_time' => $logo, 'status_time' => 'ATIVO',
-            'id_categoria' => $this->categoria($categoria)->id_categoria,
-        ]);
+        $time = function (string $nome, string $tipo, array $categorias, string $logo) {
+            $time = Time::create(['nome_time' => $nome, 'tipo_time' => $tipo, 'logo_time' => $logo, 'status_time' => 'ATIVO']);
+            $time->definirCategorias(array_map(fn ($c) => $this->categoria($c)->id_categoria, $categorias));
+
+            return $time;
+        };
 
         return [
-            'sub11'     => $time('AACJ Sub-11', 'INTERNO', 'Sub-11', 'time-azul.png'),
-            'sub13'     => $time('AACJ Sub-13', 'INTERNO', 'Sub-13', 'time-verde.png'),
-            'sub15'     => $time('AACJ Sub-15', 'INTERNO', 'Sub-15', 'time-preto.jpg'),
-            'botafogo'  => $time('Botafogo da Vila', 'EXTERNO', 'Sub-15', 'time-visitante.png'),
-            'uniao'     => $time('União Esportiva', 'EXTERNO', 'Sub-13', 'time-visitante.jpg'),
-            'estrela'   => $time('Estrela FC', 'EXTERNO', 'Sub-15', 'time-visitante.png'),
+            'sub11'     => $time('AACJ Sub-11', 'INTERNO', ['Sub-11'], 'time-azul.png'),
+            'sub13'     => $time('AACJ Sub-13', 'INTERNO', ['Sub-13'], 'time-verde.png'),
+            'sub15'     => $time('AACJ Sub-15', 'INTERNO', ['Sub-15'], 'time-preto.jpg'),
+            'botafogo'  => $time('Botafogo da Vila', 'EXTERNO', ['Sub-13', 'Sub-15'], 'time-visitante.png'),
+            'uniao'     => $time('União Esportiva', 'EXTERNO', ['Sub-11', 'Sub-13'], 'time-visitante.jpg'),
+            'estrela'   => $time('Estrela FC', 'EXTERNO', ['Sub-15'], 'time-visitante.png'),
         ];
     }
 

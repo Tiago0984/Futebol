@@ -11,7 +11,7 @@ class CampeonatoController extends Controller
 {
     public function campeonato()
     {
-        $campeonatos = Campeonato::with(['categorias', 'times.categoria'])->ativos()->get();
+        $campeonatos = Campeonato::with(['categorias', 'times'])->ativos()->get();
 
         // Local de cada cartão: o principal ou os locais dos jogos visíveis (cada jogo tem o seu), numa consulta só
         $jogosPorCampeonato = Jogo::with('evento')->whereIn('id_campeonato', $campeonatos->pluck('id_campeonato'))
@@ -41,7 +41,7 @@ class CampeonatoController extends Controller
      */
     public function show($id)
     {
-        $campeonato = Campeonato::with(['categorias', 'times.categoria'])->ativos()->findOrFail($id);
+        $campeonato = Campeonato::with(['categorias', 'times'])->ativos()->findOrFail($id);
 
         // Jogos visíveis (oculto e rascunho somem; cancelado aparece com o selo), pela data do evento
         $jogos = Jogo::with(['evento', 'timeCasa', 'timeVisitante', 'jogoIda', 'jogoVolta'])

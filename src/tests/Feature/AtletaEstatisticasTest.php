@@ -41,9 +41,15 @@ class AtletaEstatisticasTest extends TestCase
             'data_inicio_campeonato' => now()->subMonth()->toDateString(), 'data_fim_campeonato' => now()->addMonth()->toDateString(),
         ]);
 
-        $time = fn (string $nome, string $tipo, string $categoria) => DB::table('tbl_time')->insertGetId([
-            'id_categoria' => $this->idCategoria($categoria, 'M'), 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo,
-        ]);
+        // Time com a categoria marcada no cadastro (tbl_time_categoria, 27/10/2026)
+        $time = function (string $nome, string $tipo, string $categoria) {
+            $id = DB::table('tbl_time')->insertGetId([
+                'id_categoria' => $this->idCategoria($categoria, 'M'), 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo,
+            ]);
+            DB::table('tbl_time_categoria')->insert(['id_time' => $id, 'id_categoria' => $this->idCategoria($categoria, 'M')]);
+
+            return $id;
+        };
         $this->sub15   = $time('AACJ Sub-15', 'INTERNO', 'Sub-15');
         $this->sub17   = $time('AACJ Sub-17 A', 'INTERNO', 'Sub-17');
         $this->externo = $time('Botafogo', 'EXTERNO', 'Sub-15');

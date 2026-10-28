@@ -37,9 +37,10 @@ class Categoria extends Model
         return $this->belongsToMany(Campeonato::class, 'tbl_campeonato_categoria', 'id_categoria', 'id_campeonato');
     }
 
+    // Times que têm esta categoria marcada no cadastro (tbl_time_categoria, 27/10/2026)
     public function times()
     {
-        return $this->hasMany(Time::class, 'id_categoria', 'id_categoria');
+        return $this->belongsToMany(Time::class, 'tbl_time_categoria', 'id_categoria', 'id_time');
     }
 
     public function atletas()

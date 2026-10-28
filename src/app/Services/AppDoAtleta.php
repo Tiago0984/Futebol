@@ -81,8 +81,8 @@ class AppDoAtleta
      *
      * "categoria_atual" (22/10/2026, pedido do app): os mesmos números, só os da categoria atual do atleta (linha
      * ATIVO de tbl_categoria_atleta; null sem ela). Conta a categoria em que cada jogo foi jogado (a do jogo, no
-     * evento; no amistoso sem categoria, a do time da escalação) e a da convocação: o Sub-13 que sobe para jogar
-     * no Sub-15 tem essas partidas no total, não no Sub-13.
+     * evento; no amistoso sem categoria, a do time da escalação, se ele tem uma só) e a da convocação: o Sub-13 que
+     * sobe para jogar no Sub-15 tem essas partidas no total, não no Sub-13.
      */
     public function estatisticas(): array
     {
@@ -125,12 +125,14 @@ class AppDoAtleta
         $convocacoesPorTime = $convocacoes->pluck('id_time')->countBy()->all();
         $idsTimes = collect(array_keys($partidas))->merge(array_keys($convocacoesPorTime))
             ->merge($cartoes->pluck('id_time')->filter())->unique();
-        $porTime = Time::with('categoria')->whereIn('id_time', $idsTimes)->get()
+        // categoria: as categorias do cadastro do time, num texto ("Sub-13 Masculino, Sub-15 Masculino"; várias desde
+        // 27/10/2026, quando a AACJ passou a ter um cadastro só); null sem nenhuma
+        $porTime = Time::with('categorias')->whereIn('id_time', $idsTimes)->get()
             ->map(fn (Time $time) => [
                 'id_time'   => $time->id_time,
                 'nome_time' => $time->nome_time,
                 'logo_url'  => $time->logo_url,
-                'categoria' => $time->categoria?->rotulo,
+                'categoria' => $time->categorias->pluck('rotulo')->implode(', ') ?: null,
             ] + $numeros($partidas[$time->id_time] ?? 0, $convocacoesPorTime[$time->id_time] ?? 0, $cartoes->where('id_time', $time->id_time),
                 $sumula->where('id_time', $time->id_time)))
             ->sortBy([['partidas', 'desc'], ['convocacoes', 'desc'], ['nome_time', 'asc']])
@@ -182,11 +184,12 @@ class AppDoAtleta
             return null;
         }
 
-        // Categoria em que cada jogo foi jogado: a do jogo (evento) ou, no amistoso sem categoria, a do time
+        // Categoria em que cada jogo foi jogado: a do jogo (evento) ou, no amistoso sem categoria, a do time quando
+        // ele tem uma só no cadastro (com várias, não dá para saber: o jogo fica só no total)
         $categoriaDoEvento = EventoCalendario::whereIn('id_evento_calendario', $jogados->keys()->merge($cartoes->pluck('id_evento')->filter()))
             ->pluck('id_categoria', 'id_evento_calendario');
-        $categoriaDoTime = Time::whereIn('id_time', $jogados->merge($cartoes->pluck('id_time'))->filter()->unique())
-            ->pluck('id_categoria', 'id_time');
+        $categoriaDoTime = Time::with('categorias')->whereIn('id_time', $jogados->merge($cartoes->pluck('id_time'))->filter()->unique())->get()
+            ->mapWithKeys(fn (Time $time) => [$time->id_time => $time->categorias->count() === 1 ? $time->categorias->first()->id_categoria : null]);
         $nela = fn ($idEvento, $idTime) => (int) ($categoriaDoEvento[$idEvento] ?? $categoriaDoTime[$idTime] ?? 0) === (int) $categoria->id_categoria;
 
         return [
