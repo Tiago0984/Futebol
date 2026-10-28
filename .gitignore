@@ -40,3 +40,9 @@ chat_*.md
 # Fotos da comissão técnica enviadas pelo admin (dados pessoais; cada servidor tem as suas)
 /src/public/futebol/images/comissao/*
 !/src/public/futebol/images/comissao/.gitkeep
+
+# Imagens tratadas e gravadas pelo painel com nome gerado (TratadorDeImagem): cada servidor tem as suas
+/src/public/futebol/images/**/logo-time-*
+/src/public/futebol/images/**/logo-campeonato-*
+/src/public/futebol/images/**/banner-campeonato-*
+/src/public/futebol/images/**/banner-site-*
