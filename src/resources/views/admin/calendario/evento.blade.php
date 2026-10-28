@@ -281,10 +281,11 @@
                         'logo'       => $par[0]->logo_time,
                         'papel'      => $par[1],
                         'externo'    => $par[0]->tipo_time !== 'INTERNO',
-                        // Categoria do cadastro do time; outra que não a do jogo: a do jogo em destaque e a do cadastro embaixo
-                        'categoria'  => $par[0]->categoria?->rotulo,
-                        'outra_categoria' => $par[0]->categoria && $jogo->categoriaDoJogo()
-                            && (int) $par[0]->id_categoria !== (int) $jogo->categoriaDoJogo()->id_categoria,
+                        // Categorias do cadastro do time (várias desde 27/10/2026); sem a do jogo entre elas: a do jogo em
+                        // destaque e as do cadastro embaixo
+                        'categoria'  => $par[0]->categorias->pluck('rotulo')->implode(', ') ?: null,
+                        'outra_categoria' => $par[0]->categorias->isNotEmpty() && $jogo->categoriaDoJogo()
+                            && ! $par[0]->categorias->contains('id_categoria', $jogo->categoriaDoJogo()->id_categoria),
                         'inscricoes' => $inscricoes->filter(fn ($i) => (int) $i->id_time === (int) $par[0]->id_time)->sortBy($pelaPosicao),
                         'id_time'    => (int) $par[0]->id_time,
                     ])->values()
@@ -448,6 +449,7 @@
                                     @if ($bloco['outra_categoria'])
                                         <div class="fw-semibold js-categoria-do-time">{{ $jogo->categoriaDoJogo()->rotulo }}</div>
                                         <div>Cadastro do time: {{ $bloco['categoria'] }}</div>
+                                    @elseif ($jogo->categoriaDoJogo())<div>{{ $jogo->categoriaDoJogo()->rotulo }}</div>
                                     @elseif ($bloco['categoria'])<div>{{ $bloco['categoria'] }}</div>@endif
                                     <i class="bi bi-lock-fill"></i> <em>Elenco não disponível nesta associação</em>
                                 </div>

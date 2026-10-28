@@ -29,13 +29,21 @@
   <span class="form-text">Marque uma ou mais.</span>
 
   <p class="modal-section-label mb-1 mt-3"><i class="bi bi-shield-fill"></i> Times participantes por categoria</p>
-  <p class="form-text mt-0 mb-2">O adversário (EXT) pode jogar em mais de uma categoria, com um cadastro só; cada time da AACJ (INT) joga em uma só.</p>
+  <p class="form-text mt-0 mb-2">Em cada categoria aparecem os times que a têm marcada no cadastro (tela de Times). O mesmo time (a AACJ, o Botafogo) pode jogar em várias categorias.</p>
   @foreach($categorias as $cat)
-  @php $doBloco = array_map('intval', $participantes[$cat->id_categoria] ?? []); @endphp
+  @php
+    $doBloco = array_map('intval', $participantes[$cat->id_categoria] ?? []);
+    // Os times com a categoria no cadastro e, por segurança, quem já é participante nela
+    $timesDaCategoria = $times->filter(fn ($t) => $t->categorias->contains('id_categoria', $cat->id_categoria)
+        || in_array((int) $t->id_time, $doBloco, true));
+  @endphp
   <div class="border rounded p-2 mb-2 js-bloco-categoria" data-categoria="{{ $cat->id_categoria }}">
     <div class="fw-semibold small mb-1">{{ $cat->rotulo }}</div>
+    @if($timesDaCategoria->isEmpty())
+    <div class="small text-muted">Nenhum time tem o {{ $cat->rotulo }} marcado. Marque a categoria na tela de Times.</div>
+    @endif
     <div class="row g-2">
-      @foreach($times as $time)
+      @foreach($timesDaCategoria as $time)
       <div class="col-md-4 col-6">
         <div class="form-check mb-0">
           <input class="form-check-input js-time" type="checkbox" name="participantes[{{ $cat->id_categoria }}][]"

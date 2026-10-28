@@ -40,7 +40,7 @@
              style="width:40px;height:40px;object-fit:contain;border-radius:8px;"
              onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
         <div>
-          <h1 class="page-title mb-0">Convocados · {{ $time->nome_time }}</h1>
+          <h1 class="page-title mb-0">Convocados · {{ $time->nome_time }} · {{ $categoria->rotulo }}</h1>
           <p class="page-subtitle mb-0" id="resumoConvocados">
             {{ $campeonato->nome_campeonato }}
             @if ($categoria)
@@ -57,9 +57,9 @@
     @include('admin.jogos._mensagens')
 
     <p class="text-muted small mb-3">
-      <i class="bi bi-info-circle"></i> O {{ $time->nome_time }} joga no {{ $categoria?->rotulo ?? '—' }} deste campeonato: a convocação
+      <i class="bi bi-info-circle"></i> Convocação do {{ $time->nome_time }} no {{ $categoria->rotulo }} deste campeonato: a convocação
       e a camisa valem aqui (a camisa pode mudar no próximo campeonato). O atleta pode ser convocado também em outra categoria
-      do campeonato, por outro time da AACJ.
+      do campeonato, com outra camisa.
     </p>
 
     {{-- Lista dos convocados --}}
@@ -90,7 +90,7 @@
             @endphp
             <tr data-id-atleta="{{ $atleta->id_atleta }}" @class(['text-muted' => $inativo])>
               <td>
-                <form action="{{ route('admin.campeonatos.convocados.camisa', [$campeonato->id_campeonato, $time->id_time, $atleta->id_atleta]) }}"
+                <form action="{{ route('admin.campeonatos.convocados.camisa', [$campeonato->id_campeonato, $time->id_time, $atleta->id_atleta, 'categoria' => $categoria->id_categoria]) }}"
                       method="POST" class="d-flex gap-1">
                   @csrf @method('PATCH')
                   <input type="number" min="1" max="99" name="camisa_convocacao" value="{{ $convocacao->camisa_convocacao }}" required
@@ -120,7 +120,7 @@
                 <div class="text-muted">{{ $convocacao->usuario?->nome_usuario ?? '—' }}</div>
               </td>
               <td class="text-end">
-                <form action="{{ route('admin.campeonatos.convocados.remover', [$campeonato->id_campeonato, $time->id_time, $atleta->id_atleta]) }}"
+                <form action="{{ route('admin.campeonatos.convocados.remover', [$campeonato->id_campeonato, $time->id_time, $atleta->id_atleta, 'categoria' => $categoria->id_categoria]) }}"
                       method="POST" class="d-inline"
                       onsubmit="return confirm(@js("Tirar {$atleta->nome_atleta} da convocação do {$time->nome_time}?"))">
                   @csrf @method('DELETE')
@@ -138,7 +138,7 @@
     @endif
 
     {{-- Convocar atletas: caixa por categoria, com a camisa de cada escolhido --}}
-    <form action="{{ route('admin.campeonatos.convocados.convocar', [$campeonato->id_campeonato, $time->id_time]) }}" method="POST"
+    <form action="{{ route('admin.campeonatos.convocados.convocar', [$campeonato->id_campeonato, $time->id_time, 'categoria' => $categoria->id_categoria]) }}" method="POST"
           class="card card-body shadow-sm" id="formConvocar">
       @csrf
       <h2 class="h6 fw-bold mb-3"><i class="bi bi-person-plus"></i> Convocar atletas</h2>

@@ -77,9 +77,11 @@
         filtrarTimes(form, participantes);
         form.querySelector('.js-aviso-participantes')?.classList.toggle('d-none', participantes === null);
 
+        // Amistoso: sugere a categoria do mandante quando ele tem uma só no cadastro (com várias, o admin escolhe)
         const casa = form.querySelector('.js-time-casa').selectedOptions[0];
-        if (amistoso && !categoria.value && casa?.dataset.categoria) {
-            categoria.value = casa.dataset.categoria;
+        const categoriasDaCasa = (casa?.dataset.categorias ?? '').split(',').filter(Boolean);
+        if (amistoso && !categoria.value && categoriasDaCasa.length === 1) {
+            categoria.value = categoriasDaCasa[0];
         }
 
         atualizarMataMata(form, amistoso || campeonato.value === '' ? null : form.querySelector('.js-fase')?.value, campeonato.value, categoria.value);

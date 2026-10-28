@@ -29,7 +29,7 @@ class TimesDoCampeonatoController extends Controller
             ->flatMap(fn ($jogo) => [(int) $jogo->id_time_casa, (int) $jogo->id_time_visitante])
             ->unique()->all();
         $semJogo = $campeonato->times()
-            ->with('categoria')
+            ->with('categorias')
             // O time interno abre os convocados dele no campeonato (sem elenco fixo, Fase G, Etapa 4)
             ->withCount(['convocacoes as total_convocados' => fn ($q) => $q->where('id_campeonato', $campeonato->id_campeonato)->deAtivos()])
             ->whereNotIn('tbl_time.id_time', $idsNosJogos)
@@ -37,16 +37,9 @@ class TimesDoCampeonatoController extends Controller
             ->orderBy('nome_time')
             ->get();
 
-        // Convocação (Fase G): os participantes internos, cada um com quantos atletas ativos convocou e a categoria
-        // em que joga no campeonato (Fase H, Etapa H2), na ordem das categorias e pelo nome
-        $convocacao = $campeonato->timesConvocaveis()
-            ->withCount(['convocacoes as total_convocados' => fn ($q) => $q->where('id_campeonato', $campeonato->id_campeonato)->deAtivos()])
-            ->orderBy('nome_time')
-            ->get()
-            ->each(fn ($time) => $time->setAttribute('categoria_no_campeonato', $campeonato->categoriaDoTime($time)))
-            ->sortBy(fn ($time) => [$time->categoria_no_campeonato?->sexo_categoria === 'M' ? 0 : 1,
-                (int) $time->categoria_no_campeonato?->idade_min_categoria, $time->nome_time])
-            ->values();
+        // Convocação (Fase G): uma linha por time interno e categoria em que ele joga (a AACJ pode estar em várias,
+        // desde 27/10/2026), com quantos atletas ativos convocou nela, na ordem das categorias e pelo nome
+        $convocacao = $campeonato->participacoesConvocaveis();
 
         $caminho = $this->caminho($campeonato);
 

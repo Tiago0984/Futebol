@@ -81,7 +81,7 @@
         <select name="id_time_casa" id="{{ $p }}id_time_casa" class="form-select js-time-casa" required>
             <option value="">— Selecionar —</option>
             @foreach($times as $time)
-            <option value="{{ $time->id_time }}" data-categoria="{{ $time->id_categoria }}"
+            <option value="{{ $time->id_time }}" data-categorias="{{ $time->categorias->pluck('id_categoria')->implode(',') }}"
                 @selected((string) $valor('id_time_casa') === (string) $time->id_time)>{{ $time->nome_time }}</option>
             @endforeach
         </select>

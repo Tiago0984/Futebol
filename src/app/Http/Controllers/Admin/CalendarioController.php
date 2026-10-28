@@ -285,7 +285,7 @@ class CalendarioController extends Controller
         if ($jogo) {
             $jogo->setRelation('evento', $evento);
             $campeonatosDoJogo = JogosController::campeonatosDoFormulario();
-            $timesDoJogo       = Time::orderBy('nome_time')->get();
+            $timesDoJogo       = Time::with('categorias')->orderBy('nome_time')->get();
             $sumula            = $this->dadosDaSumula($jogo);
         } else {
             $evento->load('historico.usuario');

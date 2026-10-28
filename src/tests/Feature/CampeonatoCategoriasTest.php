@@ -43,7 +43,7 @@ class CampeonatoCategoriasTest extends TestCase
         $this->idSub11M = $this->idCategoria('Sub-11', 'M');
         $this->idSub15M = $this->idCategoria('Sub-15', 'M');
         $this->idSub17M = $this->idCategoria('Sub-17', 'M');
-        $this->botafogo = $this->time('Botafogo', 'EXTERNO', $this->idSub15M);
+        $this->botafogo = $this->time('Botafogo', 'EXTERNO', [$this->idSub15M, $this->idSub17M]);
         $this->aacj15   = $this->time('AACJ Sub-15', 'INTERNO', $this->idSub15M);
         $this->aacj17   = $this->time('AACJ Sub-17', 'INTERNO', $this->idSub17M);
     }
@@ -146,29 +146,33 @@ class CampeonatoCategoriasTest extends TestCase
             ->assertSee('data-participantes="' . e(json_encode([$this->idSub15M => [$this->botafogo, $this->aacj15], $this->idSub17M => [$this->botafogo, $this->aacj17]])) . '"', false);
     }
 
-    public function test_time_da_aacj_masculino_nao_joga_em_categoria_feminina(): void
+    public function test_time_so_entra_nas_categorias_marcadas_no_cadastro(): void
     {
-        // 26/10/2026, dono do projeto: só o masculino da AACJ é barrado; feminino no masculino e o externo continuam
+        // 27/10/2026, dono do projeto: um cadastro só por time, com as categorias marcadas na tela de Times. Substitui
+        // "um time da AACJ por categoria" e "masculino da AACJ não joga no feminino"
         $sub15F = $this->idCategoria('Sub-15', 'F');
-        $aacj15F = $this->time('AACJ Sub-15 F', 'INTERNO', $sub15F);
-        $dados = [...$this->dados('Copa Mista'), 'categorias' => [$this->idSub15M, $sub15F]];
+        $aacj = $this->time('AACJ', 'INTERNO', [$this->idSub15M, $this->idSub17M]);
+        $dados = [...$this->dados('Copa Mista'), 'categorias' => [$this->idSub15M, $this->idSub17M, $sub15F]];
 
-        $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$dados, 'participantes' => [$sub15F => [$this->aacj15, $this->botafogo]]])
-            ->assertSessionHasErrors(['participantes' => 'AACJ Sub-15 é Masculino e não pode jogar no Sub-15 Feminino. '
-                . 'Cadastre um time feminino (ex.: AACJ Sub-15 F).']);
+        // A AACJ no Sub-15 Feminino, que ela não tem marcado: recusado, com o time e a categoria
+        $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$dados, 'participantes' => [$sub15F => [$aacj]]])
+            ->assertSessionHasErrors(['participantes' => 'O AACJ não tem o Sub-15 Feminino marcado no cadastro do time. '
+                . 'Marque a categoria na tela de Times antes.']);
         $this->assertSame(0, Campeonato::where('nome_campeonato', 'Copa Mista')->count());
 
-        // O externo (cadastro masculino) no feminino e o time feminino da AACJ no masculino: aceitos
+        // A mesma AACJ no Sub-15 e no Sub-17 do mesmo campeonato (antes, um time da AACJ por categoria): aceito
         $this->comoAdmin()->post(route('admin.campeonatos.store'), [...$dados, 'participantes' => [
-            $sub15F => [$this->botafogo], $this->idSub15M => [$aacj15F, $this->botafogo],
+            $this->idSub15M => [$aacj, $this->botafogo], $this->idSub17M => [$aacj, $this->botafogo],
         ]])->assertSessionHasNoErrors()->assertSessionHas('sucesso');
 
-        // Na edição, a mesma regra
+        // Marcado o Sub-15 Feminino no cadastro, ela entra nele também
         $copa = Campeonato::where('nome_campeonato', 'Copa Mista')->sole();
-        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), [...$dados, 'participantes' => [$sub15F => [$this->aacj15]]])
-            ->assertSessionHasErrors('participantes');
-        $this->assertEquals([$sub15F => [$this->botafogo], $this->idSub15M => [$this->botafogo, $aacj15F]],
-            $copa->participantesPorCategoria(), 'nada mudou');
+        DB::table('tbl_time_categoria')->insert(['id_time' => $aacj, 'id_categoria' => $sub15F]);
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), [...$dados, 'participantes' => [
+            $this->idSub15M => [$aacj, $this->botafogo], $this->idSub17M => [$aacj, $this->botafogo], $sub15F => [$aacj],
+        ]])->assertSessionHasNoErrors();
+        $this->assertEquals([$this->idSub15M => [$this->botafogo, $aacj], $this->idSub17M => [$this->botafogo, $aacj], $sub15F => [$aacj]],
+            $copa->participantesPorCategoria());
     }
 
     public function test_ao_menos_uma_categoria_e_obrigatoria(): void
@@ -311,11 +315,16 @@ class CampeonatoCategoriasTest extends TestCase
         ]);
     }
 
-    private function time(string $nome, string $tipo, int $idCategoria): int
+    // Time com as categorias marcadas no cadastro (tbl_time_categoria, 27/10/2026): só entra no campeonato nelas
+    private function time(string $nome, string $tipo, int|array $categorias): int
     {
-        return DB::table('tbl_time')->insertGetId([
-            'id_categoria' => $idCategoria, 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo,
+        $categorias = (array) $categorias;
+        $id = DB::table('tbl_time')->insertGetId([
+            'id_categoria' => $categorias[0], 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo,
             'status_time' => 'ATIVO',
         ]);
+        DB::table('tbl_time_categoria')->insert(array_map(fn ($idCategoria) => ['id_time' => $id, 'id_categoria' => $idCategoria], $categorias));
+
+        return $id;
     }
 }

@@ -36,7 +36,7 @@ class JogosController extends Controller
     public function index(Request $request)
     {
         $campeonatos = self::campeonatosDoFormulario();
-        $times       = Time::orderBy('nome_time')->get();
+        $times       = Time::with('categorias')->orderBy('nome_time')->get();
         $filtros     = $this->filtrosDaLista($request, $campeonatos, $times);
 
         $jogoFiltrado = $filtros['jogo'] ? Jogo::with(['evento', 'timeCasa', 'timeVisitante'])->find($filtros['jogo']) : null;
@@ -88,7 +88,7 @@ class JogosController extends Controller
     {
         return [
             'campeonatos' => self::campeonatosDoFormulario(),
-            'times'       => Time::orderBy('nome_time')->get(),
+            'times'       => Time::with('categorias')->orderBy('nome_time')->get(),
             'categorias'  => Categoria::ativas()->get(),
         ];
     }
@@ -163,7 +163,7 @@ class JogosController extends Controller
      */
     public function escaladosDoTime($id, $timeId)
     {
-        $jogo = Jogo::with(['evento', 'campeonato', 'timeCasa.categoria', 'timeVisitante.categoria'])->findOrFail($id);
+        $jogo = Jogo::with(['evento', 'campeonato', 'timeCasa.categorias', 'timeVisitante.categorias'])->findOrFail($id);
         $time = collect([$jogo->timeCasa, $jogo->timeVisitante])->first(fn ($t) => (string) $t?->id_time === (string) $timeId);
         abort_unless($time, 404);
 

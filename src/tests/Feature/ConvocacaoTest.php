@@ -98,7 +98,7 @@ class ConvocacaoTest extends TestCase
         $bia = $this->atleta('Bia', 14, $this->idSub15M);
 
         $this->convocar($this->azul, [$ana => 10, $bia => 7])
-            ->assertRedirect(route('admin.campeonatos.convocados', [$this->liga, $this->azul]))
+            ->assertRedirect(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub15M]))
             ->assertSessionHas('sucesso', '2 atleta(s) convocado(s) pelo AACJ Sub-15.');
 
         $this->assertSame([$ana => 10, $bia => 7], $this->camisas($this->azul));
@@ -190,7 +190,7 @@ class ConvocacaoTest extends TestCase
         // A tela do AACJ Sub-17 mostra a categoria e o limite dela; o bloco Convocação, a categoria de cada time
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $aacj17]))
             ->assertSee('Sub-17 Masculino, até 17 anos')
-            ->assertSee('O AACJ Sub-17 joga no Sub-17 Masculino deste campeonato');
+            ->assertSee('Convocação do AACJ Sub-17 no Sub-17 Masculino deste campeonato');
         $this->comoAdminLogado()->get(route('admin.campeonatos.times', $this->liga))
             ->assertSeeInOrder(['AACJ Sub-15', '· Sub-15 Masculino', 'AACJ Sub-17', '· Sub-17 Masculino']);
     }
@@ -372,23 +372,47 @@ class ConvocacaoTest extends TestCase
         $this->assertSame([$ana => 10], $this->camisas($this->azul));
     }
 
-    public function test_time_da_aacj_joga_em_uma_categoria_so_do_campeonato(): void
+    public function test_a_mesma_aacj_convoca_em_duas_categorias_do_campeonato(): void
     {
+        // 27/10/2026: um cadastro só para a AACJ, com as categorias marcadas (antes, um time da AACJ por categoria)
         $dados = [
             'nome_campeonato' => 'Liga', 'tipo_campeonato' => 'MATA-MATA', 'categorias' => [$this->idSub15M, $this->idSub17M],
             'data_inicio_campeonato' => now()->toDateString(), 'data_fim_campeonato' => now()->addMonth()->toDateString(),
         ];
-
-        // O externo pode estar nas duas; o AACJ Sub-15, não
         $this->comoAdminLogado()->put(route('admin.campeonatos.update', $this->liga), [...$dados,
             'participantes' => [$this->idSub15M => [$this->azul, $this->visitante], $this->idSub17M => [$this->azul, $this->visitante]]])
-            ->assertSessionHasErrors(['participantes' => 'Cada time da AACJ joga em uma categoria só do campeonato: AACJ Sub-15 está(ão) '
-                . 'marcado(s) em mais de uma. Para outra categoria, use outro time da AACJ (ex.: "AACJ Sub-17").']);
-
-        $this->comoAdminLogado()->put(route('admin.campeonatos.update', $this->liga), [...$dados,
-            'participantes' => [$this->idSub15M => [$this->azul, $this->visitante], $this->idSub17M => [$this->verde, $this->visitante]]])
             ->assertSessionHasNoErrors();
-        $this->assertSame(2, DB::table('tbl_campeonato_time')->where('id_campeonato', $this->liga)->where('id_time', $this->visitante)->count());
+
+        // Ana (15) nas duas categorias pelo mesmo time, com a mesma camisa 10 (a camisa é por categoria); Caio (16) só no Sub-17
+        $ana  = $this->atleta('Ana', 15, $this->idSub15M);
+        $caio = $this->atleta('Caio', 16, $this->idSub17M);
+        $this->convocar($this->azul, [$ana => 10], idCategoria: $this->idSub15M)
+            ->assertRedirect(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub15M]));
+        $this->convocar($this->azul, [$ana => 10, $caio => 9], idCategoria: $this->idSub17M)->assertSessionHasNoErrors();
+        $this->convocar($this->azul, [$caio => 7], idCategoria: $this->idSub15M)
+            ->assertSessionHasErrors(['convocacao' => 'Caio (16 anos) passa(m) da idade da categoria do AACJ Sub-15 (Sub-15 Masculino, até 15 anos): '
+                . 'atleta mais velho não joga em categoria abaixo da idade dele.']);
+
+        $this->assertEquals([$this->idSub15M => 10, $this->idSub17M => 10],
+            Convocacao::where('id_atleta', $ana)->pluck('camisa_convocacao', 'id_categoria')->map(fn ($c) => (int) $c)->all());
+
+        // Cada categoria na sua tela; o bloco Convocação tem uma linha por categoria do time
+        $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub15M]))
+            ->assertOk()->assertSee('Convocados · AACJ Sub-15 · Sub-15 Masculino')->assertSee('1 convocado(s)');
+        $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub17M]))
+            ->assertOk()->assertSee('Convocados · AACJ Sub-15 · Sub-17 Masculino')->assertSee('2 convocado(s)');
+        $this->comoAdminLogado()->get(route('admin.campeonatos.times', $this->liga))
+            ->assertSeeInOrder(['AACJ Sub-15', '· Sub-15 Masculino', 'AACJ Sub-15', '· Sub-17 Masculino']);
+
+        // Remover pela tela do Sub-17 tira só a convocação do Sub-17
+        $this->comoAdminLogado()->delete(route('admin.campeonatos.convocados.remover', [$this->liga, $this->azul, $ana, 'categoria' => $this->idSub17M]))
+            ->assertRedirect(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub17M]));
+        $this->assertSame([$this->idSub15M], Convocacao::where('id_atleta', $ana)->pluck('id_categoria')->map(fn ($c) => (int) $c)->all());
+
+        // Categoria em que o time não joga: volta para a tela do campeonato com o erro
+        $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub13M]))
+            ->assertRedirect(route('admin.campeonatos.times', $this->liga))
+            ->assertSessionHas('erro', 'O AACJ Sub-15 não joga no Sub-13 Masculino do campeonato Liga.');
     }
 
     // ---------- ajudantes ----------
@@ -398,10 +422,11 @@ class ConvocacaoTest extends TestCase
         return $this->actingAs($this->admin, 'admin');
     }
 
-    // POST da caixa "Convocar atletas": [id_atleta => camisa]
-    private function convocar(int $idTime, array $camisas, ?int $idCampeonato = null)
+    // POST da caixa "Convocar atletas": [id_atleta => camisa]; $idCategoria quando o time está em várias
+    private function convocar(int $idTime, array $camisas, ?int $idCampeonato = null, ?int $idCategoria = null)
     {
-        return $this->comoAdminLogado()->post(route('admin.campeonatos.convocados.convocar', [$idCampeonato ?? $this->liga, $idTime]), [
+        return $this->comoAdminLogado()->post(route('admin.campeonatos.convocados.convocar',
+            [$idCampeonato ?? $this->liga, $idTime, ...($idCategoria ? ['categoria' => $idCategoria] : [])]), [
             'atletas' => array_keys($camisas),
             'camisas' => $camisas,
         ]);
@@ -440,11 +465,16 @@ class ConvocacaoTest extends TestCase
         ]);
     }
 
+    // Time com o Sub-15 e o Sub-17 marcados no cadastro (tbl_time_categoria, 27/10/2026): só entra no campeonato
+    // nas categorias marcadas, e os testes passam times de uma para a outra
     private function time(string $nome, string $tipo): int
     {
-        return DB::table('tbl_time')->insertGetId([
+        $id = DB::table('tbl_time')->insertGetId([
             'id_categoria' => $this->idSub15M, 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo,
             'status_time' => 'ATIVO',
         ]);
+        DB::table('tbl_time_categoria')->insert([['id_time' => $id, 'id_categoria' => $this->idSub15M], ['id_time' => $id, 'id_categoria' => $this->idSub17M]]);
+
+        return $id;
     }
 }

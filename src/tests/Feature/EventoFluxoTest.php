@@ -39,9 +39,15 @@ class EventoFluxoTest extends TestCase
             'local_evento' => 'Estádio da Copa', 'status_campeonato' => 'ATIVO',
         ]);
 
-        $time = fn (string $nome, string $tipo) => DB::table('tbl_time')->insertGetId([
-            'id_categoria' => $this->idSub11M, 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo, 'status_time' => 'ATIVO',
-        ]);
+        // Times com o Sub-11 marcado no cadastro (tbl_time_categoria, 27/10/2026)
+        $time = function (string $nome, string $tipo) {
+            $id = DB::table('tbl_time')->insertGetId([
+                'id_categoria' => $this->idSub11M, 'logo_time' => 'time.png', 'nome_time' => $nome, 'tipo_time' => $tipo, 'status_time' => 'ATIVO',
+            ]);
+            DB::table('tbl_time_categoria')->insert(['id_time' => $id, 'id_categoria' => $this->idSub11M]);
+
+            return $id;
+        };
         $this->azul      = $time('Time Azul', 'INTERNO');
         $this->verde     = $time('Time Verde', 'INTERNO');
         $this->visitante = $time('Time Visitante', 'EXTERNO');
@@ -379,8 +385,8 @@ class EventoFluxoTest extends TestCase
             ->assertSee('Sub-11 Masculino')
             ->assertDontSee('js-categoria-do-time');
 
-        // Jogo Sub-15, times Sub-11: a do jogo em destaque e a do cadastro embaixo (26/10/2026; antes, "Time: …" com
-        // uma dica escondida), nos cartões e na tela do jogo (Fase H, Etapa H3: a do jogo)
+        // Jogo Sub-15, times só com o Sub-11 no cadastro (jogo de antes de 27/10/2026, quando o time passou a ter as
+        // categorias marcadas): a do jogo em destaque e as do cadastro embaixo, nos cartões e na tela do jogo
         $jogo->evento->update(['id_categoria' => $this->idCategoria('Sub-15', 'M')]);
         $destaque = '<span class="escal-team-cat escal-team-cat-joga js-categoria-do-time">Sub-15 Masculino</span>';
         $this->comoAdmin()->get(route('admin.campeonatos.times', $this->copa))

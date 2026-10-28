@@ -16,24 +16,27 @@ use Illuminate\Http\Request;
  * a caixa "Convocar atletas" por categoria (com a camisa de cada escolhido) e a remoção. A convocação vale na
  * categoria do time no campeonato (Fase H, Etapa H2): um time por atleta em cada categoria e bloqueio de quem
  * passa da idade dela (ano de início). Os jogos usam a convocação pelo "Preencher pela convocação" (Fase G, Etapa 2).
+ * Desde 27/10/2026 o time (a AACJ) pode estar em várias categorias do mesmo campeonato: a categoria vem na URL
+ * (?categoria=ID, ou o campo "categoria" dos formulários); sem ela, a primeira em que o time participa.
  */
 class ConvocacaoController extends Controller
 {
-    public function show($id, $timeId)
+    public function show(Request $request, $id, $timeId)
     {
         [$campeonato, $time] = $this->campeonatoETime($id, $timeId);
-        if ($erro = $campeonato->erroDoTimeNaConvocacao($time)) {
+        if ($erro = $campeonato->erroDoTimeNaConvocacao($time, $this->idCategoria($request))) {
             return redirect()->route('admin.campeonatos.times', $campeonato->id_campeonato)->with('erro', $erro);
         }
+        $categoria   = $campeonato->categoriaDoTime($time, $this->idCategoria($request));
+        $idCategoria = (int) $categoria->id_categoria;
 
-        // Convocados do time, pela camisa; ativos primeiro (o inativo fica com a linha, mas não conta)
-        $convocados = $campeonato->convocacoes()->where('id_time', $time->id_time)
+        // Convocados do time nesta categoria, pela camisa; ativos primeiro (o inativo fica com a linha, mas não conta)
+        $convocados = $campeonato->convocacoes()->where('id_time', $time->id_time)->where('id_categoria', $idCategoria)
             ->with(['atleta:id_atleta,nome_atleta,status_atleta,sexo_atleta,data_nasc_atleta', 'atleta.categoriasAtivas', 'usuario:id_usuario,nome_usuario'])
             ->get()
             ->sortBy(fn (Convocacao $c) => [$c->atleta->status_atleta === 'ATIVO' ? 0 : 1, $c->camisa_convocacao])
             ->values();
-        $categoria = $campeonato->categoriaDoTime($time);
-        $acimaDosConvocados = $campeonato->idadesAcimaDaIdade($time, $convocados->pluck('id_atleta')->all());
+        $acimaDosConvocados = $campeonato->idadesAcimaDaIdade($time, $convocados->pluck('id_atleta')->all(), $idCategoria);
 
         // Caixa "Convocar atletas": ativos ainda não convocados por este time; desabilitados os convocados por
         // outro time na mesma categoria do campeonato (em outra categoria pode: Etapa H2) e os que passam da idade
@@ -41,12 +44,12 @@ class ConvocacaoController extends Controller
         $grupos = Atleta::ativosPorCategoria()
             ->map(fn ($grupo) => $grupo->reject(fn ($atleta) => in_array((int) $atleta->id_atleta, $idsDoTime, true))->values())
             ->filter(fn ($grupo) => $grupo->isNotEmpty());
-        $bloqueados = $campeonato->convocacoes()->where('id_categoria', $categoria?->id_categoria)
+        $bloqueados = $campeonato->convocacoes()->where('id_categoria', $idCategoria)
             ->where('id_time', '<>', $time->id_time)->with('time:id_time,nome_time')->get()
             ->mapWithKeys(fn (Convocacao $c) => [(int) $c->id_atleta => "convocado pelo {$c->time->nome_time}"])
             ->all();
         $idsDaCaixa = $grupos->flatten()->pluck('id_atleta')->all();
-        foreach ($campeonato->idadesAcimaDaIdade($time, $idsDaCaixa) as $idAtleta => $idade) {
+        foreach ($campeonato->idadesAcimaDaIdade($time, $idsDaCaixa, $idCategoria) as $idAtleta => $idade) {
             $bloqueados[$idAtleta] ??= "acima da idade ({$idade} anos)";
         }
 
@@ -54,7 +57,7 @@ class ConvocacaoController extends Controller
             ['Eventos', route('admin.calendario.index')],
             ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
             [$campeonato->nome_campeonato, route('admin.campeonatos.times', $campeonato->id_campeonato)],
-            ["Convocados · {$time->nome_time}", null],
+            ["Convocados · {$time->nome_time} · {$categoria->rotulo}", null],
         ];
 
         return view('admin.campeonatos.convocados', compact(
@@ -66,9 +69,10 @@ class ConvocacaoController extends Controller
     public function convocar(Request $request, $id, $timeId)
     {
         [$campeonato, $time] = $this->campeonatoETime($id, $timeId);
-        if ($erro = $campeonato->erroDoTimeNaConvocacao($time)) {
+        if ($erro = $campeonato->erroDoTimeNaConvocacao($time, $this->idCategoria($request))) {
             return redirect()->route('admin.campeonatos.times', $campeonato->id_campeonato)->with('erro', $erro);
         }
+        $idCategoria = (int) $campeonato->categoriaDoTime($time, $this->idCategoria($request))->id_categoria;
 
         $request->validate([
             'atletas'   => 'required|array|min:1',
@@ -84,12 +88,12 @@ class ConvocacaoController extends Controller
         );
 
         $camisas = collect($ids)->mapWithKeys(fn ($idAtleta) => [$idAtleta => (int) $request->input("camisas.{$idAtleta}")])->all();
-        if ($erros = $campeonato->errosDaConvocacao($time, $camisas)) {
+        if ($erros = $campeonato->errosDaConvocacao($time, $camisas, $idCategoria)) {
             return back()->withInput()->withErrors(['convocacao' => $erros]);
         }
 
         try {
-            $total = $campeonato->convocar($time, $camisas, auth('admin')->id());
+            $total = $campeonato->convocar($time, $camisas, auth('admin')->id(), $idCategoria);
         } catch (UniqueConstraintViolationException) {
             // Outra tela convocou o mesmo atleta ou usou a mesma camisa entre a conferência e a gravação
             return back()->withInput()->withErrors(['convocacao' => 'A convocação mudou enquanto você escolhia: confira a lista e tente de novo.']);
@@ -97,13 +101,13 @@ class ConvocacaoController extends Controller
 
         // Jogos do time já criados não recebem os novos sozinhos (Fase G, Etapa 2): lembra o "Preencher pela convocação"
         $jogos = $time->jogosFuturosNoCampeonato($campeonato->id_campeonato);
-        $redirecionar = redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time])
+        $redirecionar = redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time, 'categoria' => $idCategoria])
             ->with('sucesso', "{$total} atleta(s) convocado(s) pelo {$time->nome_time}."
                 . ($jogos ? " O {$time->nome_time} já tem {$jogos} jogo(s) futuro(s) neste campeonato: para inscrever os novos,"
                     . ' use "Preencher pela convocação" na tela de cada jogo.' : ''));
 
         // Sexo diferente do campeonato: só aviso (CLAUDE.md, seção 8, pergunta 14)
-        $avisos = $campeonato->avisosDeSexo($time, $ids);
+        $avisos = $campeonato->avisosDeSexo($time, $ids, $idCategoria);
 
         return $avisos ? $redirecionar->with('aviso', implode(' ', $avisos)) : $redirecionar;
     }
@@ -112,7 +116,7 @@ class ConvocacaoController extends Controller
     public function camisa(Request $request, $id, $timeId, $atletaId)
     {
         [$campeonato, $time] = $this->campeonatoETime($id, $timeId);
-        $convocacao = $this->convocacao($campeonato, $time, $atletaId);
+        $convocacao = $this->convocacao($campeonato, $time, $atletaId, $this->idCategoria($request));
 
         $request->validate(['camisa_convocacao' => $this->regraDaCamisa()], $this->mensagensDaCamisa('camisa_convocacao'));
         $camisa = (int) $request->input('camisa_convocacao');
@@ -127,15 +131,15 @@ class ConvocacaoController extends Controller
             return back()->withErrors(['convocacao' => 'A convocação mudou enquanto você editava: confira a lista e tente de novo.']);
         }
 
-        return redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time])
+        return redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time, 'categoria' => $convocacao->id_categoria])
             ->with('sucesso', "Camisa de {$convocacao->atleta->nome_atleta} atualizada para {$camisa}.");
     }
 
     // Tira o atleta da convocação do time; as inscrições nos jogos ficam (marcadas "Não convocado")
-    public function remover($id, $timeId, $atletaId)
+    public function remover(Request $request, $id, $timeId, $atletaId)
     {
         [$campeonato, $time] = $this->campeonatoETime($id, $timeId);
-        $convocacao = $this->convocacao($campeonato, $time, $atletaId);
+        $convocacao = $this->convocacao($campeonato, $time, $atletaId, $this->idCategoria($request));
         $nome = $convocacao->atleta->nome_atleta;
         $convocacao->delete();
 
@@ -147,7 +151,7 @@ class ConvocacaoController extends Controller
                 . ' na tela do jogo); remova a inscrição na tela de cada jogo, se for o caso.';
         }
 
-        return redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time])
+        return redirect()->route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time, 'categoria' => $convocacao->id_categoria])
             ->with($jogos ? 'aviso' : 'sucesso', $mensagem);
     }
 
@@ -156,10 +160,21 @@ class ConvocacaoController extends Controller
         return [Campeonato::findOrFail($id), Time::findOrFail($timeId)];
     }
 
-    // Convocação do atleta por este time neste campeonato (404 se não houver)
-    private function convocacao(Campeonato $campeonato, Time $time, $atletaId): Convocacao
+    // Categoria pedida (?categoria=ID na URL ou o campo dos formulários); null = a primeira em que o time participa
+    private function idCategoria(Request $request): ?int
+    {
+        $id = (string) $request->input('categoria', '');
+
+        return ctype_digit($id) ? (int) $id : null;
+    }
+
+    // Convocação do atleta por este time neste campeonato, na categoria pedida quando há (404 se não houver). Sem a
+    // categoria, a primeira: o mesmo atleta pode estar convocado pelo time em duas categorias
+    private function convocacao(Campeonato $campeonato, Time $time, $atletaId, ?int $idCategoria): Convocacao
     {
         return $campeonato->convocacoes()->where('id_time', $time->id_time)->where('id_atleta', (int) $atletaId)
+            ->when($idCategoria, fn ($q) => $q->where('id_categoria', $idCategoria))
+            ->orderBy('id_categoria')
             ->with(['atleta:id_atleta,nome_atleta', 'time:id_time,nome_time'])->firstOrFail();
     }
 

@@ -59,21 +59,21 @@
 
     @include('admin.jogos._mensagens')
 
-    {{-- Convocação (Fase G): um time interno participante por linha, com os convocados ativos e o botão da tela --}}
+    {{-- Convocação (Fase G): uma linha por time interno e categoria em que ele joga (a AACJ no Sub-13 e no Sub-15:
+         duas linhas, desde 27/10/2026), com os convocados ativos e o botão da tela --}}
     @if ($convocacao->isNotEmpty())
     <div class="card shadow-sm mb-4" id="blocoConvocacao">
       <div class="card-body py-2">
         <h2 class="h6 text-uppercase text-muted fw-bold mb-2">Convocação</h2>
-        @foreach ($convocacao as $timeConvocador)
-        <div class="d-flex align-items-center gap-2 py-1 border-top" data-id-time="{{ $timeConvocador->id_time }}">
-          <span class="fw-semibold">{{ $timeConvocador->nome_time }}</span>
-          @if ($timeConvocador->categoria_no_campeonato)
-          <span class="text-muted small">· {{ $timeConvocador->categoria_no_campeonato->rotulo }}</span>
-          @endif
-          <span @class(['badge', 'bg-secondary' => $timeConvocador->total_convocados, 'bg-warning text-dark' => ! $timeConvocador->total_convocados])>
-            {{ $timeConvocador->total_convocados ? $timeConvocador->total_convocados . ' convocado(s)' : 'Sem convocados' }}
+        @foreach ($convocacao as $participacao)
+        <div class="d-flex align-items-center gap-2 py-1 border-top" data-id-time="{{ $participacao->time->id_time }}"
+             data-id-categoria="{{ $participacao->categoria->id_categoria }}">
+          <span class="fw-semibold">{{ $participacao->time->nome_time }}</span>
+          <span class="text-muted small">· {{ $participacao->categoria->rotulo }}</span>
+          <span @class(['badge', 'bg-secondary' => $participacao->total, 'bg-warning text-dark' => ! $participacao->total])>
+            {{ $participacao->total ? $participacao->total . ' convocado(s)' : 'Sem convocados' }}
           </span>
-          <a href="{{ route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $timeConvocador->id_time]) }}"
+          <a href="{{ route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $participacao->time->id_time, 'categoria' => $participacao->categoria->id_categoria]) }}"
              class="btn btn-sm btn-outline-primary ms-auto">
             <i class="bi bi-person-lines-fill"></i> Convocados
           </a>

@@ -30,7 +30,7 @@ class CampeonatosController extends Controller
             ->orderBy('data_inicio_campeonato', 'desc')
             ->get();
         $categorias  = $this->categorias();
-        $times       = Time::orderBy('nome_time')->get();
+        $times       = Time::with('categorias')->orderBy('nome_time')->get();
 
         // Participantes de cada categoria, para o modal de edição
         $participantes = $campeonatos->mapWithKeys(fn ($camp) => [$camp->id_campeonato => $camp->participantesPorCategoria()]);
@@ -41,7 +41,7 @@ class CampeonatosController extends Controller
     public function create()
     {
         $categorias = $this->categorias();
-        $times      = Time::orderBy('nome_time')->get();
+        $times      = Time::with('categorias')->orderBy('nome_time')->get();
 
         return view('admin.campeonatos.create', compact('categorias', 'times'));
     }
@@ -52,7 +52,7 @@ class CampeonatosController extends Controller
 
         $idsCategorias = $this->categoriasDoPedido($request);
         $participantes = $this->participantesDoPedido($request, $idsCategorias);
-        if ($erro = $this->erroDosInternos($participantes)) {
+        if ($erro = $this->erroDosParticipantes($participantes)) {
             return back()->withInput()->withErrors(['participantes' => $erro]);
         }
 
@@ -81,7 +81,7 @@ class CampeonatosController extends Controller
     {
         $campeonato = Campeonato::with('categorias')->findOrFail($id);
         $categorias = $this->categorias();
-        $times      = Time::orderBy('nome_time')->get();
+        $times      = Time::with('categorias')->orderBy('nome_time')->get();
 
         return view('admin.campeonatos.edit', compact('campeonato', 'categorias', 'times'));
     }
@@ -95,7 +95,7 @@ class CampeonatosController extends Controller
         $idsCategorias = $this->categoriasDoPedido($request);
         $participantes = $this->participantesDoPedido($request, $idsCategorias);
 
-        if ($erro = $this->erroDosInternos($participantes)) {
+        if ($erro = $this->erroDosParticipantes($participantes)) {
             return back()->withInput()->withErrors(['participantes' => $erro]);
         }
 
@@ -237,19 +237,12 @@ class CampeonatosController extends Controller
         return array_values(array_unique(array_map('intval', (array) $request->input('categorias', []))));
     }
 
-    // Time da AACJ em mais de uma categoria (ou null): cada um joga numa categoria só do campeonato (Etapa H2)
-    private function erroDosInternos(array $participantes): ?string
+    // Participante numa categoria que não está marcada no cadastro do time (ou null; 27/10/2026)
+    private function erroDosParticipantes(array $participantes): ?string
     {
-        $repetidos = Campeonato::internosEmVariasCategorias($participantes);
-        if ($repetidos) {
-            return 'Cada time da AACJ joga em uma categoria só do campeonato: ' . implode(', ', $repetidos)
-                . ' está(ão) marcado(s) em mais de uma. Para outra categoria, use outro time da AACJ (ex.: "AACJ Sub-17").';
-        }
+        $foraDasCategorias = Campeonato::timesForaDasCategorias($participantes);
 
-        // Time da AACJ masculino em categoria feminina (26/10/2026); o contrário continua permitido
-        $masculinos = Campeonato::masculinosEmCategoriaFeminina($participantes);
-
-        return $masculinos ? implode(' ', $masculinos) : null;
+        return $foraDasCategorias ? implode(' ', $foraDasCategorias) : null;
     }
 
     // Participantes de cada categoria marcada: [id_categoria => [id_time]]; o bloco de categoria desmarcada é ignorado

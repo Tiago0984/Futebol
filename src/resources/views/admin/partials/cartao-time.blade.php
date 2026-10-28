@@ -1,15 +1,16 @@
 {{--
     Cartão de um time (visual da antiga tela de Escalação), usado nos Jogos do campeonato e nos dos amistosos.
-    $time (com categoria); $link = jogadores do time no jogo ou convocados do time no campeonato, ignorado no
+    $time (com categorias); $link = jogadores do time no jogo ou convocados do time no campeonato, ignorado no
     externo, que fica bloqueado (sem atletas na associação); $contagem = texto do número, por exemplo
     "3 escalado(s) no jogo" ou "5 convocado(s)".
-    $categoriaDoCampeonato (opcional): quando a categoria do time é outra, ela aparece em destaque e a do cadastro
-    do time embaixo, menor (o mesmo time joga campeonatos de faixas diferentes; a idade segue a do campeonato).
+    $categoriaDoCampeonato (opcional): a do jogo ou a do time no campeonato, mostrada no lugar das categorias do
+    cadastro (o time tem várias desde 27/10/2026). Se o cadastro não a tem marcada (jogo de antes), as do cadastro
+    aparecem embaixo, menores.
 --}}
 @php
   $categoriaDoCampeonato ??= null;
-  $outraCategoria = $time->categoria && $categoriaDoCampeonato
-      && (int) $time->categoria->id_categoria !== (int) $categoriaDoCampeonato->id_categoria;
+  $outraCategoria = $categoriaDoCampeonato && $time->categorias->isNotEmpty()
+      && ! $time->categorias->contains('id_categoria', $categoriaDoCampeonato->id_categoria);
 @endphp
 @if(strtoupper($time->tipo_time) === 'EXTERNO')
 <div class="escal-team-card escal-team-card-external">
