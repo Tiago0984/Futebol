@@ -182,10 +182,11 @@ class ConvocacaoTest extends TestCase
         $this->assertEquals([$this->idSub15M => 10, $this->idSub17M => 4],
             Convocacao::where('id_atleta', $ana)->pluck('camisa_convocacao', 'id_categoria')->map(fn ($c) => (int) $c)->all());
 
-        // Na caixa do AACJ Sub-15 B (mesma categoria do AACJ Sub-15), a Ana fica desabilitada; o Caio, acima da idade
+        // Na caixa do AACJ Sub-15 B (mesma categoria do AACJ Sub-15), a Ana fica desabilitada; o Caio, do Sub-17
+        // (mais velho), nem aparece (28/10/2026: a caixa tem só a categoria e as mais novas)
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->verde]))
             ->assertSee('Ana <span class="text-muted small">· convocado pelo AACJ Sub-15</span>', false)
-            ->assertSee('Caio <span class="text-muted small">· acima da idade (16 anos)</span>', false);
+            ->assertDontSee('Caio');
 
         // A tela do AACJ Sub-17 mostra a categoria e o limite dela; o bloco Convocação, a categoria de cada time
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $aacj17]))
@@ -206,8 +207,13 @@ class ConvocacaoTest extends TestCase
 
         $this->convocar($this->azul, [$ana => 10])->assertSessionHasNoErrors();
 
+        // Caixa (28/10/2026): a categoria da convocação primeiro e as mais novas como "pode subir"; o mais velho
+        // (Caio, Sub-17) não aparece
+        $bia = $this->atleta('Bia', 15, $this->idSub15M);
+        $leo = $this->atleta('Leo', 12, $this->idSub13M);
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->azul]))
-            ->assertSee('Caio <span class="text-muted small">· acima da idade (16 anos)</span>', false);
+            ->assertSeeInOrder(['Sub-15 Masculino', 'Bia', 'Sub-13 Masculino · pode subir', 'Leo'])
+            ->assertDontSee('Caio');
     }
 
     public function test_idade_conta_pelo_ano_de_inicio_do_campeonato(): void
@@ -401,8 +407,19 @@ class ConvocacaoTest extends TestCase
             ->assertOk()->assertSee('Convocados · AACJ Sub-15 · Sub-15 Masculino')->assertSee('1 convocado(s)');
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub17M]))
             ->assertOk()->assertSee('Convocados · AACJ Sub-15 · Sub-17 Masculino')->assertSee('2 convocado(s)');
-        $this->comoAdminLogado()->get(route('admin.campeonatos.times', $this->liga))
-            ->assertSeeInOrder(['AACJ Sub-15', '· Sub-15 Masculino', 'AACJ Sub-15', '· Sub-17 Masculino']);
+        $html = $this->comoAdminLogado()->get(route('admin.campeonatos.times', $this->liga))
+            ->assertSeeInOrder(['AACJ Sub-15', '· Sub-15 Masculino', 'AACJ Sub-15', '· Sub-17 Masculino'])->getContent();
+
+        // Participantes sem jogo (28/10/2026): um cartão por categoria, cada um com os convocados dela (antes, um
+        // cartão só, com a soma das duas e a primeira categoria)
+        preg_match('#id="participantesSemJogo">.*?</main>#s', $html, $semJogo);
+        foreach ([[$this->idSub15M, 'Sub-15 Masculino', '1 convocado(s)'], [$this->idSub17M, 'Sub-17 Masculino', '2 convocado(s)']] as [$idCat, $rotulo, $total]) {
+            preg_match('#data-id-time="' . $this->azul . '" data-id-categoria="' . $idCat . '">(.*?)</a>#s', $semJogo[0], $cartao);
+            $this->assertStringContainsString(e(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $idCat])), $cartao[1]);
+            $this->assertStringContainsString($rotulo, $cartao[1]);
+            $this->assertStringContainsString($total, $cartao[1]);
+        }
+        $this->assertStringNotContainsString('3 convocado(s)', $semJogo[0]);
 
         // Remover pela tela do Sub-17 tira só a convocação do Sub-17
         $this->comoAdminLogado()->delete(route('admin.campeonatos.convocados.remover', [$this->liga, $this->azul, $ana, 'categoria' => $this->idSub17M]))

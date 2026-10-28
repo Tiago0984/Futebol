@@ -6,6 +6,7 @@
     (old()); $ajuda: texto embaixo da caixa. Os atletas vão em atletas[].
     Opcionais: $bloqueados [id_atleta => motivo] aparecem desabilitados com "· motivo"; $comCamisa = true põe o
     número da camisa ao lado de cada atleta (camisas[id], obrigatório só para os marcados; $camisas: old()).
+    $vazio: o texto quando não há ninguém a escolher (padrão "Nenhum atleta ativo.").
     $comFiltroDeIdade = true (Fase E, peneira): o ano de nascimento ao lado do nome e o "Marcar só quem cabe" por
     faixa de ano de nascimento e sexo (marca quem cabe e desmarca o resto; dá para ajustar à mão depois).
 --}}
@@ -75,7 +76,7 @@
             </div>
         </div>
         @empty
-        <p class="text-muted small mb-0">Nenhum atleta ativo.</p>
+        <p class="text-muted small mb-0">{{ $vazio ?? 'Nenhum atleta ativo.' }}</p>
         @endforelse
     </div>
     <small class="text-muted">{{ $ajuda }}</small>

@@ -312,7 +312,9 @@ class MenuAdminTest extends TestCase
         // (o Verde aparece só no select de times do modal "Editar jogo", fora da área dos cartões)
         $this->assertStringNotContainsString('Time Verde', explode('id="modalEditarJogo"', $resposta->getContent())[0]);
         preg_match('#id="participantesSemJogo">.*?</main>#s', $resposta->getContent(), $semJogo);
-        $this->assertStringContainsString('<a href="' . route('admin.campeonatos.convocados', [$this->emAndamento, $this->azul]) . '" class="escal-team-card">', $semJogo[0]);
+        // Um cartão por time e categoria (28/10/2026): o link leva à convocação daquela categoria
+        $idCategoria = (int) DB::table('tbl_campeonato')->where('id_campeonato', $this->emAndamento)->value('id_categoria');
+        $this->assertStringContainsString('<a href="' . e(route('admin.campeonatos.convocados', [$this->emAndamento, $this->azul, 'categoria' => $idCategoria])) . '" class="escal-team-card">', $semJogo[0]);
         $this->assertStringContainsString('1 convocado(s)', $semJogo[0]);
         $this->assertStringContainsString('Elenco não disponível nesta associação', $semJogo[0]);
         $this->assertStringNotContainsString(route('admin.campeonatos.convocados', [$this->emAndamento, $this->visitante]), $semJogo[0]);

@@ -280,17 +280,26 @@ class Campeonato extends Model
         return $this->categoriasDosTimes[$chave];
     }
 
-    /**
-     * Participações dos times da AACJ (INTERNO) no campeonato, uma por time e categoria, para o bloco Convocação:
-     * cada uma com o time, a categoria e quantos atletas ativos ele convocou nela. Masculino antes, pela idade.
-     */
+    // Participações dos times da AACJ (INTERNO), para o bloco Convocação (ver participacoes())
     public function participacoesConvocaveis(): Collection
+    {
+        return $this->participacoes(soInternos: true);
+    }
+
+    /**
+     * Participações no campeonato, uma por time e categoria (28/10/2026, dono do projeto: no campeonato e no jogo o
+     * time aparece separado por categoria, "AACJ Masculino · Sub-13" e "· Sub-15", cada um com os seus números; só a
+     * tela de Times mostra um cadastro com todas as categorias). Cada uma com o time (com as categorias do cadastro),
+     * a categoria e quantos atletas ativos ele convocou nela (externo: 0). Internos antes, masculino antes, pela idade.
+     */
+    public function participacoes(bool $soInternos = false): Collection
     {
         $linhas = DB::table('tbl_campeonato_time as ct')
             ->join('tbl_time as t', 't.id_time', '=', 'ct.id_time')
-            ->where('ct.id_campeonato', $this->id_campeonato)->where('t.tipo_time', 'INTERNO')
+            ->where('ct.id_campeonato', $this->id_campeonato)
+            ->when($soInternos, fn ($q) => $q->where('t.tipo_time', 'INTERNO'))
             ->get(['ct.id_time', 'ct.id_categoria']);
-        $times      = Time::whereIn('id_time', $linhas->pluck('id_time'))->get()->keyBy('id_time');
+        $times      = Time::with('categorias')->whereIn('id_time', $linhas->pluck('id_time'))->get()->keyBy('id_time');
         $categorias = Categoria::whereIn('id_categoria', $linhas->pluck('id_categoria'))->get()->keyBy('id_categoria');
         $totais     = $this->convocacoes()->deAtivos()->groupBy('id_time', 'id_categoria')
             ->selectRaw('id_time, id_categoria, COUNT(*) AS total')->get()
@@ -300,7 +309,8 @@ class Campeonato extends Model
             'time'      => $times[$l->id_time],
             'categoria' => $categorias[$l->id_categoria],
             'total'     => $totais["{$l->id_time}|{$l->id_categoria}"] ?? 0,
-        ])->sortBy(fn ($p) => [$p->categoria->sexo_categoria === 'M' ? 0 : 1, (int) $p->categoria->idade_min_categoria, $p->time->nome_time])
+        ])->sortBy(fn ($p) => [$p->time->tipo_time === 'INTERNO' ? 0 : 1, $p->categoria->sexo_categoria === 'M' ? 0 : 1,
+            (int) $p->categoria->idade_min_categoria, $p->time->nome_time])
             ->values();
     }
 

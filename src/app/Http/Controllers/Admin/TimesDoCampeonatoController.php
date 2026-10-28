@@ -24,22 +24,22 @@ class TimesDoCampeonatoController extends Controller
         // Jogos do campeonato (não ocultos): próximos do mais perto ao mais longe, depois os últimos realizados
         [$proximos, $realizados] = Jogo::separadosParaTelaDeTimes($campeonato->jogos()->getQuery());
 
-        // Participantes que não aparecem em nenhum desses jogos (internos primeiro, depois por nome)
-        $idsNosJogos = $proximos->concat($realizados)
-            ->flatMap(fn ($jogo) => [(int) $jogo->id_time_casa, (int) $jogo->id_time_visitante])
-            ->unique()->all();
-        $semJogo = $campeonato->times()
-            ->with('categorias')
-            // O time interno abre os convocados dele no campeonato (sem elenco fixo, Fase G, Etapa 4)
-            ->withCount(['convocacoes as total_convocados' => fn ($q) => $q->where('id_campeonato', $campeonato->id_campeonato)->deAtivos()])
-            ->whereNotIn('tbl_time.id_time', $idsNosJogos)
-            ->orderByRaw("FIELD(tipo_time, 'INTERNO', 'EXTERNO')")
-            ->orderBy('nome_time')
-            ->get();
+        // Participações (time e categoria, 28/10/2026) que não aparecem em nenhum desses jogos daquela categoria: a
+        // AACJ Masculino com jogo no Sub-13 e sem jogo no Sub-15 aparece só no Sub-15. Cada cartão com os convocados
+        // daquela categoria (o interno abre os convocados dela; sem elenco fixo, Fase G, Etapa 4)
+        // (jogo antigo sem categoria: vale para todas as categorias do time, chave "id_time|")
+        $nosJogos = $proximos->concat($realizados)
+            ->flatMap(fn ($jogo) => [
+                "{$jogo->id_time_casa}|{$jogo->categoriaDoJogo()?->id_categoria}",
+                "{$jogo->id_time_visitante}|{$jogo->categoriaDoJogo()?->id_categoria}",
+            ])->flip();
+        $participacoes = $campeonato->participacoes();
+        $semJogo = $participacoes->reject(fn ($p) => $nosJogos->has("{$p->time->id_time}|{$p->categoria->id_categoria}")
+            || $nosJogos->has("{$p->time->id_time}|"))->values();
 
         // Convocação (Fase G): uma linha por time interno e categoria em que ele joga (a AACJ pode estar em várias,
         // desde 27/10/2026), com quantos atletas ativos convocou nela, na ordem das categorias e pelo nome
-        $convocacao = $campeonato->participacoesConvocaveis();
+        $convocacao = $participacoes->where(fn ($p) => $p->time->tipo_time === 'INTERNO')->values();
 
         $caminho = $this->caminho($campeonato);
 

@@ -86,16 +86,17 @@
     @include('admin.partials.blocos-de-jogos', ['rotulo' => 'jogo'])
 
     {{-- Participantes que não aparecem em nenhum jogo acima (ainda sem jogo marcado, ou só em jogos mais
-         antigos): o cartão do time da AACJ abre os convocados dele no campeonato --}}
+         antigos), um cartão por time e categoria (28/10/2026): o cartão da AACJ abre os convocados daquela categoria --}}
     @if ($semJogo->isNotEmpty())
     <h2 class="h6 text-uppercase text-muted fw-bold mt-4 mb-2">Participantes sem jogo na lista</h2>
     <div class="row g-3" id="participantesSemJogo">
-      @foreach ($semJogo as $time)
-      <div class="col-md-4 col-lg-3" data-id-time="{{ $time->id_time }}">
+      @foreach ($semJogo as $participacao)
+      <div class="col-md-4 col-lg-3" data-id-time="{{ $participacao->time->id_time }}" data-id-categoria="{{ $participacao->categoria->id_categoria }}">
         @include('admin.partials.cartao-time', [
-          'link' => route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $time->id_time]),
-          'contagem' => $time->total_convocados . ' convocado(s)',
-          'categoriaDoCampeonato' => $campeonato->categoriaDoTime($time), // a do time no campeonato (Fase H)
+          'time' => $participacao->time,
+          'link' => route('admin.campeonatos.convocados', [$campeonato->id_campeonato, $participacao->time->id_time, 'categoria' => $participacao->categoria->id_categoria]),
+          'contagem' => $participacao->total . ' convocado(s)',
+          'categoriaDoCampeonato' => $participacao->categoria,
         ])
       </div>
       @endforeach

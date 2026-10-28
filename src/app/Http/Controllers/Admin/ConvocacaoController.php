@@ -5,11 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
 use App\Models\Campeonato;
+use App\Models\Categoria;
 use App\Models\Convocacao;
 use App\Models\EventoCalendario;
 use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 /**
  * Convocados de um time interno num campeonato (Fase G, Etapa 1): a lista com a camisa de cada um (editável),
@@ -38,10 +40,11 @@ class ConvocacaoController extends Controller
             ->values();
         $acimaDosConvocados = $campeonato->idadesAcimaDaIdade($time, $convocados->pluck('id_atleta')->all(), $idCategoria);
 
-        // Caixa "Convocar atletas": ativos ainda não convocados por este time; desabilitados os convocados por
-        // outro time na mesma categoria do campeonato (em outra categoria pode: Etapa H2) e os que passam da idade
+        // Caixa "Convocar atletas": ativos ainda não convocados por este time nesta categoria; desabilitados os
+        // convocados por outro time na mesma categoria do campeonato (em outra categoria pode: Etapa H2) e os que
+        // passam da idade
         $idsDoTime = $convocados->pluck('id_atleta')->map(fn ($id) => (int) $id)->all();
-        $grupos = Atleta::ativosPorCategoria()
+        $grupos = $this->gruposDaCaixa($categoria)
             ->map(fn ($grupo) => $grupo->reject(fn ($atleta) => in_array((int) $atleta->id_atleta, $idsDoTime, true))->values())
             ->filter(fn ($grupo) => $grupo->isNotEmpty());
         $bloqueados = $campeonato->convocacoes()->where('id_categoria', $idCategoria)
@@ -158,6 +161,23 @@ class ConvocacaoController extends Controller
     private function campeonatoETime($id, $timeId): array
     {
         return [Campeonato::findOrFail($id), Time::findOrFail($timeId)];
+    }
+
+    /**
+     * Grupos da caixa "Convocar atletas" (28/10/2026, dono do projeto: na convocação do Sub-13, os atletas do Sub-13):
+     * primeiro os da categoria da convocação; depois, as categorias mais novas do mesmo sexo, como "pode subir" (o
+     * mais novo pode jogar acima, regra do professor). As mais velhas (nunca podem: acima da idade) e as do outro
+     * sexo (o time é de um sexo só) não aparecem. [rótulo => atletas]
+     */
+    private function gruposDaCaixa(Categoria $categoria): Collection
+    {
+        $porRotulo = Atleta::ativosPorCategoria();
+        $maisNovas = Categoria::where('sexo_categoria', $categoria->sexo_categoria)
+            ->where('idade_max_categoria', '<', $categoria->idade_max_categoria)
+            ->orderByDesc('idade_max_categoria')->get();
+
+        return collect([$categoria->rotulo => $porRotulo->get($categoria->rotulo, collect())])
+            ->merge($maisNovas->mapWithKeys(fn (Categoria $c) => ["{$c->rotulo} · pode subir" => $porRotulo->get($c->rotulo, collect())]));
     }
 
     // Categoria pedida (?categoria=ID na URL ou o campo dos formulários); null = a primeira em que o time participa

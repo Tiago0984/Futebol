@@ -149,8 +149,9 @@
         'bloqueados' => $bloqueados,
         'comCamisa'  => true,
         'camisas'    => old('camisas', []),
-        'ajuda'      => 'Marque os atletas e informe a camisa de cada um. Um time por atleta em cada categoria do campeonato; '
-                        . 'quem passa da idade da categoria não pode ser convocado (o mais novo pode subir).',
+        'ajuda'      => "Aparecem os atletas do {$categoria->rotulo} e, como \"pode subir\", os das categorias mais novas. "
+                        . 'Marque os atletas e informe a camisa de cada um. Um time por atleta em cada categoria do campeonato.',
+        'vazio'      => "Todos os atletas ativos do {$categoria->rotulo} (e das categorias mais novas) já estão convocados por este time.",
       ])
       <div class="mt-3">
         <button type="submit" class="btn btn-success btn-sm" @disabled($grupos->isEmpty())>
