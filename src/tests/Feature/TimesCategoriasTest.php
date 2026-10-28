@@ -52,6 +52,31 @@ class TimesCategoriasTest extends TestCase
         $this->assertSame(1, Time::count());
     }
 
+    public function test_masculino_e_feminino_em_cadastros_separados(): void
+    {
+        // 28/10/2026, dono do projeto: "AACJ" e "AACJ Feminino", para todos os times; outra AACJ do mesmo sexo pode
+        $sub13F = (int) DB::table('tbl_categoria')->where('nome_categoria', 'Sub-13')->where('sexo_categoria', 'F')->value('id_categoria');
+
+        $this->comoAdmin()->post(route('admin.times.store'), [
+            'nome_time' => 'AACJ', 'tipo_time' => 'INTERNO', 'categorias' => [$this->sub13, $sub13F],
+        ])->assertSessionHasErrors(['categorias' =>
+            'Um time não mistura categorias masculinas e femininas. Para o feminino, cadastre outro time (ex.: "AACJ Feminino").']);
+        $this->assertSame(0, Time::count());
+
+        foreach ([['AACJ', [$this->sub13, $this->sub15]], ['AACJ Feminino', [$sub13F]], ['AACJ B', [$this->sub13]]] as [$nome, $categorias]) {
+            $this->comoAdmin()->post(route('admin.times.store'), ['nome_time' => $nome, 'tipo_time' => 'INTERNO', 'categorias' => $categorias])
+                ->assertSessionHas('sucesso');
+        }
+        $this->assertSame(['AACJ', 'AACJ B', 'AACJ Feminino'], Time::orderBy('nome_time')->pluck('nome_time')->all());
+
+        // Na edição, a mesma regra
+        $aacj = Time::where('nome_time', 'AACJ')->firstOrFail();
+        $this->comoAdmin()->put(route('admin.times.update', $aacj->id_time), [
+            'nome_time' => 'AACJ', 'tipo_time' => 'INTERNO', 'categorias' => [$this->sub13, $sub13F],
+        ])->assertSessionHasErrors('categorias');
+        $this->assertSame([$this->sub13, $this->sub15], $this->idsDas($aacj));
+    }
+
     public function test_edicao_marca_e_desmarca_mas_nao_tira_a_categoria_de_um_campeonato(): void
     {
         $botafogo = $this->timeCom('Botafogo', 'EXTERNO', [$this->sub13, $this->sub15]);

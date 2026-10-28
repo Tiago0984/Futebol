@@ -13,7 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 /**
  * Times (27/10/2026, dono do projeto): um cadastro só para a AACJ e para cada adversário, com as categorias de que
- * ele participa marcadas (tbl_time_categoria), no lugar de um time por categoria. O nome não se repete.
+ * ele participa marcadas (tbl_time_categoria), no lugar de um time por categoria. O nome não se repete. Masculino e
+ * feminino em cadastros separados ("AACJ" e "AACJ Feminino", 28/10/2026); outro time interno ("AACJ B") é permitido.
  */
 class TimesController extends Controller
 {
@@ -88,9 +89,18 @@ class TimesController extends Controller
             ...TratadorDeImagem::mensagensDoEnvio(['logo_time'], 1024),
         ]);
 
+        $marcadas = Categoria::whereIn('id_categoria', array_map('intval', $request->input('categorias')))->get();
+
+        // Masculino e feminino em cadastros separados (dono do projeto, 28/10/2026): "AACJ" e "AACJ Feminino",
+        // "Botafogo" e "Botafogo Feminino", para todos os times
+        if ($marcadas->pluck('sexo_categoria')->unique()->count() > 1) {
+            throw ValidationException::withMessages(['categorias' =>
+                'Um time não mistura categorias masculinas e femininas. Para o feminino, cadastre outro time (ex.: "'
+                . $request->input('nome_time') . ' Feminino").']);
+        }
+
         $jaTem = $time ? $time->categorias()->pluck('tbl_categoria.id_categoria')->map(fn ($id) => (int) $id)->all() : [];
-        $inativas = Categoria::whereIn('id_categoria', array_diff(array_map('intval', $request->input('categorias')), $jaTem))
-            ->where('status_categoria', '!=', 'ATIVO')->get();
+        $inativas = $marcadas->whereNotIn('id_categoria', $jaTem)->where('status_categoria', '!=', 'ATIVO');
         if ($inativas->isNotEmpty()) {
             throw ValidationException::withMessages(['categorias' =>
                 'Categoria inativa não pode ser marcada: ' . $inativas->pluck('rotulo')->implode(', ') . '.']);

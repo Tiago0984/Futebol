@@ -233,6 +233,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 
+// Masculino e feminino em cadastros separados: com alguma caixa marcada numa coluna, a outra fica desabilitada
+function travarSexoDasCategorias(caixa) {
+    const colunas = caixa.querySelectorAll('.js-col-sexo');
+    const marcada = [...colunas].find(col => col.querySelector('.js-categoria-time:checked'));
+    colunas.forEach(col => col.querySelectorAll('.js-categoria-time').forEach(cx => {
+        cx.disabled = !!marcada && col !== marcada;
+    }));
+}
+document.querySelectorAll('.js-categorias-do-time').forEach(caixa => {
+    caixa.addEventListener('change', () => travarSexoDasCategorias(caixa));
+    travarSexoDasCategorias(caixa);
+});
+
 // Preenche o modal de edição: nome, tipo e as caixas das categorias (a inativa só aparece se o time a tem)
 function preencherEdicaoDoTime(id, nome, tipo, categorias, logo) {
     const f = document.getElementById('formEditarTime');
@@ -245,6 +258,7 @@ function preencherEdicaoDoTime(id, nome, tipo, categorias, logo) {
         cx.checked = marcadas.includes(Number(cx.value));
         cx.closest('.js-cat-inativa')?.classList.toggle('d-none', !cx.checked);
     });
+    travarSexoDasCategorias(f.querySelector('.js-categorias-do-time'));
     const logoInfo = document.getElementById('edit_logo_atual');
     logoInfo.textContent = logo ? `Atual: ${logo}` : 'Sem logo cadastrado';
 }

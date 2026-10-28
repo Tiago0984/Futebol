@@ -5,14 +5,15 @@
   $categorias  todas as categorias (TimesController::index)
   $marcadas    ids marcados ao abrir (criar: o old() depois de um erro; editar: preenchido pelo JS da lista)
   A categoria inativa só aparece marcada, no time que já a tem (.js-cat-inativa, mostrada pelo JS da edição);
-  o servidor recusa marcar uma inativa nova.
+  o servidor recusa marcar uma inativa nova. Masculino e feminino em cadastros separados (28/10/2026): marcar uma
+  coluna desabilita a outra (JS da lista de Times, travarSexoDasCategorias); o servidor também confere.
 --}}
 @php $marcadas = array_map('intval', $marcadas ?? []); @endphp
-<div class="col-12">
+<div class="col-12 js-categorias-do-time">
   <label class="form-label">Categorias de que o time participa <span class="text-danger">*</span></label>
   <div class="row g-2">
     @foreach(['M' => 'Masculino', 'F' => 'Feminino'] as $sexo => $titulo)
-    <div class="col-6">
+    <div class="col-6 js-col-sexo" data-sexo="{{ $sexo }}">
       <div class="small text-muted fw-semibold mb-1">{{ $titulo }}</div>
       @foreach($categorias->where('sexo_categoria', $sexo) as $cat)
       @php $inativa = $cat->status_categoria !== 'ATIVO'; @endphp
@@ -27,5 +28,6 @@
     </div>
     @endforeach
   </div>
-  <span class="form-text">Marque uma ou mais. Um cadastro só por time: o mesmo time (AACJ, Botafogo…) joga em várias categorias.</span>
+  <span class="form-text">Marque uma ou mais, de um sexo só: o mesmo time (AACJ, Botafogo…) joga em várias categorias, e o
+    feminino é outro cadastro (ex.: "AACJ Feminino").</span>
 </div>
