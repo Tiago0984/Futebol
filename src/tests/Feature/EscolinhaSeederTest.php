@@ -11,28 +11,30 @@ use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
 
 /**
- * Elencos da escolinha (EscolinhaSeeder): os times AACJ Sub-13 e AACJ Sub-15 com o nome tirado da categoria e
- * 21 atletas ativos em cada categoria, coerentes com as regras do cadastro; nada gravado num banco com dados.
+ * Elencos da escolinha (EscolinhaSeeder): AACJ Masculino, Botafogo e Palmeiras, um cadastro cada, com o Sub-13 e o
+ * Sub-15 Masculino marcados, e 21 atletas ativos em cada categoria, coerentes com as regras do cadastro; nada
+ * gravado num banco com dados.
  */
 class EscolinhaSeederTest extends TestCase
 {
     use RefreshBancoDeTestes;
 
-    public function test_times_com_o_nome_da_categoria_e_21_atletas_em_cada(): void
+    public function test_um_cadastro_por_time_e_21_atletas_em_cada_categoria(): void
     {
         $this->seed(EscolinhaSeeder::class);
 
-        $times = Time::with('categoria')->orderBy('nome_time')->get();
-        $this->assertSame(['AACJ Sub-13', 'AACJ Sub-15'], $times->pluck('nome_time')->all());
+        $times = Time::with('categorias')->orderBy('nome_time')->get();
+        $this->assertSame(['AACJ Masculino', 'Botafogo', 'Palmeiras'], $times->pluck('nome_time')->all());
+        $this->assertSame(['INTERNO', 'EXTERNO', 'EXTERNO'], $times->pluck('tipo_time')->all());
         foreach ($times as $time) {
-            $this->assertSame('INTERNO', $time->tipo_time);
-            $this->assertSame('AACJ ' . $time->categoria->nome_categoria, $time->nome_time);
-            $this->assertSame('M', $time->categoria->sexo_categoria);
+            $this->assertSame(['Sub-13 Masculino', 'Sub-15 Masculino'], $time->categorias->pluck('rotulo')->all(), $time->nome_time);
+        }
 
+        foreach ($times->first()->categorias as $categoria) {
             $atletas = Atleta::where('status_atleta', 'ATIVO')
-                ->whereHas('categoriasAtivas', fn ($q) => $q->where('tbl_categoria.id_categoria', $time->id_categoria))
+                ->whereHas('categoriasAtivas', fn ($q) => $q->where('tbl_categoria.id_categoria', $categoria->id_categoria))
                 ->with('posicoes')->get();
-            $this->assertCount(21, $atletas, $time->nome_time);
+            $this->assertCount(21, $atletas, $categoria->rotulo);
 
             // 3 goleiros e as outras posições principais do elenco de 21
             $principais = $atletas->map(fn ($a) => $a->posicoes->first()->posicao_atleta_posicao)->countBy()->all();

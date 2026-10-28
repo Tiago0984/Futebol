@@ -11,13 +11,13 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Elencos da escolinha (todos fictícios): um time da AACJ no Sub-13 e outro no Sub-15 Masculino, com 21 atletas
- * ativos em cada categoria (3 goleiros, 4 zagueiros, 2 laterais de cada lado, 3 volantes, 2 meias-centrais,
- * 1 meia-ofensivo, 1 ponta de cada lado e 2 centroavantes), período escolar e um responsável cada (dois pares de
- * irmãos dividem o responsável).
+ * Elencos da escolinha (todos fictícios): 21 atletas ativos no Sub-13 e 21 no Sub-15 Masculino (3 goleiros,
+ * 4 zagueiros, 2 laterais de cada lado, 3 volantes, 2 meias-centrais, 1 meia-ofensivo, 1 ponta de cada lado e
+ * 2 centroavantes), com período escolar e um responsável cada (dois pares de irmãos dividem o responsável).
  *
- * O nome do time sai da categoria ("AACJ " + nome da categoria). O atleta é da categoria, não do time: o time
- * recebe os atletas pela convocação de cada campeonato (tela Convocados, com a camisa).
+ * Times (28/10/2026): um cadastro só por time, com as categorias marcadas (tbl_time_categoria): a "AACJ Masculino"
+ * e os adversários Botafogo e Palmeiras, os três no Sub-13 e no Sub-15 Masculino. O atleta é da categoria, não do
+ * time: o time recebe os atletas pela convocação de cada campeonato (tela Convocados, por categoria, com a camisa).
  *
  * Fora do DatabaseSeeder de propósito. Só roda num banco sem atletas nem times:
  *   php artisan db:seed --class=EscolinhaSeeder
@@ -76,8 +76,12 @@ class EscolinhaSeeder extends Seeder
         ],
     ];
 
-    // Logo de cada time (pasta public/futebol/images/team)
-    private const LOGOS = ['Sub-13' => 'time-verde.png', 'Sub-15' => 'time-preto.jpg'];
+    // Times com as categorias de ELENCOS marcadas: nome, tipo e logo (pasta public/futebol/images/team)
+    private const TIMES = [
+        ['AACJ Masculino', 'INTERNO', 'time-azul.png'],
+        ['Botafogo',       'EXTERNO', 'time-preto.jpg'],
+        ['Palmeiras',      'EXTERNO', 'time-verde.png'],
+    ];
 
     public function run(): void
     {
@@ -89,17 +93,17 @@ class EscolinhaSeeder extends Seeder
         DB::transaction(function () {
             $responsaveis = [];
             $i = 0;
+            $categorias = collect(array_keys(self::ELENCOS))->mapWithKeys(fn ($nome) => [
+                $nome => Categoria::where('nome_categoria', $nome)->where('sexo_categoria', 'M')->firstOrFail(),
+            ]);
+
+            foreach (self::TIMES as [$nome, $tipo, $logo]) {
+                Time::create(['nome_time' => $nome, 'tipo_time' => $tipo, 'logo_time' => $logo, 'status_time' => 'ATIVO'])
+                    ->definirCategorias($categorias->pluck('id_categoria')->all());
+            }
 
             foreach (self::ELENCOS as $nomeCategoria => $elenco) {
-                $categoria = Categoria::where('nome_categoria', $nomeCategoria)->where('sexo_categoria', 'M')->firstOrFail();
-
-                Time::create([
-                    'nome_time'    => 'AACJ ' . $categoria->nome_categoria,
-                    'tipo_time'    => 'INTERNO',
-                    'logo_time'    => self::LOGOS[$nomeCategoria],
-                    'status_time'  => 'ATIVO',
-                    'id_categoria' => $categoria->id_categoria,
-                ]);
+                $categoria = $categorias[$nomeCategoria];
 
                 foreach ($elenco as [$nome, $idade, $periodo, $turno, $posicoes, $comEmail, $nomeResp, $grau]) {
                     // Irmãos: o mesmo responsável (reaproveitado, como pelo CPF no cadastro) e o mesmo endereço
@@ -110,7 +114,7 @@ class EscolinhaSeeder extends Seeder
             }
         });
 
-        $this->command?->info('Escolinha criada: ' . Time::pluck('nome_time')->implode(' e ') . ', com '
+        $this->command?->info('Escolinha criada: ' . Time::pluck('nome_time')->implode(', ') . ' (Sub-13 e Sub-15 Masculino), com '
             . Atleta::where('status_atleta', 'ATIVO')->count() . ' atletas ativos e ' . Responsavel::count() . ' responsáveis.');
     }
 
