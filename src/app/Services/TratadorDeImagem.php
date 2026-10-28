@@ -47,7 +47,7 @@ class TratadorDeImagem
 
     // Nome gerado: "banner-campeonato-20261026-141500-a1b2c3.jpg". Só arquivos com esse nome são apagados (os que
     // vieram com o projeto, no Git, ficam)
-    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
+    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
 
     /**
      * Capa no formato $largura × $altura, em JPG. $recorte: "x,y,largura,altura" em pixels da imagem já virada

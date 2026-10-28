@@ -26,7 +26,7 @@
                             <label class="form-label">Logo / Escudo</label>
                             <small id="edit_logo_atual" class="d-block text-muted mb-1"></small>
                             <input type="file" name="logo_time" class="form-control" accept="image/*">
-                            <span class="form-text">Deixe em branco para manter o logo atual.</span>
+                            <span class="form-text">Deixe em branco para manter a logo atual. JPG, PNG, WEBP, até 10 MB.</span>
                         </div>
                     </div>
                 </div>

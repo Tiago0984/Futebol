@@ -3,7 +3,9 @@
 namespace Tests\Feature;
 
 use App\Models\Time;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Tests\CriaDadosDeAtleta;
 use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
@@ -58,21 +60,21 @@ class TimesCategoriasTest extends TestCase
         $sub13F = (int) DB::table('tbl_categoria')->where('nome_categoria', 'Sub-13')->where('sexo_categoria', 'F')->value('id_categoria');
 
         $this->comoAdmin()->post(route('admin.times.store'), [
-            'nome_time' => 'AACJ', 'tipo_time' => 'INTERNO', 'categorias' => [$this->sub13, $sub13F],
+            'nome_time' => 'AACJ Masculino', 'tipo_time' => 'INTERNO', 'categorias' => [$this->sub13, $sub13F],
         ])->assertSessionHasErrors(['categorias' =>
             'Um time não mistura categorias masculinas e femininas. Para o feminino, cadastre outro time (ex.: "AACJ Feminino").']);
         $this->assertSame(0, Time::count());
 
-        foreach ([['AACJ', [$this->sub13, $this->sub15]], ['AACJ Feminino', [$sub13F]], ['AACJ B', [$this->sub13]]] as [$nome, $categorias]) {
+        foreach ([['AACJ Masculino', [$this->sub13, $this->sub15]], ['AACJ Feminino', [$sub13F]], ['AACJ B', [$this->sub13]]] as [$nome, $categorias]) {
             $this->comoAdmin()->post(route('admin.times.store'), ['nome_time' => $nome, 'tipo_time' => 'INTERNO', 'categorias' => $categorias])
                 ->assertSessionHas('sucesso');
         }
-        $this->assertSame(['AACJ', 'AACJ B', 'AACJ Feminino'], Time::orderBy('nome_time')->pluck('nome_time')->all());
+        $this->assertSame(['AACJ B', 'AACJ Feminino', 'AACJ Masculino'], Time::orderBy('nome_time')->pluck('nome_time')->all());
 
         // Na edição, a mesma regra
-        $aacj = Time::where('nome_time', 'AACJ')->firstOrFail();
+        $aacj = Time::where('nome_time', 'AACJ Masculino')->firstOrFail();
         $this->comoAdmin()->put(route('admin.times.update', $aacj->id_time), [
-            'nome_time' => 'AACJ', 'tipo_time' => 'INTERNO', 'categorias' => [$this->sub13, $sub13F],
+            'nome_time' => 'AACJ Masculino', 'tipo_time' => 'INTERNO', 'categorias' => [$this->sub13, $sub13F],
         ])->assertSessionHasErrors('categorias');
         $this->assertSame([$this->sub13, $this->sub15], $this->idsDas($aacj));
     }
@@ -113,6 +115,36 @@ class TimesCategoriasTest extends TestCase
         $this->comoAdmin()->post(route('admin.times.store'), [
             'nome_time' => 'Palmeiras', 'tipo_time' => 'EXTERNO', 'categorias' => [$sub17],
         ])->assertSessionHasErrors(['categorias' => 'Categoria inativa não pode ser marcada: Sub-17 Masculino.']);
+    }
+
+    public function test_logo_com_nome_gerado_nao_troca_a_de_outro_time(): void
+    {
+        // 28/10/2026: antes a logo ia com o nome original; enviar "time-preto.jpg" no Palmeiras trocaria a do Botafogo
+        Storage::fake('imagens');
+        $botafogo = $this->timeCom('Botafogo', 'EXTERNO', [$this->sub13]);
+        $botafogo->update(['logo_time' => 'time-preto.jpg']);
+        $palmeiras = $this->timeCom('Palmeiras', 'EXTERNO', [$this->sub13]);
+        $palmeiras->update(['logo_time' => 'time-verde.png']);
+
+        $this->comoAdmin()->put(route('admin.times.update', $palmeiras->id_time), [
+            'nome_time' => 'Palmeiras', 'tipo_time' => 'EXTERNO', 'categorias' => [$this->sub13],
+            'logo_time' => UploadedFile::fake()->image('time-preto.png', 300, 200),
+        ])->assertSessionHas('sucesso');
+
+        $logo = $palmeiras->fresh()->logo_time;
+        $this->assertMatchesRegularExpression('/^logo-time-\d{8}-\d{6}-[a-z0-9]{6}\.png$/', $logo);
+        // 300 × 200 entra inteira num quadrado de 300 (o lado maior; não amplia)
+        [$largura, $altura] = getimagesizefromstring(Storage::disk('imagens')->get("team/{$logo}"));
+        $this->assertSame([300, 300], [$largura, $altura]);
+        $this->assertSame('time-preto.jpg', $botafogo->fresh()->logo_time);
+
+        // Trocar de novo apaga a gerada anterior (ninguém mais a usa); a do Git nunca é apagada
+        $this->comoAdmin()->put(route('admin.times.update', $palmeiras->id_time), [
+            'nome_time' => 'Palmeiras', 'tipo_time' => 'EXTERNO', 'categorias' => [$this->sub13],
+            'logo_time' => UploadedFile::fake()->image('outra.png', 600, 600),
+        ])->assertSessionHas('sucesso');
+        Storage::disk('imagens')->assertMissing("team/{$logo}");
+        Storage::disk('imagens')->assertExists('team/' . $palmeiras->fresh()->logo_time);
     }
 
     public function test_lista_um_time_com_os_selos_das_categorias_e_exclui_com_elas(): void

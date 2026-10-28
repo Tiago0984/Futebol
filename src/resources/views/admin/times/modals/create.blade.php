@@ -12,7 +12,7 @@
                         <div class="col-12">
                             <label class="form-label">Nome do Time <span class="text-danger">*</span></label>
                             <input type="text" name="nome_time" class="form-control" maxlength="50"
-                                placeholder="Ex: AACJ, Botafogo" required value="{{ old('_editar_id') ? '' : old('nome_time') }}">
+                                placeholder="Ex: AACJ Masculino, Botafogo" required value="{{ old('_editar_id') ? '' : old('nome_time') }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">Tipo <span class="text-danger">*</span></label>
@@ -26,7 +26,7 @@
                         <div class="col-12">
                             <label class="form-label">Logo / Escudo</label>
                             <input type="file" name="logo_time" class="form-control" accept="image/*">
-                            <span class="form-text">JPG, PNG, WEBP. Máx. 1MB.</span>
+                            <span class="form-text">JPG, PNG, WEBP, até 10 MB. A logo entra inteira num quadrado de até 512 px, com fundo transparente.</span>
                         </div>
                     </div>
                 </div>

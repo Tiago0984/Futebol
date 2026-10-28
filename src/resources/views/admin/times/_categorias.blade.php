@@ -28,6 +28,6 @@
     </div>
     @endforeach
   </div>
-  <span class="form-text">Marque uma ou mais, de um sexo só: o mesmo time (AACJ, Botafogo…) joga em várias categorias, e o
+  <span class="form-text">Marque uma ou mais, de um sexo só: o mesmo time (AACJ Masculino, Botafogo…) joga em várias categorias, e o
     feminino é outro cadastro (ex.: "AACJ Feminino").</span>
 </div>

@@ -70,6 +70,8 @@
         </div>
         @endif
 
+        @include('admin.partials.avisos-imagem')
+
         @if(session('erro'))
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
             <strong>Erro!</strong> {{ session('erro') }}

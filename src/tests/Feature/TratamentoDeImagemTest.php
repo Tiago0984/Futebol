@@ -211,7 +211,7 @@ class TratamentoDeImagemTest extends TestCase
         $this->comoAdmin()->post(route('admin.noticias.store'), ['foto_noticia' => $recusado('n.jpg')])
             ->assertSessionHasErrors(['foto_noticia' => 'Não foi possível enviar a imagem. Use um arquivo de até 2 MB.']);
         $this->comoAdmin()->post(route('admin.times.store'), ['logo_time' => $recusado('t.jpg')])
-            ->assertSessionHasErrors(['logo_time' => 'Não foi possível enviar a imagem. Use um arquivo de até 1 MB.']);
+            ->assertSessionHasErrors(['logo_time' => 'Não foi possível enviar a imagem. Use um arquivo de até 10 MB.']); // tratada desde 28/10/2026
         $this->comoAdmin()->post(route('admin.galeria.store'), ['foto_galeria' => $recusado('g.jpg')])
             ->assertSessionHasErrors(['foto_galeria' => 'Não foi possível enviar a imagem. Use um arquivo de até 4 MB.']);
     }
