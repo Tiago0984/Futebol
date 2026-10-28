@@ -24,9 +24,18 @@ class Time extends Model
         'status_time',
     ];
 
+    // Categoria única do cadastro antigo: sai quando o código passar a usar só categorias() (a coluna aceita NULL)
     public function categoria()
     {
         return $this->belongsTo(Categoria::class, 'id_categoria', 'id_categoria');
+    }
+
+    // Categorias de que o time participa (tbl_time_categoria, 27/10/2026): um cadastro só para a AACJ e para cada
+    // adversário, com as categorias marcadas, no lugar de um time por categoria
+    public function categorias()
+    {
+        return $this->belongsToMany(Categoria::class, 'tbl_time_categoria', 'id_time', 'id_categoria')
+            ->orderBy('tbl_categoria.idade_max_categoria')->orderByDesc('tbl_categoria.sexo_categoria');
     }
 
     public function campeonatos()

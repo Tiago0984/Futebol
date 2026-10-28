@@ -8,7 +8,8 @@ use Illuminate\Database\Eloquent\Model;
  * Convocação por campeonato (Fase G, Etapa 1): o atleta convocado por um time interno (a "camisa" da AACJ
  * naquele campeonato), com o número da camisa, quem convocou e quando. Desde a Fase H, Etapa H2, com a
  * categoria do time no campeonato: um time por atleta em cada categoria (o do Sub-15 pode ir também ao Sub-17)
- * e camisa sem repetir no mesmo time do campeonato (os dois únicos da tabela). Atleta inativado continua com
+ * e camisa sem repetir no mesmo time e categoria do campeonato (os dois únicos da tabela; por categoria desde
+ * 27/10/2026, quando o time passou a ter várias categorias). Atleta inativado continua com
  * a linha, mas não conta (como nas inscrições). As regras ficam em Campeonato (convocar, erroDaCamisa).
  */
 class Convocacao extends Model

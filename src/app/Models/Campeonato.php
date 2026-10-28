@@ -593,7 +593,7 @@ class Campeonato extends Model
      * Confere uma convocação antes de gravar ($camisas: [id_atleta => número da camisa]). Tudo ou nada: devolve
      * as mensagens de erro (vazio = pode gravar). Regras: atleta ATIVO; um time por atleta em cada categoria do
      * campeonato (o do Sub-15 pode ser convocado também no Sub-17: Etapa H2); idade da categoria do time; camisa
-     * sem repetir no pedido nem no time (contando os convocados inativos, que guardam o número). A faixa do
+     * sem repetir no pedido nem no time naquela categoria (contando os convocados inativos, que guardam o número). A faixa do
      * número é conferida na validação do formulário.
      */
     public function errosDaConvocacao(Time $time, array $camisas): array
@@ -604,8 +604,8 @@ class Campeonato extends Model
         $ativos    = Atleta::whereIn('id_atleta', $ids)->where('status_atleta', 'ATIVO')->pluck('id_atleta')->all();
         $jaConvocados = $this->convocacoes()->where('id_categoria', $categoria?->id_categoria)
             ->with('time:id_time,nome_time')->whereIn('id_atleta', $ids)->get()->keyBy('id_atleta');
-        $camisasDoTime = $this->convocacoes()->where('id_time', $time->id_time)->with('atleta:id_atleta,nome_atleta')
-            ->get()->keyBy('camisa_convocacao');
+        $camisasDoTime = $this->convocacoes()->where('id_time', $time->id_time)->where('id_categoria', $categoria?->id_categoria)
+            ->with('atleta:id_atleta,nome_atleta')->get()->keyBy('camisa_convocacao');
 
         $erros = [];
         foreach ($camisas as $idAtleta => $camisa) {
@@ -661,10 +661,12 @@ class Campeonato extends Model
         return count($camisas);
     }
 
-    // Por que a camisa não pode ser trocada para este número (ou null): já é de outro convocado do time
+    // Por que a camisa não pode ser trocada para este número (ou null): já é de outro convocado do time na mesma
+    // categoria (convocacao_camisa_categoria_unique)
     public function erroDaCamisa(Convocacao $convocacao, int $camisa): ?string
     {
-        $dono = $this->convocacoes()->where('id_time', $convocacao->id_time)->where('camisa_convocacao', $camisa)
+        $dono = $this->convocacoes()->where('id_time', $convocacao->id_time)->where('id_categoria', $convocacao->id_categoria)
+            ->where('camisa_convocacao', $camisa)
             ->where('id_convocacao', '<>', $convocacao->id_convocacao)->with('atleta:id_atleta,nome_atleta')->first();
 
         return $dono ? "A camisa {$camisa} do {$convocacao->time->nome_time} já é de {$dono->atleta->nome_atleta}." : null;

@@ -69,8 +69,10 @@ class ConvocacaoTest extends TestCase
         $unicos = collect(DB::select("SELECT INDEX_NAME i, GROUP_CONCAT(COLUMN_NAME ORDER BY SEQ_IN_INDEX) c FROM information_schema.STATISTICS
             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_convocacao' AND NON_UNIQUE = 0 GROUP BY INDEX_NAME"))->pluck('c', 'i');
         $this->assertSame('id_campeonato,id_categoria,id_atleta', $unicos['convocacao_categoria_atleta_unique']);
-        $this->assertSame('id_campeonato,id_time,camisa_convocacao', $unicos['convocacao_camisa_unique']);
+        // Camisa por categoria desde 27/10/2026 (o time passou a ter várias categorias)
+        $this->assertSame('id_campeonato,id_categoria,id_time,camisa_convocacao', $unicos['convocacao_camisa_categoria_unique']);
         $this->assertArrayNotHasKey('convocacao_campeonato_atleta_unique', $unicos->all());
+        $this->assertArrayNotHasKey('convocacao_camisa_unique', $unicos->all());
 
         $fks = collect(DB::select("SELECT CONSTRAINT_NAME n, DELETE_RULE d FROM information_schema.REFERENTIAL_CONSTRAINTS
             WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = 'tbl_convocacao'"))->pluck('d', 'n');
