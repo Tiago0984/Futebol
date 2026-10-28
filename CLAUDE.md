@@ -1084,7 +1084,7 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Envio de imagem falhava em todo o painel** neste computador: as pastas de `public/futebol/images` eram só do usuário do WSL e o PHP roda como `www-data`. Correção (só as pastas; o Git não guarda permissão de pasta): `docker compose exec php sh -c "find public/futebol/images -type d -exec chmod 777 {} +"`. Num computador novo, rodar o mesmo se o envio falhar.
 - **Servidor:** nada publicado desde 26/10. Na próxima publicação: `migrate --pretend --force` deve mostrar só a `2026_10_27_000001`; o banco de lá tem times antigos (um por categoria), que continuam funcionando, cada um com a sua categoria marcada.
 - **Conferido (28/10, pelo Claude, com os dados do banco local numa transação desfeita no fim):** campeonato com Sub-13 e Sub-15, AACJ Masculino convocando nas duas com a camisa 10 em cada, e as telas Times, Jogos do campeonato (bloco Convocação com uma linha por categoria), Convocados de cada categoria, Campeonatos, Jogos e a página do campeonato no site, todas 200 com o conteúdo esperado. Falta só o olho do dono do projeto no navegador.
-- **Push** da `feature/agenda-eventos` feito em 28/10 (a `main` e o servidor continuam em `86f6d10`/`8b181cd`).
+- **Push** da `feature/agenda-eventos` feito em 28/10. A `main` do GitHub continua em `3f498da` e o servidor em `8b181cd` (nada publicado desde 26/10).
 - **Para casa:** restaurar `backup/db_futebol_para_casa_20261028.sql` (feito no Senac às 13:01 de 28/10, 44 tabelas, batch 10; só existe aqui: levar o arquivo; recriar o `db_futebol` vazio antes de importar) e, para ver as logos, levar os 4 `logo-time-*.png` de `src/public/futebol/images/team/`.
 
 ---
