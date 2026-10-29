@@ -832,6 +832,10 @@ class MenuAdminTest extends TestCase
             'admin.matriculas.show'         => $atleta,
             'admin.atletas.afastamentos'    => $atleta,
             'admin.atletas.fotoPendente'    => $atleta, // sem foto pendente: 404
+            'admin.locais.edit'             => DB::table('tbl_local')->insertGetId([
+                'nome_local' => 'Campo AACJ', 'rua_local' => 'Rua A', 'numero_local' => '1', 'bairro_local' => 'Centro',
+                'cidade_local' => 'São Paulo', 'estado_local' => 'SP',
+            ]),
             'admin.comissao.edit'           => DB::table('tbl_comissao_tecnica')->insertGetId([
                 'nome_comissao_tecnica' => 'Carlos Mendes', 'cargo_comissao_tecnica' => 'TREINADOR_TECNICO',
             ]),

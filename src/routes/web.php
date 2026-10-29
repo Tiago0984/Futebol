@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\GaleriaController;
 use App\Http\Controllers\Admin\CampeonatosController;
 use App\Http\Controllers\Admin\TimesController;
 use App\Http\Controllers\Admin\ComissaoTecnicaController;
+use App\Http\Controllers\Admin\LocaisController;
 use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
 use App\Http\Controllers\Admin\AtletasController as AdminAtletasController;
@@ -140,6 +141,11 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::resource('comissao-tecnica', ComissaoTecnicaController::class)->only(['index', 'create', 'store', 'edit', 'update'])
         ->parameters(['comissao-tecnica' => 'id'])->names('comissao');
     Route::patch('comissao-tecnica/{id}/toggle-status', [ComissaoTecnicaController::class, 'toggleStatus'])->name('comissao.toggleStatus');
+
+    // Locais (Etapa L1, 30/10/2026): cadastro sem exclusão, como a comissão técnica
+    Route::resource('locais', LocaisController::class)->only(['index', 'create', 'store', 'edit', 'update'])
+        ->parameters(['locais' => 'id'])->names('locais');
+    Route::patch('locais/{id}/toggle-status', [LocaisController::class, 'toggleStatus'])->name('locais.toggleStatus');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
     Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo

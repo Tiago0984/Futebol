@@ -89,6 +89,7 @@ class MenuAdminComposer
             $r->routeIs('admin.campeonatos.*')  => 'campeonatos',
             $r->routeIs('admin.times.*')        => 'times',
             $r->routeIs('admin.comissao.*')     => 'comissao',
+            $r->routeIs('admin.locais.*')       => 'locais',
             $r->routeIs('admin.categorias.*')   => 'categorias',
             $r->routeIs('admin.notificacoes.*') => 'notificacoes',
             default                             => null,

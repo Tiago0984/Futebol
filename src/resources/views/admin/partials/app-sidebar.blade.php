@@ -176,6 +176,14 @@
           </a>
         </li>
 
+        {{-- Locais (Etapa L1): o endereço e o link do mapa do "Abrir mapa" do app --}}
+        <li class="nav-item">
+          <a href="{{ route('admin.locais.index') }}" class="nav-link {{ $ativo('locais') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-geo-alt-fill"></i>
+            <p>Locais</p>
+          </a>
+        </li>
+
         <li class="nav-header">PESSOAS</li>
 
         {{-- Atletas, sem subitens --}}
