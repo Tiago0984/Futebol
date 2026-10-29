@@ -50,6 +50,16 @@
 
         @include('admin.atletas._links_convite')
 
+        {{-- Fotos enviadas pelo app esperando a aprovação (29/10/2026) --}}
+        @php $fotosParaAprovar = $atletas->filter->temFotoPendente()->count(); @endphp
+        @if($fotosParaAprovar)
+        <div class="alert alert-info d-flex flex-wrap align-items-center gap-2 mb-3" role="alert">
+            <i class="bi bi-person-bounding-box"></i>
+            <span><strong>{{ $fotosParaAprovar }} foto(s) nova(s)</strong> enviada(s) pelo app esperando aprovação. Até aprovar, o app e o site mostram a foto atual.</span>
+            <button type="button" class="btn btn-sm btn-outline-primary ms-auto" id="btnFiltrarFotos">Mostrar só esses atletas</button>
+        </div>
+        @endif
+
         {{-- Troca de categoria: eventos futuros a mover (só com a confirmação do admin) --}}
         @if($mover = session('mover_inscricoes'))
         <div class="alert alert-warning mb-3" role="alert">
@@ -138,6 +148,7 @@
                             <option value="">Todos</option>
                             <option value="ATIVO">Ativo</option>
                             <option value="INATIVO">Inativo</option>
+                            <option value="FOTO">Foto para aprovar</option>
                         </select>
                     </div>
                     <div class="col-md-auto">
@@ -194,7 +205,8 @@
                             data-responsavel="{{ strtolower($nomeResponsavel ?? '') }}"
                             data-categoria="{{ strtoupper($nomeCategoria ?? '') }}"
                             data-posicao=" {{ $codigosPosicoes->implode(' ') }} "
-                            data-status="{{ strtoupper($atleta->status_atleta ?? '') }}">
+                            data-status="{{ strtoupper($atleta->status_atleta ?? '') }}"
+                            data-foto-pendente="{{ $atleta->temFotoPendente() ? '1' : '0' }}">
                             <td>
                                 <div style="position:relative;width:42px;height:42px;flex-shrink:0;">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
@@ -234,6 +246,18 @@
                                             class="badge bg-warning-subtle text-warning-emphasis text-decoration-none js-afastado" style="font-size:0.7rem;"
                                             title="Afastado de {{ $atleta->afastamentoAtual->periodoTexto() }}: não treina nesse período">
                                         <i class="bi bi-bandaid"></i> {{ $atleta->afastamentoAtual->selo }}</a></div>
+                                @endif
+                                @if($atleta->temFotoPendente())
+                                    <div><button type="button" class="badge bg-info-subtle text-info-emphasis border-0 js-foto-pendente" style="font-size:0.7rem;"
+                                            title="Enviada pelo app em {{ $atleta->data_foto_pendente_atleta?->format('d/m/Y H:i') }}: compare com a atual e aprove ou recuse"
+                                            data-bs-toggle="modal" data-bs-target="#modalFotoPendente"
+                                            data-nome="{{ $atleta->nome_atleta }}"
+                                            data-iniciais="{{ $iniciais }}"
+                                            data-atual="{{ $atleta->urlFoto() }}"
+                                            data-nova="{{ route('admin.atletas.fotoPendente', $atleta->id_atleta) }}?v={{ $atleta->data_foto_pendente_atleta?->timestamp }}"
+                                            data-enviada="{{ $atleta->data_foto_pendente_atleta?->format('d/m/Y') }} às {{ $atleta->data_foto_pendente_atleta?->format('H:i') }}"
+                                            data-acao="{{ route('admin.atletas.fotoPendente.aprovar', $atleta->id_atleta) }}">
+                                        <i class="bi bi-person-bounding-box"></i> Foto nova para aprovar</button></div>
                                 @endif
                             </td>
                             <td>
@@ -384,6 +408,51 @@
 
 @include('admin.atletas.modals.create')
 @include('admin.atletas.modals.edit')
+
+{{-- Foto enviada pelo app: a atual e a nova lado a lado (29/10/2026). As ações e as imagens vêm do botão do selo --}}
+<div class="modal fade" id="modalFotoPendente" tabindex="-1" aria-labelledby="tituloFotoPendente" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="tituloFotoPendente">Foto nova de <span class="js-nome"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row g-3 text-center">
+                    <div class="col-6">
+                        <div class="small text-muted mb-2">Atual</div>
+                        <img class="js-atual rounded-circle object-fit-cover" alt="Foto atual" style="width:160px;height:160px;">
+                        <div class="js-sem-foto rounded-circle d-inline-flex align-items-center justify-content-center bg-body-secondary fw-bold fs-3"
+                             style="width:160px;height:160px;"></div>
+                        <div class="js-sem-foto small text-muted mt-1">Sem foto</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="small text-muted mb-2">Nova (pelo app)</div>
+                        <img class="js-nova rounded-circle object-fit-cover border border-3 border-info" alt="Foto nova" style="width:160px;height:160px;">
+                        <div class="small text-muted mt-1">Enviada em <span class="js-enviada"></span></div>
+                    </div>
+                </div>
+                <p class="small text-muted mt-3 mb-0">Aprovada, ela aparece no app e no site (página Jogadores) e o atleta é avisado. Recusada, é apagada, a atual continua e o atleta recebe o aviso para enviar outra.</p>
+
+                <form class="js-form-recusar mt-3" method="POST" onsubmit="return confirm('Recusar a foto nova? Ela será apagada e o atleta será avisado.');">
+                    @csrf
+                    @method('DELETE')
+                    <label class="form-label small mb-1" for="motivoFotoRecusada">Motivo da recusa (opcional, vai no aviso ao atleta)</label>
+                    <input type="text" class="form-control form-control-sm" id="motivoFotoRecusada" name="motivo" maxlength="{{ \App\Models\Notificacao::MOTIVO_FOTO_MAX }}"
+                           placeholder="Ex.: a foto precisa mostrar o rosto">
+                    <div class="d-flex justify-content-end gap-2 mt-3">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"><i class="bi bi-x-lg"></i> Recusar</button>
+                        <button type="submit" class="btn btn-success btn-sm js-aprovar" form="formAprovarFoto"><i class="bi bi-check-lg"></i> Aprovar</button>
+                    </div>
+                </form>
+                <form id="formAprovarFoto" class="js-form-aprovar" method="POST" onsubmit="return confirm('Aprovar a foto nova? Ela substitui a atual no app e no site, e o atleta será avisado.');">
+                    @csrf
+                    @method('PATCH')
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 @if($errors->any())
     <div class="modal-backdrop fade show"></div>
@@ -612,7 +681,7 @@ document.addEventListener('DOMContentLoaded', function () {
                     && (!responsavel || row.dataset.responsavel.includes(responsavel))
                     && (!categoria   || row.dataset.categoria === categoria)
                     && (!posicao     || row.dataset.posicao.includes(' ' + posicao + ' '))
-                    && (!status      || row.dataset.status === status);
+                    && (!status      || (status === 'FOTO' ? row.dataset.fotoPendente === '1' : row.dataset.status === status));
             row.style.display = ok ? '' : 'none';
             if (ok) visiveis++;
         });
@@ -624,6 +693,28 @@ document.addEventListener('DOMContentLoaded', function () {
 
     ['filtroNome','filtroMatricula','filtroResponsavel','filtroCategoria','filtroPosicao','filtroStatus']
         .forEach(id => document.getElementById(id)?.addEventListener('input', aplicarFiltros));
+
+    // Foto enviada pelo app: o modal recebe as imagens e as ações do selo clicado (a mesma rota: PATCH aprova, DELETE recusa)
+    document.getElementById('modalFotoPendente')?.addEventListener('show.bs.modal', (e) => {
+        const botao = e.relatedTarget, modal = e.currentTarget;
+        modal.querySelector('.js-nome').textContent = botao.dataset.nome;
+        modal.querySelector('.js-enviada').textContent = botao.dataset.enviada;
+        modal.querySelector('.js-nova').src = botao.dataset.nova;
+        const atual = botao.dataset.atual;
+        modal.querySelector('.js-atual').src = atual || '';
+        modal.querySelector('.js-atual').classList.toggle('d-none', !atual);
+        modal.querySelectorAll('.js-sem-foto').forEach(el => el.classList.toggle('d-none', !!atual));
+        modal.querySelector('div.js-sem-foto').textContent = botao.dataset.iniciais;
+        modal.querySelector('.js-form-aprovar').action = botao.dataset.acao;
+        modal.querySelector('.js-form-recusar').action = botao.dataset.acao;
+        modal.querySelector('#motivoFotoRecusada').value = '';
+    });
+
+    document.getElementById('btnFiltrarFotos')?.addEventListener('click', () => {
+        document.getElementById('filtroStatus').value = 'FOTO';
+        bootstrap.Collapse.getOrCreateInstance(document.getElementById('filterPanel')).show();
+        aplicarFiltros();
+    });
 
     document.getElementById('btnLimparFiltros')?.addEventListener('click', () => {
         ['filtroNome','filtroMatricula','filtroResponsavel'].forEach(id => document.getElementById(id).value = '');

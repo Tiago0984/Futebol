@@ -831,6 +831,7 @@ class MenuAdminTest extends TestCase
             'admin.jogos.times.show'        => [$jogoDaCopa->id_jogo, $this->azul],
             'admin.matriculas.show'         => $atleta,
             'admin.atletas.afastamentos'    => $atleta,
+            'admin.atletas.fotoPendente'    => $atleta, // sem foto pendente: 404
             'admin.comissao.edit'           => DB::table('tbl_comissao_tecnica')->insertGetId([
                 'nome_comissao_tecnica' => 'Carlos Mendes', 'cargo_comissao_tecnica' => 'TREINADOR_TECNICO',
             ]),

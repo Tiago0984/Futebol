@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\ComissaoTecnicaController;
 use App\Http\Controllers\Admin\JogosController;
 use App\Http\Controllers\Admin\CategoriasController;
 use App\Http\Controllers\Admin\AtletasController as AdminAtletasController;
+use App\Http\Controllers\Admin\FotosPendentesController;
 use App\Http\Controllers\Admin\AfastamentosController;
 use App\Http\Controllers\Admin\MatriculasController;
 use App\Http\Controllers\Admin\LoginController;
@@ -198,6 +199,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::resource('atletas', AdminAtletasController::class)->only(['index', 'store', 'update']);
     Route::patch('atletas/{id}/toggle-status', [AdminAtletasController::class, 'toggleStatus'])->name('atletas.toggleStatus');
     Route::post('atletas/{id}/mover-inscricoes', [AdminAtletasController::class, 'moverInscricoes'])->name('atletas.moverInscricoes');
+    // Foto enviada pelo app (29/10/2026): ver, aprovar e recusar
+    Route::get('atletas/{id}/foto-pendente', [FotosPendentesController::class, 'mostrar'])->name('atletas.fotoPendente');
+    Route::patch('atletas/{id}/foto-pendente', [FotosPendentesController::class, 'aprovar'])->name('atletas.fotoPendente.aprovar');
+    Route::delete('atletas/{id}/foto-pendente', [FotosPendentesController::class, 'recusar'])->name('atletas.fotoPendente.recusar');
     // Convite do app, "Defina sua senha" (Fase 9): um atleta/responsável, ou todos os que ainda não têm senha
     Route::post('atletas/convites-pendentes', [AdminAtletasController::class, 'convitesPendentes'])->name('atletas.convitesPendentes');
     Route::post('atletas/{id}/convite', [AdminAtletasController::class, 'convite'])->name('atletas.convite');

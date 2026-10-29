@@ -742,6 +742,73 @@ class Atleta extends Authenticatable
         self::apagarFotoPendente($pendente);
     }
 
+    // Aprovação pela secretaria (F2): a pendente passa para public/ e vira a foto do atleta; a antiga sai do disco.
+    // Histórico com quem aprovou e um AVISO ao atleta. Devolve false se não havia foto pendente (ou o arquivo sumiu)
+    public function aprovarFotoPendente(?int $idUsuario): bool
+    {
+        $pendente = $this->foto_pendente_atleta;
+        $origem = self::PASTA_FOTO_PENDENTE . '/' . basename((string) $pendente);
+        if (! $pendente || ! Storage::disk('local')->exists($origem)) {
+            return false;
+        }
+
+        // Copia antes de mexer no banco: se a cópia falhar, nada muda
+        Storage::disk('imagens')->put(self::PASTA_FOTO . '/' . basename($pendente), Storage::disk('local')->get($origem));
+        $antiga = $this->foto_atleta;
+
+        DB::transaction(function () use ($pendente, $antiga, $idUsuario) {
+            $this->forceFill([
+                'foto_atleta'               => basename($pendente),
+                'foto_pendente_atleta'      => null,
+                'data_foto_pendente_atleta' => null,
+            ])->save();
+
+            $this->historico()->create([
+                'campo_atleta_historico'        => AtletaHistorico::CAMPO_FOTO,
+                'valor_antigo_atleta_historico' => $antiga,
+                'valor_novo_atleta_historico'   => basename($pendente),
+                'id_usuario'                    => $idUsuario,
+            ]);
+
+            Notificacao::fotoAprovada($this->id_atleta, $idUsuario);
+        });
+
+        $this->apagarArquivoDaFoto($antiga);
+        Storage::disk('local')->delete($origem);
+
+        return true;
+    }
+
+    // Recusa pela secretaria (F2): a pendente é apagada, a foto atual fica e o atleta recebe um AVISO (com o motivo,
+    // se houver). Devolve false se não havia foto pendente
+    public function recusarFotoPendente(?string $motivo, ?int $idUsuario): bool
+    {
+        $pendente = $this->foto_pendente_atleta;
+        if (! $pendente) {
+            return false;
+        }
+
+        DB::transaction(function () use ($motivo, $idUsuario) {
+            $this->forceFill(['foto_pendente_atleta' => null, 'data_foto_pendente_atleta' => null])->save();
+
+            Notificacao::fotoRecusada($this->id_atleta, $motivo, $idUsuario);
+        });
+
+        self::apagarFotoPendente($pendente);
+
+        return true;
+    }
+
+    // A foto pendente, para o painel mostrar (rota protegida do admin); null se não há
+    public function caminhoDaFotoPendente(): ?string
+    {
+        $caminho = self::PASTA_FOTO_PENDENTE . '/' . basename((string) $this->foto_pendente_atleta);
+
+        return $this->temFotoPendente() && Storage::disk('local')->exists($caminho)
+            ? Storage::disk('local')->path($caminho)
+            : null;
+    }
+
     // Apaga do disco uma foto que saiu do atleta: só as enviadas (FOTO_ENVIADA) e que nenhum outro atleta usa
     private function apagarArquivoDaFoto(?string $foto): void
     {

@@ -290,6 +290,26 @@ class Notificacao extends Model
         return self::gravarParaAtivos($idsAtletas, $idUsuario, fn () => self::linha('AVISO', null, self::TITULO_AVISO, trim($mensagem)));
     }
 
+    // Foto enviada pelo app (29/10/2026): o resultado da revisão da secretaria, um AVISO para o atleta
+    public const MOTIVO_FOTO_MAX = 200;
+
+    public static function fotoAprovada(int $idAtleta, ?int $idUsuario): int
+    {
+        return self::gravarParaAtivos([$idAtleta], $idUsuario, fn () => self::linha(
+            'AVISO', null, 'Foto aprovada', 'Sua foto nova foi aprovada pela secretaria e já aparece no app.'
+        ));
+    }
+
+    public static function fotoRecusada(int $idAtleta, ?string $motivo, ?int $idUsuario): int
+    {
+        $motivo = trim((string) $motivo);
+
+        return self::gravarParaAtivos([$idAtleta], $idUsuario, fn () => self::linha(
+            'AVISO', null, 'Foto não aprovada',
+            'A secretaria não aprovou a sua foto nova' . ($motivo !== '' ? ': ' . rtrim($motivo, '.') : '') . '. Você pode enviar outra pelo app.'
+        ));
+    }
+
     /**
      * Afastamento (16/10/2026): uma AGENDA com o resumo, no lugar de uma REMOCAO/INSCRICAO por atividade. Sem o
      * motivo (dado de saúde de menor). $acao: registrado, alterado, encerrado ou excluido; $antes/$depois =
