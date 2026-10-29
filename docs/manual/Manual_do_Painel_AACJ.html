@@ -77,7 +77,7 @@
   <div>Eventos (Calendário, Campeonatos, Amistosos, Individuais)</div>
   <div>Tela do evento e tela do jogo</div>
   <div>Jogos · Grade de treino · Notificações</div>
-  <div>Categorias · Times · Atletas · Matrículas · Sistema</div>
+  <div>Categorias · Times · Locais · Atletas · Matrículas · Sistema</div>
   <div class="g">Parte 4 — Consulta rápida</div>
   <div>Situações e selos</div>
   <div>Quem recebe aviso no aplicativo</div>
@@ -153,8 +153,9 @@
   <tr><td>Grade de treino</td><td>O modelo semanal dos treinos.</td></tr>
   <tr><td>Grade › Gerar agenda do mês</td><td>Transforma a grade em treinos de verdade no mês escolhido.</td></tr>
   <tr><td>Notificações</td><td>Tudo o que foi avisado aos atletas e o botão "Novo aviso".</td></tr>
-  <tr><td rowspan="2">CADASTROS</td><td>Categorias</td><td>As faixas de idade.</td></tr>
+  <tr><td rowspan="3">CADASTROS</td><td>Categorias</td><td>As faixas de idade.</td></tr>
   <tr><td>Times</td><td>Times da AACJ e adversários.</td></tr>
+  <tr><td>Locais</td><td>Campos, quadras e arenas, com endereço e link do mapa. Os formulários escolhem o local desta lista.</td></tr>
   <tr><td rowspan="2">PESSOAS</td><td>Atletas</td><td>Cadastro dos atletas ativos e inativos.</td></tr>
   <tr><td>Matrículas</td><td>Pedidos de matrícula feitos pelo site (pendentes e rejeitadas).</td></tr>
   <tr><td rowspan="2">SISTEMA</td><td>Ver site</td><td>Abre o site público.</td></tr>
@@ -170,10 +171,12 @@
 <ol class="passos">
   <li><strong>Categorias:</strong> as 10 oficiais já existem (Sub-9 a Sub-17, masculino e feminino). Só crie outra se o professor pedir.</li>
   <li><strong>Times:</strong> em <span class="caminho">Cadastros › Times</span> › <span class="botao">Novo Time</span>, cadastre os times da AACJ como <strong>Interno</strong> (ex.: "AACJ Sub-15") e os adversários como <strong>Externo</strong>, com logo.</li>
+  <li><strong>Locais:</strong> em <span class="caminho">Cadastros › Locais</span> › <span class="botao">Novo local</span>, cadastre onde a escolinha treina e joga (ex.: "Campo da AACJ"), com o endereço. O <strong>link do Google Maps</strong> é opcional (no Google Maps: Compartilhar › Copiar link); sem ele, o "Abrir no mapa" procura pelo nome e pelo endereço. Os atletas usam esse endereço no aplicativo para chegar.</li>
   <li><strong>Grade de treino:</strong> cadastre os horários reais (veja o R3). Inative os horários antigos que não valem mais.</li>
   <li><strong>Atletas:</strong> confira se todo atleta ativo tem <strong>categoria</strong> e <strong>período escolar</strong>. A lista mostra o selo <span class="selo amarelo">Sem período escolar</span> em quem falta.</li>
   <li><strong>Acesso ao aplicativo:</strong> em <span class="caminho">Pessoas › Atletas</span>, use <span class="botao">Enviar convites pendentes</span> para mandar o link de senha a quem ainda não tem.</li>
 </ol>
+<div class="caixa dica"><strong>O campo "Local" em todos os formulários</strong>Evento, evento individual, horário da grade, jogo e local principal do campeonato escolhem o local de uma <strong>lista</strong> (não se escreve mais à mão). O endereço do local escolhido aparece logo abaixo. Se o lugar ainda não está na lista, clique em <span class="botao">Novo local</span> ao lado: um quadro pede nome, rua, número (ou S/N), bairro, cidade e UF; <span class="botao">Salvar local</span> cadastra e já deixa escolhido, sem sair do formulário.</div>
 <div class="caixa atencao"><strong>Virada do ano</strong>Como a idade conta pelo ano de nascimento, todo 1º de janeiro parte dos atletas muda de faixa. A troca de categoria é <strong>manual</strong>, no cadastro de cada atleta (veja o R10).</div>
 
 <h2>R2. Chegou um aluno novo</h2>
@@ -204,7 +207,7 @@
 <ol class="passos">
   <li>Abra <span class="caminho">Esporte › Grade de treino</span> e clique em <span class="botao">Novo Horário</span>.</li>
   <li>Marque os <strong>dias da semana</strong> (ex.: terça e quinta). Cada dia marcado vira uma linha da grade, e cada linha gera um treino por semana.</li>
-  <li>Preencha horário de <strong>início</strong> e <strong>fim</strong>, <strong>local</strong> e tipo (<strong>TREINO</strong> ou <strong>LIVRE</strong>, para treino livre ou jogo interno com coletes). Escolha a <strong>categoria</strong> (ex.: Sub-13 Masculino) ou deixe como item <strong>geral</strong>, sem categoria, quando o treino é para todos. Jogo de verdade (amistoso ou campeonato) não entra na grade: ele é criado em <span class="caminho">Esporte › Jogos</span>.</li>
+  <li>Preencha horário de <strong>início</strong> e <strong>fim</strong>, <strong>local</strong> (da lista de Locais, ou "Sem local") e tipo (<strong>TREINO</strong> ou <strong>LIVRE</strong>, para treino livre ou jogo interno com coletes). Escolha a <strong>categoria</strong> (ex.: Sub-13 Masculino) ou deixe como item <strong>geral</strong>, sem categoria, quando o treino é para todos. Jogo de verdade (amistoso ou campeonato) não entra na grade: ele é criado em <span class="caminho">Esporte › Jogos</span>.</li>
   <li>Salve. Exemplo da escolinha: terça e quinta das 9h às 11h, terça e quinta das 14h às 17h, e sábado das 13h às 17h como LIVRE.</li>
 </ol>
 <div class="caixa info"><strong>Como o sistema decide quem vai em cada treino</strong>
@@ -507,6 +510,7 @@
 <ul>
   <li>Um cartão por dia da semana, com os horários em ordem.</li>
   <li><span class="botao">Novo Horário</span>: uma caixa por dia; cada dia marcado vira uma linha. <strong>Editar</strong> muda uma linha só (um dia).</li>
+  <li>O local vem da lista de Locais e pode ficar <strong>"Sem local"</strong>. Os treinos gerados copiam o local da linha; mudar o local da linha depois não muda os já gerados.</li>
   <li>Ativar/inativar uma linha. Não geram treinos: linha inativa, categoria inativa, linha sem horário de início e linhas do tipo "Jogo".</li>
   <li><span class="botao">Gerar agenda do mês</span> (R3).</li>
 </ul>
@@ -521,6 +525,15 @@
 <ul>
   <li>Cadastro de times internos e externos, com logo e categoria.</li>
   <li>O time <strong>não tem lista fixa de atletas</strong>: o atleta é da AACJ, na categoria dele. Quem joga por um time da AACJ é a <strong>convocação</strong> de cada campeonato (com a camisa daquele campeonato); no amistoso, a escolha no próprio jogo.</li>
+</ul>
+
+<h2>Locais</h2>
+<ul>
+  <li>Lista com nome, endereço, status e o link <strong>Abrir no mapa</strong> ("pela busca" quando o local não tem link próprio). Busca por nome ou cidade e filtro de status.</li>
+  <li><span class="botao">Novo local</span> e <strong>Editar</strong>: nome (não se repete), rua, número ou "S/N", complemento, bairro, cidade, UF e CEP (o CEP preenche o endereço sozinho). O <strong>link do mapa</strong> só aceita link do Google Maps, porque abre no celular dos atletas.</li>
+  <li><strong>Sem exclusão:</strong> <strong>desative</strong> o local que não é mais usado. Ele sai das novas escolhas, mas continua nos eventos em que já está (aparece como "Nome (inativo)" no editar, e pode ser mantido).</li>
+  <li><strong>Renomear</strong> um local muda o nome em todos os eventos, horários da grade e campeonatos que o usam, sem avisar os atletas (o lugar é o mesmo). Mudar o endereço também não avisa.</li>
+  <li><strong>Locais usados que ainda não estão cadastrados</strong> (cartão no topo): os locais escritos à mão antes desta tela existir, com quantas vezes aparecem. Clique num deles para cadastrar com o nome já preenchido; depois de salvar, o botão <span class="botao">Ligar os N uso(s)</span> faz os eventos, horários e campeonatos com aquele texto passarem a usar o local cadastrado. Ninguém é avisado. Enquanto não forem ligados, eles aparecem no editar como "Nome (texto antigo)", que pode ser mantido.</li>
 </ul>
 
 <h2>Atletas</h2>
@@ -609,6 +622,8 @@
 <p><strong>Mudei a data de um jogo que já tinha passado e não apareceu o "Publicar".</strong> O jogo já estava publicado: o "Publicar" só existe para rascunho. Mudar a data de um jogo publicado avisa os inscritos sozinho, e não existe voltar para rascunho.</p>
 <p><strong>Apareceu um * vermelho na classificação.</strong> Os times com * estão empatados em todos os critérios de desempate. A decisão é por sorteio, fora do sistema.</p>
 <p><strong>O "Montar próxima fase" não deixa montar.</strong> A tela diz o motivo: confronto sem vencedor, classificados não definidos, ou um número de times que não fecha uma chave (2, 4, 8, 16 ou 32). Nesse último caso, crie os jogos à mão em "Novo Jogo".</p>
+<p><strong>O local que eu quero não aparece na lista.</strong> Ou ele ainda não foi cadastrado (use "Novo local" ao lado do campo), ou foi desativado (reative em Cadastros › Locais).</p>
+<p><strong>No editar aparece "(texto antigo)" no local.</strong> O local foi escrito à mão antes do cadastro de Locais. Pode manter, mas o aplicativo só mostra o endereço e o mapa de local cadastrado: cadastre o local com esse nome e use "Ligar os N uso(s)" (veja Locais, na Parte 3).</p>
 <p><strong>O CPF não é aceito.</strong> Confira os números: o sistema recusa CPF com dígito verificador errado, sequências como 111.111.111-11 e CPF que já é de outro atleta.</p>
 
 <h2>O que ainda está em construção</h2>
