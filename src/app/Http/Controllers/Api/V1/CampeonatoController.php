@@ -28,9 +28,14 @@ class CampeonatoController extends Controller
                 'id_categoria',
             ]);
 
+        // Andamento para o card (fase, rodada, jogos realizados / já marcados), numa consulta só
+        $resumos = Campeonato::resumos($campeonatos);
+
         return response()->json([
             'success' => true,
-            'data'    => $campeonatos->map(fn ($camp) => [...$camp->toArray(), 'categorias' => $camp->categoriasNaApi()]),
+            'data'    => $campeonatos->map(fn ($camp) => [
+                ...$camp->toArray(), 'categorias' => $camp->categoriasNaApi(), 'resumo' => $resumos[$camp->id_campeonato],
+            ]),
         ]);
     }
 
@@ -41,13 +46,13 @@ class CampeonatoController extends Controller
         $campeonato = Campeonato::with([
                 'categoria:id_categoria,nome_categoria',
                 'categorias',
-                'times:tbl_time.id_time,nome_time,logo_time',
+                'times:tbl_time.id_time,nome_time,logo_time,tipo_time',
                 // Jogos visíveis, pela data do evento; data_jogo, horario_jogo, local_jogo e status_jogo
                 // vêm do evento (Jogo::$appends), com os mesmos nomes de antes para não quebrar o app
                 'jogos' => fn ($query) => $query->visiveis()->ordenadosPelaData(),
                 'jogos.evento', 'jogos.jogoIda', 'jogos.jogoVolta',   // para o "confronto" sem uma consulta por jogo
-                'jogos.timeCasa:id_time,nome_time,logo_time',
-                'jogos.timeVisitante:id_time,nome_time,logo_time',
+                'jogos.timeCasa:id_time,nome_time,logo_time,tipo_time',
+                'jogos.timeVisitante:id_time,nome_time,logo_time,tipo_time',
             ])
             ->ativos()
             ->find($id);
@@ -64,7 +69,10 @@ class CampeonatoController extends Controller
 
         $classificacoes = $campeonato->classificacoes();
         $campeoes       = $campeonato->campeoes($classificacoes);   // Fase I, Etapa I4
-        $time = fn (?array $t) => $t ? [...$t, 'logo_url' => Time::urlDaImagem($t['logo'], 'team')] : null;
+        // Se o time é da AACJ, pelos times já carregados (participantes e os dos jogos): sem consulta a mais
+        $daAacj = $campeonato->times->merge($campeonato->jogos->pluck('timeCasa'))->merge($campeonato->jogos->pluck('timeVisitante'))
+            ->filter()->mapWithKeys(fn (Time $t) => [(int) $t->id_time => $t->da_aacj])->all();
+        $time = fn (?array $t) => $t ? [...$t, 'logo_url' => Time::urlDaImagem($t['logo'], 'team'), 'da_aacj' => $daAacj[$t['id_time']] ?? false] : null;
 
         $classificacao = collect($classificacoes)->map(fn ($c) => [
             'id_categoria'  => (int) $c['categoria']->id_categoria,
@@ -80,7 +88,7 @@ class CampeonatoController extends Controller
                 'classificados' => $tabela['classificados'],
                 'tabela'        => array_map(fn ($linha, $pos) => [
                     'posicao' => $pos + 1, 'id_time' => $linha['id_time'], 'time' => $linha['nome'], 'logo' => $linha['logo'],
-                    'logo_url' => Time::urlDaImagem($linha['logo'], 'team'),
+                    'logo_url' => Time::urlDaImagem($linha['logo'], 'team'), 'da_aacj' => $daAacj[$linha['id_time']] ?? false,
                     'pontos' => $linha['pontos'], 'jogos' => $linha['pj'], 'vitorias' => $linha['v'],
                     'empates' => $linha['e'], 'derrotas' => $linha['d'], 'gols_marcados' => $linha['gm'],
                     'gols_sofridos' => $linha['gc'], 'saldo' => $linha['gm'] - $linha['gc'],

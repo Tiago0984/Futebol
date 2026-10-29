@@ -114,6 +114,51 @@ class Campeonato extends Model
         return $id === null ? null : (int) $id;
     }
 
+    /**
+     * Resumo do andamento para o card do app (29/10/2026), de vários campeonatos com uma consulta só:
+     * [id_campeonato => {fase_atual, fase_atual_label, rodada_atual, total_rodadas, jogos_realizados, total_jogos}].
+     * Contam os jogos publicados e ATIVOS (rascunho, oculto e cancelado fora); com $categorias
+     * [id_campeonato => int[]], só os jogos dessas categorias (campeonatos do atleta).
+     * - fase_atual: a do próximo jogo sem placar (pela data); com todos jogados, a do último; sem jogos, null;
+     * - rodada_atual / total_rodadas: só na fase de grupos com rodada (a do próximo jogo sem placar, ou a última);
+     * - total_jogos: os jogos JÁ MARCADOS. O mata-mata só existe depois de montado, então o total cresce e a
+     *   barra do app pode recuar (12 de 12 vira 12 de 16 quando as quartas são criadas).
+     *
+     * @param  Collection<int, Campeonato> $campeonatos
+     * @param  array<int, int[]>           $categorias
+     */
+    public static function resumos(Collection $campeonatos, array $categorias = []): array
+    {
+        $jogos = Jogo::with('evento:id_evento_calendario,id_categoria')
+            ->whereIn('tbl_jogos.id_campeonato', $campeonatos->pluck('id_campeonato'))
+            ->whereHas('evento', fn ($q) => $q->publicados()->where('status_evento_calendario', 'ATIVO'))
+            ->ordenadosPelaData()->orderBy('tbl_jogos.id_jogo')
+            ->get()
+            ->groupBy('id_campeonato');
+
+        return $campeonatos->mapWithKeys(function (Campeonato $campeonato) use ($jogos, $categorias) {
+            $id = (int) $campeonato->id_campeonato;
+            $doCampeonato = $jogos->get($id, collect())
+                ->when(isset($categorias[$id]), fn ($js) => $js->filter(fn (Jogo $j) => in_array((int) $j->evento?->id_categoria, $categorias[$id], true)))
+                ->values();
+            $pendente = $doCampeonato->first(fn (Jogo $j) => ! $j->temPlacar());
+            $atual = $pendente ?? $doCampeonato->last();
+            $fase = $atual?->fase_jogo ?? ($atual ? Jogo::FASE_PADRAO : null);
+
+            $rodadas = $doCampeonato->filter(fn (Jogo $j) => ($j->fase_jogo ?? Jogo::FASE_PADRAO) === Jogo::FASE_PADRAO)->pluck('rodada_jogo')->filter();
+            $nosGrupos = $fase === Jogo::FASE_PADRAO && $rodadas->isNotEmpty();
+
+            return [$id => [
+                'fase_atual'       => $fase,
+                'fase_atual_label' => $fase ? Jogo::FASES[$fase] : null,
+                'rodada_atual'     => $nosGrupos && $atual->rodada_jogo !== null ? (int) $atual->rodada_jogo : null,
+                'total_rodadas'    => $nosGrupos ? (int) $rodadas->max() : null,
+                'jogos_realizados' => $doCampeonato->filter(fn (Jogo $j) => $j->temPlacar())->count(),
+                'total_jogos'      => $doCampeonato->count(),
+            ]];
+        })->all();
+    }
+
     // Categorias no JSON da API: [{id_categoria, nome_categoria, sexo_categoria, rotulo}]; com $ids, só essas
     // (campeonatos do atleta: só as dele)
     public function categoriasNaApi(?array $ids = null): array

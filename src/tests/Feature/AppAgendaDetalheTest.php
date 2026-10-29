@@ -78,9 +78,17 @@ class AppAgendaDetalheTest extends TestCase
         $this->assertSame(['id_time' => $aacj, 'como' => 'pênaltis', 'agregado' => [3, 3],
             'texto' => 'AACJ Sub-13 passa nos pênaltis (4 × 3), depois do agregado 3 × 3'], $jogo['confronto']);
 
-        // Nada dos colegas nem da escalação de cada um (posição e titular ficam só no admin)
-        $json = json_encode($this->comToken($token)->getJson("/api/v1/agenda/{$volta}")->json());
-        foreach (['inscritos', 'escalacao', 'GOLEIRO', 'TITULAR', 'posicao', 'titular'] as $proibido) {
+        // A participação do próprio atleta (desde 29/10/2026: ele vê a posição e o titular dele) e nada dos colegas: o
+        // colega é reserva na lateral, e nem a reserva nem a lateral aparecem
+        DB::table('tbl_evento_atleta')->where('id_evento_calendario', $volta)->where('id_atleta', $colega)
+            ->update(['posicao_evento_atleta' => 'LATERAL_DIREITO', 'titular_evento_atleta' => 'RESERVA']);
+        $resposta = $this->comToken($token)->getJson("/api/v1/agenda/{$volta}")->json();
+        $this->assertSame([
+            'convocado' => false, 'camisa' => null, 'escalado' => true, 'time' => $jogo['time_do_atleta'],
+            'titular' => 'TITULAR', 'titular_label' => 'Titular', 'posicao' => ['codigo' => 'GOLEIRO', 'sigla' => 'GOL', 'nome' => 'Goleiro'],
+        ], $resposta['data']['jogo']['participacao']);
+        $json = json_encode($resposta);
+        foreach (['inscritos', 'escalacao', 'RESERVA', 'LATERAL'] as $proibido) {
             $this->assertStringNotContainsString($proibido, $json);
         }
 

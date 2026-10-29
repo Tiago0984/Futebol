@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Atleta;
 use App\Models\Campeonato;
+use App\Models\Convocacao;
 use App\Models\EventoAtleta;
 use App\Models\EventoCalendario;
 use App\Models\Jogo;
@@ -229,7 +230,7 @@ class AppDoAtleta
             ->where('ct.id_categoria', $idCategoriaAtual)->where('t.tipo_time', 'INTERNO')
             ->distinct()->pluck('ct.id_campeonato')->map(fn ($id) => (int) $id);
 
-        return Campeonato::with('categorias')->ativos()
+        $campeonatos = Campeonato::with('categorias')->ativos()
             ->whereIn('id_campeonato', $convocacoes->keys()->merge($pelaCategoria)->unique()->values())
             ->whereDate('data_fim_campeonato', '>=', $hoje)
             ->get()
@@ -237,12 +238,20 @@ class AppDoAtleta
                 $c->data_inicio_campeonato->toDateString() <= $hoje ? 0 : 1,
                 $c->data_inicio_campeonato->toDateString() <= $hoje ? $c->data_fim_campeonato->toDateString() : $c->data_inicio_campeonato->toDateString(),
                 $c->id_campeonato,
-            ])
-            ->map(function (Campeonato $campeonato) use ($convocacoes, $pelaCategoria, $idCategoriaAtual, $hoje) {
+            ]);
+
+        // As categorias do atleta em cada campeonato (as das convocações e a atual, pela segunda regra): valem para
+        // as categorias mostradas e para o resumo do card
+        $categorias = $campeonatos->mapWithKeys(fn (Campeonato $c) => [(int) $c->id_campeonato => $convocacoes->get($c->id_campeonato, collect())
+            ->pluck('id_categoria')->map(fn ($id) => (int) $id)
+            ->when($pelaCategoria->contains($c->id_campeonato), fn ($ids) => $ids->push((int) $idCategoriaAtual))
+            ->unique()->values()->all()])->all();
+        $resumos = Campeonato::resumos($campeonatos, $categorias);
+
+        return $campeonatos
+            ->map(function (Campeonato $campeonato) use ($convocacoes, $categorias, $resumos, $hoje) {
                 $doCampeonato = $convocacoes->get($campeonato->id_campeonato, collect());
-                $ids = $doCampeonato->pluck('id_categoria')->map(fn ($id) => (int) $id)
-                    ->when($pelaCategoria->contains($campeonato->id_campeonato), fn ($ids) => $ids->push((int) $idCategoriaAtual))
-                    ->unique()->all();
+                $ids = $categorias[$campeonato->id_campeonato];
 
                 return collect($campeonato->toArray())->only([
                     'id_campeonato', 'nome_campeonato', 'organizador_campeonato', 'descricao_campeonato', 'tipo_campeonato', 'tipo_label',
@@ -257,6 +266,7 @@ class AppDoAtleta
                             'rotulo'       => $c->categoria?->rotulo,
                             'camisa'       => $c->camisa_convocacao,
                         ])->values()->all(),
+                    'resumo'       => $resumos[$campeonato->id_campeonato],
                 ];
             })
             ->values()->all();
@@ -322,9 +332,10 @@ class AppDoAtleta
     /**
      * Detalhe de um evento da agenda (GET /agenda/{idEvento}, pedido do app, 24/10/2026, para o "Ver detalhes"): os
      * mesmos campos da lista e, no jogo, também o adversário, a fase, a rodada, a perna, a prorrogação, os pênaltis
-     * e o confronto. Só o que já é público ou do próprio atleta: sem os colegas, a escalação, a posição e o titular
-     * (decisão do dono do projeto: dados de outros menores, e posição e titular ficam só no admin). null (404) para
-     * evento em que o atleta não está inscrito, oculto ou em rascunho: as mesmas regras da lista.
+     * e o confronto, e a participação do próprio atleta (convocação, camisa, time, titular/reserva e posição; desde
+     * 29/10/2026 o atleta vê os dele, decisão do dono do projeto que revê a de 15/10). Nunca os colegas nem a
+     * escalação do time (dados de outros menores). null (404) para evento em que o atleta não está inscrito, oculto
+     * ou em rascunho: as mesmas regras da lista.
      */
     public function detalhe(int $idEvento): ?array
     {
@@ -339,6 +350,7 @@ class AppDoAtleta
 
         if ($evento->jogo) {
             $dados['jogo'] += $this->detalheDoJogo($evento->jogo, $idTime);
+            $dados['jogo']['participacao'] = $this->participacao($evento, $idTime);
         }
 
         return $dados;
@@ -444,6 +456,39 @@ class AppDoAtleta
     }
 
     /**
+     * "Sua participação" no jogo (29/10/2026), sempre presente, com o que ainda não existe em null/false, para o app
+     * mostrar "Convocado · camisa 10 · escalação a definir":
+     * - convocado e camisa: a convocação do atleta no campeonato e na categoria do jogo (null no amistoso, que não tem
+     *   convocação);
+     * - escalado e time: o time do jogo em que ele está escalado;
+     * - titular (TITULAR/RESERVA) e posicao ({codigo, sigla, nome}): o que o técnico GRAVOU no "Salvar escalação" (a
+     *   posição só sugerida na tela não conta). Mudar a escalação não avisa o atleta, por enquanto.
+     */
+    private function participacao(EventoCalendario $evento, ?int $idTimeDoAtleta): array
+    {
+        $jogo = $evento->jogo;
+        $inscricao = EventoAtleta::where('id_evento_calendario', $evento->id_evento_calendario)
+            ->where('id_atleta', $this->atleta->id_atleta)->first(['posicao_evento_atleta', 'titular_evento_atleta']);
+        $convocacao = $jogo->id_campeonato === null ? null : Convocacao::where('id_campeonato', $jogo->id_campeonato)
+            ->where('id_atleta', $this->atleta->id_atleta)
+            ->when($evento->id_categoria, fn ($q) => $q->where('id_categoria', $evento->id_categoria))
+            ->first(['camisa_convocacao']);
+        $escalado = $idTimeDoAtleta !== null;
+        $titular = $escalado ? $inscricao?->titular_evento_atleta : null;
+        $posicao = $escalado ? $inscricao?->posicao_evento_atleta : null;
+
+        return [
+            'convocado'     => $jogo->id_campeonato === null ? null : $convocacao !== null,
+            'camisa'        => $convocacao ? (int) $convocacao->camisa_convocacao : null,
+            'escalado'      => $escalado,
+            'time'          => self::time(self::timeDoAtleta($jogo, $idTimeDoAtleta)),
+            'titular'       => $titular,
+            'titular_label' => $titular ? EventoAtleta::TITULARIDADES[$titular] : null,
+            'posicao'       => $posicao ? ['codigo' => $posicao, 'sigla' => Atleta::POSICOES[$posicao]['sigla'], 'nome' => Atleta::POSICOES[$posicao]['nome']] : null,
+        ];
+    }
+
+    /**
      * O que o detalhe acrescenta ao bloco do jogo:
      * - adversario: o outro time do jogo, pelo time em que o atleta está escalado; sem time, o outro do único time
      *   da AACJ do jogo (null quando os dois são da AACJ e o atleta está sem time);
@@ -485,7 +530,10 @@ class AppDoAtleta
 
     private static function time(?Time $time): ?array
     {
-        return $time ? ['id_time' => $time->id_time, 'nome_time' => $time->nome_time, 'logo_time' => $time->logo_time, 'logo_url' => $time->logo_url] : null;
+        return $time ? [
+            'id_time' => $time->id_time, 'nome_time' => $time->nome_time, 'logo_time' => $time->logo_time, 'logo_url' => $time->logo_url,
+            'da_aacj' => $time->da_aacj,
+        ] : null;
     }
 
     // O time do jogo em que o atleta está escalado (null = inscrito sem time)

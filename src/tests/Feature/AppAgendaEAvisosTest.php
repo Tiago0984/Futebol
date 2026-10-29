@@ -104,10 +104,10 @@ class AppAgendaEAvisosTest extends TestCase
         $this->assertSame([
             'id_jogo' => $idJogo, 'amistoso' => false,
             'campeonato' => ['id_campeonato' => DB::table('tbl_campeonato')->value('id_campeonato'), 'nome_campeonato' => 'Copa AACJ'],
-            'time_casa' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png')],
-            'time_visitante' => ['id_time' => $visitante, 'nome_time' => 'Rival FC', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png')],
+            'time_casa' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png'), 'da_aacj' => true],
+            'time_visitante' => ['id_time' => $visitante, 'nome_time' => 'Rival FC', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png'), 'da_aacj' => false],
             'placar' => null,
-            'time_do_atleta' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png')],
+            'time_do_atleta' => ['id_time' => $casa, 'nome_time' => 'AACJ Sub-13', 'logo_time' => 'time.png', 'logo_url' => asset('futebol/images/team/time.png'), 'da_aacj' => true],
             'horario_chegada' => '09:00', 'chegada' => '2026-10-15T09:00:00-03:00', // 1 hora antes das 10:00
         ], $agenda['proximos'][0]['jogo']);
 

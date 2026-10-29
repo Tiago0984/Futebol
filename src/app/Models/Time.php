@@ -10,8 +10,8 @@ class Time extends Model
 {
     use UrlDeImagem;
 
-    // Endereço completo do escudo no JSON da API (o banco guarda só o nome do arquivo)
-    protected $appends = ['logo_url'];
+    // Endereço completo do escudo no JSON da API (o banco guarda só o nome do arquivo) e se o time é da AACJ
+    protected $appends = ['logo_url', 'da_aacj'];
 
     protected $table = 'tbl_time';
     protected $primaryKey = 'id_time';
@@ -25,6 +25,13 @@ class Time extends Model
         'tipo_time',
         'status_time',
     ];
+
+    // Time da AACJ (INTERNO) ou adversário (EXTERNO), para o app destacar a escolinha (29/10/2026). null quando a
+    // consulta não trouxe o tipo_time (select de poucas colunas), para nunca dizer "adversário" por engano
+    public function getDaAacjAttribute(): ?bool
+    {
+        return array_key_exists('tipo_time', $this->attributes) ? $this->attributes['tipo_time'] === 'INTERNO' : null;
+    }
 
     // Categorias de que o time participa (tbl_time_categoria, 27/10/2026): um cadastro só para a AACJ e para cada
     // adversário, com as categorias marcadas, no lugar de um time por categoria

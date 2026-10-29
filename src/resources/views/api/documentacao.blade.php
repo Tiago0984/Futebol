@@ -161,6 +161,15 @@
         <table>
             <tr><th>Campo</th><th>Descrição</th></tr>
             <tr><td><code>categorias</code></td><td>As categorias do campeonato: <code>[{ "id_categoria": 2, "nome_categoria": "Sub-15", "sexo_categoria": "M", "rotulo": "Sub-15 Masculino" }]</code>. O campo antigo <code>categoria</code> continua (uma delas), para não quebrar o app; use <code>categorias</code></td></tr>
+            <tr><td><code>da_aacj</code></td><td>Em todo time (<code>times[]</code>, <code>jogos[].time_casa</code> / <code>time_visitante</code>, as linhas da <code>classificacao</code> e o <code>campeao</code>, <code>vice</code> e <code>terceiro</code>): <code>true</code> quando o time é da AACJ, <code>false</code> quando é adversário. Use para destacar a escolinha. Vem também nos times da agenda (<code>time_casa</code>, <code>time_visitante</code>, <code>time_do_atleta</code>, <code>adversario</code>)</td></tr>
+            <tr><td><code>resumo</code></td><td>Só em <code>/campeonatos</code> e <code>/campeonatos-do-atleta</code>, para o card: <code>{ "fase_atual": "OITAVAS", "fase_atual_label": "Oitavas de final", "rodada_atual": null, "total_rodadas": null, "jogos_realizados": 14, "total_jogos": 20 }</code>.
+                <ul>
+                    <li>Contam só os jogos publicados e ativos (cancelados ficam fora). Em <code>/campeonatos-do-atleta</code>, só os das categorias do atleta.</li>
+                    <li><code>fase_atual</code>: a do próximo jogo ainda sem placar; com todos jogados, a do último; sem jogos, <code>null</code>.</li>
+                    <li><code>rodada_atual</code> / <code>total_rodadas</code>: só na fase de grupos com rodadas (a do próximo jogo sem placar e a maior rodada marcada); senão, <code>null</code>.</li>
+                    <li><code>jogos_realizados</code> / <code>total_jogos</code>: jogos com placar sobre os <strong>jogos já marcados</strong> ("14 de 20 jogos"). O mata-mata só existe depois que a escolinha monta a próxima fase, então o total cresce durante o campeonato (12 de 12 vira 12 de 16 quando as quartas são marcadas): não é o total final.</li>
+                </ul>
+            </td></tr>
             <tr><td><code>tipo_campeonato</code> / <code>tipo_label</code></td><td>O tipo (<code>LIGA</code>, <code>COPA</code>, <code>TORNEIO</code>, <code>MATA-MATA</code>, <code>PONTOS CORRIDOS</code>, <code>AMISTOSO</code>) e o rótulo para mostrar ("Pontos Corridos")</td></tr>
             <tr><td><code>local_evento</code>, <code>organizador_campeonato</code>, <code>logo_evento</code> / <code>logo_url</code>, <code>banner_evento</code> / <code>banner_url</code></td><td>Opcionais: podem vir <code>null</code>. <code>local_evento</code> é só o local principal; cada jogo tem o seu, em <code>jogos[].local_jogo</code> (os jogos de um campeonato podem ser em locais diferentes)</td></tr>
             <tr><td><code>jogos[].fase_jogo</code> / <code>jogos[].fase</code></td><td>A fase do jogo: <code>GRUPOS</code>, <code>REPESCAGEM</code>, <code>DEZESSEIS_AVOS</code>, <code>OITAVAS</code>, <code>QUARTAS</code>, <code>SEMIFINAL</code>, <code>TERCEIRO</code>, <code>FINAL</code>; <code>fase</code> é o rótulo ("Fase de grupos", "Disputa de 3º lugar")</td></tr>
@@ -171,8 +180,8 @@
             <tr><td><code>jogos[].confronto</code></td><td>Mata-mata decidido: <code>{ "id_time": 9, "como": "pênaltis", "agregado": [3, 3], "texto": "Botafogo passa nos pênaltis (4 × 3), depois do agregado 3 × 3" }</code>. <code>como</code>: <code>tempo normal</code>, <code>prorrogação</code>, <code>agregado</code> ou <code>pênaltis</code>; <code>agregado</code> só na volta, na ordem mandante × visitante deste jogo. <code>null</code> fora do mata-mata, na ida (decide na volta) e enquanto não há vencedor</td></tr>
             <tr><td><code>jogos[].id_categoria</code></td><td>A categoria do jogo (uma das <code>categorias</code>)</td></tr>
             <tr><td><code>classificacao</code></td><td>Só em <code>/campeonatos/{id}</code>: uma entrada por categoria, com <code>id_categoria</code>, <code>categoria</code> (rótulo), <code>classificados</code> (quantos passam de cada grupo, ou <code>null</code>) e <code>grupos</code></td></tr>
-            <tr><td><code>classificacao[].campeao</code></td><td>O campeão da categoria, ou <code>null</code> enquanto não há: <code>situacao</code> (<code>campeao</code> ou <code>sorteio</code>), <code>modo</code> (<code>final</code>: o vencedor da final; <code>tabela</code>: pontos corridos, o 1º depois que a escolinha encerra a categoria, com todos os jogos da fase de grupos publicados e com placar; com "classificam N por grupo", o campeão sai da final), <code>como</code> (texto), <code>campeao</code>, <code>vice</code> e <code>terceiro</code> (<code>{ id_time, nome, logo, logo_url }</code> ou <code>null</code>; vice e 3º só com final) e <code>empatados</code> (nomes, quando o 1º lugar está empatado em tudo e o campeão sai por sorteio)</td></tr>
-            <tr><td><code>classificacao[].grupos[]</code></td><td><code>grupo</code> (nome, ou <code>null</code> na categoria sem grupos; "Sem grupo" para quem não está em nenhum), <code>classificados</code> e <code>tabela</code>: <code>posicao</code>, <code>id_time</code>, <code>time</code>, <code>logo</code>, <code>logo_url</code>, <code>pontos</code>, <code>jogos</code>, <code>vitorias</code>, <code>empates</code>, <code>derrotas</code>, <code>gols_marcados</code>, <code>gols_sofridos</code>, <code>saldo</code>, <code>classificado</code> (true para os primeiros que passam) e <code>empate_sorteio</code> (true quando o time está empatado com outro em todos os critérios: se continuar assim no fim, a ordem sai por sorteio)</td></tr>
+            <tr><td><code>classificacao[].campeao</code></td><td>O campeão da categoria, ou <code>null</code> enquanto não há: <code>situacao</code> (<code>campeao</code> ou <code>sorteio</code>), <code>modo</code> (<code>final</code>: o vencedor da final; <code>tabela</code>: pontos corridos, o 1º depois que a escolinha encerra a categoria, com todos os jogos da fase de grupos publicados e com placar; com "classificam N por grupo", o campeão sai da final), <code>como</code> (texto), <code>campeao</code>, <code>vice</code> e <code>terceiro</code> (<code>{ id_time, nome, logo, logo_url, da_aacj }</code> ou <code>null</code>; vice e 3º só com final) e <code>empatados</code> (nomes, quando o 1º lugar está empatado em tudo e o campeão sai por sorteio)</td></tr>
+            <tr><td><code>classificacao[].grupos[]</code></td><td><code>grupo</code> (nome, ou <code>null</code> na categoria sem grupos; "Sem grupo" para quem não está em nenhum), <code>classificados</code> e <code>tabela</code>: <code>posicao</code>, <code>id_time</code>, <code>time</code>, <code>logo</code>, <code>logo_url</code>, <code>pontos</code>, <code>jogos</code>, <code>vitorias</code>, <code>empates</code>, <code>derrotas</code>, <code>gols_marcados</code>, <code>gols_sofridos</code>, <code>saldo</code>, <code>da_aacj</code>, <code>classificado</code> (true para os primeiros que passam) e <code>empate_sorteio</code> (true quando o time está empatado com outro em todos os critérios: se continuar assim no fim, a ordem sai por sorteio)</td></tr>
             <tr><td>Ordem da tabela</td><td>Como no Brasileirão: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, com só dois times empatados nisso tudo, o confronto direto (pontos nos jogos entre eles). Sem cartões. Empate em tudo: <code>empate_sorteio</code> e, enquanto isso, ordem alfabética</td></tr>
         </table>
         </div>
@@ -184,7 +193,7 @@
         "grupo": "Grupo 01", "classificados": 2,
         "tabela": [
           { "posicao": 1, "id_time": 3, "time": "AACJ Sub-15", "logo": "aacj.png",
-            "logo_url": "https://.../futebol/images/team/aacj.png", "pontos": 6, "jogos": 2, "vitorias": 2,
+            "logo_url": "https://.../futebol/images/team/aacj.png", "da_aacj": true, "pontos": 6, "jogos": 2, "vitorias": 2,
             "empates": 0, "derrotas": 0, "gols_marcados": 5, "gols_sofridos": 1, "saldo": 4, "classificado": true }
         ]
       }
@@ -410,6 +419,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             <tr><td><code>categorias</code></td><td><strong>Só as do atleta</strong> no campeonato (as das convocações e a categoria atual, quando a AACJ joga nela), no formato de <code>GET /campeonatos</code></td></tr>
             <tr><td><code>convocada</code></td><td><code>true</code> se o atleta foi convocado no campeonato; <code>false</code> quando aparece só pela categoria (convocação ainda não feita ou não chamado)</td></tr>
             <tr><td><code>convocacoes</code></td><td>Cada convocação: <code>{ id_categoria, rotulo, camisa }</code> (sem o time). A camisa é sempre definida na convocação (1 a 99). Vazio quando <code>convocada</code> é <code>false</code></td></tr>
+            <tr><td><code>resumo</code></td><td>O andamento para o card, como em <a href="#campeonatos">Campeonatos</a>, mas contando <strong>só os jogos das categorias do atleta</strong></td></tr>
         </table>
         </div>
 <pre>200 {
@@ -423,7 +433,9 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
       "situacao": "EM_ANDAMENTO",
       "categorias": [ { "id_categoria": 3, "nome_categoria": "Sub-13", "sexo_categoria": "M", "rotulo": "Sub-13 Masculino" } ],
       "convocada": true,
-      "convocacoes": [ { "id_categoria": 3, "rotulo": "Sub-13 Masculino", "camisa": 8 } ]
+      "convocacoes": [ { "id_categoria": 3, "rotulo": "Sub-13 Masculino", "camisa": 8 } ],
+      "resumo": { "fase_atual": "GRUPOS", "fase_atual_label": "Fase de grupos", "rodada_atual": 3, "total_rodadas": 5,
+                  "jogos_realizados": 4, "total_jogos": 10 }
     }
   ]
 }</pre>
@@ -590,10 +602,10 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
           "id_jogo": 12,
           "amistoso": false,
           "campeonato": { "id_campeonato": 2, "nome_campeonato": "Copa AACJ" },
-          "time_casa": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png" },
-          "time_visitante": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png" },
+          "time_casa": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png", "da_aacj": true },
+          "time_visitante": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png", "da_aacj": false },
           "placar": null,
-          "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png" },
+          "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png", "da_aacj": true },
           "horario_chegada": "09:00",
           "chegada": "2026-10-15T09:00:00-03:00"
         }
@@ -636,7 +648,15 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
         <ul>
             <li>O evento com <strong>os mesmos campos da lista</strong> (<code>id_evento</code> é o mesmo da agenda e do <code>id_evento</code> dos avisos).</li>
             <li>No jogo, o bloco <code>jogo</code> traz também: <code>adversario</code> (o outro time, pelo time em que o atleta está escalado; sem escalação, o adversário do time da AACJ; <code>null</code> quando os dois times são da AACJ e o atleta ainda não foi escalado), <code>fase_jogo</code> e <code>fase</code> (<code>null</code> no amistoso), <code>fase_completa</code> ("Oitavas de final · volta"), <code>rodada</code> (só na fase de grupos), <code>perna</code> (<code>IDA</code>, <code>VOLTA</code> ou <code>null</code> no jogo único), <code>prorrogacao</code> e <code>penaltis</code> (<code>{ "casa", "visitante" }</code> ou <code>null</code>) e <code>confronto</code> (quem passa no mata-mata, o mesmo bloco da <a href="#campeonatos">API de campeonatos</a>; <code>null</code> fora do mata-mata, na ida ou sem o resultado).</li>
-            <li>Não traz os colegas inscritos, a escalação, a posição nem titular/reserva (dados de outros atletas; posição e titular ficam com o técnico).</li>
+            <li><code>participacao</code> ("Sua participação"), <strong>sempre presente</strong> no jogo, só com os dados do próprio atleta:
+                <ul>
+                    <li><code>convocado</code> (<code>true</code>/<code>false</code>; <code>null</code> no amistoso, que não tem convocação) e <code>camisa</code> (a da convocação, ou <code>null</code>);</li>
+                    <li><code>escalado</code> (<code>true</code>/<code>false</code>) e <code>time</code> (o time em que ele joga, ou <code>null</code>);</li>
+                    <li><code>titular</code> (<code>TITULAR</code>, <code>RESERVA</code> ou <code>null</code> = a definir) com <code>titular_label</code>, e <code>posicao</code> (<code>{ "codigo", "sigla", "nome" }</code> ou <code>null</code>): o que o técnico já salvou na escalação.</li>
+                </ul>
+                Ex.: "Convocado · camisa 10 · escalação a definir" com <code>convocado: true</code>, <code>camisa: 10</code>, <code>escalado: false</code>. Mudar a escalação <strong>não gera aviso</strong>: a agenda mostra o que estiver salvo quando o app consultar.
+            </li>
+            <li>Não traz os colegas inscritos nem a escalação do time (dados de outros atletas).</li>
             <li>Evento em que o atleta não está inscrito, oculto, jogo em rascunho ou inexistente: 404 (as mesmas regras da lista).</li>
         </ul>
 <pre>200 {
@@ -651,7 +671,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
       ...os mesmos campos da lista...,
       "placar": { "casa": 1, "visitante": 1 },
       "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", ... },
-      "adversario": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png" },
+      "adversario": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png", "da_aacj": false },
       "fase_jogo": "SEMIFINAL",
       "fase": "Semifinal",
       "fase_completa": "Semifinal · volta",
@@ -659,7 +679,16 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
       "perna": "VOLTA",
       "prorrogacao": null,
       "penaltis": { "casa": 3, "visitante": 4 },
-      "confronto": { "id_time": 3, "como": "pênaltis", "agregado": [3, 3], "texto": "AACJ Sub-13 passa nos pênaltis (4 × 3), depois do agregado 3 × 3" }
+      "confronto": { "id_time": 3, "como": "pênaltis", "agregado": [3, 3], "texto": "AACJ Sub-13 passa nos pênaltis (4 × 3), depois do agregado 3 × 3" },
+      "participacao": {
+        "convocado": true,
+        "camisa": 10,
+        "escalado": true,
+        "time": { "id_time": 3, "nome_time": "AACJ Sub-13", ..., "da_aacj": true },
+        "titular": "TITULAR",
+        "titular_label": "Titular",
+        "posicao": { "codigo": "VOLANTE", "sigla": "VOL", "nome": "Volante" }
+      }
     }
   }
 }
