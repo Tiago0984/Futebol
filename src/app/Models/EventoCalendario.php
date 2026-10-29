@@ -124,6 +124,9 @@ class EventoCalendario extends Model
         'horario_inicio_evento_calendario',
         'horario_fim_evento_calendario',
         'local_evento_calendario',
+        // O local do cadastro (L2); o texto acima é a cópia do nome dele (sem id_local = texto antigo). O controller grava
+        // os dois pela Local::daEscolha()
+        'id_local',
         // Quem conduz, diferente do id_usuario (quem criou): o profissional da comissão técnica (C2) ou o texto antigo
         // (texto livre de 24/10/2026, só mantido); o controller grava os dois pela ComissaoTecnica::daEscolha()
         'id_comissao_tecnica',
@@ -739,20 +742,6 @@ class EventoCalendario extends Model
             : route('admin.calendario.index', ['ramo' => $ramo]);
     }
 
-    // Locais já usados em eventos, grade e campeonatos (sugestões do campo Local), sem repetir, em ordem
-    public static function locaisUsados(): array
-    {
-        $locais = DB::table('tbl_evento_calendario')->select('local_evento_calendario as local')
-            ->union(DB::table('tbl_grade_treino')->select('local_grade_treino'))
-            ->union(DB::table('tbl_campeonato')->select('local_evento'));
-
-        return DB::query()->fromSub($locais, 'l')
-            ->whereNotNull('local')->where('local', '<>', '')
-            ->orderBy('local')
-            ->pluck('local')
-            ->all();
-    }
-
     // Ramo do menu deste evento (a mesma regra de scopeDoRamo), para marcar o item ativo na tela do evento
     public function ramo(): ?string
     {
@@ -843,6 +832,12 @@ class EventoCalendario extends Model
     public function comissaoTecnica()
     {
         return $this->belongsTo(ComissaoTecnica::class, 'id_comissao_tecnica', 'id_comissao_tecnica');
+    }
+
+    // O local do cadastro (Etapa L2; inativo continua aqui). Sem ele, só o texto antigo
+    public function local()
+    {
+        return $this->belongsTo(Local::class, 'id_local', 'id_local');
     }
 
     // Nome de quem conduz: o profissional escolhido, ou o texto antigo (24/10/2026), ou null

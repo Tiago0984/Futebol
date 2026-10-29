@@ -4,6 +4,7 @@ namespace App\Services\Concerns;
 
 use App\Models\EventoCalendario;
 use App\Models\Jogo;
+use App\Models\Local;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -106,9 +107,15 @@ trait ProgramaJogos
     // Grava os jogos numa transação (tudo ou nada), pelo mesmo caminho da tela de Jogos (Jogo::criarComEvento)
     protected function gravarJogos(array $jogos, ?int $idUsuario): void
     {
-        $local = filled($this->opcoes['local'] ?? null) ? $this->opcoes['local'] : $this->campeonato->local_evento;
+        // O local escolhido do cadastro (L2), o texto das requisições antigas ou, sem nenhum, o local principal do campeonato
+        $escolhido = filled($this->opcoes['id_local'] ?? null) ? Local::find((int) $this->opcoes['id_local']) : null;
+        [$idLocal, $local] = match (true) {
+            $escolhido !== null                   => [$escolhido->id_local, $escolhido->nome_local],
+            filled($this->opcoes['local'] ?? null) => [null, $this->opcoes['local']],
+            default                               => [$this->campeonato->id_local, $this->campeonato->local_evento],
+        };
 
-        DB::transaction(function () use ($jogos, $idUsuario, $local) {
+        DB::transaction(function () use ($jogos, $idUsuario, $local, $idLocal) {
             $criados = [];
             foreach ($jogos as $jogo) {
                 $colunas = $jogo['colunas'];
@@ -129,6 +136,7 @@ trait ProgramaJogos
                     'horario_inicio_evento_calendario' => $jogo['inicio'],
                     'horario_fim_evento_calendario'    => $jogo['fim'],
                     'local_evento_calendario'          => $local,
+                    'id_local'                         => $idLocal,
                     'status_evento_calendario'         => 'ATIVO',
                 ]);
 

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Local;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -25,29 +26,94 @@ class LocaisController extends Controller
     // ?nome= vem do "Cadastrar" de um texto já usado
     public function create(Request $request)
     {
-        return view('admin.locais.form', ['local' => new Local(['nome_local' => mb_substr(trim((string) $request->query('nome')), 0, 100)])]);
+        $nome = mb_substr(trim((string) $request->query('nome')), 0, 100);
+
+        return view('admin.locais.form', ['local' => new Local(['nome_local' => $nome]), 'textoOrigem' => $nome]);
     }
 
+    // Cadastrado a partir de um texto já usado (texto_origem): abre o Editar com o "Ligar os usos" desse texto
     public function store(Request $request)
     {
         $local = new Local($this->dados($request));
         $local->status_local = 'ATIVO';
         $local->save();
 
+        $origem = trim((string) $request->input('texto_origem'));
+        if ($origem !== '' && array_sum(Local::usosDoTexto($origem)) > 0) {
+            return redirect()->route('admin.locais.edit', ['id' => $local->id_local, 'texto' => $origem])
+                ->with('sucesso', "Local {$local->nome_local} cadastrado. Agora você pode ligar a ele os usos de \"{$origem}\".");
+        }
+
         return redirect()->route('admin.locais.index')->with('sucesso', "Local {$local->nome_local} cadastrado.");
     }
 
-    public function edit($id)
+    // "Novo local" dentro dos formulários (L2): o mesmo cadastro, em JSON, para o select já escolher o local novo
+    public function rapido(Request $request)
     {
-        return view('admin.locais.form', ['local' => Local::findOrFail($id)]);
+        $local = new Local($this->dados($request));
+        $local->status_local = 'ATIVO';
+        $local->save();
+
+        return response()->json([
+            'id_local' => $local->id_local,
+            'nome'     => $local->nome_local,
+            'endereco' => $local->enderecoEmUmaLinha(),
+            'mensagem' => "Local {$local->nome_local} cadastrado.",
+        ], 201);
+    }
+
+    // ?texto= escolhe o texto do "Ligar os usos" (padrão: o próprio nome do local, se tiver usos soltos)
+    public function edit(Request $request, $id)
+    {
+        $local = Local::findOrFail($id);
+        $soltos = Local::textosSoltos();
+        $texto = trim((string) $request->query('texto'));
+        $texto = $soltos->first(fn ($u) => mb_strtolower($u->texto) === mb_strtolower($texto))?->texto
+            ?? $soltos->first(fn ($u) => mb_strtolower($u->texto) === mb_strtolower($local->nome_local))?->texto;
+
+        return view('admin.locais.form', [
+            'local'       => $local,
+            'soltos'      => $soltos,
+            'textoLigar'  => $texto,
+            'usosDoTexto' => $texto ? Local::usosDoTexto($texto) : null,
+        ]);
     }
 
     public function update(Request $request, $id)
     {
         $local = Local::findOrFail($id);
-        $local->update($this->dados($request, $local));
+        $nomeAntes = $local->nome_local;
 
-        return redirect()->route('admin.locais.index')->with('sucesso', "Dados do local {$local->nome_local} atualizados.");
+        // Renomear leva o nome novo para os eventos, linhas e campeonatos ligados (Local::booted), junto
+        DB::transaction(fn () => $local->update($this->dados($request, $local)));
+
+        $mensagem = "Dados do local {$local->nome_local} atualizados.";
+        if ($nomeAntes !== $local->nome_local) {
+            $mensagem .= ' O nome novo vale em todos os eventos, horários da grade e campeonatos que usam este local.';
+        }
+
+        return redirect()->route('admin.locais.index')->with('sucesso', $mensagem);
+    }
+
+    // "Ligar os N usos": os eventos, linhas da grade e campeonatos com o texto (e sem local) passam a usar este local
+    public function ligarUsos(Request $request, $id)
+    {
+        $local = Local::findOrFail($id);
+        $texto = trim((string) $request->input('texto'));
+
+        if ($texto === '' || array_sum(Local::usosDoTexto($texto)) === 0) {
+            return back()->with('erro', 'Nada para ligar: nenhum evento, horário da grade ou campeonato usa esse texto sem local.');
+        }
+
+        $ligados = $local->ligarUsos($texto, auth('admin')->id());
+        $partes = array_filter([
+            $ligados['tbl_evento_calendario'] ? "{$ligados['tbl_evento_calendario']} evento(s)" : null,
+            $ligados['tbl_grade_treino'] ? "{$ligados['tbl_grade_treino']} horário(s) da grade" : null,
+            $ligados['tbl_campeonato'] ? "{$ligados['tbl_campeonato']} campeonato(s)" : null,
+        ]);
+
+        return redirect()->route('admin.locais.index')
+            ->with('sucesso', 'Ligados a ' . $local->nome_local . ': ' . implode(', ', $partes) . '. Ninguém foi avisado (o lugar é o mesmo).');
     }
 
     // Desativado: some das novas escolhas, mas continua nos eventos em que já está

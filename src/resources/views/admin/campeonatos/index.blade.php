@@ -180,6 +180,7 @@
                                         data-inicio="{{ $camp->data_inicio_campeonato?->format('Y-m-d') }}"
                                         data-fim="{{ $camp->data_fim_campeonato?->format('Y-m-d') }}"
                                         data-local="{{ $camp->local_evento }}"
+                                        data-local-id="{{ $camp->id_local }}"
                                         data-organizador="{{ $camp->organizador_campeonato }}"
                                         data-descricao="{{ $camp->descricao_campeonato }}"
                                         data-logo="{{ $camp->logo_url }}"
@@ -263,8 +264,7 @@
                             <input type="date" name="data_fim_campeonato" class="form-control" required>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Local principal</label>
-                            <input type="text" name="local_evento" class="form-control" maxlength="100" placeholder="Ex: Campo AACJ" list="locaisUsados" autocomplete="off">
+                            @include('admin.partials.select-local', ['idCampo' => 'cad_camp_local', 'rotulo' => 'Local principal'])
                             <span class="form-text">Opcional. Cada jogo tem o seu local.</span>
                         </div>
                         <div class="col-md-3">
@@ -340,8 +340,7 @@
                                 class="form-control" required>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Local principal</label>
-                            <input type="text" id="edit_local_evento" name="local_evento" class="form-control" maxlength="100" list="locaisUsados" autocomplete="off">
+                            @include('admin.partials.select-local', ['idCampo' => 'edit_local_evento', 'rotulo' => 'Local principal'])
                             <span class="form-text">Opcional. Cada jogo tem o seu local.</span>
                         </div>
                         <div class="col-md-3">
@@ -422,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_nome_campeonato').value = this.dataset.nome        || '';
             document.getElementById('edit_data_inicio').value     = this.dataset.inicio      || '';
             document.getElementById('edit_data_fim').value        = this.dataset.fim          || '';
-            document.getElementById('edit_local_evento').value    = this.dataset.local        || '';
+            prepararSelectLocal(document.getElementById('edit_local_evento'), this.dataset.localId, this.dataset.local);
             document.getElementById('edit_organizador').value     = this.dataset.organizador  || '';
             document.getElementById('edit_descricao').value       = this.dataset.descricao    || '';
 

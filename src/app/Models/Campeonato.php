@@ -43,6 +43,7 @@ class Campeonato extends Model
         'data_inicio_campeonato',
         'data_fim_campeonato',
         'local_evento',
+        'id_local', // o local principal do cadastro (L2); local_evento é a cópia do nome
         'id_categoria',
         'status_campeonato',
     ];
@@ -82,6 +83,12 @@ class Campeonato extends Model
      * (sem "principal"); a de referência (tbl_campeonato.id_categoria, categoriaDeReferencia) está sempre entre
      * elas e é a que vale para a idade, a convocação e os jogos até a Etapa H3, quando o jogo ganha a categoria dele.
      */
+    // Local principal (Etapa L2; inativo continua aqui): sugestão para o jogo criado sem local
+    public function local()
+    {
+        return $this->belongsTo(Local::class, 'id_local', 'id_local');
+    }
+
     public function categorias()
     {
         return $this->belongsToMany(Categoria::class, 'tbl_campeonato_categoria', 'id_campeonato', 'id_categoria')

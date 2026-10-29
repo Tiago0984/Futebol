@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\ConfirmaConflitos;
+use App\Http\Controllers\Admin\Concerns\EscolheLocal;
 use App\Http\Controllers\Admin\Concerns\ListaPorMes;
 use App\Http\Controllers\Controller;
 use App\Models\Atleta;
@@ -24,7 +25,7 @@ use Illuminate\Validation\ValidationException;
 
 class CalendarioController extends Controller
 {
-    use ConfirmaConflitos, ListaPorMes;
+    use ConfirmaConflitos, EscolheLocal, ListaPorMes;
 
     public function index(Request $request)
     {
@@ -749,14 +750,17 @@ class CalendarioController extends Controller
         ]);
 
         [$idComissao, $textoAntigo] = $this->responsavelEscolhido($request, $evento?->id_comissao_tecnica, $evento?->responsavel_evento_calendario);
+        [$idLocal, $textoDoLocal] = $this->localEscolhido($request, 'local_evento_calendario', $evento?->id_local, $evento?->local_evento_calendario);
 
         return [
             ...$request->only([
                 'titulo_evento_calendario', 'tipo_evento_calendario', 'id_categoria',
                 'data_evento_calendario', 'horario_inicio_evento_calendario',
-                'horario_fim_evento_calendario', 'local_evento_calendario',
+                'horario_fim_evento_calendario',
                 'subtipo_evento_calendario', 'descricao_evento_calendario',
             ]),
+            'id_local'                      => $idLocal,
+            'local_evento_calendario'       => $textoDoLocal,
             'id_comissao_tecnica'           => $idComissao,
             'responsavel_evento_calendario' => $textoAntigo,
         ];
@@ -972,7 +976,7 @@ class CalendarioController extends Controller
     // Campos da grade que mudam os eventos gerados (observação e ordem não mudam)
     private const CAMPOS_GRADE_DO_EVENTO = [
         'dia_semana_grade_treino', 'horario_inicio_grade_treino', 'horario_fim_grade_treino',
-        'local_grade_treino', 'id_comissao_tecnica', 'responsavel_grade_treino', 'id_categoria', 'categoria_grade_treino', 'tipo_grade_treino',
+        'local_grade_treino', 'id_local', 'id_comissao_tecnica', 'responsavel_grade_treino', 'id_categoria', 'categoria_grade_treino', 'tipo_grade_treino',
     ];
 
     public function updateGrade(Request $request, $id)
@@ -1030,7 +1034,8 @@ class CalendarioController extends Controller
             'horario_inicio_grade_treino'    => 'required|date_format:H:i,H:i:s',
             'horario_fim_grade_treino'       => 'required|date_format:H:i,H:i:s',
             'horario_obs_grade_treino'       => 'nullable|string|max:60',
-            'local_grade_treino'             => 'required|string|max:255',
+            // Sem o select (requisição antiga): o texto livre. Desde a L2 a grade aceita "Sem local"
+            'local_grade_treino'             => 'nullable|string|max:255',
             'ordem_grade_treino'             => 'nullable|integer|min:0',
         ], [
             'categoria_grade_treino.required_without' => 'Escolha uma categoria ou, para um item geral, informe o nome (ex.: Integrado).',
@@ -1039,13 +1044,16 @@ class CalendarioController extends Controller
 
         $categoria = $request->filled('id_categoria') ? Categoria::find($request->id_categoria) : null;
         [$idComissao, $textoAntigo] = $this->responsavelEscolhido($request, $atual?->id_comissao_tecnica, $atual?->responsavel_grade_treino);
+        [$idLocal, $textoDoLocal] = $this->localEscolhido($request, 'local_grade_treino', $atual?->id_local, $atual?->local_grade_treino);
 
         return [
             ...$request->only([
                 'tipo_grade_treino',
                 'horario_inicio_grade_treino', 'horario_fim_grade_treino',
-                'horario_obs_grade_treino', 'local_grade_treino',
+                'horario_obs_grade_treino',
             ]),
+            'id_local'                 => $idLocal,
+            'local_grade_treino'       => $textoDoLocal,
             'id_comissao_tecnica'      => $idComissao,
             'responsavel_grade_treino' => $textoAntigo,
             'id_categoria'           => $categoria?->id_categoria,

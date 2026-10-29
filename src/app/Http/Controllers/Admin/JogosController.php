@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Admin\Concerns\ConfirmaConflitos;
+use App\Http\Controllers\Admin\Concerns\EscolheLocal;
 use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
 use App\Models\Categoria;
@@ -22,7 +23,7 @@ use Illuminate\Validation\ValidationException;
  */
 class JogosController extends Controller
 {
-    use ConfirmaConflitos;
+    use ConfirmaConflitos, EscolheLocal;
 
     // Valor do select de campeonato para jogo sem campeonato
     public const AMISTOSO = 'AMISTOSO';
@@ -116,9 +117,11 @@ class JogosController extends Controller
         $dadosJogo   = $this->dadosJogo($request);
         $dadosEvento = [...$this->dadosEvento($request, $dadosJogo), 'status_evento_calendario' => 'ATIVO'];
 
-        // Sem local, o jogo de campeonato usa o local do campeonato
+        // Sem local, o jogo de campeonato usa o local principal do campeonato (o do cadastro e o nome, ou o texto antigo)
         if (blank($dadosEvento['local_evento_calendario']) && $dadosJogo['id_campeonato']) {
-            $dadosEvento['local_evento_calendario'] = Campeonato::find($dadosJogo['id_campeonato'])?->local_evento;
+            $campeonato = Campeonato::find($dadosJogo['id_campeonato']);
+            $dadosEvento['local_evento_calendario'] = $campeonato?->local_evento;
+            $dadosEvento['id_local'] = $campeonato?->id_local;
         }
 
         // Os convocados do campeonato (ou o elenco, no amistoso) ativos dos times internos serão inscritos:
@@ -267,7 +270,7 @@ class JogosController extends Controller
         $evento = $jogo->evento;
 
         $dadosJogo   = $this->dadosJogo($request, $evento);
-        $dadosEvento = $this->dadosEvento($request, $dadosJogo);
+        $dadosEvento = $this->dadosEvento($request, $dadosJogo, $evento);
         $timesAntes  = [(int) $jogo->id_time_casa, (int) $jogo->id_time_visitante];
         $timesNovos  = [$dadosJogo['id_time_casa'], $dadosJogo['id_time_visitante']];
 
@@ -507,9 +510,10 @@ class JogosController extends Controller
 
     // Campos do evento do jogo. Título gerado pelos times; categoria escolhida (a do jogo, no campeonato; só
     // exibição, no amistoso)
-    private function dadosEvento(Request $request, array $dadosJogo): array
+    private function dadosEvento(Request $request, array $dadosJogo, ?EventoCalendario $evento = null): array
     {
         $idCategoria = $request->filled('id_categoria') ? (int) $request->id_categoria : null;
+        [$idLocal, $textoDoLocal] = $this->localEscolhido($request, 'local_evento_calendario', $evento?->id_local, $evento?->local_evento_calendario);
 
         return [
             'titulo_evento_calendario'         => Jogo::tituloPara($dadosJogo['id_time_casa'], $dadosJogo['id_time_visitante']),
@@ -518,7 +522,8 @@ class JogosController extends Controller
             'data_evento_calendario'           => $request->data_evento_calendario,
             'horario_inicio_evento_calendario' => $request->horario_inicio_evento_calendario,
             'horario_fim_evento_calendario'    => $request->horario_fim_evento_calendario,
-            'local_evento_calendario'          => $request->local_evento_calendario,
+            'local_evento_calendario'          => $textoDoLocal,
+            'id_local'                         => $idLocal,
         ];
     }
 }

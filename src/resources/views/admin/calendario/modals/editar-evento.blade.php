@@ -68,9 +68,7 @@
                                 class="form-control" value="{{ $hora($valorEv('horario_fim_evento_calendario')) }}">
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label">Local</label>
-                            <input type="text" id="edit_ev_local" name="local_evento_calendario"
-                                class="form-control" list="locaisUsados" autocomplete="off" value="{{ $valorEv('local_evento_calendario') }}">
+                            @include('admin.partials.select-local', ['idCampo' => 'edit_ev_local', 'atual' => $ev, 'campoTexto' => 'local_evento_calendario'])
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Categoria</label>

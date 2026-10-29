@@ -146,6 +146,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::resource('locais', LocaisController::class)->only(['index', 'create', 'store', 'edit', 'update'])
         ->parameters(['locais' => 'id'])->names('locais');
     Route::patch('locais/{id}/toggle-status', [LocaisController::class, 'toggleStatus'])->name('locais.toggleStatus');
+    // L2: "Novo local" dentro dos formulários (JSON) e "Ligar os usos" de um texto antigo
+    Route::post('locais/rapido', [LocaisController::class, 'rapido'])->name('locais.rapido');
+    Route::post('locais/{id}/ligar-usos', [LocaisController::class, 'ligarUsos'])->name('locais.ligarUsos');
     // Jogo = evento JOGO: sem exclusão nem status próprio; cancelar e ocultar são ações do evento
     Route::resource('jogos',       JogosController::class)->only(['index', 'store', 'update']);
     Route::patch('jogos/{id}/placar', [JogosController::class, 'placar'])->name('jogos.placar'); // placar rápido, na tela do jogo

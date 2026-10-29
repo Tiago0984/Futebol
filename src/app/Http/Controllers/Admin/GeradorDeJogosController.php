@@ -224,6 +224,7 @@ class GeradorDeJogosController extends Controller
             'horario'   => '13:00',
             'intervalo' => 60,
             'duracao'   => '',
+            'id_local'  => '',
             'local'     => '',
         ];
     }
@@ -237,8 +238,11 @@ class GeradorDeJogosController extends Controller
             'horario'   => 'required|date_format:H:i',
             'intervalo' => 'required|integer|min:0|max:600',
             'duracao'   => 'nullable|integer|min:10|max:600',
+            // Local do cadastro (L2; vazio = o local principal do campeonato). "local" (texto) só nas requisições antigas
+            'id_local'  => ['nullable', 'integer', \Illuminate\Validation\Rule::exists('tbl_local', 'id_local')->where('status_local', 'ATIVO')],
             'local'     => 'nullable|string|max:255',
         ], [
+            'id_local.*'  => 'Escolha um local ativo da lista (ou deixe vazio para usar o local principal do campeonato).',
             'data.*'      => 'Informe a data da 1ª rodada.',
             'dias.*'      => 'Dias entre rodadas: de 1 a 60.',
             'horario.*'   => 'Informe o horário do 1º jogo (HH:MM).',
@@ -253,6 +257,7 @@ class GeradorDeJogosController extends Controller
             'horario'   => $dados['horario'],
             'intervalo' => (int) $dados['intervalo'],
             'duracao'   => $dados['duracao'] ?? '',
+            'id_local'  => (string) ($dados['id_local'] ?? ''),
             'local'     => trim((string) ($dados['local'] ?? '')),
         ];
     }

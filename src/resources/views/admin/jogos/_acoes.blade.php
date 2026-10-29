@@ -21,6 +21,7 @@
     data-inicio="{{ substr((string) $ev->horario_inicio_evento_calendario, 0, 5) }}"
     data-fim="{{ substr((string) $ev->horario_fim_evento_calendario, 0, 5) }}"
     data-local="{{ $ev->local_evento_calendario }}"
+    data-local-id="{{ $ev->id_local }}"
     data-placar-casa="{{ $jogo->placar_time_casa_jogos }}"
     data-placar-visitante="{{ $jogo->placar_time_visitante_jogos }}"
     data-rodada="{{ $jogo->rodada_jogo }}"

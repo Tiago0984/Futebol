@@ -161,7 +161,7 @@
                 document.getElementById('edit_data').value             = this.dataset.data;
                 document.getElementById('edit_inicio').value           = this.dataset.inicio;
                 document.getElementById('edit_fim').value              = this.dataset.fim;
-                document.getElementById('edit_local').value            = this.dataset.local;
+                prepararSelectLocal(document.getElementById('edit_local'), this.dataset.localId, this.dataset.local);
                 document.getElementById('edit_placar_casa').value      = this.dataset.placarCasa;
                 document.getElementById('edit_placar_visitante').value = this.dataset.placarVisitante;
                 // Fase I, Etapa I1b

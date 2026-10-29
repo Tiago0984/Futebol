@@ -60,9 +60,7 @@
                                 required value="{{ old('data_fim_campeonato') }}">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label">Local principal</label>
-                            <input type="text" name="local_evento" class="form-control" maxlength="100" list="locaisUsados" autocomplete="off"
-                                placeholder="Ex: Campo AACJ" value="{{ old('local_evento') }}">
+                            @include('admin.partials.select-local', ['idCampo' => 'cad_camp_local', 'rotulo' => 'Local principal'])
                             <span class="form-text">Opcional. Cada jogo tem o seu local; este é a sugestão para os jogos novos.</span>
                         </div>
                         <div class="col-md-6">

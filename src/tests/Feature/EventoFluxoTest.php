@@ -285,14 +285,13 @@ class EventoFluxoTest extends TestCase
 
     // ---------- 9: sugestões ----------
 
-    public function test_sugestoes_de_local_e_de_subtipo(): void
+    // Desde a L2 (30/10/2026), o Local é o select do cadastro de locais (sem a lista de textos usados)
+    public function test_select_de_local_e_sugestoes_de_subtipo(): void
     {
-        $this->evento('REUNIAO', 'Reunião', ['local_evento_calendario' => 'Sala 7']);
-        DB::table('tbl_grade_treino')->insert([
-            'dia_semana_grade_treino' => 'sexta', 'categoria_grade_treino' => 'Integrado', 'tipo_grade_treino' => 'TREINO',
-            'horario_inicio_grade_treino' => '08:00', 'local_grade_treino' => 'Campo da Grade', 'status_grade_treino' => 'ATIVO',
+        DB::table('tbl_local')->insert([
+            'nome_local' => 'Campo da Grade', 'rua_local' => 'Rua A', 'numero_local' => '1', 'bairro_local' => 'Centro',
+            'cidade_local' => 'São Paulo', 'estado_local' => 'SP',
         ]);
-        $this->assertSame(['Campo da Grade', 'Estádio da Copa', 'Sala 7'], EventoCalendario::locaisUsados());
 
         $treino = $this->evento('TREINO', 'Treino');
         $paginas = [
@@ -302,9 +301,10 @@ class EventoFluxoTest extends TestCase
         ];
         foreach ($paginas as $pagina) {
             $this->comoAdmin()->get($pagina)->assertOk()
-                ->assertSee('<datalist id="locaisUsados">', false)
-                ->assertSee('<option value="Campo da Grade"></option>', false)
-                ->assertSee('list="locaisUsados"', false);
+                ->assertSee('class="form-select js-select-local"', false)
+                ->assertSee('>Campo da Grade</option>', false)
+                ->assertSee('js-novo-local', false)
+                ->assertDontSee('list="locaisUsados"', false);
         }
 
         $this->comoAdmin()->get(route('admin.calendario.index'))

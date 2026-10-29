@@ -17,6 +17,7 @@
         'horario_inicio_evento_calendario' => substr((string) $ev->horario_inicio_evento_calendario, 0, 5),
         'horario_fim_evento_calendario'    => substr((string) $ev->horario_fim_evento_calendario, 0, 5),
         'local_evento_calendario'          => $ev->local_evento_calendario,
+        'evento'                           => $ev, // o select Local lê o id_local e o texto antigo dele
         'placar_time_casa_jogos'           => $jogoEmEdicao->placar_time_casa_jogos,
         'placar_time_visitante_jogos'      => $jogoEmEdicao->placar_time_visitante_jogos,
         'id_jogo'                          => $jogoEmEdicao->id_jogo,

@@ -81,7 +81,8 @@ class GradeTreinoTest extends TestCase
         $this->assertDatabaseCount('tbl_grade_treino', 0);
     }
 
-    public function test_admin_recusa_categoria_inativa_tipo_invalido_e_local_vazio(): void
+    // O local vazio é aceito desde a L2 (30/10/2026; "Sem local"): LocaisNosFormulariosTest
+    public function test_admin_recusa_categoria_inativa_e_tipo_invalido(): void
     {
         $idSub9F = $this->idCategoria('Sub-9', 'F');
         DB::table('tbl_categoria')->where('id_categoria', $idSub9F)->update(['status_categoria' => 'INATIVO']);
@@ -92,7 +93,8 @@ class GradeTreinoTest extends TestCase
                 'tipo_grade_treino'  => 'OUTRO',
                 'local_grade_treino' => '',
             ]))
-            ->assertSessionHasErrors(['id_categoria', 'tipo_grade_treino', 'local_grade_treino']);
+            ->assertSessionHasErrors(['id_categoria', 'tipo_grade_treino'])
+            ->assertSessionDoesntHaveErrors('local_grade_treino');
 
         $this->assertDatabaseCount('tbl_grade_treino', 0);
     }

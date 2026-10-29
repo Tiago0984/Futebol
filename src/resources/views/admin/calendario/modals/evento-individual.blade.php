@@ -59,9 +59,7 @@
                             <input type="time" name="horario_fim_evento_calendario" id="ind_fim" class="form-control" value="{{ old('horario_fim_evento_calendario') }}">
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label" for="ind_local">Local</label>
-                            <input type="text" name="local_evento_calendario" id="ind_local" class="form-control" list="locaisUsados" autocomplete="off"
-                                placeholder="Ex: Clínica São Lucas" value="{{ old('local_evento_calendario') }}">
+                            @include('admin.partials.select-local', ['idCampo' => 'ind_local'])
                         </div>
                         <div class="col-md-8">
                             @include('admin.partials.select-responsavel', ['idCampo' => 'ind_responsavel'])

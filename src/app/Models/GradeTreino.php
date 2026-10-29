@@ -33,6 +33,7 @@ class GradeTreino extends Model
         'horario_fim_grade_treino',
         'horario_obs_grade_treino',
         'local_grade_treino',
+        'id_local', // o local do cadastro (L2), copiado para os treinos gerados; o texto é a cópia do nome
         // Quem conduz o treino (vai para os eventos gerados): o profissional da comissão técnica (C2) ou o texto
         // antigo de 24/10/2026, só mantido (o controller grava os dois pela ComissaoTecnica::daEscolha())
         'id_comissao_tecnica',
@@ -86,6 +87,12 @@ class GradeTreino extends Model
     public function comissaoTecnica()
     {
         return $this->belongsTo(ComissaoTecnica::class, 'id_comissao_tecnica', 'id_comissao_tecnica');
+    }
+
+    // Local do treino (Etapa L2; inativo continua aqui). Sem ele, o texto antigo ou "Sem local"
+    public function local()
+    {
+        return $this->belongsTo(Local::class, 'id_local', 'id_local');
     }
 
     // Nome de quem conduz: o profissional escolhido, ou o texto antigo, ou null
@@ -203,6 +210,7 @@ class GradeTreino extends Model
             'horario_inicio_evento_calendario' => $this->horario_inicio_grade_treino,
             'horario_fim_evento_calendario'    => $this->horario_fim_grade_treino,
             'local_evento_calendario'          => $this->local_grade_treino,
+            'id_local'                         => $this->id_local,
             'id_comissao_tecnica'              => $this->id_comissao_tecnica,
             'responsavel_evento_calendario'    => $this->responsavel_grade_treino, // o texto antigo, se a linha ainda tem
             'status_evento_calendario'         => 'ATIVO',

@@ -77,9 +77,11 @@
             <input type="number" name="duracao" id="duracao" class="form-control" min="10" max="600" placeholder="—" value="{{ $opcoes['duracao'] }}">
           </div>
           <div class="col-md-7">
-            <label class="form-label" for="local">Local</label>
-            <input type="text" name="local" id="local" class="form-control" maxlength="255" list="locaisUsados" autocomplete="off"
-                   placeholder="{{ $campeonato->local_evento ? 'Vazio = ' . $campeonato->local_evento : 'Opcional' }}" value="{{ $opcoes['local'] }}">
+            @include('admin.partials.select-local', [
+                'idCampo' => 'local', 'valorEscolhido' => $opcoes['id_local'],
+                'vazio' => $campeonato->local_evento ? '— O local principal: ' . $campeonato->local_evento . ' —' : '— Sem local —',
+            ])
+            @if ($opcoes['local'] !== '')<input type="hidden" name="local" value="{{ $opcoes['local'] }}">@endif
             <small class="text-muted">Depois de gerar, dá para mudar a data, o horário e o local de cada jogo.</small>
           </div>
           <div class="col-md-3 text-end">

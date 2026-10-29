@@ -287,6 +287,7 @@
                                         data-inicio="{{ $ev->horario_inicio_evento_calendario }}"
                                         data-fim="{{ $ev->horario_fim_evento_calendario }}"
                                         data-local="{{ $ev->local_evento_calendario }}"
+                                        data-local-id="{{ $ev->id_local }}"
                                         data-responsavel-id="{{ $ev->id_comissao_tecnica }}"
                                         data-responsavel-nome="{{ $ev->comissaoTecnica?->nome_comissao_tecnica }}"
                                         data-responsavel-texto="{{ $ev->responsavel_evento_calendario }}"
@@ -402,6 +403,7 @@
                                         data-fim="{{ $g->horario_fim_grade_treino }}"
                                         data-obs="{{ $g->horario_obs_grade_treino }}"
                                         data-local="{{ $g->local_grade_treino }}"
+                                        data-local-id="{{ $g->id_local }}"
                                         data-responsavel-id="{{ $g->id_comissao_tecnica }}"
                                         data-responsavel-nome="{{ $g->comissaoTecnica?->nome_comissao_tecnica }}"
                                         data-responsavel-texto="{{ $g->responsavel_grade_treino }}">
@@ -492,9 +494,7 @@
                             <input type="time" name="horario_fim_evento_calendario" class="form-control">
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label">Local</label>
-                            <input type="text" name="local_evento_calendario" class="form-control"
-                                placeholder="Ex: Campo AACJ" list="locaisUsados" autocomplete="off">
+                            @include('admin.partials.select-local', ['idCampo' => 'cad_ev_local'])
                         </div>
                         <div class="col-md-4">
                             <label class="form-label">Categoria</label>
@@ -592,9 +592,7 @@
                             <input type="time" name="horario_fim_grade_treino" class="form-control" required>
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label">Local <span class="text-danger">*</span></label>
-                            <input type="text" name="local_grade_treino" class="form-control" required list="locaisUsados" autocomplete="off"
-                                placeholder="Ex: Campo A" value="{{ old('local_grade_treino') }}">
+                            @include('admin.partials.select-local', ['idCampo' => 'cad_g_local'])
                         </div>
                         <div class="col-12">
                             @include('admin.partials.select-responsavel', ['idCampo' => 'cad_g_responsavel', 'rotulo' => 'Responsável pelo treino'])
@@ -673,8 +671,7 @@
                                 class="form-control" required>
                         </div>
                         <div class="col-md-8">
-                            <label class="form-label">Local <span class="text-danger">*</span></label>
-                            <input type="text" id="edit_g_local" name="local_grade_treino" class="form-control" required list="locaisUsados" autocomplete="off">
+                            @include('admin.partials.select-local', ['idCampo' => 'edit_g_local'])
                         </div>
                         <div class="col-12">
                             @include('admin.partials.select-responsavel', ['idCampo' => 'edit_g_responsavel', 'rotulo' => 'Responsável pelo treino'])
@@ -797,7 +794,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_ev_subtipo').value  = this.dataset.subtipo || '';
             document.getElementById('edit_ev_inicio').value   = this.dataset.inicio  || '';
             document.getElementById('edit_ev_fim').value      = this.dataset.fim     || '';
-            document.getElementById('edit_ev_local').value    = this.dataset.local   || '';
+            prepararSelectLocal(document.getElementById('edit_ev_local'), this.dataset.localId, this.dataset.local);
             prepararSelectResponsavel(document.getElementById('edit_ev_responsavel_atividade'),
                 this.dataset.responsavelId, this.dataset.responsavelNome, this.dataset.responsavelTexto);
             document.getElementById('edit_ev_descricao').value = this.dataset.descricao || '';
@@ -860,7 +857,7 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_g_inicio').value    = this.dataset.inicio    || '';
             document.getElementById('edit_g_fim').value       = this.dataset.fim       || '';
             document.getElementById('edit_g_obs').value       = this.dataset.obs       || '';
-            document.getElementById('edit_g_local').value     = this.dataset.local     || '';
+            prepararSelectLocal(document.getElementById('edit_g_local'), this.dataset.localId, this.dataset.local);
             prepararSelectResponsavel(document.getElementById('edit_g_responsavel'),
                 this.dataset.responsavelId, this.dataset.responsavelNome, this.dataset.responsavelTexto);
             const selDia  = document.getElementById('edit_g_dia');

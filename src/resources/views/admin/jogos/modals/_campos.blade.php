@@ -114,9 +114,10 @@
         <input type="time" name="horario_fim_evento_calendario" id="{{ $p }}fim" class="form-control" value="{{ $valor('horario_fim_evento_calendario') }}">
     </div>
     <div class="col-12">
-        <label class="form-label">Local</label>
-        <input type="text" name="local_evento_calendario" id="{{ $p }}local" class="form-control" maxlength="255"
-            placeholder="Vazio = local do campeonato" list="locaisUsados" autocomplete="off" value="{{ $valor('local_evento_calendario') }}">
+        @include('admin.partials.select-local', [
+            'idCampo' => $p . 'local', 'atual' => $comOld ? ($valores['evento'] ?? null) : null, 'campoTexto' => 'local_evento_calendario',
+            'vazio' => '— Sem local (no campeonato: o local principal) —',
+        ])
     </div>
 
     <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-123"></i> Placar (vazio = jogo ainda não jogado)</p></div>

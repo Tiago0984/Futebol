@@ -42,9 +42,66 @@ class Local extends Model
         'www.google.com.br' => '/maps',
     ];
 
+    // As tabelas que guardam o local: [tabela, coluna do texto] (o texto é a cópia do nome do local escolhido)
+    public const USOS = [
+        'tbl_evento_calendario' => 'local_evento_calendario',
+        'tbl_grade_treino'      => 'local_grade_treino',
+        'tbl_campeonato'        => 'local_evento',
+    ];
+
+    // Valor do select para manter o texto livre de antes num evento, linha da grade ou campeonato que ainda o tem
+    public const TEXTO_ANTIGO = 'texto-antigo';
+
+    protected static function booted(): void
+    {
+        // Renomear leva o nome novo para tudo o que usa o local (decisão do dono do projeto, 30/10/2026): sem aviso
+        // aos atletas e sem histórico, porque o lugar é o mesmo
+        static::updated(function (Local $local) {
+            if ($local->wasChanged('nome_local')) {
+                foreach (self::USOS as $tabela => $coluna) {
+                    DB::table($tabela)->where('id_local', $local->id_local)->update([$coluna => $local->nome_local]);
+                }
+            }
+        });
+    }
+
     public function scopeAtivos($query)
     {
         return $query->where('status_local', 'ATIVO');
+    }
+
+    // Ativos para o select "Local", pelo nome (uma consulta por select; sem once(), que guardaria a lista entre
+    // requisições do mesmo processo, como nos testes)
+    public static function paraEscolher(): Collection
+    {
+        return self::ativos()->orderBy('nome_local')->get();
+    }
+
+    /**
+     * O que gravar a partir do select "Local": [id_local, texto do local], ou a mensagem de erro. Vazio = sem local;
+     * TEXTO_ANTIGO = mantém o texto que o registro já tem (sem local); um id = o local (ativo, ou o inativo que já
+     * estava: continua onde estava, mas não é escolhido de novo), com o nome dele no texto.
+     */
+    public static function daEscolha(?string $valor, ?int $idAtual, ?string $textoAtual): array|string
+    {
+        if ($valor === null || $valor === '') {
+            return [null, null];
+        }
+
+        if ($valor === self::TEXTO_ANTIGO) {
+            return ! $idAtual && filled($textoAtual) ? [null, $textoAtual] : 'Escolha um local da lista.';
+        }
+
+        if (! ctype_digit($valor)) {
+            return 'Escolha um local da lista.';
+        }
+
+        $local = self::find((int) $valor);
+        if ($local && ($local->id_local === $idAtual || $local->estaAtivo())) {
+            return [$local->id_local, $local->nome_local];
+        }
+
+        return 'Escolha um local ativo da lista.';
     }
 
     public function estaAtivo(): bool
@@ -102,27 +159,69 @@ class Local extends Model
     }
 
     /**
-     * Textos de local já usados nos eventos, na grade e no local principal dos campeonatos que ainda não são o nome
-     * de um local cadastrado (sem diferenciar maiúsculas e acentos, pela collation), com quantas vezes aparecem:
-     * a lista de Locais oferece "Cadastrar" com o nome preenchido. Nada é ligado sozinho (a escolha é da L2).
+     * Textos de local soltos (sem id_local) nos eventos, na grade e no local principal dos campeonatos, com quantas
+     * vezes aparecem; os iguais sem diferenciar maiúsculas e acentos (a collation) contam juntos. $semCadastro = só os
+     * que ainda não são o nome de um local: a lista de Locais oferece "Cadastrar" com o nome preenchido.
      *
      * @return Collection<int, object{texto: string, usos: int}>
      */
-    public static function textosSemCadastro(): Collection
+    public static function textosSoltos(bool $semCadastro = false): Collection
     {
         $usados = DB::query()->fromSub(
-            DB::table('tbl_evento_calendario')->selectRaw('TRIM(local_evento_calendario) AS texto')
-                ->unionAll(DB::table('tbl_grade_treino')->selectRaw('TRIM(local_grade_treino)'))
-                ->unionAll(DB::table('tbl_campeonato')->selectRaw('TRIM(local_evento)')),
+            collect(self::USOS)->map(fn ($coluna, $tabela) => DB::table($tabela)->whereNull('id_local')->selectRaw("TRIM({$coluna}) AS texto"))
+                ->reduce(fn ($uniao, $consulta) => $uniao ? $uniao->unionAll($consulta) : $consulta),
             'usados'
         );
 
         return $usados->selectRaw('MIN(texto) AS texto, COUNT(*) AS usos')
             ->whereNotNull('texto')->where('texto', '<>', '')
-            ->whereNotExists(fn ($q) => $q->from('tbl_local')->whereColumn('tbl_local.nome_local', 'usados.texto'))
+            ->when($semCadastro, fn ($q) => $q->whereNotExists(fn ($s) => $s->from('tbl_local')->whereColumn('tbl_local.nome_local', 'usados.texto')))
             ->groupBy('texto')
             ->orderByDesc('usos')->orderBy('texto')
             ->get()
             ->map(fn ($linha) => (object) ['texto' => $linha->texto, 'usos' => (int) $linha->usos]);
+    }
+
+    public static function textosSemCadastro(): Collection
+    {
+        return self::textosSoltos(semCadastro: true);
+    }
+
+    // Quantos usos soltos (sem local) têm esse texto, por tabela: [tabela => quantidade]
+    public static function usosDoTexto(string $texto): array
+    {
+        return collect(self::USOS)->map(fn ($coluna, $tabela) => DB::table($tabela)->whereNull('id_local')
+            ->whereRaw("TRIM({$coluna}) = ?", [trim($texto)])->count())->all();
+    }
+
+    /**
+     * "Ligar os N usos" (L2): os eventos, linhas da grade e campeonatos com esse texto e sem local passam a usar este
+     * local, com o nome dele no texto. Sem aviso aos atletas e sem "Alterado" (é o mesmo lugar); no evento cujo texto
+     * muda, uma linha no histórico ("Local: Campo da AACJ → Campo AACJ"). Devolve [tabela => quantidade].
+     */
+    public function ligarUsos(string $texto, ?int $idUsuario): array
+    {
+        return DB::transaction(function () use ($texto, $idUsuario) {
+            $eventos = DB::table('tbl_evento_calendario')->whereNull('id_local')
+                ->whereRaw('TRIM(local_evento_calendario) = ?', [trim($texto)])
+                ->get(['id_evento_calendario', 'local_evento_calendario']);
+
+            foreach ($eventos as $evento) {
+                if ($evento->local_evento_calendario !== $this->nome_local) {
+                    EventoHistorico::create([
+                        'id_evento_calendario'          => $evento->id_evento_calendario,
+                        'campo_evento_historico'        => 'local_evento_calendario',
+                        'valor_antigo_evento_historico' => $evento->local_evento_calendario,
+                        'valor_novo_evento_historico'   => $this->nome_local,
+                        'id_usuario'                    => $idUsuario,
+                        'data_evento_historico'         => now(),
+                    ]);
+                }
+            }
+
+            return collect(self::USOS)->map(fn ($coluna, $tabela) => DB::table($tabela)->whereNull('id_local')
+                ->whereRaw("TRIM({$coluna}) = ?", [trim($texto)])
+                ->update(['id_local' => $this->id_local, $coluna => $this->nome_local]))->all();
+        });
     }
 }

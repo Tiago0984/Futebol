@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Admin\Concerns\EscolheLocal;
 use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
 use App\Models\Categoria;
@@ -13,6 +14,8 @@ use Illuminate\Validation\Rule;
 
 class CampeonatosController extends Controller
 {
+    use EscolheLocal;
+
     // Pasta da logo e do banner no disco "imagens" (public/futebol/images)
     public const PASTA_IMAGENS = 'campeonatos';
 
@@ -58,9 +61,10 @@ class CampeonatosController extends Controller
 
         $dados = $request->only([
             'nome_campeonato', 'tipo_campeonato', 'data_inicio_campeonato',
-            'data_fim_campeonato', 'local_evento', 'organizador_campeonato',
+            'data_fim_campeonato', 'organizador_campeonato',
             'descricao_campeonato',
         ]);
+        [$dados['id_local'], $dados['local_evento']] = $this->localEscolhido($request, 'local_evento', null, null);
 
         [$imagens, $avisosImagem] = $this->tratarImagens($request);
         $dados += $imagens;
@@ -113,9 +117,10 @@ class CampeonatosController extends Controller
 
         $dados = $request->only([
             'nome_campeonato', 'tipo_campeonato', 'data_inicio_campeonato',
-            'data_fim_campeonato', 'local_evento', 'organizador_campeonato',
+            'data_fim_campeonato', 'organizador_campeonato',
             'descricao_campeonato',
         ]);
+        [$dados['id_local'], $dados['local_evento']] = $this->localEscolhido($request, 'local_evento', $campeonato->id_local, $campeonato->local_evento);
 
         [$imagens, $avisosImagem] = $this->tratarImagens($request);
         $dados += $imagens;
