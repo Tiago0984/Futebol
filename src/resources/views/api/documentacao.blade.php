@@ -436,7 +436,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
 
     <div class="card">
         <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/responsavel</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Dados do responsável logado, o endereço e os filhos <code>ATIVO</code>. A senha nunca vem. <code>endereco.compartilhado_com</code>: os filhos que usam o <strong>mesmo endereço</strong> do responsável (lista vazia quando é só dele), para o app perguntar se a mudança vale também para eles.</p>
+        <p>Dados do responsável logado, o endereço e os filhos <code>ATIVO</code>. A senha nunca vem. <code>endereco.compartilhado_com</code>: os filhos que moram no <strong>mesmo endereço</strong> do responsável (o mesmo cadastro de endereço, ou outro com o mesmo endereço escrito; lista vazia quando nenhum), para o app perguntar se a mudança vale também para eles.</p>
 <pre>200 {
   "success": true,
   "data": {
@@ -460,7 +460,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             <li><code>cpf_responsavel</code>: com ou sem pontuação; volta como <code>000.000.000-00</code>. Os dígitos verificadores são conferidos ("Informe um CPF válido.") e o CPF não pode ser de outro responsável ("Este CPF já está cadastrado para outro responsável.").</li>
             <li><code>email_responsavel</code> (o login; único entre responsáveis, gravado em minúsculas), <code>telefone_responsavel</code>, <code>whatsapp_responsavel</code>.</li>
             <li><code>endereco</code>: o <strong>bloco inteiro</strong>, com <code>cep_endereco</code> (8 dígitos, com ou sem hífen; volta como <code>00000-000</code>), <code>rua_endereco</code> (até 100), <code>numero_endereco</code> (até 6), <code>bairro_endereco</code> (até 50), <code>complemento_endereco</code> (opcional), <code>cidade_endereco</code> (até 50) e <code>estado_endereco</code> (UF, 2 letras). Os erros vêm com a chave de cada campo, como <code>errors["endereco.cep_endereco"]</code>.</li>
-            <li><code>endereco_dos_filhos</code> (<code>true</code>/<code>false</code>, padrão <code>true</code>): só conta quando o endereço é compartilhado (<code>endereco.compartilhado_com</code> do GET). <code>true</code> muda o endereço do responsável e o desses filhos; <code>false</code> dá ao responsável um endereço próprio, e o dos filhos fica como estava.</li>
+            <li><code>endereco_dos_filhos</code> (<code>true</code>/<code>false</code>, padrão <code>true</code>): só conta quando o endereço é compartilhado (<code>endereco.compartilhado_com</code> do GET). <code>true</code> muda o endereço do responsável e o desses filhos; <code>false</code> muda só o do responsável, e o dos filhos fica como estava. O endereço de quem não está na lista (outro responsável, por exemplo) nunca muda.</li>
         </ul>
 <pre>PATCH /api/v1/responsavel
 { "nome_responsavel": "Carla Exemplo da Silva", "cpf_responsavel": "19472778984",

@@ -190,6 +190,10 @@
                         </div>
                     </div>
 
+                    {{-- Endereço do responsável, quando é outro (29/10/2026): o responsável muda o dele pelo app, e os campos
+                         acima são só os do atleta. Preenchido pelo data-endereco-responsavel do botão Editar --}}
+                    <div id="edit_endereco_responsavel" class="alert alert-info small py-2 mb-3 d-none" role="note"></div>
+
                     {{-- Nome, CPF e data de nascimento corrigidos pelo próprio atleta no app (tbl_atleta_historico),
                          preenchido pelo data-historico do botão Editar; some quando não há nada --}}
                     <div id="edit_historico_bloco" class="d-none">

@@ -206,6 +206,11 @@
                                     ->map(fn ($h) => [$h->data_responsavel_historico, $h->autor . ' · Responsável: ' . $h->resumo]))
                                 ->sortByDesc(fn ($a) => $a[0])->take(20)
                                 ->map(fn ($a) => $a[0]->format('d/m/Y H:i') . ' · ' . $a[1])->values();
+                            // Endereço do responsável quando é outro (registro e texto diferentes do do atleta): o modal avisa
+                            $textoDoEndereco = fn ($e) => $e ? \App\Models\Endereco::texto(\App\Models\Endereco::normalizar($e->only(\App\Models\Endereco::CAMPOS))) : null;
+                            $enderecoDoResponsavel = $responsavel && $responsavel->id_endereco !== $atleta->id_endereco
+                                && $textoDoEndereco($responsavel->endereco) !== $textoDoEndereco($atleta->endereco)
+                                ? $textoDoEndereco($responsavel->endereco) : null;
                         @endphp
                         <tr class="linha-atleta"
                             data-nome="{{ strtolower($atleta->nome_atleta) }}"
@@ -309,6 +314,7 @@
                                             data-nome="{{ $atleta->nome_atleta }}"
                                             data-posicoes="{{ $codigosPosicoes->implode(',') }}"
                                             data-historico="{{ $alteracoesPeloApp->toJson(JSON_UNESCAPED_UNICODE) }}"
+                                            data-endereco-responsavel="{{ $enderecoDoResponsavel ? "Endereço do responsável ({$responsavel->nome_responsavel}), diferente do do atleta: {$enderecoDoResponsavel}" : '' }}"
                                             data-data-nasc="{{ $atleta->data_nasc_atleta?->format('Y-m-d') }}"
                                             data-cpf="{{ $atleta->cpf_atleta }}"
                                             data-email="{{ $atleta->email_atleta }}"
@@ -556,6 +562,10 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_complemento_endereco').value = g('data-complemento');
             document.getElementById('edit_cidade_endereco').value      = g('data-cidade');
             document.getElementById('edit_estado_endereco').value      = g('data-estado');
+
+            const enderecoResponsavel = document.getElementById('edit_endereco_responsavel');
+            enderecoResponsavel.textContent = g('data-endereco-responsavel');
+            enderecoResponsavel.classList.toggle('d-none', !g('data-endereco-responsavel'));
 
             sugestaoEdicao.atualizar(false); // mantém a categoria atual; só mostra a dica
         });

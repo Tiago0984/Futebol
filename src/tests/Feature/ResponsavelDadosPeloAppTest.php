@@ -115,7 +115,7 @@ class ResponsavelDadosPeloAppTest extends TestCase
             ->assertJsonPath('data.endereco.complemento_endereco', null);
 
         $this->assertSame($idEndereco, DB::table('tbl_responsavel')->where('id_responsavel', $this->idResponsavel)->value('id_endereco'));
-        $this->assertSame(['Endereço: Rua do Responsável, 200 – Centro, São Paulo/SP, 01000-000 → Rua das Flores, 120 – Centro, São Carlos/SP, 13560-000'], $this->historico());
+        $this->assertSame(['Endereço do responsável: Rua do Responsável, 200 – Centro, São Paulo/SP, 01000-000 → Rua das Flores, 120 – Centro, São Carlos/SP, 13560-000'], $this->historico());
 
         // Enviar de novo igual (CEP com hífen, UF em maiúsculas) não é mudança
         $this->patchJson('/api/v1/responsavel', ['endereco' => [...self::ENDERECO, 'cep_endereco' => '13560-000', 'estado_endereco' => 'SP']])->assertOk();
@@ -164,16 +164,83 @@ class ResponsavelDadosPeloAppTest extends TestCase
         $this->assertCount(1, $this->historico());
     }
 
-    public function test_endereco_usado_por_quem_nao_e_filho_sempre_vira_um_proprio(): void
+    public function test_registro_usado_por_quem_nao_esta_na_mudanca_nao_muda_e_os_da_familia_vao_juntos_para_um_novo(): void
     {
         $idEndereco = $this->compartilharEnderecoComOFilho();
         $estranho = $this->criarAtleta((now()->year - 12) . '-01-01', 'M', 'ATIVO');
         DB::table('tbl_atletas')->where('id_atleta', $estranho)->update(['id_endereco' => $idEndereco]);
 
-        $this->patchJson('/api/v1/responsavel', ['endereco' => self::ENDERECO, 'endereco_dos_filhos' => true])->assertOk();
+        $this->patchJson('/api/v1/responsavel', ['endereco' => self::ENDERECO, 'endereco_dos_filhos' => true])->assertOk()
+            ->assertJsonPath('data.endereco.compartilhado_com.0.id_atleta', $this->idAtleta);
 
+        // O de fora fica no registro antigo; o responsável e a filha vão juntos para um novo
         $this->assertDatabaseHas('tbl_endereco', ['id_endereco' => $idEndereco, 'rua_endereco' => 'Rua de Teste']);
-        $this->assertNotSame($idEndereco, DB::table('tbl_responsavel')->where('id_responsavel', $this->idResponsavel)->value('id_endereco'));
+        $this->assertSame($idEndereco, DB::table('tbl_atletas')->where('id_atleta', $estranho)->value('id_endereco'));
+        $novo = DB::table('tbl_responsavel')->where('id_responsavel', $this->idResponsavel)->value('id_endereco');
+        $this->assertNotSame($idEndereco, $novo);
+        $this->assertSame($novo, DB::table('tbl_atletas')->where('id_atleta', $this->idAtleta)->value('id_endereco'));
+        $this->assertDatabaseHas('tbl_endereco', ['id_endereco' => $novo, 'rua_endereco' => 'Rua das Flores']);
+        $this->assertSame(1, AtletaHistorico::where('id_atleta', $this->idAtleta)->count());
+    }
+
+    // Cadastro pelo site (30/10/2026, o caso da Carla e da Joana em produção): registros diferentes com o mesmo endereço
+    private function mesmoEnderecoEmOutroRegistro(): int
+    {
+        $idDoFilho = DB::table('tbl_atletas')->where('id_atleta', $this->idAtleta)->value('id_endereco');
+        $enderecoDoFilho = (array) DB::table('tbl_endereco')->where('id_endereco', $idDoFilho)->first(\App\Models\Endereco::CAMPOS);
+        DB::table('tbl_endereco')
+            ->where('id_endereco', DB::table('tbl_responsavel')->where('id_responsavel', $this->idResponsavel)->value('id_endereco'))
+            ->update($enderecoDoFilho);
+        $this->entrar();
+
+        return $idDoFilho;
+    }
+
+    public function test_filho_com_o_mesmo_endereco_em_outro_registro_aparece_e_com_true_o_registro_dele_muda(): void
+    {
+        $idDoFilho = $this->mesmoEnderecoEmOutroRegistro();
+        $idDoResponsavel = DB::table('tbl_responsavel')->where('id_responsavel', $this->idResponsavel)->value('id_endereco');
+        $this->assertNotSame($idDoFilho, $idDoResponsavel);
+
+        $this->getJson('/api/v1/responsavel')
+            ->assertJsonPath('data.endereco.compartilhado_com', [['id_atleta' => $this->idAtleta, 'nome_atleta' => 'Joana Exemplo']]);
+
+        $this->patchJson('/api/v1/responsavel', ['endereco' => self::ENDERECO])->assertOk()
+            ->assertJsonPath('data.endereco.compartilhado_com.0.id_atleta', $this->idAtleta);
+
+        // Cada um continua no seu registro, os dois com o endereço novo
+        $this->assertDatabaseHas('tbl_endereco', ['id_endereco' => $idDoResponsavel, 'rua_endereco' => 'Rua das Flores', 'cep_endereco' => '13560-000']);
+        $this->assertDatabaseHas('tbl_endereco', ['id_endereco' => $idDoFilho, 'rua_endereco' => 'Rua das Flores', 'cep_endereco' => '13560-000']);
+        $this->assertSame($idDoFilho, DB::table('tbl_atletas')->where('id_atleta', $this->idAtleta)->value('id_endereco'));
+        $this->assertStringStartsWith('Endereço (pelo responsável): Rua de Teste, 100', AtletaHistorico::where('id_atleta', $this->idAtleta)->sole()->resumo);
+    }
+
+    public function test_filho_com_o_mesmo_endereco_em_outro_registro_com_false_fica_e_sai_da_lista(): void
+    {
+        $idDoFilho = $this->mesmoEnderecoEmOutroRegistro();
+
+        $this->patchJson('/api/v1/responsavel', ['endereco' => self::ENDERECO, 'endereco_dos_filhos' => false])->assertOk()
+            ->assertJsonPath('data.endereco.compartilhado_com', []);
+
+        $this->assertDatabaseHas('tbl_endereco', ['id_endereco' => $idDoFilho, 'rua_endereco' => 'Rua de Teste']);
+        $this->assertSame(0, AtletaHistorico::where('id_atleta', $this->idAtleta)->count());
+    }
+
+    public function test_registro_do_filho_dividido_com_outro_responsavel_o_filho_ganha_um_novo_e_o_outro_fica(): void
+    {
+        $idDoFilho = $this->mesmoEnderecoEmOutroRegistro();
+        // O pai, cadastrado pelo painel no mesmo registro do filho (criado por outro atleta só para ter outro e-mail)
+        $pai = $this->criarResponsavel($this->criarAtleta((now()->year - 12) . '-01-01', 'M', 'INATIVO'));
+        DB::table('tbl_atleta_responsavel')->insert(['id_atleta' => $this->idAtleta, 'id_responsavel' => $pai, 'grau_parentesco_responsavel' => 'Pai']);
+        DB::table('tbl_responsavel')->where('id_responsavel', $pai)->update(['id_endereco' => $idDoFilho]);
+
+        $this->patchJson('/api/v1/responsavel', ['endereco' => self::ENDERECO])->assertOk();
+
+        $this->assertDatabaseHas('tbl_endereco', ['id_endereco' => $idDoFilho, 'rua_endereco' => 'Rua de Teste']);
+        $this->assertSame($idDoFilho, DB::table('tbl_responsavel')->where('id_responsavel', $pai)->value('id_endereco'));
+        $doFilhoAgora = DB::table('tbl_atletas')->where('id_atleta', $this->idAtleta)->value('id_endereco');
+        $this->assertNotSame($idDoFilho, $doFilhoAgora);
+        $this->assertDatabaseHas('tbl_endereco', ['id_endereco' => $doFilhoAgora, 'rua_endereco' => 'Rua das Flores']);
     }
 
     public function test_cep_uf_e_campos_do_endereco_dao_422_com_a_chave_de_cada_campo(): void
@@ -214,5 +281,19 @@ class ResponsavelDadosPeloAppTest extends TestCase
         $this->comoAdmin()->get(route('admin.atletas.index'))
             ->assertOk()
             ->assertSee('Pelo app · Responsável: Nome: Carla Exemplo → Carla Exemplo da Silva');
+    }
+
+    // Correção 1 (30/10/2026): o Editar do atleta mostra o endereço do responsável quando é outro, e o histórico diz de quem é
+    public function test_painel_avisa_o_endereco_do_responsavel_quando_e_diferente_do_do_atleta(): void
+    {
+        $this->mesmoEnderecoEmOutroRegistro();
+        $this->comoAdmin()->get(route('admin.atletas.index'))->assertOk()->assertDontSee('diferente do do atleta');
+
+        $this->patchJson('/api/v1/responsavel', ['endereco' => self::ENDERECO, 'endereco_dos_filhos' => false])->assertOk();
+
+        $this->comoAdmin()->get(route('admin.atletas.index'))
+            ->assertOk()
+            ->assertSee('Endereço do responsável (Carla Exemplo), diferente do do atleta: Rua das Flores, 120 – Centro, São Carlos/SP, 13560-000')
+            ->assertSee('Pelo app · Responsável: Endereço do responsável: Rua de Teste, 100');
     }
 }

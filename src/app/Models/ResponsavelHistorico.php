@@ -12,14 +12,15 @@ class ResponsavelHistorico extends Model
     protected $primaryKey = 'id_responsavel_historico';
     public    $timestamps = false;
 
-    // Campos registrados e o nome de cada um na tela ("endereco" guarda o endereço inteiro num texto)
+    // Campos registrados e o nome de cada um na tela ("endereco" guarda o endereço inteiro num texto). O do endereço diz
+    // de quem é: a tela do atleta mostra estas linhas junto das dele, e o endereço do filho tem linha própria
     public const CAMPOS = [
         'nome_responsavel'     => 'Nome',
         'cpf_responsavel'      => 'CPF',
         'email_responsavel'    => 'E-mail',
         'telefone_responsavel' => 'Telefone',
         'whatsapp_responsavel' => 'WhatsApp',
-        'endereco'             => 'Endereço',
+        'endereco'             => 'Endereço do responsável',
     ];
 
     protected $fillable = [
