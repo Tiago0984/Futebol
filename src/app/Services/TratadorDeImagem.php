@@ -13,7 +13,8 @@ use Intervention\Image\ImageManager;
  * - capa (Banners da home 1920×1080, banner do campeonato 1920×960): recorte na proporção (o do formulário, pelo
  *   Cropper.js, ou o centro) e redução, em JPG; menor que o formato não é ampliada (só borraria);
  * - logo do campeonato: a imagem inteira, sem cortar, centralizada num quadrado de até 512×512 com fundo
- *   transparente, em PNG.
+ *   transparente, em PNG;
+ * - foto do atleta enviada pelo app (29/10/2026): quadrado do centro, até 512×512, em JPG.
  * A rotação das fotos de celular (EXIF) é acertada na leitura. Grava no disco "imagens" (public/futebol/images)
  * com nome gerado; quem chama grava o nome no banco e apaga o antigo (apagarSeNinguemUsa).
  */
@@ -22,7 +23,12 @@ class TratadorDeImagem
     public const BANNER_SITE = [1920, 1080];
     public const BANNER_CAMPEONATO = [1920, 960];
     public const LOGO = 512;
+    public const FOTO = 512;
     public const QUALIDADE_JPG = 82;
+
+    // Tipos aceitos na foto do atleta (pelo conteúdo do arquivo). HEIC/HEIF (iPhone) só abrem com o Imagick que
+    // tenha suporte a HEIC; sem ele, a leitura falha e quem chama responde como "não é imagem"
+    public const TIPOS_FOTO = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
 
     // Abaixo disso, aviso (sem bloquear): pode ficar sem nitidez
     public const LARGURA_MINIMA_CAPA = 1200;
@@ -47,7 +53,7 @@ class TratadorDeImagem
 
     // Nome gerado: "banner-campeonato-20261026-141500-a1b2c3.jpg". Só arquivos com esse nome são apagados (os que
     // vieram com o projeto, no Git, ficam)
-    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
+    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time|foto-atleta)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
 
     /**
      * Capa no formato $largura × $altura, em JPG. $recorte: "x,y,largura,altura" em pixels da imagem já virada
@@ -106,6 +112,25 @@ class TratadorDeImagem
     }
 
     /**
+     * Foto do atleta: o maior quadrado do centro, reduzido a até 512×512 (menor não é ampliada), em JPG, no $disco
+     * ("local" enquanto espera a aprovação). A imagem que não abre lança Intervention\Image\Exceptions\RuntimeException.
+     *
+     * @return string o nome do arquivo gravado
+     */
+    public static function foto(string $origem, string $disco, string $pasta, string $prefixo): string
+    {
+        $imagem = self::ler($origem, self::ehHeic($origem));
+        [$x, $y, $l, $a] = self::recorteDoCentro($imagem->width(), $imagem->height(), 1.0);
+
+        $imagem->crop($l, $a, $x, $y);
+        if ($l > self::FOTO) {
+            $imagem->resize(self::FOTO, self::FOTO);
+        }
+
+        return self::gravar($pasta, $prefixo, 'jpg', (string) $imagem->toJpeg(quality: self::QUALIDADE_JPG, progressive: true), $disco);
+    }
+
+    /**
      * Maior área na proporção, centralizada: [x, y, largura, altura].
      */
     public static function recorteDoCentro(int $largura, int $altura, float $proporcao): array
@@ -153,10 +178,21 @@ class TratadorDeImagem
         }
     }
 
-    private static function ler(string $origem): ImageInterface
+    private static function ler(string $origem, bool $comImagick = false): ImageInterface
     {
         // autoOrientation: foto de celular "em pé" (EXIF) chega virada; decodeAnimation: GIF animado, só o 1º quadro
-        return ImageManager::gd(autoOrientation: true, decodeAnimation: false)->read($origem);
+        $gerenciador = $comImagick
+            ? ImageManager::imagick(autoOrientation: true, decodeAnimation: false)
+            : ImageManager::gd(autoOrientation: true, decodeAnimation: false);
+
+        return $gerenciador->read($origem);
+    }
+
+    // HEIC/HEIF (o GD não lê): tenta pelo Imagick, quando o PHP tem a extensão
+    private static function ehHeic(string $origem): bool
+    {
+        return extension_loaded('imagick')
+            && in_array(mime_content_type($origem), ['image/heic', 'image/heif'], true);
     }
 
     // "x,y,largura,altura" dentro da imagem e na proporção (com tolerância), ou null
@@ -178,10 +214,10 @@ class TratadorDeImagem
         return [$x, $y, $l, $a];
     }
 
-    private static function gravar(string $pasta, string $prefixo, string $extensao, string $conteudo): string
+    private static function gravar(string $pasta, string $prefixo, string $extensao, string $conteudo, string $disco = 'imagens'): string
     {
         $arquivo = $prefixo . '-' . now()->format('Ymd-His') . '-' . Str::lower(Str::random(6)) . ".{$extensao}";
-        Storage::disk('imagens')->put("{$pasta}/{$arquivo}", $conteudo);
+        Storage::disk($disco)->put("{$pasta}/{$arquivo}", $conteudo);
 
         return $arquivo;
     }

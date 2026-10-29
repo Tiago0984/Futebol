@@ -8,6 +8,7 @@ use App\Support\Cpf;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Laravel\Sanctum\HasApiTokens;
@@ -41,6 +42,16 @@ class Atleta extends Authenticatable
 
     // Validade do token do app (Sanctum), em dias: gravada em expires_at no login
     public const VALIDADE_TOKEN_DIAS = 30;
+
+    // Foto (29/10/2026): a padrão (sem foto) e as pastas. A foto aprovada fica em public/futebol/images/our-teams
+    // (disco "imagens"); a enviada pelo app espera a aprovação fora de public/ (disco "local"), por ser de menor
+    public const FOTO_PADRAO         = 'default-player.jpg';
+    public const PASTA_FOTO          = 'our-teams';
+    public const PASTA_FOTO_PENDENTE = 'fotos-pendentes';
+
+    // Fotos enviadas que podem ser apagadas do disco: a tratada (foto-atleta-…), a do admin (atleta_<uniqid>.ext) e
+    // a do cadastro do site (atletas/<hash>.ext, disco "public"). As que vieram no Git (jogador1.png, a padrão) ficam
+    private const FOTO_ENVIADA = '/^(foto-atleta-\d{8}-\d{6}-[a-z0-9]{6}\.jpg|atleta_[0-9a-f]{13}\.[A-Za-z0-9]+|atletas\/[A-Za-z0-9]{40}\.[A-Za-z0-9]+)$/';
 
     // Período escolar (ENUM sem acento => rótulo). O atleta treina no turno oposto ao da escola (professor,
     // 13/10/2026); quem estuda à noite escolhe o turno do treino (TURNOS_TREINO)
@@ -129,9 +140,12 @@ class Atleta extends Authenticatable
         'password',
         'remember_token',
         'token_cadastro',
+        'foto_pendente_atleta',      // arquivo fora de public/: a API diz só se há (foto_pendente)
+        'data_foto_pendente_atleta',
     ];
 
     protected $casts = [
+        'data_foto_pendente_atleta' => 'datetime',
         'data_nasc_atleta' => 'date',
         'peso_atleta'      => 'decimal:2',
         'altura_atleta'    => 'decimal:2',
@@ -681,6 +695,73 @@ class Atleta extends Authenticatable
             : asset('futebol/images/our-teams/' . $foto);
     }
 
+    // ── Foto enviada pelo app (29/10/2026) ──────────────────────────────────
+    // A nova espera a aprovação da secretaria (foto_pendente_atleta); até lá, o app e o site mostram a atual
+
+    public function temFotoPendente(): bool
+    {
+        return filled($this->foto_pendente_atleta);
+    }
+
+    // Guarda a foto já tratada como pendente; a que esperava antes é descartada (vale a mais recente)
+    public function guardarFotoPendente(string $arquivo): void
+    {
+        $anterior = $this->foto_pendente_atleta;
+
+        $this->forceFill(['foto_pendente_atleta' => $arquivo, 'data_foto_pendente_atleta' => now()])->save();
+
+        self::apagarFotoPendente($anterior);
+    }
+
+    // Volta para a foto padrão e descarta a pendente. Tirar a foto vale na hora (não expõe ninguém). Registra no
+    // histórico (id_usuario NULL = o próprio atleta, pelo app) quando havia uma foto de verdade
+    public function removerFoto(?int $idUsuario = null): void
+    {
+        $antiga = $this->foto_atleta;
+        $pendente = $this->foto_pendente_atleta;
+        $tinhaFoto = $this->urlFoto() !== null;
+
+        DB::transaction(function () use ($antiga, $tinhaFoto, $idUsuario) {
+            $this->forceFill([
+                'foto_atleta'               => self::FOTO_PADRAO,
+                'foto_pendente_atleta'      => null,
+                'data_foto_pendente_atleta' => null,
+            ])->save();
+
+            if ($tinhaFoto) {
+                $this->historico()->create([
+                    'campo_atleta_historico'        => AtletaHistorico::CAMPO_FOTO,
+                    'valor_antigo_atleta_historico' => $antiga,
+                    'valor_novo_atleta_historico'   => null,
+                    'id_usuario'                    => $idUsuario,
+                ]);
+            }
+        });
+
+        $this->apagarArquivoDaFoto($antiga);
+        self::apagarFotoPendente($pendente);
+    }
+
+    // Apaga do disco uma foto que saiu do atleta: só as enviadas (FOTO_ENVIADA) e que nenhum outro atleta usa
+    private function apagarArquivoDaFoto(?string $foto): void
+    {
+        if (! $foto || ! preg_match(self::FOTO_ENVIADA, $foto)
+            || self::where('foto_atleta', $foto)->where('id_atleta', '!=', $this->id_atleta)->exists()) {
+            return;
+        }
+
+        str_contains($foto, '/')
+            ? Storage::disk('public')->delete($foto)
+            : Storage::disk('imagens')->delete(self::PASTA_FOTO . '/' . $foto);
+    }
+
+    private static function apagarFotoPendente(?string $arquivo): void
+    {
+        if ($arquivo) {
+            Storage::disk('local')->delete(self::PASTA_FOTO_PENDENTE . '/' . basename($arquivo));
+        }
+    }
+
     // Exclui o atleta e todos os vínculos dele (as FKs não têm ON DELETE CASCADE).
     // Atleta com cartões não é excluído, para não apagar o histórico dos jogos:
     // retorna false e quem chamou deve avisar o usuário.
@@ -708,6 +789,9 @@ class Atleta extends Authenticatable
             $this->tokens()->delete(); // tokens do Sanctum (personal_access_tokens não tem FK)
             $this->delete();
         });
+
+        // Depois do commit: a foto que esperava aprovação (fora de public/) sai junto
+        self::apagarFotoPendente($this->foto_pendente_atleta);
 
         return true;
     }
