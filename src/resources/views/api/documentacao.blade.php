@@ -527,6 +527,13 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             <li><code>situacao</code>: <code>CONFIRMADO</code> ou <code>CANCELADO</code>. Mudanças de data, horário ou local chegam pelos <a href="#avisos">avisos</a>; a agenda já mostra os dados novos.</li>
             <li><code>proximos</code>: o que ainda não terminou (inclusive o de hoje em andamento e os cancelados), do mais perto ao mais longe, <strong>paginado</strong>. No mesmo dia, evento sem horário vem por último.</li>
             <li><code>passados</code>: os <strong>3 últimos concluídos e não cancelados</strong>, do mais recente ao mais antigo; iguais em todas as páginas.</li>
+            <li><code>local</code>: o nome do local, para mostrar (ou <code>null</code>, sem local). <code>local_detalhe</code>: quando o local é <strong>cadastrado</strong> pela escolinha, <code>{ nome, endereco, mapa_url }</code>:
+                <ul>
+                    <li><code>endereco</code>: uma linha pronta para mostrar, sem o nome (<code>"Avenida Brasil, 500, Portão 2 – Vila Nova, São Carlos/SP, 13560-000"</code>; sem CEP, termina na UF). Para o Google Agenda, use <code>nome + ", " + endereco</code>.</li>
+                    <li><code>mapa_url</code>: sempre um endereço <code>https</code> do Google Maps, para abrir direto (no celular, abre o app Maps): o link que a escolinha cadastrou ou, sem ele, a busca pelo nome e pelo endereço.</li>
+                    <li><code>null</code> quando o evento não tem local ou tem só um local <strong>escrito à mão</strong> (de antes do cadastro de locais): mostre só o <code>local</code>, sem o "Abrir mapa".</li>
+                </ul>
+            </li>
             <li>Concluído: dia anterior a hoje, ou hoje com o horário de fim já passado (sem fim, vale o início; sem nenhum dos dois, só no dia seguinte). Cada evento traz <code>concluido</code> (<code>true</code>/<code>false</code>) com essa regra.</li>
             <li><code>?tipo=JOGO</code> (opcional): só os eventos desses tipos, em <code>proximos</code> e <code>passados</code>. Aceita vários separados por vírgula (<code>?tipo=JOGO,CAMPEONATO</code>), sem diferenciar maiúsculas. Tipo desconhecido: 422. Use para achar o próximo jogo sem passar pelas páginas de treinos.</li>
             <li><code>totais</code>: quantos <code>proximos</code> existem de cada tipo, somando <strong>todas as páginas</strong> (todos os tipos, com 0). <strong>Não considera o <code>?tipo</code></strong>, para os contadores dos outros filtros continuarem certos; o total da lista filtrada está em <code>paginacao.total</code>.</li>
@@ -548,7 +555,12 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
         "horario_fim": "19:30",
         "inicio": "2026-10-12T18:00:00-03:00",
         "fim": "2026-10-12T19:30:00-03:00",
-        "local": "Campo AACJ",
+        "local": "Campo da AACJ",
+        "local_detalhe": {
+          "nome": "Campo da AACJ",
+          "endereco": "Rua das Palmeiras, S/N – Centro, São Carlos/SP, 13560-000",
+          "mapa_url": "https://maps.app.goo.gl/AbCdEf123"
+        },
         "responsavel": "Carlos Mendes",
         "responsavel_id": 4,
         "situacao": "CONFIRMADO",
@@ -568,7 +580,8 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
         "horario_fim": null,
         "inicio": "2026-10-15T10:00:00-03:00",
         "fim": null,
-        "local": "Campo AACJ",
+        "local": "Campo do Rival",
+        "local_detalhe": null,
         "responsavel": null,
         "responsavel_id": null,
         "situacao": "CONFIRMADO",
