@@ -436,7 +436,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
 
     <div class="card">
         <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/responsavel</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Dados do responsável logado, o endereço (só leitura) e os filhos <code>ATIVO</code>. A senha nunca vem.</p>
+        <p>Dados do responsável logado, o endereço e os filhos <code>ATIVO</code>. A senha nunca vem. <code>endereco.compartilhado_com</code>: os filhos que usam o <strong>mesmo endereço</strong> do responsável (lista vazia quando é só dele), para o app perguntar se a mudança vale também para eles.</p>
 <pre>200 {
   "success": true,
   "data": {
@@ -444,7 +444,8 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
     "cpf_responsavel": "123.456.789-09", "rg_responsavel": "...", "telefone_responsavel": null,
     "whatsapp_responsavel": "(11) 90000-0000",
     "endereco": { "cep_endereco": "...", "rua_endereco": "...", "numero_endereco": "...", "bairro_endereco": "...",
-                  "complemento_endereco": null, "cidade_endereco": "...", "estado_endereco": "SP" },
+                  "complemento_endereco": null, "cidade_endereco": "...", "estado_endereco": "SP",
+                  "compartilhado_com": [ { "id_atleta": 7, "nome_atleta": "Joana Exemplo" } ] },
     "atletas": [ { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100",
                    "foto_atleta": null, "foto_url": null, "grau_parentesco_responsavel": "Mãe" } ]
   }
@@ -453,12 +454,27 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
 
     <div class="card">
         <div class="rota"><span class="metodo PUT">PUT</span><span class="metodo PATCH">PATCH</span><code>/api/v1/responsavel</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Atualiza só <code>email_responsavel</code> (o login; único entre responsáveis, gravado em minúsculas), <code>telefone_responsavel</code> e <code>whatsapp_responsavel</code>. Nome, CPF, RG e endereço ficam com a secretaria. Responde com os mesmos dados do GET.</p>
+        <p>Atualiza os dados do responsável (mande só o que mudou; campos fora desta lista, como o RG, são ignorados). Responde com os mesmos dados do GET, já atualizados. Cada mudança fica registrada para a secretaria (o painel mostra o antes e o depois).</p>
+        <ul>
+            <li><code>nome_responsavel</code>: de 3 a 100 caracteres.</li>
+            <li><code>cpf_responsavel</code>: com ou sem pontuação; volta como <code>000.000.000-00</code>. Os dígitos verificadores são conferidos ("Informe um CPF válido.") e o CPF não pode ser de outro responsável ("Este CPF já está cadastrado para outro responsável.").</li>
+            <li><code>email_responsavel</code> (o login; único entre responsáveis, gravado em minúsculas), <code>telefone_responsavel</code>, <code>whatsapp_responsavel</code>.</li>
+            <li><code>endereco</code>: o <strong>bloco inteiro</strong>, com <code>cep_endereco</code> (8 dígitos, com ou sem hífen; volta como <code>00000-000</code>), <code>rua_endereco</code> (até 100), <code>numero_endereco</code> (até 6), <code>bairro_endereco</code> (até 50), <code>complemento_endereco</code> (opcional), <code>cidade_endereco</code> (até 50) e <code>estado_endereco</code> (UF, 2 letras). Os erros vêm com a chave de cada campo, como <code>errors["endereco.cep_endereco"]</code>.</li>
+            <li><code>endereco_dos_filhos</code> (<code>true</code>/<code>false</code>, padrão <code>true</code>): só conta quando o endereço é compartilhado (<code>endereco.compartilhado_com</code> do GET). <code>true</code> muda o endereço do responsável e o desses filhos; <code>false</code> dá ao responsável um endereço próprio, e o dos filhos fica como estava.</li>
+        </ul>
 <pre>PATCH /api/v1/responsavel
-{ "whatsapp_responsavel": "(11) 90000-0001" }
+{ "nome_responsavel": "Carla Exemplo da Silva", "cpf_responsavel": "19472778984",
+  "endereco": { "cep_endereco": "13560000", "rua_endereco": "Rua das Flores", "numero_endereco": "120",
+                "bairro_endereco": "Centro", "complemento_endereco": null, "cidade_endereco": "São Carlos",
+                "estado_endereco": "SP" },
+  "endereco_dos_filhos": false }
 
-422 { "success": false, "message": "Este e-mail já está cadastrado para outro responsável.",
-      "errors": { "email_responsavel": ["Este e-mail já está cadastrado para outro responsável."] } }</pre>
+200 { "success": true, "data": { ...o mesmo de GET /api/v1/responsavel, com os dados novos... } }
+
+422 { "success": false, "message": "Este CPF já está cadastrado para outro responsável.",
+      "errors": { "cpf_responsavel": ["Este CPF já está cadastrado para outro responsável."] } }
+422 { "success": false, "message": "Informe um CEP com 8 dígitos (ex.: 13560-000).",
+      "errors": { "endereco.cep_endereco": ["Informe um CEP com 8 dígitos (ex.: 13560-000)."] } }</pre>
     </div>
 
     <div class="card">
@@ -787,7 +803,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             ['PATCH', '/notificacoes/{idNotificacao}/lida', 'Atleta', '{idNotificacao}'],
             ['PATCH', '/notificacoes/lidas', 'Atleta', '—'],
             ['GET',   '/responsavel', 'Responsável', '—'],
-            ['PUT',   '/responsavel', 'Responsável', $camposDoResponsavel = 'email_responsavel?, telefone_responsavel?, whatsapp_responsavel?'],
+            ['PUT',   '/responsavel', 'Responsável', $camposDoResponsavel = 'nome_responsavel?, cpf_responsavel?, email_responsavel?, telefone_responsavel?, whatsapp_responsavel?, endereco? { cep_endereco, rua_endereco, numero_endereco, bairro_endereco, complemento_endereco?, cidade_endereco, estado_endereco }, endereco_dos_filhos?'],
             ['PATCH', '/responsavel', 'Responsável', $camposDoResponsavel],
             ['PUT',   '/responsavel/senha', 'Responsável', $camposDaSenha],
             ['GET',   '/responsavel/atletas', 'Responsável', '—'],

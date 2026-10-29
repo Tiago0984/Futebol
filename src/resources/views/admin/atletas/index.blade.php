@@ -198,6 +198,14 @@
                             $grauParentesco = \App\Models\Responsavel::normalizarGrau($responsavel?->pivot->grau_parentesco_responsavel);
                             // Posições do cadastro do atleta, a principal primeiro (Fase D; a camisa é da convocação)
                             $codigosPosicoes = $atleta->posicoes->pluck('posicao_atleta_posicao');
+                            // "Alterações feitas pelo app" no Editar: as do atleta e as do responsável dele (29/10/2026), da
+                            // mais nova para a mais antiga, até 20
+                            $alteracoesPeloApp = $atleta->historico
+                                ->map(fn ($h) => [$h->data_atleta_historico, $h->autor . ' · ' . $h->resumo])
+                                ->concat(($responsavel?->historico ?? collect())
+                                    ->map(fn ($h) => [$h->data_responsavel_historico, $h->autor . ' · Responsável: ' . $h->resumo]))
+                                ->sortByDesc(fn ($a) => $a[0])->take(20)
+                                ->map(fn ($a) => $a[0]->format('d/m/Y H:i') . ' · ' . $a[1])->values();
                         @endphp
                         <tr class="linha-atleta"
                             data-nome="{{ strtolower($atleta->nome_atleta) }}"
@@ -300,7 +308,7 @@
                                             data-id="{{ $atleta->id_atleta }}"
                                             data-nome="{{ $atleta->nome_atleta }}"
                                             data-posicoes="{{ $codigosPosicoes->implode(',') }}"
-                                            data-historico="{{ $atleta->historico->take(20)->map(fn ($h) => $h->data_atleta_historico->format('d/m/Y H:i') . ' · ' . $h->autor . ' · ' . $h->resumo)->values()->toJson(JSON_UNESCAPED_UNICODE) }}"
+                                            data-historico="{{ $alteracoesPeloApp->toJson(JSON_UNESCAPED_UNICODE) }}"
                                             data-data-nasc="{{ $atleta->data_nasc_atleta?->format('Y-m-d') }}"
                                             data-cpf="{{ $atleta->cpf_atleta }}"
                                             data-email="{{ $atleta->email_atleta }}"

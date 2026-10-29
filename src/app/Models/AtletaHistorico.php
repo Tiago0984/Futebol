@@ -24,6 +24,9 @@ class AtletaHistorico extends Model
     // A foto: o histórico guarda os nomes dos arquivos, mas a tela diz só o que aconteceu
     public const CAMPO_FOTO = 'foto_atleta';
 
+    // Endereço mudado pelo responsável no app, quando vale também para o filho (29/10/2026; o texto inteiro)
+    public const CAMPO_ENDERECO = 'endereco';
+
     protected $fillable = [
         'id_atleta',
         'campo_atleta_historico',
@@ -57,6 +60,11 @@ class AtletaHistorico extends Model
     {
         if ($this->campo_atleta_historico === self::CAMPO_FOTO) {
             return 'Foto: ' . ($this->valor_novo_atleta_historico === null ? 'removida' : 'trocada');
+        }
+
+        if ($this->campo_atleta_historico === self::CAMPO_ENDERECO) {
+            return 'Endereço (pelo responsável): ' . $this->valorExibido($this->valor_antigo_atleta_historico)
+                . ' → ' . $this->valorExibido($this->valor_novo_atleta_historico);
         }
 
         return (self::CAMPOS[$this->campo_atleta_historico] ?? $this->campo_atleta_historico) . ': '

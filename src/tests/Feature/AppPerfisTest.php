@@ -190,21 +190,22 @@ class AppPerfisTest extends TestCase
         $this->assertArrayNotHasKey('assinatura_responsavel', $dados);
     }
 
-    public function test_responsavel_edita_email_telefone_e_whatsapp_e_nao_os_dados_da_secretaria(): void
+    // Nome, CPF e endereço pelo app (29/10/2026): ResponsavelDadosPeloAppTest. O RG continua com a secretaria
+    public function test_responsavel_edita_email_telefone_e_whatsapp_e_nao_o_rg(): void
     {
         [$idResponsavel] = $this->responsavelComSenha('mae@exemplo.com');
         [$outro] = $this->responsavelComSenha('ocupado@exemplo.com');
-        $cpfAntes = DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->value('cpf_responsavel');
+        $rgAntes = DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->value('rg_responsavel');
         $token = $this->login('mae@exemplo.com', self::SENHA_RESPONSAVEL, 'responsavel');
 
         $this->comToken($token)->patchJson('/api/v1/responsavel', [
             'email_responsavel' => '  Nova@Exemplo.COM ', 'telefone_responsavel' => '(11) 3333-4444', 'whatsapp_responsavel' => '(11) 98888-7777',
-            'nome_responsavel' => 'Outro Nome', 'cpf_responsavel' => '999.999.999-99', 'rg_responsavel' => '9',
+            'rg_responsavel' => '9',
         ])->assertOk()->assertJsonPath('data.email_responsavel', 'nova@exemplo.com');
 
         $this->assertDatabaseHas('tbl_responsavel', [
             'id_responsavel' => $idResponsavel, 'email_responsavel' => 'nova@exemplo.com', 'telefone_responsavel' => '(11) 3333-4444',
-            'whatsapp_responsavel' => '(11) 98888-7777', 'nome_responsavel' => 'Responsável de Teste', 'cpf_responsavel' => $cpfAntes,
+            'whatsapp_responsavel' => '(11) 98888-7777', 'nome_responsavel' => 'Responsável de Teste', 'rg_responsavel' => $rgAntes,
         ]);
 
         // E-mail continua único entre responsáveis (comparando já normalizado)

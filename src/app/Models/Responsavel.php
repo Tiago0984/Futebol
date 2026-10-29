@@ -6,6 +6,8 @@ use App\Models\Concerns\AcessaOApp;
 use App\Support\Cpf;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -109,6 +111,96 @@ class Responsavel extends Authenticatable
     public function atletasAtivos()
     {
         return $this->atletas()->where('tbl_atletas.status_atleta', 'ATIVO');
+    }
+
+    public function historico()
+    {
+        return $this->hasMany(ResponsavelHistorico::class, 'id_responsavel', 'id_responsavel')
+            ->orderByDesc('data_responsavel_historico')
+            ->orderByDesc('id_responsavel_historico');
+    }
+
+    // ---------- dados mudados pelo app (29/10/2026) ----------
+
+    // Os filhos que usam o MESMO registro de endereço: o cadastro pelo painel grava um endereço só para o atleta e o
+    // responsável (o app pergunta se a mudança vale também para eles)
+    public function filhosNoMesmoEndereco(): Collection
+    {
+        if (! $this->id_endereco) {
+            return collect();
+        }
+
+        return $this->atletas()->where('tbl_atletas.id_endereco', $this->id_endereco)
+            ->orderBy('nome_atleta')->get(['tbl_atletas.id_atleta', 'nome_atleta']);
+    }
+
+    /**
+     * PATCH /api/v1/responsavel: grava os campos (já validados) e o endereço, e registra cada mudança real no histórico
+     * (id_usuario NULL = pelo app), numa transação. Endereço compartilhado com os filhos: $dosFilhos = true muda o
+     * registro de todos (e registra no histórico de cada filho); false dá ao responsável um endereço próprio. Se o
+     * registro é usado por alguém que não é filho dele (não deveria acontecer), sempre ganha um próprio.
+     */
+    public function atualizarPeloApp(array $dados, ?array $endereco, bool $dosFilhos): void
+    {
+        DB::transaction(function () use ($dados, $endereco, $dosFilhos) {
+            $campos = array_keys(array_diff_key(ResponsavelHistorico::CAMPOS, ['endereco' => true]));
+            $antes = collect($campos)->mapWithKeys(fn ($c) => [$c => $this->{$c}]);
+
+            $this->update($dados);
+
+            $mudancas = $antes->filter(fn ($valor, $campo) => (string) $valor !== (string) $this->{$campo})
+                ->map(fn ($valor, $campo) => [$valor, $this->{$campo}])->all();
+
+            if ($endereco !== null && ($textos = $this->gravarEndereco(Endereco::normalizar($endereco), $dosFilhos))) {
+                $mudancas['endereco'] = $textos;
+            }
+
+            foreach ($mudancas as $campo => [$antigo, $novo]) {
+                $this->historico()->create([
+                    'campo_responsavel_historico'        => $campo,
+                    'valor_antigo_responsavel_historico' => $antigo === null ? null : (string) $antigo,
+                    'valor_novo_responsavel_historico'   => $novo === null ? null : (string) $novo,
+                    'id_usuario'                         => null,
+                ]);
+            }
+        });
+    }
+
+    // Grava o endereço novo; devolve [texto antigo, texto novo], ou null se nada mudou
+    private function gravarEndereco(array $novo, bool $dosFilhos): ?array
+    {
+        $atual = $this->endereco;
+        $antigo = $atual ? Endereco::normalizar($atual->only(Endereco::CAMPOS)) : null;
+
+        if ($antigo === $novo) {
+            return null;
+        }
+
+        $filhos = $this->filhosNoMesmoEndereco();
+        $comOutros = $atual && (
+            self::where('id_endereco', $atual->id_endereco)->where('id_responsavel', '<>', $this->id_responsavel)->exists()
+            || Atleta::where('id_endereco', $atual->id_endereco)->whereNotIn('id_atleta', $this->atletas()->pluck('tbl_atletas.id_atleta'))->exists()
+        );
+
+        if (! $atual || $comOutros || ($filhos->isNotEmpty() && ! $dosFilhos)) {
+            // Um endereço só dele: o dos filhos (e de quem mais usava o registro) fica como estava
+            $this->forceFill(['id_endereco' => Endereco::create($novo)->id_endereco])->save();
+            $this->unsetRelation('endereco');
+        } else {
+            $atual->update($novo);
+
+            foreach ($filhos as $filho) {
+                AtletaHistorico::create([
+                    'id_atleta'                     => $filho->id_atleta,
+                    'campo_atleta_historico'        => AtletaHistorico::CAMPO_ENDERECO,
+                    'valor_antigo_atleta_historico' => Endereco::texto($antigo),
+                    'valor_novo_atleta_historico'   => Endereco::texto($novo),
+                    'id_usuario'                    => null, // pelo app, do responsável
+                ]);
+            }
+        }
+
+        return [Endereco::texto($antigo), Endereco::texto($novo)];
     }
 
     // ---------- acesso ao app (trait AcessaOApp) ----------
