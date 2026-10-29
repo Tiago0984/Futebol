@@ -21,7 +21,7 @@
         .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
         .rota { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px; }
         .metodo { font-weight: 700; font-size: .75rem; padding: 2px 8px; border-radius: 4px; color: #fff; }
-        .GET { background: #198754; } .POST { background: #0d6efd; } .PUT { background: #fd7e14; } .PATCH { background: #6f42c1; }
+        .GET { background: #198754; } .POST { background: #0d6efd; } .PUT { background: #fd7e14; } .PATCH { background: #6f42c1; } .DELETE { background: #dc3545; }
         .acesso { font-size: .75rem; padding: 2px 8px; border-radius: 4px; background: #e9ecef; }
         .acesso.atleta { background: #fff3cd; } .acesso.responsavel { background: #cfe2ff; } .acesso.qualquer { background: #e2d9f3; }
         code { font-family: ui-monospace, Consolas, monospace; font-size: .9rem; word-break: break-all; }
@@ -280,7 +280,7 @@ Content-Type: application/json
     "id_atleta": 7, "nome_atleta": "Joana Exemplo", "data_nasc_atleta": "2013-06-15T00:00:00-03:00",
     "email_atleta": "joana@exemplo.com", "numero_matricula_atleta": "A100", "status_atleta": "ATIVO",
     "escola_atleta": "...", "serie_atleta": "...", "peso_atleta": "45.00", "altura_atleta": "1.55", ...,
-    "posicao_atleta": "VOLANTE", "foto_url": "https://.../futebol/images/our-teams/joana.jpg",
+    "posicao_atleta": "VOLANTE", "foto_url": "https://.../futebol/images/our-teams/joana.jpg", "foto_pendente": false,
     "endereco": { "cep_endereco": "01000-000", "rua_endereco": "...", ... },
     "categorias": [
       { "id_categoria": 5, "nome_categoria": "Sub-13",
@@ -328,6 +328,38 @@ Content-Type: application/json
 
 200 { "success": true, "message": "Senha alterada com sucesso." }
 422 { "success": false, "message": "Senha atual incorreta." }</pre>
+    </div>
+
+    <div class="card">
+        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/atleta/foto</code><span class="acesso atleta">Atleta</span></div>
+        <p>Envia uma foto nova do atleta. <strong>O corpo é <code>multipart/form-data</code></strong> (não JSON), com o arquivo no campo <code>foto</code>: não defina o <code>Content-Type</code> à mão (o <code>FormData</code> e o <code>curl -F</code> põem o <em>boundary</em> sozinhos). Aceita JPG, PNG e WebP (HEIC do iPhone só se o servidor conseguir abrir), até <strong>10 MB</strong>. A foto é recortada no quadrado do centro e reduzida a até 512 × 512, em JPG.</p>
+        <p><strong>A foto nova espera a aprovação da secretaria</strong> (o atleta é menor e a foto aparece no site): até lá, <code>foto_url</code> continua com a foto atual e <code>foto_pendente</code> vem <code>true</code>. Mandar outra antes da aprovação troca a que esperava. A resposta traz o atleta no mesmo formato de <code>GET /api/v1/atleta</code>. O responsável não troca a foto do filho.</p>
+<pre>curl -X POST https://.../api/v1/atleta/foto \
+  -H "Accept: application/json" -H "Authorization: Bearer SEU_TOKEN" \
+  -F "foto=@joana.jpg"
+
+// JavaScript (navegador ou React Native)
+const corpo = new FormData();
+corpo.append('foto', arquivo);   // File/Blob, ou { uri, name: 'foto.jpg', type: 'image/jpeg' } no React Native
+await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
+  method: 'POST',
+  headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },   // sem Content-Type
+  body: corpo,
+});
+
+200 { "success": true, "message": "Foto enviada. Ela aparece no app depois que a secretaria aprovar.",
+      "data": { ...o mesmo de GET /api/v1/atleta, com "foto_pendente": true... } }
+
+422 { "success": false, "message": "A foto deve ser uma imagem JPG ou PNG.",
+      "errors": { "foto": ["A foto deve ser uma imagem JPG ou PNG."] } }
+422 { "success": false, "message": "A foto deve ter no máximo 10 MB.",
+      "errors": { "foto": ["A foto deve ter no máximo 10 MB."] } }</pre>
+    </div>
+
+    <div class="card">
+        <div class="rota"><span class="metodo DELETE">DELETE</span><code>/api/v1/atleta/foto</code><span class="acesso atleta">Atleta</span></div>
+        <p>Tira a foto do atleta <strong>na hora</strong> (volta para a padrão: <code>foto_url</code> <code>null</code>, e o app mostra as iniciais) e descarta a foto que esperava aprovação. Responde no mesmo formato do envio.</p>
+<pre>200 { "success": true, "message": "Foto removida.", "data": { ...o mesmo de GET /api/v1/atleta, com "foto_url": null, "foto_pendente": false... } }</pre>
     </div>
 
     <div class="card">
@@ -727,6 +759,7 @@ Content-Type: application/json
             <li><strong>Todas as rotas:</strong> 120 por minuto por conta logada (atleta ou responsável) e 60 por minuto por IP sem login. As respostas trazem os cabeçalhos <code>X-RateLimit-Limit</code> e <code>X-RateLimit-Remaining</code>. Guarde no app o que muda pouco (campeonatos, notícias, banners) em vez de buscar a cada tela.</li>
             <li><code>POST /auth/login</code>: 5 por minuto por IP e 5 por minuto por e-mail e perfil.</li>
             <li><code>POST /auth/esqueci-senha</code>: 5 por minuto por IP e 3 a cada 10 minutos por e-mail e perfil.</li>
+            <li><code>POST</code> e <code>DELETE /atleta/foto</code>: juntos, 5 por minuto e 20 por hora por atleta.</li>
         </ul>
     </div>
 
@@ -742,6 +775,8 @@ Content-Type: application/json
             ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'nome_atleta?, cpf_atleta?, data_nasc_atleta?, email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
             ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],
             ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
+            ['POST',  '/atleta/foto', 'Atleta', 'foto (arquivo, multipart/form-data)'],
+            ['DELETE', '/atleta/foto', 'Atleta', '—'],
             ['GET',   '/atleta/estatisticas', 'Atleta', '—'],
             ['GET',   '/campeonatos-do-atleta', 'Atleta', '—'],
             ['GET',   '/agenda', 'Atleta', 'page?, tipo?, de?, ate?'],
@@ -771,7 +806,7 @@ Content-Type: application/json
 
     <p class="nota">
         <strong>Parâmetros:</strong> <code>{nome}</code> vai no caminho da URL; <code>?</code> no fim do nome = opcional (os outros são obrigatórios);
-        nas rotas <code>GET</code> os parâmetros vão na query string (ex.: <code>?page=2</code>) e nas demais no corpo JSON; <code>—</code> = sem parâmetros.
+        nas rotas <code>GET</code> os parâmetros vão na query string (ex.: <code>?page=2</code>) e nas demais no corpo JSON (a foto, em <code>multipart/form-data</code>); <code>—</code> = sem parâmetros.
         <strong>Acesso:</strong> as rotas que não são <strong>Público</strong> exigem <code>Authorization: Bearer SEU_TOKEN</code> do perfil indicado.
     </p>
 

@@ -45,7 +45,8 @@ class AppDoAtleta
     // "times" fica sempre vazio (Fase G, Etapa 4: sem elenco fixo; o time de cada jogo vem na agenda, em
     // time_do_atleta), para não quebrar o app. Posições (Fase D): "posicoes" (até 3, a principal primeiro, com
     // código, sigla e nome) e "posicao_atleta" com o código da principal (antes, texto livre), também para o app
-    // "foto_url": endereço completo da foto (null sem foto; o banco guarda o caminho do arquivo)
+    // "foto_url": endereço completo da foto (null sem foto; o banco guarda o caminho do arquivo). "foto_pendente"
+    // (29/10/2026): true quando o atleta enviou uma foto pelo app e a secretaria ainda não aprovou (foto_url é a atual)
     public function dados(): Atleta
     {
         $atleta = $this->atleta->load([
@@ -63,6 +64,7 @@ class AppDoAtleta
 
         return $atleta->setAttribute('posicao_atleta', $atleta->posicoes->first()?->posicao)
             ->setAttribute('foto_url', $atleta->urlFoto())
+            ->setAttribute('foto_pendente', $atleta->temFotoPendente())
             ->setAttribute('responsaveis', $responsaveis);
     }
 

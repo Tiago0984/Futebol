@@ -1,9 +1,11 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AtletaController;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -63,6 +65,11 @@ return Application::configure(basePath: dirname(__DIR__))
                 $e instanceof ThrottleRequestsException => $erro(
                     'Muitas tentativas. Aguarde um pouco e tente de novo.', 429, [], $e->getHeaders()
                 ),
+                // Corpo acima do post_max_size (o PHP descarta tudo): na foto do atleta, o mesmo 422 do campo, que o
+                // app mostra embaixo da foto (29/10/2026)
+                $e instanceof PostTooLargeException => $request->is('api/v1/atleta/foto')
+                    ? $erro(AtletaController::MENSAGEM_FOTO_TAMANHO, 422, ['errors' => ['foto' => [AtletaController::MENSAGEM_FOTO_TAMANHO]]])
+                    : $erro('O envio passou do tamanho máximo aceito pelo servidor.', 413),
                 $e instanceof NotFoundHttpException => $erro('Endereço não encontrado.', 404),
                 $e instanceof MethodNotAllowedHttpException => $erro(
                     'Método não aceito nesta rota.', 405, [], $e->getHeaders()

@@ -7,11 +7,14 @@ use App\Models\Atleta;
 use App\Models\AtletaHistorico;
 use App\Rules\CpfValido;
 use App\Services\AppDoAtleta;
+use App\Services\TratadorDeImagem;
 use App\Support\Cpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
+use Intervention\Image\Exceptions\RuntimeException as ImagemException;
 
 class AtletaController extends Controller
 {
@@ -95,6 +98,56 @@ class AtletaController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Dados atualizados com sucesso.',
+            'data'    => (new AppDoAtleta($atleta->fresh()))->dados(),
+        ]);
+    }
+
+    // Mensagens da foto, as mesmas que o app mostra embaixo da foto
+    public const MENSAGEM_FOTO_TIPO    = 'A foto deve ser uma imagem JPG ou PNG.';
+    public const MENSAGEM_FOTO_TAMANHO = 'A foto deve ter no máximo 10 MB.';
+
+    // POST /api/v1/atleta/foto (multipart, campo "foto"; 29/10/2026): a foto é tratada (quadrado de até 512×512,
+    // JPG) e fica pendente até a secretaria aprovar no painel (dono do projeto: o atleta é menor e a foto vai para o
+    // site). foto_url continua com a atual; foto_pendente = true. Mandar outra antes da aprovação troca a pendente
+    public function enviarFoto(Request $request)
+    {
+        $request->validate([
+            'foto' => 'bail|required|file|max:' . TratadorDeImagem::ENVIO_MAX_KB . '|mimetypes:' . implode(',', TratadorDeImagem::TIPOS_FOTO),
+        ], [
+            'foto.required'  => 'Envie a foto no campo "foto".',
+            'foto.file'      => self::MENSAGEM_FOTO_TIPO,
+            'foto.mimetypes' => self::MENSAGEM_FOTO_TIPO,
+            'foto.max'       => self::MENSAGEM_FOTO_TAMANHO,
+            'foto.uploaded'  => self::MENSAGEM_FOTO_TAMANHO, // o PHP recusou (acima do upload_max_filesize)
+        ]);
+
+        // O tipo do conteúdo passou, mas a imagem pode não abrir (arquivo corrompido, HEIC sem o Imagick)
+        try {
+            $arquivo = TratadorDeImagem::foto($request->file('foto')->getRealPath(), 'local', Atleta::PASTA_FOTO_PENDENTE, 'foto-atleta');
+        } catch (ImagemException) {
+            throw ValidationException::withMessages(['foto' => self::MENSAGEM_FOTO_TIPO]);
+        }
+
+        // Relido do banco: o objeto do token pode já ter os campos calculados do dados() (foto_url…), que o save() gravaria
+        $atleta = $request->user()->fresh();
+        $atleta->guardarFotoPendente($arquivo);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto enviada. Ela aparece no app depois que a secretaria aprovar.',
+            'data'    => (new AppDoAtleta($atleta->fresh()))->dados(),
+        ]);
+    }
+
+    // DELETE /api/v1/atleta/foto: volta para a foto padrão (foto_url null) na hora e descarta a pendente
+    public function removerFoto(Request $request)
+    {
+        $atleta = $request->user()->fresh();
+        $atleta->removerFoto();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Foto removida.',
             'data'    => (new AppDoAtleta($atleta->fresh()))->dados(),
         ]);
     }

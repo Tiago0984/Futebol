@@ -71,6 +71,17 @@ class AppServiceProvider extends ServiceProvider
                 : Limit::perMinute(60)->by('api-ip:' . $request->ip());
         });
 
+        // Foto do atleta (enviar e remover; 29/10/2026): 5 por minuto e 20 por hora por atleta (cada envio pode ter
+        // 10 MB e é tratado no servidor). Passou: 429 em JSON
+        RateLimiter::for('foto-api', function (Request $request) {
+            $chave = 'foto:' . $request->user()?->getAuthIdentifier();
+
+            return [
+                Limit::perMinute(5)->by($chave),
+                Limit::perHour(20)->by($chave . ':hora'),
+            ];
+        });
+
         // "Esqueci minha senha": 5 pedidos por minuto por IP e 3 a cada 10 minutos por e-mail e perfil
         // (além do broker, que não gera outro link para a mesma conta em menos de 60 segundos)
         RateLimiter::for('esqueci-senha-api', function (Request $request) {

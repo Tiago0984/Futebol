@@ -88,6 +88,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () use ($rotasDa
         // Atualizar senha
         Route::put('/atleta/senha', [AtletaController::class, 'updateSenha']);
 
+        // Foto (29/10/2026): enviar (multipart, campo "foto"; fica pendente até a secretaria aprovar) e remover
+        Route::post('/atleta/foto', [AtletaController::class, 'enviarFoto'])->middleware('throttle:foto-api');
+        Route::delete('/atleta/foto', [AtletaController::class, 'removerFoto'])->middleware('throttle:foto-api');
+
         // Estatísticas (partidas, convocações e cartões; o responsável tem a mesma, sob o filho)
         Route::get('/atleta/estatisticas', [AppDoAtletaController::class, 'estatisticas']);
 
