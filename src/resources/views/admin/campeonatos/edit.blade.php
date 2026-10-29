@@ -66,7 +66,7 @@
                                 value="{{ old('data_fim_campeonato', $campeonato->data_fim_campeonato?->format('Y-m-d')) }}">
                         </div>
                         <div class="col-md-4">
-                            @include('admin.partials.select-local', ['idCampo' => 'edit_camp_local', 'rotulo' => 'Local principal', 'atual' => $campeonato, 'campoTexto' => 'local_evento'])
+                            @include('admin.partials.select-local', ['idCampo' => 'edit_camp_local', 'rotuloDoCampo' => 'Local principal', 'atual' => $campeonato, 'campoTexto' => 'local_evento'])
                             <span class="form-text">Opcional. Cada jogo tem o seu local; este é a sugestão para os jogos novos.</span>
                         </div>
                         <div class="col-md-6">

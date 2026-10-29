@@ -264,7 +264,7 @@
                             <input type="date" name="data_fim_campeonato" class="form-control" required>
                         </div>
                         <div class="col-md-3">
-                            @include('admin.partials.select-local', ['idCampo' => 'cad_camp_local', 'rotulo' => 'Local principal'])
+                            @include('admin.partials.select-local', ['idCampo' => 'cad_camp_local', 'rotuloDoCampo' => 'Local principal'])
                             <span class="form-text">Opcional. Cada jogo tem o seu local.</span>
                         </div>
                         <div class="col-md-3">
@@ -340,7 +340,7 @@
                                 class="form-control" required>
                         </div>
                         <div class="col-md-3">
-                            @include('admin.partials.select-local', ['idCampo' => 'edit_local_evento', 'rotulo' => 'Local principal'])
+                            @include('admin.partials.select-local', ['idCampo' => 'edit_local_evento', 'rotuloDoCampo' => 'Local principal'])
                             <span class="form-text">Opcional. Cada jogo tem o seu local.</span>
                         </div>
                         <div class="col-md-3">

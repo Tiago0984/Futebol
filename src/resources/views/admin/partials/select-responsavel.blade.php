@@ -1,7 +1,7 @@
 {{--
     Select "Responsável pela atividade" (Etapa C2): só os profissionais ATIVOS da comissão técnica, sem texto livre.
     Parâmetros: $idCampo (id do select); opcionais $atual (EventoCalendario ou GradeTreino em edição, na tela do evento)
-    e $rotulo. Extras do registro em edição (o servidor também confere, em ComissaoTecnica::daEscolha):
+    e $rotuloDoCampo (não $rotulo, que as telas usam em laços e vazaria para cá). Extras do registro em edição (o servidor também confere, em ComissaoTecnica::daEscolha):
     - profissional atual que foi desativado: "Nome (inativo)", só para manter;
     - texto antigo (texto livre de 24/10/2026): "Prof. Carlos (texto antigo)", mantido até alguém escolher da lista.
     Nos modais da lista, o JS do partial admin.partials.sugestoes cria esses extras (prepararSelectResponsavel).
@@ -16,7 +16,7 @@
         ? (string) old('id_comissao_tecnica', '')
         : (string) ($idAtual ?: (filled($textoAntigo) ? \App\Models\ComissaoTecnica::TEXTO_ANTIGO : ''));
 @endphp
-<label class="form-label" for="{{ $idCampo }}">{{ $rotulo ?? 'Responsável pela atividade' }}</label>
+<label class="form-label" for="{{ $idCampo }}">{{ $rotuloDoCampo ?? 'Responsável pela atividade' }}</label>
 <select id="{{ $idCampo }}" name="id_comissao_tecnica" class="form-select js-select-responsavel">
     <option value="">— Sem responsável —</option>
     @foreach ($ativos as $p)

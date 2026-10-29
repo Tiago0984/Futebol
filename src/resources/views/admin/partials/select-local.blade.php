@@ -3,7 +3,7 @@
     botão "Novo local" (cadastra sem sair da tela, pela rota admin.locais.rapido, e já escolhe o novo).
     Parâmetros: $idCampo (id do select); opcionais $atual (EventoCalendario, GradeTreino ou Campeonato em edição) com
     $campoTexto (a coluna do texto do local nele), $valorEscolhido (valor já escolhido, quando não há $atual: os geradores),
-    $nome (nome do campo, padrão id_local), $rotulo e $vazio (texto da opção vazia, padrão "— Sem local —").
+    $nome (nome do campo, padrão id_local), $rotuloDoCampo (não $rotulo, que as telas usam em laços e vazaria para cá) e $vazio (texto da opção vazia, padrão "— Sem local —").
     Extras do registro em edição (o servidor também confere, em Local::daEscolha):
     - local atual que foi desativado: "Nome (inativo)", só para manter;
     - texto antigo (escrito à mão antes da L2): "Quadra A (texto antigo)", mantido até alguém escolher da lista.
@@ -23,7 +23,7 @@
             : (string) ($idAtual ?: (filled($textoAtual) ? \App\Models\Local::TEXTO_ANTIGO : '')));
 @endphp
 <div class="js-campo-local">
-    <label class="form-label" for="{{ $idCampo }}">{{ $rotulo ?? 'Local' }}</label>
+    <label class="form-label" for="{{ $idCampo }}">{{ $rotuloDoCampo ?? 'Local' }}</label>
     <div class="input-group">
         <select id="{{ $idCampo }}" name="{{ $nome }}" class="form-select js-select-local">
             <option value="">{{ $vazio ?? '— Sem local —' }}</option>

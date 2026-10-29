@@ -48,6 +48,25 @@ class LocaisNosFormulariosTest extends TestCase
         ], $extra);
     }
 
+    // O Calendário tem laços com $rotulo (filtro de tipos: o último é "AVALIAÇÃO"), e o @include passa as variáveis da
+    // tela para o partial: o rótulo dos campos é $rotuloDoCampo, para não herdar esse valor (achado em 29/10/2026)
+    public function test_rotulos_dos_campos_local_e_responsavel_nao_herdam_variavel_da_tela(): void
+    {
+        $resposta = $this->comoAdmin()->get(route('admin.calendario.index'))->assertOk();
+        // O modal do evento individual só existe na lista de Individuais
+        $individuais = $this->get(route('admin.calendario.index', ['ramo' => 'individuais']))->assertOk();
+
+        foreach (['cad_ev_local', 'cad_g_local', 'edit_g_local', 'edit_ev_local'] as $id) {
+            $resposta->assertSee('<label class="form-label" for="' . $id . '">Local</label>', false);
+        }
+        $resposta->assertSee('<label class="form-label" for="cad_ev_responsavel">Responsável pela atividade</label>', false);
+        $individuais->assertSee('<label class="form-label" for="ind_local">Local</label>', false)
+            ->assertSee('<label class="form-label" for="ind_responsavel">Responsável pela atividade</label>', false);
+        foreach (['cad_g_responsavel', 'edit_g_responsavel'] as $id) {
+            $resposta->assertSee('<label class="form-label" for="' . $id . '">Responsável pelo treino</label>', false);
+        }
+    }
+
     public function test_evento_grava_o_local_escolhido_com_o_nome_no_texto(): void
     {
         $this->comoAdmin()->post(route('admin.calendario.eventos.store'), $this->dadosEvento(['id_local' => (string) $this->campo]))

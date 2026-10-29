@@ -60,7 +60,7 @@
                                 required value="{{ old('data_fim_campeonato') }}">
                         </div>
                         <div class="col-md-4">
-                            @include('admin.partials.select-local', ['idCampo' => 'cad_camp_local', 'rotulo' => 'Local principal'])
+                            @include('admin.partials.select-local', ['idCampo' => 'cad_camp_local', 'rotuloDoCampo' => 'Local principal'])
                             <span class="form-text">Opcional. Cada jogo tem o seu local; este é a sugestão para os jogos novos.</span>
                         </div>
                         <div class="col-md-6">

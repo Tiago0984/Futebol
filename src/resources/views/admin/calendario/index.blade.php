@@ -595,7 +595,7 @@
                             @include('admin.partials.select-local', ['idCampo' => 'cad_g_local'])
                         </div>
                         <div class="col-12">
-                            @include('admin.partials.select-responsavel', ['idCampo' => 'cad_g_responsavel', 'rotulo' => 'Responsável pelo treino'])
+                            @include('admin.partials.select-responsavel', ['idCampo' => 'cad_g_responsavel', 'rotuloDoCampo' => 'Responsável pelo treino'])
                             <div class="form-text">Vai para os treinos gerados pelo "Gerar agenda do mês".</div>
                         </div>
                         <div class="col-12">
@@ -674,7 +674,7 @@
                             @include('admin.partials.select-local', ['idCampo' => 'edit_g_local'])
                         </div>
                         <div class="col-12">
-                            @include('admin.partials.select-responsavel', ['idCampo' => 'edit_g_responsavel', 'rotulo' => 'Responsável pelo treino'])
+                            @include('admin.partials.select-responsavel', ['idCampo' => 'edit_g_responsavel', 'rotuloDoCampo' => 'Responsável pelo treino'])
                             <div class="form-text">Vale para os próximos treinos gerados; os já gerados não mudam (edite-os na lista de eventos).</div>
                         </div>
                         <div class="col-12">
