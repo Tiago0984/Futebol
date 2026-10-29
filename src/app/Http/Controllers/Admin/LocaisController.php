@@ -9,9 +9,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
- * Cadastro de locais (Etapa L1, 30/10/2026): criar, editar, ativar e desativar, no molde da comissão técnica. Sem
- * exclusão: o local fica nos eventos em que já está (desativado, não aparece para novas escolhas). A lista mostra
- * também os textos de local já usados que ainda não têm cadastro, com "Cadastrar" e o nome preenchido.
+ * Cadastro de locais (Etapa L1, 30/10/2026): criar, editar, ativar e desativar, no molde da comissão técnica. O local
+ * em uso fica nos eventos em que já está (desativado, não aparece para novas escolhas); só o que nada usa é excluído.
+ * A lista mostra também os textos de local já usados que ainda não têm cadastro, com "Cadastrar" (o nome preenchido)
+ * e "Ligar a…" um local já cadastrado.
  */
 class LocaisController extends Controller
 {
@@ -19,8 +20,9 @@ class LocaisController extends Controller
     {
         $locais = Local::orderByRaw("status_local = 'ATIVO' DESC")->orderBy('nome_local')->get();
         $semCadastro = Local::textosSemCadastro();
+        $usos = Local::usosPorLocal();
 
-        return view('admin.locais.index', compact('locais', 'semCadastro'));
+        return view('admin.locais.index', compact('locais', 'semCadastro', 'usos'));
     }
 
     // ?nome= vem do "Cadastrar" de um texto já usado
@@ -106,14 +108,26 @@ class LocaisController extends Controller
         }
 
         $ligados = $local->ligarUsos($texto, auth('admin')->id());
-        $partes = array_filter([
-            $ligados['tbl_evento_calendario'] ? "{$ligados['tbl_evento_calendario']} evento(s)" : null,
-            $ligados['tbl_grade_treino'] ? "{$ligados['tbl_grade_treino']} horário(s) da grade" : null,
-            $ligados['tbl_campeonato'] ? "{$ligados['tbl_campeonato']} campeonato(s)" : null,
-        ]);
 
         return redirect()->route('admin.locais.index')
-            ->with('sucesso', 'Ligados a ' . $local->nome_local . ': ' . implode(', ', $partes) . '. Ninguém foi avisado (o lugar é o mesmo).');
+            ->with('sucesso', 'Ligados a ' . $local->nome_local . ': ' . Local::descreverUsos($ligados) . '. Ninguém foi avisado (o lugar é o mesmo).');
+    }
+
+    // Só o local que nada usa (cadastro errado, de teste ou repetido); o usado é desativado. As FKs (NO ACTION) também
+    // seguram, caso alguém ligue um uso entre a conferência e o delete
+    public function destroy($id)
+    {
+        $local = Local::findOrFail($id);
+        $usos = $local->usos();
+
+        if (array_sum($usos) > 0) {
+            return redirect()->route('admin.locais.index')->with('erro', "O local {$local->nome_local} não pode ser excluído: está em "
+                . Local::descreverUsos($usos) . '. Desative-o para não aparecer mais nas novas escolhas.');
+        }
+
+        $local->delete();
+
+        return redirect()->route('admin.locais.index')->with('sucesso', "O local {$local->nome_local} foi excluído.");
     }
 
     // Desativado: some das novas escolhas, mas continua nos eventos em que já está

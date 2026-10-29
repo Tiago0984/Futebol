@@ -142,8 +142,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
         ->parameters(['comissao-tecnica' => 'id'])->names('comissao');
     Route::patch('comissao-tecnica/{id}/toggle-status', [ComissaoTecnicaController::class, 'toggleStatus'])->name('comissao.toggleStatus');
 
-    // Locais (Etapa L1, 30/10/2026): cadastro sem exclusão, como a comissão técnica
-    Route::resource('locais', LocaisController::class)->only(['index', 'create', 'store', 'edit', 'update'])
+    // Locais (Etapa L1, 30/10/2026): cadastro como a comissão técnica; exclusão só do local que nada usa
+    Route::resource('locais', LocaisController::class)->only(['index', 'create', 'store', 'edit', 'update', 'destroy'])
         ->parameters(['locais' => 'id'])->names('locais');
     Route::patch('locais/{id}/toggle-status', [LocaisController::class, 'toggleStatus'])->name('locais.toggleStatus');
     // L2: "Novo local" dentro dos formulários (JSON) e "Ligar os usos" de um texto antigo

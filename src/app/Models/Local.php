@@ -8,8 +8,9 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Local de treino, jogo ou evento (Etapa L1, 30/10/2026): nome, endereço e o link do Google Maps opcional, para o
- * "Abrir mapa" do app achar o lugar certo (o texto livre "Quadra A" não acha nada). Ativo/inativo, sem exclusão,
- * como a comissão técnica: o desativado sai das novas escolhas e continua nos eventos em que já está (L2).
+ * "Abrir mapa" do app achar o lugar certo (o texto livre "Quadra A" não acha nada). Ativo/inativo, como a comissão
+ * técnica: o desativado sai das novas escolhas e continua nos eventos em que já está (L2). Exclusão só do local que
+ * nada usa (cadastro errado, de teste ou repetido; dono do projeto, 29/10/2026).
  */
 class Local extends Model
 {
@@ -192,6 +193,39 @@ class Local extends Model
     {
         return collect(self::USOS)->map(fn ($coluna, $tabela) => DB::table($tabela)->whereNull('id_local')
             ->whereRaw("TRIM({$coluna}) = ?", [trim($texto)])->count())->all();
+    }
+
+    // Quantos eventos, linhas da grade e campeonatos usam cada local, numa consulta por tabela (a lista de Locais):
+    // [id_local => [tabela => quantidade]]; local sem uso não aparece
+    public static function usosPorLocal(): array
+    {
+        $usos = [];
+        foreach (array_keys(self::USOS) as $tabela) {
+            DB::table($tabela)->whereNotNull('id_local')->groupBy('id_local')
+                ->selectRaw('id_local, COUNT(*) AS quantos')->pluck('quantos', 'id_local')
+                ->each(function ($quantos, $idLocal) use (&$usos, $tabela) {
+                    $usos[$idLocal] = ($usos[$idLocal] ?? array_fill_keys(array_keys(self::USOS), 0));
+                    $usos[$idLocal][$tabela] = (int) $quantos;
+                });
+        }
+
+        return $usos;
+    }
+
+    // Os usos deste local: [tabela => quantidade]
+    public function usos(): array
+    {
+        return collect(self::USOS)->map(fn ($coluna, $tabela) => DB::table($tabela)->where('id_local', $this->id_local)->count())->all();
+    }
+
+    // "175 evento(s), 17 horário(s) da grade" a partir de [tabela => quantidade] (zeros fora)
+    public static function descreverUsos(array $usos): string
+    {
+        return implode(', ', array_filter([
+            ($usos['tbl_evento_calendario'] ?? 0) ? "{$usos['tbl_evento_calendario']} evento(s)" : null,
+            ($usos['tbl_grade_treino'] ?? 0) ? "{$usos['tbl_grade_treino']} horário(s) da grade" : null,
+            ($usos['tbl_campeonato'] ?? 0) ? "{$usos['tbl_campeonato']} campeonato(s)" : null,
+        ]));
     }
 
     /**

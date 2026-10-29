@@ -103,7 +103,7 @@ class LocaisTest extends TestCase
         $this->assertSame(0, Local::count());
     }
 
-    public function test_edita_mantendo_o_proprio_nome_e_desativa_e_reativa_sem_exclusao(): void
+    public function test_edita_mantendo_o_proprio_nome_e_desativa_e_reativa(): void
     {
         $this->comoAdmin()->post(route('admin.locais.store'), self::LOCAL);
         $local = Local::sole();
@@ -122,8 +122,60 @@ class LocaisTest extends TestCase
 
         $this->patch(route('admin.locais.toggleStatus', $local->id_local))->assertSessionHas('sucesso', 'O local Campo AACJ foi reativado.');
         $this->assertTrue($local->fresh()->estaAtivo());
+    }
 
-        $this->assertFalse(\Illuminate\Support\Facades\Route::has('admin.locais.destroy'));
+    public function test_exclui_so_o_local_que_nada_usa(): void
+    {
+        $this->comoAdmin()->post(route('admin.locais.store'), self::LOCAL);
+        $this->post(route('admin.locais.store'), [...self::LOCAL, 'nome_local' => 'Arena Errada']);
+        $usado = Local::where('nome_local', 'Campo AACJ')->sole();
+        $semUso = Local::where('nome_local', 'Arena Errada')->sole();
+        DB::table('tbl_evento_calendario')->insert([
+            'titulo_evento_calendario' => 'Treino', 'tipo_evento_calendario' => 'TREINO', 'data_evento_calendario' => '2026-11-10',
+            'local_evento_calendario' => 'Campo AACJ', 'id_local' => $usado->id_local, 'status_evento_calendario' => 'ATIVO',
+        ]);
+        DB::table('tbl_grade_treino')->insert([
+            'categoria_grade_treino' => 'Treino A', 'dia_semana_grade_treino' => 'terca', 'tipo_grade_treino' => 'TREINO',
+            'local_grade_treino' => 'Campo AACJ', 'id_local' => $usado->id_local, 'status_grade_treino' => 'ATIVO',
+        ]);
+
+        // Na lista: lixeira só no sem uso; o usado tem a lixeira desabilitada com o motivo
+        $this->get(route('admin.locais.index'))->assertOk()
+            ->assertSee('action="' . route('admin.locais.destroy', $semUso->id_local) . '"', false)
+            ->assertDontSee('action="' . route('admin.locais.destroy', $usado->id_local) . '"', false)
+            ->assertSee('Em uso: 1 evento(s), 1 horário(s) da grade.', false);
+
+        $this->delete(route('admin.locais.destroy', $usado->id_local))
+            ->assertRedirect(route('admin.locais.index'))
+            ->assertSessionHas('erro', 'O local Campo AACJ não pode ser excluído: está em 1 evento(s), 1 horário(s) da grade. Desative-o para não aparecer mais nas novas escolhas.');
+        $this->assertModelExists($usado);
+
+        $this->delete(route('admin.locais.destroy', $semUso->id_local))
+            ->assertRedirect(route('admin.locais.index'))
+            ->assertSessionHas('sucesso', 'O local Arena Errada foi excluído.');
+        $this->assertModelMissing($semUso);
+    }
+
+    public function test_texto_usado_pode_ser_ligado_a_um_local_ja_cadastrado_pela_lista(): void
+    {
+        DB::table('tbl_grade_treino')->insert([
+            'categoria_grade_treino' => 'Treino A', 'dia_semana_grade_treino' => 'terca', 'tipo_grade_treino' => 'TREINO',
+            'local_grade_treino' => 'Campo de Grama — AACJ', 'status_grade_treino' => 'ATIVO',
+        ]);
+        $this->comoAdmin()->post(route('admin.locais.store'), self::LOCAL);
+        $local = Local::sole();
+
+        // O botão do texto tem o "Ligar a…" com os locais ativos, que envia para o "Ligar os usos" do local
+        $this->get(route('admin.locais.index'))->assertOk()
+            ->assertSee('Ligar "Campo de Grama — AACJ" a…', false)
+            ->assertSee('action="' . route('admin.locais.ligarUsos', $local->id_local) . '"', false);
+
+        $this->post(route('admin.locais.ligarUsos', $local->id_local), ['texto' => 'Campo de Grama — AACJ'])
+            ->assertRedirect(route('admin.locais.index'))
+            ->assertSessionHas('sucesso', 'Ligados a Campo AACJ: 1 horário(s) da grade. Ninguém foi avisado (o lugar é o mesmo).');
+        $this->assertSame($local->id_local, DB::table('tbl_grade_treino')->value('id_local'));
+        $this->assertSame('Campo AACJ', DB::table('tbl_grade_treino')->value('local_grade_treino'));
+        $this->get(route('admin.locais.index'))->assertDontSee('Locais usados que ainda não estão cadastrados');
     }
 
     public function test_lista_os_locais_usados_que_ainda_nao_estao_cadastrados(): void
