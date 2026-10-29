@@ -19,10 +19,10 @@ class LocaisController extends Controller
     public function index()
     {
         $locais = Local::orderByRaw("status_local = 'ATIVO' DESC")->orderBy('nome_local')->get();
-        $semCadastro = Local::textosSemCadastro();
+        $soltos = Local::textosSoltos();
         $usos = Local::usosPorLocal();
 
-        return view('admin.locais.index', compact('locais', 'semCadastro', 'usos'));
+        return view('admin.locais.index', compact('locais', 'soltos', 'usos'));
     }
 
     // ?nome= vem do "Cadastrar" de um texto já usado

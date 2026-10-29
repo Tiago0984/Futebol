@@ -175,10 +175,10 @@ class LocaisTest extends TestCase
             ->assertSessionHas('sucesso', 'Ligados a Campo AACJ: 1 horário(s) da grade. Ninguém foi avisado (o lugar é o mesmo).');
         $this->assertSame($local->id_local, DB::table('tbl_grade_treino')->value('id_local'));
         $this->assertSame('Campo AACJ', DB::table('tbl_grade_treino')->value('local_grade_treino'));
-        $this->get(route('admin.locais.index'))->assertDontSee('Locais usados que ainda não estão cadastrados');
+        $this->get(route('admin.locais.index'))->assertDontSee('Locais escritos à mão, ainda sem cadastro ligado');
     }
 
-    public function test_lista_os_locais_usados_que_ainda_nao_estao_cadastrados(): void
+    public function test_lista_os_textos_soltos_e_o_de_mesmo_nome_fica_ate_ser_ligado(): void
     {
         DB::table('tbl_grade_treino')->insert([
             ['categoria_grade_treino' => 'Treino A', 'dia_semana_grade_treino' => 'terca', 'tipo_grade_treino' => 'TREINO', 'local_grade_treino' => 'Quadra A', 'status_grade_treino' => 'ATIVO'],
@@ -187,15 +187,28 @@ class LocaisTest extends TestCase
         ]);
 
         $this->assertEqualsCanonicalizing(['Quadra A' => 2, 'CAMPO AACJ' => 1],
-            Local::textosSemCadastro()->mapWithKeys(fn ($u) => [$u->texto => $u->usos])->all());
+            Local::textosSoltos()->mapWithKeys(fn ($u) => [$u->texto => $u->usos])->all());
 
-        // "Campo AACJ" cadastrado sai da lista (mesmo nome, outra caixa)
-        $this->comoAdmin()->post(route('admin.locais.store'), self::LOCAL);
+        // "Campo AACJ" cadastrado sem ligar (pelo "Novo local", sem o texto de origem): o texto continua na lista, agora
+        // com o "Ligar ao Campo AACJ" (mesmo nome, outra caixa) no lugar do "Cadastrar"; o local ainda pode ser excluído
+        $this->comoAdmin()->post(route('admin.locais.store'), self::LOCAL)->assertRedirect(route('admin.locais.index'));
+        $local = Local::sole();
+        $this->assertEqualsCanonicalizing(['Quadra A' => null, 'CAMPO AACJ' => $local->id_local],
+            Local::textosSoltos()->mapWithKeys(fn ($u) => [$u->texto => $u->local?->id_local])->all());
         $this->get(route('admin.locais.index'))
             ->assertOk()
-            ->assertSee('Locais usados que ainda não estão cadastrados')
+            ->assertSee('Locais escritos à mão, ainda sem cadastro ligado')
             ->assertSee(route('admin.locais.create', ['nome' => 'Quadra A']), false)
-            ->assertDontSee(route('admin.locais.create', ['nome' => 'CAMPO AACJ']), false);
+            ->assertDontSee(route('admin.locais.create', ['nome' => 'CAMPO AACJ']), false)
+            ->assertSee('Ligar ao Campo AACJ')
+            ->assertSee('action="' . route('admin.locais.destroy', $local->id_local) . '"', false);
+
+        // Ligado: sai da lista e o local passa a estar em uso
+        $this->post(route('admin.locais.ligarUsos', $local->id_local), ['texto' => 'CAMPO AACJ'])->assertSessionHas('sucesso');
+        $this->assertSame(['Quadra A'], Local::textosSoltos()->pluck('texto')->all());
+        $this->get(route('admin.locais.index'))
+            ->assertDontSee('Ligar ao Campo AACJ')
+            ->assertDontSee('action="' . route('admin.locais.destroy', $local->id_local) . '"', false);
 
         // "Cadastrar" abre o formulário com o nome preenchido
         $this->get(route('admin.locais.create', ['nome' => 'Quadra A']))->assertOk()->assertSee('value="Quadra A"', false);

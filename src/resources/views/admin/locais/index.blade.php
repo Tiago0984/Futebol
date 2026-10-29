@@ -31,22 +31,34 @@
         </div>
         @endif
 
-        {{-- Textos de local já usados (eventos, grade, campeonatos) que ainda não são um local cadastrado: "Cadastrar"
-             com o nome, ou "Ligar a…" um local ativo (o mesmo lugar escrito de outro jeito). A lista não cresce: desde a
-             L2 os formulários só escolhem locais cadastrados --}}
-        @if($semCadastro->isNotEmpty())
+        {{-- Textos de local escritos à mão (eventos, grade, campeonatos) ainda sem local ligado. Com o nome de um local
+             cadastrado: "Ligar ao …" direto (fica aqui até ligar, para nenhum uso ficar solto sem aviso); sem: "Cadastrar"
+             com o nome. A seta liga a qualquer local ativo (o mesmo lugar escrito de outro jeito). A lista não cresce:
+             desde a L2 os formulários só escolhem locais cadastrados --}}
+        @if($soltos->isNotEmpty())
         @php $ativos = $locais->where('status_local', 'ATIVO'); @endphp
         <div class="card shadow-sm mb-4">
             <div class="card-body">
-                <h2 class="h6 mb-1"><i class="bi bi-geo"></i> Locais usados que ainda não estão cadastrados</h2>
-                <p class="small text-muted mb-3">Escritos à mão nos eventos, na grade de treinos ou no local principal dos campeonatos. Clique para cadastrar com esse nome ou, se é o mesmo lugar de um local já cadastrado, use a seta para <strong>ligar a ele</strong> (sem avisar ninguém). Esta lista não cresce: os formulários só aceitam locais cadastrados.</p>
+                <h2 class="h6 mb-1"><i class="bi bi-geo"></i> Locais escritos à mão, ainda sem cadastro ligado</h2>
+                <p class="small text-muted mb-3">Escritos à mão nos eventos, na grade de treinos ou no local principal dos campeonatos, de antes do cadastro de locais. Enquanto não forem ligados a um local, o aplicativo não mostra o endereço nem o mapa. Em azul, os que já têm um local com o mesmo nome: clique para <strong>ligar</strong>. Nos outros, clique para cadastrar com esse nome ou use a seta para ligar a um local já cadastrado. Ninguém é avisado. Esta lista não cresce: os formulários só aceitam locais cadastrados.</p>
                 <div class="d-flex flex-wrap gap-2">
-                    @foreach($semCadastro as $usado)
+                    @foreach($soltos as $usado)
                     <div class="btn-group btn-group-sm">
+                        @if($usado->local)
+                        <form method="POST" action="{{ route('admin.locais.ligarUsos', $usado->local->id_local) }}" class="btn-group btn-group-sm"
+                              onsubmit="return confirm(@js("Ligar os {$usado->usos} uso(s) de \"{$usado->texto}\" a {$usado->local->nome_local}? Os eventos passam a usar o endereço dele; ninguém é avisado."))">
+                            @csrf
+                            <input type="hidden" name="texto" value="{{ $usado->texto }}">
+                            <button type="submit" class="btn btn-outline-primary js-ligar-mesmo-nome" title="Já existe o local {{ $usado->local->nome_local }}: ligar estes usos a ele">
+                                <i class="bi bi-link-45deg"></i> {{ $usado->texto }} <span class="opacity-75">({{ $usado->usos }})</span> · Ligar ao {{ $usado->local->nome_local }}{{ $usado->local->estaAtivo() ? '' : ' (inativo)' }}
+                            </button>
+                        </form>
+                        @else
                         <a href="{{ route('admin.locais.create', ['nome' => $usado->texto]) }}" class="btn btn-outline-secondary js-local-sem-cadastro"
                            title="Usado {{ $usado->usos }} vez(es). Cadastrar com este nome">
                             <i class="bi bi-plus-circle"></i> {{ $usado->texto }} <span class="text-muted">({{ $usado->usos }})</span>
                         </a>
+                        @endif
                         @if($ativos->isNotEmpty())
                         <button type="button" class="btn btn-outline-secondary dropdown-toggle dropdown-toggle-split js-ligar-a"
                                 data-bs-toggle="dropdown" aria-expanded="false" title="Ligar a um local já cadastrado">

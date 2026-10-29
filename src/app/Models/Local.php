@@ -161,12 +161,14 @@ class Local extends Model
 
     /**
      * Textos de local soltos (sem id_local) nos eventos, na grade e no local principal dos campeonatos, com quantas
-     * vezes aparecem; os iguais sem diferenciar maiúsculas e acentos (a collation) contam juntos. $semCadastro = só os
-     * que ainda não são o nome de um local: a lista de Locais oferece "Cadastrar" com o nome preenchido.
+     * vezes aparecem; os iguais sem diferenciar maiúsculas e acentos (a collation) contam juntos. $local = o local
+     * cadastrado com o mesmo nome, ou null: a lista de Locais oferece "Ligar ao …" nele e "Cadastrar" (nome preenchido)
+     * nos outros. O texto com o nome de um local continua na lista até ser ligado (29/10/2026: antes sumia ao cadastrar,
+     * e os usos ficavam soltos sem nenhum aviso).
      *
-     * @return Collection<int, object{texto: string, usos: int}>
+     * @return Collection<int, object{texto: string, usos: int, local: ?Local}>
      */
-    public static function textosSoltos(bool $semCadastro = false): Collection
+    public static function textosSoltos(): Collection
     {
         $usados = DB::query()->fromSub(
             collect(self::USOS)->map(fn ($coluna, $tabela) => DB::table($tabela)->whereNull('id_local')->selectRaw("TRIM({$coluna}) AS texto"))
@@ -174,18 +176,19 @@ class Local extends Model
             'usados'
         );
 
-        return $usados->selectRaw('MIN(texto) AS texto, COUNT(*) AS usos')
+        $linhas = $usados->selectRaw('MIN(texto) AS texto, COUNT(*) AS usos')
+            ->selectRaw('MIN((SELECT l.id_local FROM tbl_local l WHERE l.nome_local = usados.texto LIMIT 1)) AS id_local')
             ->whereNotNull('texto')->where('texto', '<>', '')
-            ->when($semCadastro, fn ($q) => $q->whereNotExists(fn ($s) => $s->from('tbl_local')->whereColumn('tbl_local.nome_local', 'usados.texto')))
             ->groupBy('texto')
             ->orderByDesc('usos')->orderBy('texto')
-            ->get()
-            ->map(fn ($linha) => (object) ['texto' => $linha->texto, 'usos' => (int) $linha->usos]);
-    }
+            ->get();
+        $locais = self::whereIn('id_local', $linhas->pluck('id_local')->filter())->get()->keyBy('id_local');
 
-    public static function textosSemCadastro(): Collection
-    {
-        return self::textosSoltos(semCadastro: true);
+        return $linhas->map(fn ($linha) => (object) [
+            'texto' => $linha->texto,
+            'usos'  => (int) $linha->usos,
+            'local' => $linha->id_local ? $locais[$linha->id_local] : null,
+        ]);
     }
 
     // Quantos usos soltos (sem local) têm esse texto, por tabela: [tabela => quantidade]
