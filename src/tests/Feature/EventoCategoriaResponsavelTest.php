@@ -112,7 +112,7 @@ class EventoCategoriaResponsavelTest extends TestCase
         $this->comoAdmin()->post(route('admin.calendario.eventos.store'), $this->dados(['id_categoria' => $idSub9F]));
         DB::table('tbl_categoria')->whereIn('id_categoria', [$idSub9F, $idSub11F])->update(['status_categoria' => 'INATIVO']);
 
-        $resposta = $this->comoAdmin()->get(route('admin.calendario.index'))->assertOk();
+        $resposta = $this->comoAdmin()->get(route('admin.calendario.index', ['mes' => now()->addWeek()->format('Y-m')]))->assertOk();
 
         // O modal de edição recebe a opção (o JS a mostra e seleciona só para o evento dela)
         $resposta->assertSee('<option value="' . $idSub9F . '" class="js-categoria-inativa" hidden disabled>Sub-9 Feminino (inativa)</option>', false)

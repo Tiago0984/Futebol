@@ -209,8 +209,9 @@ class EventoFluxoTest extends TestCase
 
     public function test_lista_do_calendario_sem_jogo_no_criar_e_jogo_editado_pela_tela_dele(): void
     {
+        // A lista abre no mês atual: pede o mês do jogo, que pode cair no seguinte.
         $jogo = $this->jogo($this->copa);
-        $resposta = $this->comoAdmin()->get(route('admin.calendario.index'))->assertOk();
+        $resposta = $this->comoAdmin()->get(route('admin.calendario.index', ['mes' => substr((string) $jogo->evento->data_evento_calendario, 0, 7)]))->assertOk();
 
         preg_match('#<div class="modal fade" id="modalCriarEvento".*?</form>#s', $resposta->getContent(), $criar);
         $this->assertStringNotContainsString('<option value="JOGO"', $criar[0]);

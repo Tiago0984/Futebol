@@ -113,7 +113,7 @@ class EventoHistoricoTest extends TestCase
         ]));
 
         $this->comoAdmin()
-            ->get(route('admin.calendario.index'))
+            ->get(route('admin.calendario.index', ['mes' => now()->addWeek()->format('Y-m')]))
             ->assertOk()
             ->assertSee('Editora Teste')
             ->assertSee('Local: Campo A → Campo B', false)

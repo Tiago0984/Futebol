@@ -162,7 +162,7 @@ class EventoInscricaoTest extends TestCase
         $evento->inscrever($this->atletaNaCategoria('Iris', 'Sub-15', 'F'), 'INDIVIDUAL', null);
 
         $this->comoAdmin()
-            ->get(route('admin.calendario.index'))
+            ->get(route('admin.calendario.index', ['mes' => substr((string) $evento->data_evento_calendario, 0, 7)]))
             ->assertOk()
             ->assertSee('title="Inscritos (2)"', false)
             ->assertSee(route('admin.calendario.eventos.show', $evento->id_evento_calendario), false);

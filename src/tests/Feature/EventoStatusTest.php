@@ -120,7 +120,7 @@ class EventoStatusTest extends TestCase
         $this->criarEvento('INATIVO');
 
         $this->comoAdmin()
-            ->get(route('admin.calendario.index'))
+            ->get(route('admin.calendario.index', ['mes' => $this->mesDoEvento()]))
             ->assertOk()
             ->assertSee('<span class="badge-status ativo">Ativo</span>', false)
             ->assertSee('<span class="badge-status inativo">Cancelado</span>', false)
@@ -128,7 +128,7 @@ class EventoStatusTest extends TestCase
             ->assertDontSee('Confirmado');
 
         $this->comoAdmin()
-            ->get(route('admin.calendario.index', ['situacao' => 'INATIVO']))
+            ->get(route('admin.calendario.index', ['situacao' => 'INATIVO', 'mes' => $this->mesDoEvento()]))
             ->assertOk()
             ->assertSee('<span class="badge-status rejeitado">Oculto</span>', false);
     }
@@ -166,7 +166,7 @@ class EventoStatusTest extends TestCase
         $this->criarEvento('ATIVO', ['titulo_evento_calendario' => 'Sem Horario', 'horario_inicio_evento_calendario' => null]);
 
         $this->comoAdmin()
-            ->get(route('admin.calendario.index'))
+            ->get(route('admin.calendario.index', ['mes' => $this->mesDoEvento()]))
             ->assertOk()
             ->assertSee('17:00 às 18:30')
             ->assertDontSee('17:00:00 – 18:30:00') // formato antigo da coluna (o data-inicio do botão pode ter segundos)
@@ -193,6 +193,12 @@ class EventoStatusTest extends TestCase
     private function comoAdmin(): static
     {
         return $this->actingAs(User::factory()->admin()->create(), 'admin');
+    }
+
+    // A lista do admin abre no mês atual; o evento "daqui a uma semana" pode cair no seguinte.
+    private function mesDoEvento(): string
+    {
+        return now()->addWeek()->format('Y-m');
     }
 
     private function criarEvento(string $status, array $extra = []): int
