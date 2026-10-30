@@ -16,6 +16,7 @@ use App\Models\GradeTreino;
 use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Models\Time;
+use App\Support\CentralDoCampeonato;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -275,13 +276,16 @@ class CalendarioController extends Controller
             ->withCount('leiturasDosResponsaveis')
             ->get();
 
-        // Cabeçalho: linha de caminho, "Voltar" pela origem (jogo: lista de Jogos; outros: Calendário no mês
-        // do evento) e os formulários de edição (do jogo ou do evento) já preenchidos
+        // Cabeçalho: linha de caminho, "Voltar" pela origem (jogo de campeonato: a aba Jogos da central do
+        // campeonato, desde 30/10/2026; amistoso: lista de Jogos; outros: Calendário no mês do evento) e os
+        // formulários de edição (do jogo ou do evento) já preenchidos
         $evento->setRelation('jogo', $jogo);
         $caminho = $this->caminhoDoEvento($evento);
-        $voltar  = $jogo
-            ? route('admin.jogos.index')
-            : route('admin.calendario.index', ['mes' => $evento->data_evento_calendario->format('Y-m')]);
+        $voltar  = match (true) {
+            (bool) $jogo?->id_campeonato => CentralDoCampeonato::url((int) $jogo->id_campeonato, 'jogos'),
+            (bool) $jogo                 => route('admin.jogos.index'),
+            default                      => route('admin.calendario.index', ['mes' => $evento->data_evento_calendario->format('Y-m')]),
+        };
 
         if ($jogo) {
             $jogo->setRelation('evento', $evento);
@@ -337,19 +341,20 @@ class CalendarioController extends Controller
 
     /**
      * Linha de caminho da tela do evento: [rótulo, url] por parte; a última (o evento) sem link.
-     * Eventos › ramo (EventoCalendario::urlDoRamo) › campeonato do jogo (lista de Jogos filtrada) › título.
-     * Evento sem ramo (JOGO antigo sem tbl_jogos): Eventos › título.
+     * Eventos › ramo (EventoCalendario::urlDoRamo) › título. Jogo de campeonato: dentro da aba Jogos da central
+     * do campeonato (Eventos › Campeonatos › nome › Jogos › título; 30/10/2026, antes o nome levava à lista de
+     * Jogos filtrada). Evento sem ramo (JOGO antigo sem tbl_jogos): Eventos › título.
      */
     private function caminhoDoEvento(EventoCalendario $evento): array
     {
+        if ($campeonato = $evento->jogo?->campeonato) {
+            return CentralDoCampeonato::caminho($campeonato, 'jogos', $evento->titulo_evento_calendario);
+        }
+
         $caminho = [['Eventos', route('admin.calendario.index')]];
 
         if ($ramo = $evento->ramo()) {
             $caminho[] = [EventoCalendario::RAMOS[$ramo], EventoCalendario::urlDoRamo($ramo)];
-        }
-
-        if ($campeonato = $evento->jogo?->campeonato) {
-            $caminho[] = [$campeonato->nome_campeonato, route('admin.jogos.index', ['campeonato' => $campeonato->id_campeonato])];
         }
 
         $caminho[] = [$evento->titulo_evento_calendario, null];

@@ -133,9 +133,9 @@ class MenuAdminTest extends TestCase
             route('admin.calendario.index', ['tab' => 'grade'])               => route('admin.calendario.index', ['tab' => 'grade']),
             route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]) => route('admin.calendario.index', ['tab' => 'grade']), // Grade de treino
             route('admin.jogos.index')                                        => route('admin.jogos.index'),
-            // Jogos filtrados só por um campeonato (em andamento ou não): Campeonatos e o "Jogos" de dentro dele
-            route('admin.jogos.index', ['campeonato' => $this->emAndamento])  => [route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()],
-            route('admin.jogos.index', ['campeonato' => $this->encerrado])    => [route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()],
+            // Jogos filtrados só por um campeonato (em andamento ou não; o "Lista e novo jogo" da central): Campeonatos
+            route('admin.jogos.index', ['campeonato' => $this->emAndamento])  => route('admin.campeonatos.index'),
+            route('admin.jogos.index', ['campeonato' => $this->encerrado])    => route('admin.campeonatos.index'),
             route('admin.campeonatos.index')                                  => route('admin.campeonatos.index'),
             // Tela de Campeonatos, com ou sem filtro: Campeonatos
             route('admin.campeonatos.index', ['campeonato' => $this->emAndamento]) => route('admin.campeonatos.index'),
@@ -238,8 +238,11 @@ class MenuAdminTest extends TestCase
         $jogo  = $this->jogoNoDia($this->emAndamento, $this->azul, $this->visitante, 2);
         $todos = $this->jogosDoEmAndamento();
 
-        // Lista filtrada só pelo campeonato: Campeonatos e o "Jogos" dele
-        $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()], $this->linksAtivos($this->comoAdmin()->get($todos)));
+        // Lista filtrada só pelo campeonato (o "Lista e novo jogo" da central): Campeonatos (Fase 4 do padrão das
+        // telas, 30/10/2026; o "Jogos" do menu fica só para a tela de jogos de todos os campeonatos)
+        $this->assertSame([route('admin.campeonatos.index')], $this->linksAtivos($this->comoAdmin()->get($todos)));
+        $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()],
+            $this->linksAtivos($this->comoAdmin()->get(route('admin.campeonatos.jogos'))));
 
         // Com outro filtro junto (um jogo, time ou situação): Jogos do ESPORTE
         foreach ([['jogo' => $jogo->id_jogo], ['time' => $this->azul], ['situacao' => 'INATIVO']] as $filtro) {
@@ -317,14 +320,14 @@ class MenuAdminTest extends TestCase
             ->assertSee('aria-current="page" data-aba="participantes"', false)
             ->assertSeeInOrder(['data-id-time="' . $this->azul . '"', '1 convocado(s)', 'data-id-time="' . $this->visitante . '"', 'Sem atletas na AACJ'], false)
             ->assertDontSee('Rui Convocado'); // nome de atleta só na tela dos convocados
-        $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()], $this->linksAtivos($resposta));
+        $this->assertSame([route('admin.campeonatos.index')], $this->linksAtivos($resposta));
 
         // A antiga tela "jogadores do time no campeonato" (o elenco) saiu
         $this->comoAdmin()->get("/admin/campeonatos/{$this->emAndamento}/times/{$this->azul}")->assertNotFound();
         $this->comoAdmin()->get(route('admin.campeonatos.times', 999999))->assertNotFound();
 
-        // Campeonato que não está em andamento: marca o mesmo "Jogos"
-        $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()],
+        // Campeonato que não está em andamento: também Campeonatos (a central de qualquer campeonato marca o item dele)
+        $this->assertSame([route('admin.campeonatos.index')],
             $this->linksAtivos($this->comoAdmin()->get(route('admin.campeonatos.times', $this->encerrado))));
     }
 
@@ -388,7 +391,7 @@ class MenuAdminTest extends TestCase
         // Cartões do jogo levam aos escalados
         $this->assertStringContainsString(route('admin.jogos.times.show', [$proximo->id_jogo, $verde]), $this->blocoDoJogo($html, $proximo));
         $this->assertStringContainsString(route('admin.jogos.times.show', [$proximo->id_jogo, $this->azul]), $this->blocoDoJogo($html, $proximo));
-        $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()], $this->linksAtivos($resposta));
+        $this->assertSame([route('admin.campeonatos.index')], $this->linksAtivos($resposta));
 
         // Aba Participantes: o Preto com "Sem jogo" (e o link dos convocados); o Verde com o jogo dele
         $participantes = $this->comoAdmin()->get(route('admin.campeonatos.participantes', $this->emAndamento))->assertOk()->getContent();
@@ -532,7 +535,7 @@ class MenuAdminTest extends TestCase
         $daCopa = $this->jogoNoDia($this->emAndamento, $this->azul, $verde, 6);
         $resposta = $this->comoAdmin()->get(route('admin.jogos.times.show', [$daCopa->id_jogo, $verde]))->assertOk()
             ->assertSeeInOrder(['>Campeonatos</a>', '>Taça Em Andamento</a>', '<a href="' . route('admin.campeonatos.times', $this->emAndamento) . '">Jogos</a>'], false);
-        $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()], $this->linksAtivos($resposta));
+        $this->assertSame([route('admin.campeonatos.index')], $this->linksAtivos($resposta));
 
         // Externo volta com aviso; time que não joga esse jogo, 404
         $comExterno = $this->jogoNoDia(null, $this->azul, $this->visitante, 7);

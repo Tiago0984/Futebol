@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
-use App\Models\EventoCalendario;
 use App\Models\Jogo;
 
 /**
@@ -38,7 +37,7 @@ class TimesDoCampeonatoController extends Controller
         $campeonato = null;
         $caminho    = [
             ['Eventos', route('admin.calendario.index')],
-            ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
+            ['Campeonatos', route('admin.campeonatos.index')],
             ['Jogos', null],
         ];
 

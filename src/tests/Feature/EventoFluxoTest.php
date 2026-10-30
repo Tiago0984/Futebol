@@ -57,12 +57,14 @@ class EventoFluxoTest extends TestCase
 
     public function test_caminho_do_jogo_de_campeonato_e_dos_outros_ramos(): void
     {
+        // Jogo de campeonato: dentro da aba Jogos da central do campeonato (30/10/2026)
         $jogo = $this->jogo($this->copa);
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))->assertOk()
             ->assertSeeInOrder([
                 '<a href="' . route('admin.calendario.index') . '">Eventos</a>',
-                '<a href="' . e(route('admin.calendario.index', ['ramo' => 'campeonatos'])) . '">Campeonatos</a>',
-                '<a href="' . e(route('admin.jogos.index', ['campeonato' => $this->copa])) . '">Copa Escola</a>',
+                '<a href="' . route('admin.campeonatos.index') . '">Campeonatos</a>',
+                '<a href="' . route('admin.campeonatos.show', $this->copa) . '">Copa Escola</a>',
+                '<a href="' . route('admin.campeonatos.times', $this->copa) . '">Jogos</a>',
                 '<li class="breadcrumb-item active" aria-current="page">Time Azul x Time Visitante</li>',
             ], false);
 
@@ -108,9 +110,13 @@ class EventoFluxoTest extends TestCase
         $jogo   = $this->jogo($this->copa);
         $treino = $this->evento('TREINO', 'Treino Sub-11', ['data_evento_calendario' => '2027-02-10']);
 
+        // Jogo de campeonato: a aba Jogos da central (30/10/2026); amistoso: a lista de Jogos
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
-            ->assertSee('href="' . route('admin.jogos.index') . '" class="btn btn-secondary btn-sm" id="btnVoltar"', false)
+            ->assertSee('href="' . route('admin.campeonatos.times', $this->copa) . '" class="btn btn-secondary btn-sm" id="btnVoltar"', false)
             ->assertSee('Voltar aos jogos');
+        $amistoso = $this->jogo(null);
+        $this->comoAdmin()->get(route('admin.calendario.eventos.show', $amistoso->id_evento))
+            ->assertSee('href="' . route('admin.jogos.index') . '" class="btn btn-secondary btn-sm" id="btnVoltar"', false);
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $treino->id_evento_calendario))
             ->assertSee('href="' . e(route('admin.calendario.index', ['mes' => '2027-02'])) . '" class="btn btn-secondary btn-sm" id="btnVoltar"', false)
             ->assertSee('Voltar ao calendário');

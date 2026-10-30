@@ -28,10 +28,10 @@ class MenuAdminComposer
     }
 
     /**
-     * Chave do item ativo: calendario, ramo:{ramo}, jogos-dos-campeonatos (o "Jogos" dentro de Campeonatos: a
-     * tela de jogos de todos os campeonatos ou de um, os convocados de um time, e a lista de Jogos filtrada só por
-     * um campeonato), times-dos-amistosos (os jogos dos amistosos em cartões: o item Amistosos), campeonatos (a
-     * tela de Campeonatos, com ou sem filtro), jogos, grade, categorias, times ou notificacoes; null fora deles
+     * Chave do item ativo: calendario, ramo:{ramo}, jogos-dos-campeonatos (o "Jogos" dentro de Campeonatos: só a
+     * tela de jogos de todos os campeonatos), times-dos-amistosos (os jogos dos amistosos em cartões: o item
+     * Amistosos), campeonatos (a lista de Campeonatos e tudo de um campeonato: a central com as abas, as telas de
+     * dentro delas e a lista de Jogos filtrada só por ele), jogos, grade, categorias, times ou notificacoes; null fora deles
      * (os outros itens usam routeIs() na própria view).
      */
     private function itemAtivo(): ?string
@@ -55,8 +55,9 @@ class MenuAdminComposer
             return $ramo ? "ramo:{$ramo}" : 'calendario';
         }
 
-        // Jogos filtrados só por um campeonato: o "Jogos" de Campeonatos; amistosos: o ramo Amistosos (que abre
-        // esta lista); o resto (sem filtro ou com outros filtros, como jogo, time ou situação), Jogos
+        // Jogos filtrados só por um campeonato (o "Lista e novo jogo" da aba Jogos da central): Campeonatos;
+        // amistosos: o ramo Amistosos (que abre esta lista); o resto (sem filtro ou com outros filtros, como jogo,
+        // time ou situação), Jogos
         if ($r->routeIs('admin.jogos.*') && ! $r->routeIs('admin.jogos.times.show')) {
             $campeonato = (string) $r->query('campeonato');
 
@@ -66,7 +67,7 @@ class MenuAdminComposer
 
             $soCampeonato = $r->query('jogo', '') === '' && $r->query('time', '') === '' && $r->query('situacao', '') === '';
 
-            return $soCampeonato && ctype_digit($campeonato) ? 'jogos-dos-campeonatos' : 'jogos';
+            return $soCampeonato && ctype_digit($campeonato) ? 'campeonatos' : 'jogos';
         }
 
         // Jogos dos amistosos (cartões por jogo): o item Amistosos
@@ -74,16 +75,15 @@ class MenuAdminComposer
             return 'times-dos-amistosos';
         }
 
-        // Jogadores de um time num jogo: a tela de onde o cartão veio (Amistosos ou os Jogos dos campeonatos)
+        // Jogadores de um time num jogo: a tela de onde o cartão veio (Amistosos ou a aba Jogos da central do campeonato)
         if ($r->routeIs('admin.jogos.times.show')) {
-            return Jogo::whereKey($r->route('id'))->value('id_campeonato') ? 'jogos-dos-campeonatos' : 'times-dos-amistosos';
+            return Jogo::whereKey($r->route('id'))->value('id_campeonato') ? 'campeonatos' : 'times-dos-amistosos';
         }
 
-        // Jogos de todos os campeonatos e a central de um campeonato (as abas e as telas de dentro delas, 30/10/2026):
-        // o "Jogos" de Campeonatos (o menu é revisto na Fase 4 do padrão das telas)
-        if ($r->routeIs('admin.campeonatos.jogos', 'admin.campeonatos.show', 'admin.campeonatos.participantes',
-            'admin.campeonatos.times', 'admin.campeonatos.convocados', 'admin.campeonatos.grupos',
-            'admin.campeonatos.gerar-jogos', 'admin.campeonatos.proxima-fase', 'admin.campeonatos.mata-mata')) {
+        // Jogos de todos os campeonatos (o "Jogos" do menu): o "Jogos" de Campeonatos. A central de um campeonato
+        // (as abas e as telas de dentro delas) cai no admin.campeonatos.* abaixo: Campeonatos (Fase 4 do padrão das
+        // telas, 30/10/2026; antes, o "Jogos")
+        if ($r->routeIs('admin.campeonatos.jogos')) {
             return 'jogos-dos-campeonatos';
         }
 
