@@ -40,6 +40,7 @@ use App\Http\Controllers\Admin\TimesDoCampeonatoController;
 use App\Http\Controllers\Admin\ConvocacaoController;
 use App\Http\Controllers\Admin\GruposController;
 use App\Http\Controllers\Admin\GeradorDeJogosController;
+use App\Http\Controllers\Admin\CentralDoCampeonatoController;
 use App\Http\Controllers\Admin\AmistososController;
 use App\Http\Controllers\Admin\SumulaController;
 
@@ -115,6 +116,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     // Jogos do campeonato (blocos dos jogos, convocação e participantes sem jogo): só leitura, pelo "Jogos" do menu
     Route::get('campeonatos/jogos',               [TimesDoCampeonatoController::class, 'todos'])->name('campeonatos.jogos');
     Route::get('campeonatos/{id}/times',          [TimesDoCampeonatoController::class, 'index'])->name('campeonatos.times');
+    // Central do campeonato (padrão das telas, Fase 3, 30/10/2026): as abas novas; Jogos (acima) e Grupos (abaixo) já existiam
+    Route::get('campeonatos/{id}',                [CentralDoCampeonatoController::class, 'visaoGeral'])->whereNumber('id')->name('campeonatos.show');
+    Route::get('campeonatos/{id}/participantes',  [CentralDoCampeonatoController::class, 'participantes'])->name('campeonatos.participantes');
+    Route::get('campeonatos/{id}/mata-mata',      [CentralDoCampeonatoController::class, 'mataMata'])->name('campeonatos.mata-mata');
     // Convocados de um time interno no campeonato (Fase G): convocar com a camisa, trocar a camisa, remover
     Route::get('campeonatos/{id}/times/{timeId}/convocados',               [ConvocacaoController::class, 'show'])->name('campeonatos.convocados');
     Route::post('campeonatos/{id}/times/{timeId}/convocados',              [ConvocacaoController::class, 'convocar'])->name('campeonatos.convocados.convocar');

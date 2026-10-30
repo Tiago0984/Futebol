@@ -139,7 +139,7 @@
                                 </div>
                                 @endif
                             </td>
-                            <td><span class="fw-semibold">{{ $camp->nome_campeonato }}</span></td>
+                            <td><a href="{{ route('admin.campeonatos.show', $camp->id_campeonato) }}" class="link-body-emphasis text-decoration-none"><span class="fw-semibold">{{ $camp->nome_campeonato }}</span></a></td>
                             <td><span class="badge-cat">{{ $camp->tipo_label ?: '—' }}</span></td>
                             <td class="text-muted admin-texto-pequeno">
                                 {{ $camp->data_inicio_campeonato ? \Carbon\Carbon::parse($camp->data_inicio_campeonato)->format('d/m/Y') : '—' }}
@@ -167,10 +167,10 @@
                             </td>
                             <td class="text-center">
                                 <div class="d-flex justify-content-center gap-1">
-                                    {{-- Jogos do campeonato: a tela de jogos (blocos com ações), com o filtro já nele --}}
-                                    <a href="{{ route('admin.campeonatos.times', $camp->id_campeonato) }}"
-                                       class="btn-tbl view" title="Jogos do campeonato">
-                                        <i class="bi bi-calendar2-week"></i><small class="ms-1">Jogos</small>
+                                    {{-- Central do campeonato (30/10/2026): visão geral, participantes, jogos, grupos e mata-mata --}}
+                                    <a href="{{ route('admin.campeonatos.show', $camp->id_campeonato) }}"
+                                       class="btn-tbl view" title="Abrir o campeonato: participantes, jogos, grupos e mata-mata">
+                                        <i class="bi bi-box-arrow-in-right"></i><small class="ms-1">Abrir</small>
                                     </a>
                                     <button class="btn-tbl edit" title="Editar"
                                         data-bs-toggle="modal" data-bs-target="#modalEditarCampeonato"

@@ -11311,3 +11311,74 @@ body.lp-body {
 /* Formulários em linha que quebram quando o card é estreito (inscrever atleta na tela do evento) */
 .admin-campo-largo { flex: 1 1 220px; min-width: 0; }
 .admin-campo-medio { flex: 1 1 140px; min-width: 0; }
+
+/* Central do campeonato (30/10/2026): as abas (cada uma uma tela), os passos da visão geral, as pendências e as
+   linhas de jogo. Só variáveis do tema, para os dois modos */
+.admin-abas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    border-bottom: 1px solid var(--bs-border-color);
+    margin: 0 0 1.25rem;
+}
+.admin-abas__item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.55rem 0.9rem;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    color: var(--bs-secondary-color);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-decoration: none;
+    white-space: nowrap;
+}
+.admin-abas__item:hover { color: var(--bs-body-color); background: var(--bs-tertiary-bg); }
+.admin-abas__item.ativa { color: var(--bs-body-color); border-bottom-color: var(--aacj-red); }
+.admin-abas__item.ativa i { color: var(--aacj-red); }
+
+.admin-pendencia { display: flex; align-items: center; gap: 10px; padding: 0.5rem 0; }
+
+.admin-passos { list-style: none; margin: 0; padding: 0; }
+.admin-passos__item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 0.45rem 0;
+    border-top: 1px solid var(--bs-border-color-translucent);
+}
+.admin-passos__item:first-child { border-top: 0; }
+.admin-passos__item > i { font-size: 1.05rem; flex: 0 0 auto; }
+.admin-passos__item.feito > i     { color: var(--bs-success); }
+.admin-passos__item.pendente > i  { color: var(--bs-warning); }
+.admin-passos__item.andamento > i { color: var(--bs-info); }
+.admin-passos__item.opcional > i,
+.admin-passos__item.bloqueado > i { color: var(--bs-secondary-color); }
+.admin-passos__item.bloqueado .admin-passos__texto { opacity: 0.6; }
+.admin-passos__texto { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; }
+.admin-passos__titulo { font-weight: 600; font-size: 0.85rem; }
+.admin-passos__detalhe { font-size: 0.78rem; color: var(--bs-secondary-color); }
+.admin-passos__link { font-size: 0.78rem; white-space: nowrap; }
+.admin-passos__rodape {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+.admin-jogo-linha { display: flex; align-items: center; gap: 12px; padding: 0.55rem 0; }
+.admin-jogo-linha__quando { flex: 0 0 96px; display: flex; flex-direction: column; line-height: 1.25; }
+.admin-placar { display: inline-block; min-width: 3.2em; text-align: center; font-weight: 700; color: var(--bs-body-color); }
+.admin-subtitulo {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--bs-secondary-color);
+    margin: 1rem 0 0.25rem;
+}
+.admin-subtitulo:first-of-type { margin-top: 0; }

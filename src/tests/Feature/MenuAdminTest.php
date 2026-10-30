@@ -295,32 +295,28 @@ class MenuAdminTest extends TestCase
         }
     }
 
-    // ---------- jogos do campeonato: cartões dos participantes, que abrem os convocados ----------
+    // ---------- central do campeonato: participantes, que abrem os convocados ----------
 
-    public function test_times_do_campeonato_em_cartoes_abrem_os_convocados(): void
+    public function test_participantes_do_campeonato_abrem_os_convocados(): void
     {
-        $verde = $this->time('Time Verde');
+        $this->time('Time Verde');
         $this->participantes($this->emAndamento, [$this->azul, $this->visitante]);
         $rui = $this->criarAtleta($this->nascidoComIdade(11), 'M', 'ATIVO');
         DB::table('tbl_atletas')->where('id_atleta', $rui)->update(['nome_atleta' => 'Rui Convocado']);
         $this->convocacaoDireta($this->emAndamento, $this->azul, $rui, 9);
-        $cartoes = route('admin.campeonatos.times', $this->emAndamento);
+        $pagina = route('admin.campeonatos.participantes', $this->emAndamento);
 
-        // Cartões: só os participantes (o Verde não); o da AACJ abre os convocados dele (sem elenco fixo, Fase G,
-        // Etapa 4), com a contagem; o externo fica bloqueado
-        $resposta = $this->comoAdmin()->get($cartoes)->assertOk();
-        // (o Verde aparece só no select de times do modal "Editar jogo", fora da área dos cartões)
-        $this->assertStringNotContainsString('Time Verde', explode('id="modalEditarJogo"', $resposta->getContent())[0]);
-        preg_match('#id="participantesSemJogo">.*?</main>#s', $resposta->getContent(), $semJogo);
-        // Um cartão por time e categoria (28/10/2026): o link leva à convocação daquela categoria
+        // Aba "Participantes e convocação" (30/10/2026; antes, cartões no fim da tela de jogos): só os participantes
+        // (o Verde não); a AACJ abre os convocados daquela categoria, com a contagem; o externo não tem convocação
+        $resposta = $this->comoAdmin()->get($pagina)->assertOk()->assertDontSee('Time Verde');
+        $html = $resposta->getContent();
         $idCategoria = (int) DB::table('tbl_campeonato')->where('id_campeonato', $this->emAndamento)->value('id_categoria');
-        $this->assertStringContainsString('<a href="' . e(route('admin.campeonatos.convocados', [$this->emAndamento, $this->azul, 'categoria' => $idCategoria])) . '" class="escal-team-card">', $semJogo[0]);
-        $this->assertStringContainsString('1 convocado(s)', $semJogo[0]);
-        $this->assertStringContainsString('Elenco não disponível nesta associação', $semJogo[0]);
-        $this->assertStringNotContainsString(route('admin.campeonatos.convocados', [$this->emAndamento, $this->visitante]), $semJogo[0]);
-        $resposta->assertSee('Jogos · Taça Em Andamento')
-            ->assertSeeInOrder(['data-id-time="' . $this->azul . '"', 'data-id-time="' . $this->visitante . '"'], false);
-        $this->assertStringNotContainsString('Rui Convocado', $semJogo[0]); // nome de atleta só na tela dos convocados
+        $this->assertStringContainsString('href="' . e(route('admin.campeonatos.convocados', [$this->emAndamento, $this->azul, 'categoria' => $idCategoria])) . '"', $html);
+        $this->assertStringNotContainsString(route('admin.campeonatos.convocados', [$this->emAndamento, $this->visitante]), $html);
+        $resposta->assertSee('<h1 class="page-title">Taça Em Andamento</h1>', false)
+            ->assertSee('aria-current="page" data-aba="participantes"', false)
+            ->assertSeeInOrder(['data-id-time="' . $this->azul . '"', '1 convocado(s)', 'data-id-time="' . $this->visitante . '"', 'Sem atletas na AACJ'], false)
+            ->assertDontSee('Rui Convocado'); // nome de atleta só na tela dos convocados
         $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()], $this->linksAtivos($resposta));
 
         // A antiga tela "jogadores do time no campeonato" (o elenco) saiu
@@ -384,21 +380,31 @@ class MenuAdminTest extends TestCase
 
         preg_match_all('#data-id-jogo="(\d+)"#', $html, $ids);
         $this->assertSame([$proximo->id_jogo, $passado->id_jogo], array_map('intval', $ids[1]));
-        $resposta->assertSeeInOrder(['Próximos jogos', 'Já realizados', 'Participantes sem jogo na lista'])
+        $resposta->assertSeeInOrder(['Próximos jogos', 'Já realizados'])
+            ->assertDontSee('Participantes sem jogo na lista')   // foi para a aba Participantes (30/10/2026)
+            ->assertSee('aria-current="page" data-aba="jogos"', false)
             ->assertDontSee('Ver o jogo');
 
-        // Cartões do jogo levam aos escalados; o participante sem jogo, aos convocados dele no campeonato
+        // Cartões do jogo levam aos escalados
         $this->assertStringContainsString(route('admin.jogos.times.show', [$proximo->id_jogo, $verde]), $this->blocoDoJogo($html, $proximo));
         $this->assertStringContainsString(route('admin.jogos.times.show', [$proximo->id_jogo, $this->azul]), $this->blocoDoJogo($html, $proximo));
-        preg_match('#id="participantesSemJogo">.*#s', $html, $semJogo);
-        $this->assertStringContainsString(route('admin.campeonatos.convocados', [$this->emAndamento, $preto]), $semJogo[0]);
-        $this->assertStringNotContainsString(route('admin.campeonatos.convocados', [$this->emAndamento, $verde]), $semJogo[0]);
         $this->assertSame([route('admin.campeonatos.index'), $this->itemJogosDosCampeonatos()], $this->linksAtivos($resposta));
 
-        // Filtro "Campeonato": todos (inclusive o encerrado e o inativo, este no grupo "Inativos"), o atual
-        // selecionado; cada opção abre a tela dele
+        // Aba Participantes: o Preto com "Sem jogo" (e o link dos convocados); o Verde com o jogo dele
+        $participantes = $this->comoAdmin()->get(route('admin.campeonatos.participantes', $this->emAndamento))->assertOk()->getContent();
+        preg_match('#<tr data-id-time="' . $preto . '".*?</tr>#s', $participantes, $linhaPreto);
+        preg_match('#<tr data-id-time="' . $verde . '".*?</tr>#s', $participantes, $linhaVerde);
+        $this->assertStringContainsString('Sem jogo', $linhaPreto[0]);
+        $this->assertStringContainsString(route('admin.campeonatos.convocados', [$this->emAndamento, $preto]), $linhaPreto[0]);
+        $this->assertStringNotContainsString('Sem jogo', $linhaVerde[0]);
+
+        // Na central não há o filtro "Campeonato" (ele fica na tela de todos os campeonatos, o "Jogos" do menu):
+        // todos (inclusive o encerrado e o inativo, este no grupo "Inativos"), "Todos" selecionado; cada opção
+        // abre a aba Jogos da central do campeonato
+        $this->assertStringNotContainsString('id="filtroCampeonato"', $html);
         $opcoes = [];
-        $xpath = new \DOMXPath(tap(new \DOMDocument(), fn ($d) => @$d->loadHTML('<?xml encoding="utf-8"?>' . $html)));
+        $todos = $this->comoAdmin()->get(route('admin.campeonatos.jogos'))->getContent();
+        $xpath = new \DOMXPath(tap(new \DOMDocument(), fn ($d) => @$d->loadHTML('<?xml encoding="utf-8"?>' . $todos)));
         foreach ($xpath->query('//select[@id="filtroCampeonato"]//option') as $opcao) {
             /** @var \DOMElement $opcao */
             $opcoes[$opcao->getAttribute('value')] = $opcao->hasAttribute('selected');
@@ -406,9 +412,9 @@ class MenuAdminTest extends TestCase
         $this->assertSame(route('admin.campeonatos.jogos'), array_key_first($opcoes)); // "Todos" primeiro
         $this->assertEqualsCanonicalizing([route('admin.campeonatos.jogos'), ...DB::table('tbl_campeonato')->pluck('id_campeonato')
             ->map(fn ($id) => route('admin.campeonatos.times', $id))->all()], array_keys($opcoes));
-        $this->assertSame([$pagina], array_keys(array_filter($opcoes)));
+        $this->assertSame([route('admin.campeonatos.jogos')], array_keys(array_filter($opcoes)));
         $this->comoAdmin()->get(route('admin.campeonatos.times', $this->encerrado))->assertOk()
-            ->assertSee('Jogos · Taça Encerrada');
+            ->assertSee('<h1 class="page-title">Taça Encerrada</h1>', false);
 
         // Jogo em rascunho (Fase 10, Etapa 4): aviso no topo e "Revisar e publicar" só no bloco dele
         $this->assertStringNotContainsString('id="avisoRascunhos"', $html);
@@ -573,7 +579,7 @@ class MenuAdminTest extends TestCase
         $resposta->assertSee('Mostrando só o campeonato <strong>Taça Em Andamento</strong>', false)
             ->assertSee('<a href="' . route('admin.campeonatos.index') . '" class="ms-auto btn btn-sm btn-outline-secondary">', false)
             ->assertSee('1 campeonato(s)')
-            ->assertSee('<a href="' . route('admin.campeonatos.times', $this->emAndamento) . '"', false)   // Jogos (tela com o filtro nele)
+            ->assertSee('<a href="' . route('admin.campeonatos.show', $this->emAndamento) . '"', false)    // Abrir (central do campeonato)
             ->assertSee('data-bs-target="#modalEditarCampeonato"', false)                                  // editar
             ->assertSee(route('admin.campeonatos.toggleStatus', $this->emAndamento), false)               // ocultar
             ->assertDontSee('<span class="fw-semibold">Taça Encerrada</span>', false);
@@ -825,6 +831,9 @@ class MenuAdminTest extends TestCase
         $parametros = [
             'admin.calendario.eventos.show' => $evento->id_evento_calendario,
             'admin.campeonatos.edit'        => $this->emAndamento,
+            'admin.campeonatos.show'        => $this->emAndamento,
+            'admin.campeonatos.participantes' => $this->emAndamento,
+            'admin.campeonatos.mata-mata'   => $this->emAndamento,
             'admin.campeonatos.times'       => $this->emAndamento,
             'admin.campeonatos.convocados'  => [$this->emAndamento, $this->azul],
             'admin.campeonatos.grupos'      => $this->emAndamento,
@@ -863,7 +872,9 @@ class MenuAdminTest extends TestCase
             $this->assertFalse(Route::has("admin.{$recurso}.edit"), $recurso);
             $this->assertFalse(Route::has("admin.{$recurso}.show"), $recurso);
         }
-        foreach (['admin.atletas.create', 'admin.atletas.edit', 'admin.atletas.show', 'admin.campeonatos.show',
+        // admin.campeonatos.show existe desde 30/10/2026: é a Visão geral da central do campeonato (página de verdade,
+        // conferida no test_nenhuma_pagina_get_do_admin_da_erro), não mais a do resource, que dava erro 500
+        foreach (['admin.atletas.create', 'admin.atletas.edit', 'admin.atletas.show',
                   'admin.escalacao.index', 'admin.escalacao.show'] as $nome) {
             $this->assertFalse(Route::has($nome), $nome);
         }

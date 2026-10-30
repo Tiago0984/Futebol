@@ -188,12 +188,12 @@ class ConvocacaoTest extends TestCase
             ->assertSee('Ana <span class="text-muted small">· convocado pelo AACJ Sub-15</span>', false)
             ->assertDontSee('Caio');
 
-        // A tela do AACJ Sub-17 mostra a categoria e o limite dela; o bloco Convocação, a categoria de cada time
+        // A tela do AACJ Sub-17 mostra a categoria e o limite dela; a aba Participantes, cada time na sua categoria
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $aacj17]))
             ->assertSee('Sub-17 Masculino, até 17 anos')
             ->assertSee('Convocação do AACJ Sub-17 no Sub-17 Masculino deste campeonato');
-        $this->comoAdminLogado()->get(route('admin.campeonatos.times', $this->liga))
-            ->assertSeeInOrder(['AACJ Sub-15', '· Sub-15 Masculino', 'AACJ Sub-17', '· Sub-17 Masculino']);
+        $this->comoAdminLogado()->get(route('admin.campeonatos.participantes', $this->liga))
+            ->assertSeeInOrder(['id="categoria-' . $this->idSub15M . '"', 'AACJ Sub-15', 'id="categoria-' . $this->idSub17M . '"', 'AACJ Sub-17'], false);
     }
 
     public function test_mais_velho_nao_e_convocado_e_o_mais_novo_pode_subir(): void
@@ -251,7 +251,7 @@ class ConvocacaoTest extends TestCase
         $ana = $this->atleta('Ana', 15, $this->idSub15M);
 
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->visitante]))
-            ->assertRedirect(route('admin.campeonatos.times', $this->liga))
+            ->assertRedirect(route('admin.campeonatos.participantes', $this->liga))
             ->assertSessionHas('erro', 'Times externos não possuem atletas da associação: não há convocação.');
         $this->convocar($this->preto, [$ana => 10])
             ->assertSessionHas('erro', 'O Time Preto não participa do campeonato Liga.');
@@ -306,10 +306,9 @@ class ConvocacaoTest extends TestCase
         $caio = $this->atleta('Caio', 15, $this->idSub15M);
         $this->convocar($this->azul, [$caio => 10])->assertSessionHasErrors(['convocacao' => 'A camisa 10 do AACJ Sub-15 já é de Ana.']);
 
-        // Bloco "Convocação" da tela de jogos do campeonato conta só os ativos
-        $this->comoAdminLogado()->get(route('admin.campeonatos.times', $this->liga))
+        // A aba Participantes da central (antes, o bloco "Convocação" da tela de jogos) conta só os ativos
+        $this->comoAdminLogado()->get(route('admin.campeonatos.participantes', $this->liga))
             ->assertOk()
-            ->assertSee('id="blocoConvocacao"', false)
             ->assertSeeInOrder(['AACJ Sub-15', '1 convocado(s)', 'AACJ Sub-15 B', 'Sem convocados']);
     }
 
@@ -407,28 +406,26 @@ class ConvocacaoTest extends TestCase
             ->assertOk()->assertSee('Convocados · AACJ Sub-15 · Sub-15 Masculino')->assertSee('1 convocado(s)');
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub17M]))
             ->assertOk()->assertSee('Convocados · AACJ Sub-15 · Sub-17 Masculino')->assertSee('2 convocado(s)');
-        $html = $this->comoAdminLogado()->get(route('admin.campeonatos.times', $this->liga))
-            ->assertSeeInOrder(['AACJ Sub-15', '· Sub-15 Masculino', 'AACJ Sub-15', '· Sub-17 Masculino'])->getContent();
-
-        // Participantes sem jogo (28/10/2026): um cartão por categoria, cada um com os convocados dela (antes, um
-        // cartão só, com a soma das duas e a primeira categoria)
-        preg_match('#id="participantesSemJogo">.*?</main>#s', $html, $semJogo);
-        foreach ([[$this->idSub15M, 'Sub-15 Masculino', '1 convocado(s)'], [$this->idSub17M, 'Sub-17 Masculino', '2 convocado(s)']] as [$idCat, $rotulo, $total]) {
-            preg_match('#data-id-time="' . $this->azul . '" data-id-categoria="' . $idCat . '">(.*?)</a>#s', $semJogo[0], $cartao);
-            $this->assertStringContainsString(e(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $idCat])), $cartao[1]);
-            $this->assertStringContainsString($rotulo, $cartao[1]);
-            $this->assertStringContainsString($total, $cartao[1]);
+        // Aba Participantes da central (30/10/2026; antes, os cartões dos participantes sem jogo): uma linha por
+        // categoria, cada uma com os convocados dela e o link da convocação daquela categoria (nunca a soma das duas)
+        $html = $this->comoAdminLogado()->get(route('admin.campeonatos.participantes', $this->liga))
+            ->assertSeeInOrder(['id="categoria-' . $this->idSub15M . '"', 'AACJ Sub-15', 'id="categoria-' . $this->idSub17M . '"', 'AACJ Sub-15'], false)
+            ->getContent();
+        foreach ([[$this->idSub15M, '1 convocado(s)'], [$this->idSub17M, '2 convocado(s)']] as [$idCat, $total]) {
+            preg_match('#<tr data-id-time="' . $this->azul . '" data-id-categoria="' . $idCat . '">(.*?)</tr>#s', $html, $linha);
+            $this->assertStringContainsString(e(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $idCat])), $linha[1]);
+            $this->assertStringContainsString($total, $linha[1]);
         }
-        $this->assertStringNotContainsString('3 convocado(s)', $semJogo[0]);
+        $this->assertStringNotContainsString('3 convocado(s)', $html);
 
         // Remover pela tela do Sub-17 tira só a convocação do Sub-17
         $this->comoAdminLogado()->delete(route('admin.campeonatos.convocados.remover', [$this->liga, $this->azul, $ana, 'categoria' => $this->idSub17M]))
             ->assertRedirect(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub17M]));
         $this->assertSame([$this->idSub15M], Convocacao::where('id_atleta', $ana)->pluck('id_categoria')->map(fn ($c) => (int) $c)->all());
 
-        // Categoria em que o time não joga: volta para a tela do campeonato com o erro
+        // Categoria em que o time não joga: volta para a aba Participantes com o erro
         $this->comoAdminLogado()->get(route('admin.campeonatos.convocados', [$this->liga, $this->azul, 'categoria' => $this->idSub13M]))
-            ->assertRedirect(route('admin.campeonatos.times', $this->liga))
+            ->assertRedirect(route('admin.campeonatos.participantes', $this->liga))
             ->assertSessionHas('erro', 'O AACJ Sub-15 não joga no Sub-13 Masculino do campeonato Liga.');
     }
 

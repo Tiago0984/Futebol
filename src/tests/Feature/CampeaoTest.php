@@ -65,7 +65,7 @@ class CampeaoTest extends TestCase
         // Todos jogados, mas pode vir um returno: só com a categoria encerrada pelo admin
         $this->assertNull($this->campeao());
         $this->get(route('campeonato.show', $this->copa))->assertOk()->assertDontSee('camp-campeao-card', false);
-        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))->assertOk()->assertSee('Encerrar categoria');
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.mata-mata', $this->copa))->assertOk()->assertSee('Encerrar categoria');
         $this->encerramento()->assertSessionHas('sucesso');
 
         $campeao = $this->campeao();
@@ -79,7 +79,7 @@ class CampeaoTest extends TestCase
         $this->get(route('home'))->assertOk()->assertSee('Campeão: <strong>Alfa</strong>', false);
 
         // Admin e API
-        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))->assertOk()->assertSee('Campeão: Alfa');
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.mata-mata', $this->copa))->assertOk()->assertSee('Campeão: Alfa');
         $this->getJson("/api/v1/campeonatos/{$this->copa}")->assertOk()
             ->assertJsonPath('data.classificacao.0.campeao.situacao', 'campeao')
             ->assertJsonPath('data.classificacao.0.campeao.modo', 'tabela')
@@ -103,7 +103,7 @@ class CampeaoTest extends TestCase
         // Um returno cadastrado depois: o campeão some até o placar, e o admin vê o motivo
         $returno = $this->jogo('GRUPOS', 'Beta', 'Alfa', null, null);
         $this->assertNull($this->campeao());
-        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.mata-mata', $this->copa))
             ->assertSee('O campeão não aparece: Ainda há 1 jogo(s)');
         $returno->update(['placar_time_casa_jogos' => 0, 'placar_time_visitante_jogos' => 0]);
         $this->assertSame('Alfa', $this->campeao()['campeao']['nome']);
@@ -121,7 +121,7 @@ class CampeaoTest extends TestCase
 
         $this->encerramento()->assertSessionHas('erro', fn ($erro) => str_contains($erro, 'ainda vem o mata-mata'));
         $this->assertNull($this->encerradaEm());
-        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))->assertDontSee('Encerrar categoria');
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.mata-mata', $this->copa))->assertDontSee('Encerrar categoria');
 
         // Mesmo encerrada antes de definir os classificados, a tabela não declara campeão
         Campeonato::find($this->copa)->definirEncerramento($this->idSub15M, true);
@@ -138,7 +138,7 @@ class CampeaoTest extends TestCase
         $this->assertSame('a definir (sorteio entre Alfa e Beta)', Campeonato::textoDoCampeao($campeao));
 
         $this->get(route('campeonato.show', $this->copa))->assertOk()->assertSee('Campeão a definir')->assertSee('Sorteio entre Alfa e Beta');
-        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.grupos', $this->copa))->assertSee('sorteio entre Alfa e Beta');
+        $this->actingAs($this->admin, 'admin')->get(route('admin.campeonatos.mata-mata', $this->copa))->assertSee('sorteio entre Alfa e Beta');
     }
 
     public function test_com_final_o_vencedor_dela_com_vice_e_terceiro(): void

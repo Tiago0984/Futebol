@@ -7,7 +7,7 @@ use App\Models\Atleta;
 use App\Models\Campeonato;
 use App\Models\Categoria;
 use App\Models\Convocacao;
-use App\Models\EventoCalendario;
+use App\Support\CentralDoCampeonato;
 use App\Models\Time;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -27,7 +27,7 @@ class ConvocacaoController extends Controller
     {
         [$campeonato, $time] = $this->campeonatoETime($id, $timeId);
         if ($erro = $campeonato->erroDoTimeNaConvocacao($time, $this->idCategoria($request))) {
-            return redirect()->route('admin.campeonatos.times', $campeonato->id_campeonato)->with('erro', $erro);
+            return redirect()->route('admin.campeonatos.participantes', $campeonato->id_campeonato)->with('erro', $erro);
         }
         $categoria   = $campeonato->categoriaDoTime($time, $this->idCategoria($request));
         $idCategoria = (int) $categoria->id_categoria;
@@ -56,12 +56,8 @@ class ConvocacaoController extends Controller
             $bloqueados[$idAtleta] ??= "acima da idade ({$idade} anos)";
         }
 
-        $caminho = [
-            ['Eventos', route('admin.calendario.index')],
-            ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
-            [$campeonato->nome_campeonato, route('admin.campeonatos.times', $campeonato->id_campeonato)],
-            ["Convocados · {$time->nome_time} · {$categoria->rotulo}", null],
-        ];
+        // Dentro da aba "Participantes e convocação" da central do campeonato (30/10/2026)
+        $caminho = CentralDoCampeonato::caminho($campeonato, 'participantes', "Convocados · {$time->nome_time} · {$categoria->rotulo}", $idCategoria);
 
         return view('admin.campeonatos.convocados', compact(
             'campeonato', 'time', 'categoria', 'convocados', 'acimaDosConvocados', 'grupos', 'bloqueados', 'caminho'
@@ -73,7 +69,7 @@ class ConvocacaoController extends Controller
     {
         [$campeonato, $time] = $this->campeonatoETime($id, $timeId);
         if ($erro = $campeonato->erroDoTimeNaConvocacao($time, $this->idCategoria($request))) {
-            return redirect()->route('admin.campeonatos.times', $campeonato->id_campeonato)->with('erro', $erro);
+            return redirect()->route('admin.campeonatos.participantes', $campeonato->id_campeonato)->with('erro', $erro);
         }
         $idCategoria = (int) $campeonato->categoriaDoTime($time, $this->idCategoria($request))->id_categoria;
 

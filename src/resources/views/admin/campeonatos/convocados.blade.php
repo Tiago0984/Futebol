@@ -20,7 +20,7 @@
 
     <x-admin.cabecalho :titulo="'Convocados · ' . $time->nome_time . ' · ' . $categoria->rotulo"
                        :caminho="$caminho" id-caminho="caminhoConvocados"
-                       :voltar="route('admin.campeonatos.times', $campeonato->id_campeonato)" id-voltar="btnVoltarConvocados"
+                       :voltar="\App\Support\CentralDoCampeonato::url($campeonato, 'participantes', $categoria->id_categoria)" id-voltar="btnVoltarConvocados"
                        :logo="asset('futebol/images/team/' . $time->logo_time)" :logo-alt="$time->nome_time"
                        :logo-padrao="asset('futebol/images/team/default-team.png')">
       <x-slot:subtitulo id="resumoConvocados">

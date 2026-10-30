@@ -11,6 +11,7 @@ use App\Models\EventoCalendario;
 use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Models\Time;
+use App\Support\CentralDoCampeonato;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -179,15 +180,15 @@ class JogosController extends Controller
         }
 
         $escalados = $jogo->escaladosDoTime($time->id_time);
-        $caminho = [
-            ['Eventos', route('admin.calendario.index')],
-            ...($jogo->ehAmistoso()
-                ? [['Amistosos', EventoCalendario::urlDoRamo('amistosos')]]
-                : [['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
-                   [$jogo->campeonato->nome_campeonato, route('admin.campeonatos.index', ['campeonato' => $jogo->id_campeonato])]]),
-            ['Jogos', $voltar], // a tela de jogos do campeonato ou dos amistosos
-            [$time->nome_time, null],
-        ];
+        // Jogo de campeonato: dentro da aba "Jogos" da central do campeonato (30/10/2026)
+        $caminho = $jogo->ehAmistoso()
+            ? [
+                ['Eventos', route('admin.calendario.index')],
+                ['Amistosos', EventoCalendario::urlDoRamo('amistosos')],
+                ['Jogos', $voltar], // a tela de jogos dos amistosos
+                [$time->nome_time, null],
+            ]
+            : CentralDoCampeonato::caminho($jogo->campeonato, 'jogos', $time->nome_time);
 
         return view('admin.jogos.escalados', compact('jogo', 'time', 'escalados', 'voltar', 'caminho'));
     }

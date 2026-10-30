@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
 use App\Models\Categoria;
 use App\Models\EventoCalendario;
+use App\Support\CentralDoCampeonato;
 use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Services\GeradorDeRodadas;
@@ -33,13 +34,8 @@ class GeradorDeJogosController extends Controller
             'opcoes'     => $opcoes,
             'erros'      => $gerador->erros(),
             'previa'     => $gerador->previa(),
-            'caminho'    => [
-                ['Eventos', route('admin.calendario.index')],
-                ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
-                [$campeonato->nome_campeonato, route('admin.campeonatos.times', $campeonato->id_campeonato)],
-                ['Grupos (chaves) e classificação', route('admin.campeonatos.grupos', $campeonato->id_campeonato)],
-                ['Gerar jogos · ' . $categoria->rotulo, null],
-            ],
+            // Dentro da aba "Grupos (chaves) e classificação" da central do campeonato (30/10/2026)
+            'caminho'    => CentralDoCampeonato::caminho($campeonato, 'grupos', 'Gerar jogos · ' . $categoria->rotulo, (int) $categoria->id_categoria),
         ]);
     }
 
@@ -83,13 +79,8 @@ class GeradorDeJogosController extends Controller
             'origem'     => $montador->origem(),
             'erros'      => $montador->erros(),
             'previa'     => $montador->previa(),
-            'caminho'    => [
-                ['Eventos', route('admin.calendario.index')],
-                ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
-                [$campeonato->nome_campeonato, route('admin.campeonatos.times', $campeonato->id_campeonato)],
-                ['Grupos (chaves) e classificação', route('admin.campeonatos.grupos', $campeonato->id_campeonato)],
-                ['Próxima fase · ' . $categoria->rotulo, null],
-            ],
+            // Dentro da aba "Mata-mata e campeão" da central do campeonato (30/10/2026)
+            'caminho'    => CentralDoCampeonato::caminho($campeonato, 'mata-mata', 'Próxima fase · ' . $categoria->rotulo, (int) $categoria->id_categoria),
         ]);
     }
 

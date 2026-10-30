@@ -53,7 +53,7 @@ class MontadorDaProximaFaseTest extends TestCase
             $this->jogoComPlacar('GRUPOS', $casa, $fora, 1, 0);
         }
 
-        $this->comoAdmin()->get(route('admin.campeonatos.grupos', $this->copa))->assertOk()->assertSee('Montar próxima fase');
+        $this->comoAdmin()->get(route('admin.campeonatos.mata-mata', $this->copa))->assertOk()->assertSee('Montar próxima fase');
         $this->comoAdmin()->get($this->urlPrevia())->assertOk()
             ->assertSee('Próxima fase: Semifinal')->assertSee('2</strong> confronto(s)', false)->assertDontSee('disputa de 3º lugar');
 

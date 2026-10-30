@@ -3,6 +3,8 @@
 @section('title', 'Grupos (chaves) — ' . $campeonato->nome_campeonato)
 
 {{--
+    Central do campeonato, aba "Grupos (chaves) e classificação" (padrão das telas, Fase 3, 30/10/2026; o campeão,
+    o encerramento e o "Montar próxima fase" foram para a aba Mata-mata e campeão).
     Grupos e classificação de um campeonato (Fase H, Etapa H4; GruposController), um bloco por categoria:
     os grupos (criar, renomear, remover o vazio), o grupo de cada participante (um select por time) e a
     classificação de cada grupo (Campeonato::classificacoes: só a fase de grupos; o grupo lista todos os times
@@ -13,14 +15,14 @@
 <main class="app-main">
   <div class="container-fluid py-4">
 
-    <x-admin.cabecalho :titulo="'Grupos (chaves) e classificação · ' . $campeonato->nome_campeonato"
-                       :caminho="$caminho" id-caminho="caminhoGrupos"
-                       :voltar="route('admin.campeonatos.times', $campeonato->id_campeonato)"
-                       :logo="$campeonato->logo_url" :logo-alt="$campeonato->nome_campeonato">
-      <x-slot:subtitulo>Grupos (chaves) são opcionais. A classificação conta só os jogos da fase de grupos, com placar, publicados e ativos.</x-slot:subtitulo>
-    </x-admin.cabecalho>
+    <x-admin.central-do-campeonato :campeonato="$campeonato" aba="grupos" id-caminho="caminhoGrupos" />
 
     @include('admin.jogos._mensagens')
+
+    <p class="text-body-secondary small mb-3">
+      <i class="bi bi-info-circle"></i> Grupos (chaves) são opcionais. A classificação conta só os jogos da fase de grupos, com placar,
+      publicados e ativos. O mata-mata e o campeão ficam na aba <strong>Mata-mata e campeão</strong>.
+    </p>
 
     @forelse ($campeonato->categorias as $categoria)
     @php
@@ -35,56 +37,7 @@
                class="btn btn-sm btn-outline-primary js-gerar-jogos">
               <i class="bi bi-lightning-charge"></i> Gerar jogos (todos contra todos)
             </a>
-            {{-- Fase I, Etapa I3: mata-mata pelos classificados da tabela ou pelos vencedores da fase anterior --}}
-            <a href="{{ route('admin.campeonatos.proxima-fase', [$campeonato->id_campeonato, $categoria->id_categoria]) }}"
-               class="btn btn-sm btn-outline-primary js-proxima-fase">
-              <i class="bi bi-diagram-2"></i> Montar próxima fase
-            </a>
         </x-slot:acoes>
-
-        {{-- Campeão da categoria (Fase I, Etapa I4; Campeonato::campeoes) --}}
-        @if ($campeao = $campeoes[(int) $categoria->id_categoria] ?? null)
-        <div class="alert {{ $campeao['situacao'] === 'campeao' ? 'alert-success' : 'alert-warning' }} d-flex align-items-center gap-2 js-campeao">
-          <i class="bi bi-trophy-fill"></i>
-          <div>
-            @if ($campeao['situacao'] === 'campeao')
-            <strong>Campeão: {{ $campeao['campeao']['nome'] }}</strong>
-            <span class="small">· {{ $campeao['como'] }}@if ($campeao['vice']) · Vice: {{ $campeao['vice']['nome'] }}@endif
-              @if ($campeao['terceiro']) · 3º lugar: {{ $campeao['terceiro']['nome'] }}@endif</span>
-            @else
-            <strong>Campeão a definir:</strong> sorteio entre {{ collect($campeao['empatados'])->join(', ', ' e ') }} (empatados em todos os critérios no 1º lugar).
-            @endif
-          </div>
-        </div>
-        @endif
-
-        {{-- Encerramento (pontos corridos, 25/10/2026): o campeão pela tabela só aparece com a categoria encerrada --}}
-        @php
-          $encerradaEm   = $categoria->pivot->data_encerramento_campeonato_categoria;
-          $erroEncerrar  = $paraEncerrar[$categoria->id_categoria] ?? null;
-          $rotaEncerrar  = route('admin.campeonatos.grupos.encerramento', [$campeonato->id_campeonato, $categoria->id_categoria]);
-        @endphp
-        @if ($encerradaEm)
-        <div class="alert alert-secondary d-flex flex-wrap align-items-center justify-content-between gap-2 js-encerramento">
-          <span>
-            <i class="bi bi-flag-fill"></i> Categoria encerrada em {{ \Illuminate\Support\Carbon::parse($encerradaEm)->format('d/m/Y H:i') }}.
-            @if ($erroEncerrar)<br><span class="text-danger small">O campeão não aparece: {{ $erroEncerrar }}</span>@endif
-          </span>
-          <form action="{{ $rotaEncerrar }}" method="POST" onsubmit="return confirm('Reabrir a categoria? O campeão sai do site até encerrar de novo.')">
-            @csrf @method('PATCH')
-            <input type="hidden" name="acao" value="reabrir">
-            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="bi bi-arrow-counterclockwise"></i> Reabrir</button>
-          </form>
-        </div>
-        @elseif (! $erroEncerrar)
-        <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 js-encerramento">
-          <span><i class="bi bi-info-circle"></i> Todos os jogos têm placar. Se o campeonato acabou (sem returno nem mata-mata), encerre a categoria para declarar o campeão.</span>
-          <form action="{{ $rotaEncerrar }}" method="POST" onsubmit="return confirm('Encerrar a categoria? O 1º da tabela aparece como campeão no site e no app.')">
-            @csrf @method('PATCH')
-            <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-flag"></i> Encerrar categoria</button>
-          </form>
-        </div>
-        @endif
 
         <div class="row g-4">
           {{-- Grupos da categoria --}}

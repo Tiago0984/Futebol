@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Campeonato;
 use App\Models\CampeonatoGrupo;
-use App\Models\EventoCalendario;
+use App\Support\CentralDoCampeonato;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
- * Grupos e classificação de um campeonato (Fase H, Etapa H4), aberta pelo botão da tela "Jogos · Campeonato":
+ * Grupos e classificação de um campeonato (Fase H, Etapa H4), a aba "Grupos (chaves) e classificação" da central do
+ * campeonato (desde 30/10/2026; o encerramento é mostrado na aba "Mata-mata e campeão", mas a ação continua aqui):
  * um bloco por categoria com os grupos (criar, renomear, remover o vazio), o grupo de cada participante e a
  * classificação de cada grupo (só a fase de grupos), para o admin conferir. Grupos são opcionais: categoria sem
  * grupo tem uma tabela só.
@@ -24,20 +25,11 @@ class GruposController extends Controller
         $participantes  = $campeonato->participantesComGrupo()->groupBy('id_categoria');
         $grupos         = $campeonato->grupos()->get()->groupBy('id_categoria');
         $classificacoes = collect($campeonato->classificacoes())->keyBy(fn ($c) => $c['categoria']->id_categoria);
-        $campeoes       = $campeonato->campeoes($classificacoes->all());   // Fase I, Etapa I4
-        $paraEncerrar   = $classificacoes->map(fn ($c) => $campeonato->erroParaEncerrar($c));   // null = pode encerrar
         $timesPorGrupo  = DB::table('tbl_campeonato_time')->where('id_campeonato', $campeonato->id_campeonato)
             ->whereNotNull('id_campeonato_grupo')->groupBy('id_campeonato_grupo')
             ->selectRaw('id_campeonato_grupo, COUNT(*) AS total')->pluck('total', 'id_campeonato_grupo');
 
-        $caminho = [
-            ['Eventos', route('admin.calendario.index')],
-            ['Campeonatos', EventoCalendario::urlDoRamo('campeonatos')],
-            [$campeonato->nome_campeonato, route('admin.campeonatos.times', $campeonato->id_campeonato)],
-            ['Grupos (chaves) e classificação', null],
-        ];
-
-        return view('admin.campeonatos.grupos', compact('campeonato', 'participantes', 'grupos', 'classificacoes', 'campeoes', 'paraEncerrar', 'timesPorGrupo', 'caminho'));
+        return view('admin.campeonatos.grupos', compact('campeonato', 'participantes', 'grupos', 'classificacoes', 'timesPorGrupo'));
     }
 
     // Cria um grupo numa categoria do campeonato (nome sem repetir na categoria)
@@ -134,19 +126,22 @@ class GruposController extends Controller
         $classificacao = collect($campeonato->classificacoes())->first(fn ($c) => (int) $c['categoria']->id_categoria === (int) $categoriaId);
         abort_unless($classificacao, 404);
 
+        // O encerramento fica na aba "Mata-mata e campeão" da central (Fase 3 do padrão das telas): volta para ela
+        $voltar = redirect()->to(CentralDoCampeonato::url($campeonato, 'mata-mata', (int) $categoriaId));
+
         if ($request->input('acao') === 'reabrir') {
             $campeonato->definirEncerramento((int) $categoriaId, false);
 
-            return $this->voltar($campeonato, (int) $categoriaId)->with('sucesso', 'Categoria reaberta: o campeão sai do site até encerrar de novo.');
+            return $voltar->with('sucesso', 'Categoria reaberta: o campeão sai do site até encerrar de novo.');
         }
 
         if ($erro = $campeonato->erroParaEncerrar($classificacao)) {
-            return $this->voltar($campeonato, (int) $categoriaId)->with('erro', "Não dá para encerrar: {$erro}");
+            return $voltar->with('erro', "Não dá para encerrar: {$erro}");
         }
 
         $campeonato->definirEncerramento((int) $categoriaId, true);
 
-        return $this->voltar($campeonato, (int) $categoriaId)->with('sucesso', 'Categoria encerrada: o campeão aparece no site, no app e aqui.');
+        return $voltar->with('sucesso', 'Categoria encerrada: o campeão aparece no site, no app e aqui.');
     }
 
     private function campeonatoEGrupo($id, $grupoId): array
@@ -159,7 +154,7 @@ class GruposController extends Controller
     // Volta à tela, no bloco da categoria
     private function voltar(Campeonato $campeonato, int $idCategoria)
     {
-        return redirect()->to(route('admin.campeonatos.grupos', $campeonato->id_campeonato) . "#categoria-{$idCategoria}");
+        return redirect()->to(CentralDoCampeonato::url($campeonato, 'grupos', $idCategoria));
     }
 
     private function mensagens(): array

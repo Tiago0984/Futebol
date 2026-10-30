@@ -282,8 +282,10 @@ class EventoFluxoTest extends TestCase
 
     public function test_campeonatos_linkam_os_jogos_e_a_lista_dos_amistosos_marca_amistosos(): void
     {
-        // O botão "Jogos" da linha abre a tela de jogos já filtrada pelo campeonato
+        // O botão "Abrir" da linha abre a central do campeonato (30/10/2026), que tem a aba Jogos
         $this->comoAdmin()->get(route('admin.campeonatos.index'))
+            ->assertSee('href="' . route('admin.campeonatos.show', $this->copa) . '"', false);
+        $this->comoAdmin()->get(route('admin.campeonatos.show', $this->copa))
             ->assertSee('href="' . route('admin.campeonatos.times', $this->copa) . '"', false);
 
         // A lista de Jogos dos amistosos marca o item Amistosos (que abre a tela de jogos dos amistosos)

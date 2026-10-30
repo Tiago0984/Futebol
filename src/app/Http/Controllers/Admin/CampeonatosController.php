@@ -140,7 +140,12 @@ class CampeonatosController extends Controller
                 ->orWhere('banner_evento', $arquivo)->exists());
         }
 
-        return redirect()->route('admin.campeonatos.index')->with('sucesso', 'Campeonato atualizado com sucesso.')
+        // Editado pela central do campeonato (voltar=central): volta para ela
+        $voltar = $request->input('voltar') === 'central'
+            ? route('admin.campeonatos.show', $campeonato->id_campeonato)
+            : route('admin.campeonatos.index');
+
+        return redirect($voltar)->with('sucesso', 'Campeonato atualizado com sucesso.')
             ->with('avisos_imagem', $avisosImagem);
     }
 

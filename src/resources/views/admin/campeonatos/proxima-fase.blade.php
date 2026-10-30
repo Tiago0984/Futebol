@@ -20,7 +20,7 @@
     @endphp
     <x-admin.cabecalho :titulo="'Próxima fase' . ($fase ? ': ' . \App\Models\Jogo::FASES[$fase] : '') . ' · ' . $categoria->rotulo . ' · ' . $campeonato->nome_campeonato"
                        :caminho="$caminho"
-                       :voltar="route('admin.campeonatos.grupos', $campeonato->id_campeonato) . '#categoria-' . $categoria->id_categoria"
+                       :voltar="\App\Support\CentralDoCampeonato::url($campeonato, 'mata-mata', $categoria->id_categoria)"
                        :logo="$campeonato->logo_url" :logo-alt="$campeonato->nome_campeonato">
       <x-slot:subtitulo>Entram {{ $daOrigem }}. Prévia: nada foi gravado ainda.</x-slot:subtitulo>
     </x-admin.cabecalho>

@@ -2,6 +2,12 @@
 
 @section('title', 'Editar Campeonato')
 
+@php
+  // Aberta pela central do campeonato (?voltar=central, 30/10/2026): Voltar, Cancelar e o salvar voltam para ela
+  $daCentral  = request('voltar', old('voltar')) === 'central';
+  $voltarPara = $daCentral ? route('admin.campeonatos.show', $campeonato->id_campeonato) : route('admin.campeonatos.index');
+@endphp
+
 @section('content')
 <main class="app-main">
     <div class="container-fluid py-4">
@@ -11,7 +17,7 @@
                 <h1 class="page-title">Editar Campeonato</h1>
                 <p class="page-subtitle">{{ $campeonato->nome_campeonato }}</p>
             </div>
-            <a href="{{ route('admin.campeonatos.index') }}" class="btn-filter-toggle">
+            <a href="{{ $voltarPara }}" class="btn-filter-toggle">
                 <i class="bi bi-arrow-left"></i> Voltar
             </a>
         </div>
@@ -28,6 +34,7 @@
 
         <form action="{{ route('admin.campeonatos.update', $campeonato->id_campeonato) }}" method="POST" enctype="multipart/form-data">
             @csrf @method('PUT')
+            @if ($daCentral)<input type="hidden" name="voltar" value="central">@endif
 
             <div class="table-card mb-3">
                 <div class="table-card-toolbar" style="padding:20px 24px 0">
@@ -116,7 +123,7 @@
                 <button type="submit" class="btn-admin-primary">
                     <i class="bi bi-check-lg"></i> Atualizar Campeonato
                 </button>
-                <a href="{{ route('admin.campeonatos.index') }}" class="btn-filter-toggle">Cancelar</a>
+                <a href="{{ $voltarPara }}" class="btn-filter-toggle">Cancelar</a>
             </div>
         </form>
 

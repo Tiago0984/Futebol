@@ -79,9 +79,11 @@ class MenuAdminComposer
             return Jogo::whereKey($r->route('id'))->value('id_campeonato') ? 'jogos-dos-campeonatos' : 'times-dos-amistosos';
         }
 
-        // Jogos de todos os campeonatos ou de um (e os convocados e os grupos dele): o "Jogos" de Campeonatos
-        if ($r->routeIs('admin.campeonatos.jogos', 'admin.campeonatos.times', 'admin.campeonatos.convocados',
-            'admin.campeonatos.grupos', 'admin.campeonatos.gerar-jogos', 'admin.campeonatos.proxima-fase')) {
+        // Jogos de todos os campeonatos e a central de um campeonato (as abas e as telas de dentro delas, 30/10/2026):
+        // o "Jogos" de Campeonatos (o menu é revisto na Fase 4 do padrão das telas)
+        if ($r->routeIs('admin.campeonatos.jogos', 'admin.campeonatos.show', 'admin.campeonatos.participantes',
+            'admin.campeonatos.times', 'admin.campeonatos.convocados', 'admin.campeonatos.grupos',
+            'admin.campeonatos.gerar-jogos', 'admin.campeonatos.proxima-fase', 'admin.campeonatos.mata-mata')) {
             return 'jogos-dos-campeonatos';
         }
 
