@@ -160,7 +160,7 @@
                         <tr class="linha-jogo"
                             data-campeonato="{{ $jogo->id_campeonato ?? 'amistoso' }}"
                             data-status="{{ $ev->situacao }}">
-                            <td class="text-muted" style="font-size:0.82rem;white-space:nowrap;">
+                            <td class="text-muted admin-texto-pequeno text-nowrap">
                                 {{ $ev->data_evento_calendario->format('d/m/Y') }}
                                 <div>{{ $ev->horario_texto }}</div>
                             </td>
@@ -171,10 +171,10 @@
                                     <span class="badge-cat">{{ $jogo->campeonato->nome_campeonato }}</span>
                                 @endif
                                 @if($ev->categoria)
-                                    <div class="text-muted" style="font-size:0.75rem;">{{ $ev->categoria->rotulo }}</div>
+                                    <div class="text-muted admin-texto-mini">{{ $ev->categoria->rotulo }}</div>
                                 @endif
                                 @if($jogo->ehMataMata() || $jogo->rodada_jogo)
-                                    <div class="text-muted" style="font-size:0.75rem;">{{ $jogo->fase_completa }}</div>
+                                    <div class="text-muted admin-texto-mini">{{ $jogo->fase_completa }}</div>
                                 @endif
                             </td>
                             <td class="text-center">
@@ -182,13 +182,13 @@
                                     <span class="fw-semibold">{{ $jogo->timeCasa->nome_time ?? '—' }}</span>
                                     @if($jogo->timeCasa?->logo_time)
                                     <img src="{{ asset('futebol/images/team/' . $jogo->timeCasa->logo_time) }}"
-                                         style="width:28px;height:28px;object-fit:contain;">
+                                         class="admin-logo-28">
                                     @endif
                                 </div>
                             </td>
                             <td class="text-center fw-bold">
                                 @if($jogo->placar_time_casa_jogos !== null && $jogo->placar_time_visitante_jogos !== null)
-                                    <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
+                                    <span class="badge bg-secondary">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
                                     @include('admin.jogos._resultado')
                                 @else
                                     <span class="text-muted">VS</span>
@@ -198,7 +198,7 @@
                                 <div class="d-flex align-items-center justify-content-start gap-2">
                                     @if($jogo->timeVisitante?->logo_time)
                                     <img src="{{ asset('futebol/images/team/' . $jogo->timeVisitante->logo_time) }}"
-                                         style="width:28px;height:28px;object-fit:contain;">
+                                         class="admin-logo-28">
                                     @endif
                                     <span class="fw-semibold">{{ $jogo->timeVisitante->nome_time ?? '—' }}</span>
                                 </div>

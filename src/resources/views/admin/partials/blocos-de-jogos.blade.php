@@ -79,7 +79,7 @@
   {{-- Três partes: data e selos | nome do campeonato (centralizado; o amistoso não tem) | ações.
        As laterais dividem o espaço por igual (flex 1 1 0), para o nome ficar no meio do cabeçalho --}}
   <div class="card-header bg-white d-flex flex-wrap align-items-center gap-2">
-    <div class="d-flex flex-wrap align-items-center gap-2" style="flex: 1 1 0;">
+    <div class="d-flex flex-wrap align-items-center gap-2 admin-flex-igual">
       <i class="bi bi-calendar2-event text-muted"></i>
       <strong>{{ $ev->data_evento_calendario->locale('pt_BR')->isoFormat('ddd, DD/MM/YYYY') }}</strong>
       <span class="text-muted">· {{ $ev->horario_texto }}</span>
@@ -89,7 +89,7 @@
       @if ($ev->estaCancelado())
         <span class="badge-status inativo">Cancelado</span>
       @elseif ($jogo->temPlacar())
-        <span class="badge bg-dark">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}{{ $jogo->placar_extra ? ' · ' . $jogo->placar_extra : '' }}</span>
+        <span class="badge bg-secondary">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}{{ $jogo->placar_extra ? ' · ' . $jogo->placar_extra : '' }}</span>
         @if ($confronto = $jogo->resultadoDoConfronto())
           <span class="text-success small fw-semibold"><i class="bi bi-arrow-right-circle"></i> {{ $confronto['texto'] }}</span>
         @endif
@@ -102,8 +102,7 @@
       {{-- Logo do campeonato (a mesma da tela de Campeonatos); sem logo, o troféu --}}
       <div class="d-flex align-items-center gap-2 fw-semibold text-center px-2 js-campeonato-do-jogo">
         @if ($jogo->campeonato->logo_evento)
-          <img src="{{ asset('futebol/images/campeonatos/' . $jogo->campeonato->logo_evento) }}" alt=""
-               style="width:32px;height:32px;object-fit:contain;">
+          <img src="{{ asset('futebol/images/campeonatos/' . $jogo->campeonato->logo_evento) }}" alt="" class="admin-logo-32">
         @else
           <i class="bi bi-trophy text-muted"></i>
         @endif
@@ -114,7 +113,7 @@
         </span>
       </div>
     @endif
-    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2" style="flex: 1 1 0;">
+    <div class="d-flex flex-wrap align-items-center justify-content-end gap-2 admin-flex-igual">
       @unless ($ev->estaPublicado())
         {{-- Rascunho: revisar os inscritos e a escalação na tela do jogo, onde fica o "Publicar e avisar os atletas" --}}
         <a href="{{ route('admin.calendario.eventos.show', $jogo->id_evento) }}" class="btn btn-warning btn-sm js-publicar-jogo">

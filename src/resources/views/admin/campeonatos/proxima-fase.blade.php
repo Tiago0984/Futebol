@@ -12,36 +12,18 @@
 <main class="app-main">
   <div class="container-fluid py-4">
 
-    <nav aria-label="Caminho" class="mb-2">
-      <ol class="breadcrumb mb-0 small">
-        @foreach ($caminho as [$rotulo, $url])
-          @if ($url)
-          <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
-          @else
-          <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
-          @endif
-        @endforeach
-      </ol>
-    </nav>
-
     @php
       $fase = $montador->fase();
       $daOrigem = $origem['tipo'] === 'tabela'
           ? 'os classificados da fase de grupos'
           : 'os vencedores da fase "' . \App\Models\Jogo::FASES[$origem['fase_anterior']] . '"';
     @endphp
-    <div class="admin-page-header d-flex align-items-center gap-3">
-      <a href="{{ route('admin.campeonatos.grupos', $campeonato->id_campeonato) }}#categoria-{{ $categoria->id_categoria }}"
-         class="btn btn-sm btn-outline-secondary" title="Voltar" aria-label="Voltar">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-      <div>
-        <h1 class="page-title mb-0">
-          Próxima fase{{ $fase ? ': ' . \App\Models\Jogo::FASES[$fase] : '' }} · {{ $categoria->rotulo }} · {{ $campeonato->nome_campeonato }}
-        </h1>
-        <p class="page-subtitle mb-0">Entram {{ $daOrigem }}. Prévia: nada foi gravado ainda.</p>
-      </div>
-    </div>
+    <x-admin.cabecalho :titulo="'Próxima fase' . ($fase ? ': ' . \App\Models\Jogo::FASES[$fase] : '') . ' · ' . $categoria->rotulo . ' · ' . $campeonato->nome_campeonato"
+                       :caminho="$caminho"
+                       :voltar="route('admin.campeonatos.grupos', $campeonato->id_campeonato) . '#categoria-' . $categoria->id_categoria"
+                       :logo="$campeonato->logo_url" :logo-alt="$campeonato->nome_campeonato">
+      <x-slot:subtitulo>Entram {{ $daOrigem }}. Prévia: nada foi gravado ainda.</x-slot:subtitulo>
+    </x-admin.cabecalho>
 
     @include('admin.jogos._mensagens')
 

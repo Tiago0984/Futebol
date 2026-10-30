@@ -28,7 +28,7 @@
       <i class="bi bi-lock-fill"></i> Elenco não disponível nesta associação
     </span>
   </div>
-  <i class="bi bi-lock" style="color:#9ca3af;flex-shrink:0;"></i>
+  <i class="bi bi-lock text-body-tertiary flex-shrink-0"></i>
 </div>
 @else
 <a href="{{ $link }}" class="escal-team-card">

@@ -13,28 +13,12 @@
 <main class="app-main">
   <div class="container-fluid py-4">
 
-    <nav aria-label="Caminho" class="mb-2">
-      <ol class="breadcrumb mb-0 small" id="caminhoGrupos">
-        @foreach ($caminho as [$rotulo, $url])
-          @if ($url)
-          <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
-          @else
-          <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
-          @endif
-        @endforeach
-      </ol>
-    </nav>
-
-    <div class="admin-page-header d-flex align-items-center gap-3">
-      <a href="{{ route('admin.campeonatos.times', $campeonato->id_campeonato) }}" class="btn btn-sm btn-outline-secondary"
-         title="Voltar" aria-label="Voltar">
-        <i class="bi bi-arrow-left"></i>
-      </a>
-      <div>
-        <h1 class="page-title mb-0">Grupos (chaves) e classificação · {{ $campeonato->nome_campeonato }}</h1>
-        <p class="page-subtitle mb-0">Grupos (chaves) são opcionais. A classificação conta só os jogos da fase de grupos, com placar, publicados e ativos.</p>
-      </div>
-    </div>
+    <x-admin.cabecalho :titulo="'Grupos (chaves) e classificação · ' . $campeonato->nome_campeonato"
+                       :caminho="$caminho" id-caminho="caminhoGrupos"
+                       :voltar="route('admin.campeonatos.times', $campeonato->id_campeonato)"
+                       :logo="$campeonato->logo_url" :logo-alt="$campeonato->nome_campeonato">
+      <x-slot:subtitulo>Grupos (chaves) são opcionais. A classificação conta só os jogos da fase de grupos, com placar, publicados e ativos.</x-slot:subtitulo>
+    </x-admin.cabecalho>
 
     @include('admin.jogos._mensagens')
 
@@ -44,12 +28,9 @@
       $timesDaCat    = $participantes[$categoria->id_categoria] ?? collect();
       $classificacao = $classificacoes[$categoria->id_categoria]['tabelas'] ?? [];
     @endphp
-    <div class="card shadow-sm mb-4" id="categoria-{{ $categoria->id_categoria }}">
-      <div class="card-body">
-        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-          <h2 class="h5 mb-0">{{ $categoria->rotulo }}</h2>
-          {{-- Fase I, Etapa I2: todos contra todos (por grupo, se houver), com prévia antes de gravar --}}
-          <div class="d-flex flex-wrap gap-2">
+    <x-admin.secao :titulo="$categoria->rotulo" icone="trophy" id="categoria-{{ $categoria->id_categoria }}">
+        <x-slot:acoes>
+            {{-- Fase I, Etapa I2: todos contra todos (por grupo, se houver), com prévia antes de gravar --}}
             <a href="{{ route('admin.campeonatos.gerar-jogos', [$campeonato->id_campeonato, $categoria->id_categoria]) }}"
                class="btn btn-sm btn-outline-primary js-gerar-jogos">
               <i class="bi bi-lightning-charge"></i> Gerar jogos (todos contra todos)
@@ -59,8 +40,7 @@
                class="btn btn-sm btn-outline-primary js-proxima-fase">
               <i class="bi bi-diagram-2"></i> Montar próxima fase
             </a>
-          </div>
-        </div>
+        </x-slot:acoes>
 
         {{-- Campeão da categoria (Fase I, Etapa I4; Campeonato::campeoes) --}}
         @if ($campeao = $campeoes[(int) $categoria->id_categoria] ?? null)
@@ -152,7 +132,7 @@
               <div class="d-flex gap-1">
                 <input type="number" min="1" max="{{ \App\Models\Campeonato::CLASSIFICADOS_MAX }}" name="classificados"
                        id="classificados_{{ $categoria->id_categoria }}" value="{{ $categoria->pivot->classificados_campeonato_categoria }}"
-                       class="form-control form-control-sm" style="max-width: 90px;" placeholder="—">
+                       class="form-control form-control-sm admin-campo-estreito" placeholder="—">
                 <button type="submit" class="btn btn-sm btn-outline-secondary">Salvar</button>
               </div>
               <span class="form-text">Ex.: 1 (só o primeiro) ou 2 (primeiro e segundo). Vazio: não destaca ninguém.</span>
@@ -178,11 +158,10 @@
                   <div class="border rounded px-2 py-1 h-100 d-flex align-items-center gap-2 js-time-do-grupo">
                   <label for="grupo_{{ $categoria->id_categoria }}_{{ $time->id_time }}" class="flex-grow-1 small fw-semibold mb-0">
                     {{ $time->nome_time }}
-                    <span @class(['badge-status ms-1', 'ativo' => $time->tipo_time === 'INTERNO', 'inativo' => $time->tipo_time !== 'INTERNO'])
-                          style="font-size:0.6rem;">{{ $time->tipo_time === 'INTERNO' ? 'INT' : 'EXT' }}</span>
+                    <span @class(['badge-status mini ms-1', 'ativo' => $time->tipo_time === 'INTERNO', 'inativo' => $time->tipo_time !== 'INTERNO'])>{{ $time->tipo_time === 'INTERNO' ? 'INT' : 'EXT' }}</span>
                   </label>
                   <select name="grupos[{{ $time->id_time }}]" id="grupo_{{ $categoria->id_categoria }}_{{ $time->id_time }}"
-                          class="form-select form-select-sm" style="max-width: 170px;">
+                          class="form-select form-select-sm admin-select-medio">
                     <option value="">Sem grupo</option>
                     @foreach ($doCategoria as $grupo)
                     <option value="{{ $grupo->id_campeonato_grupo }}" @selected((int) $time->id_campeonato_grupo === (int) $grupo->id_campeonato_grupo)>
@@ -249,8 +228,7 @@
           </div>
           @endforeach
         </div>
-      </div>
-    </div>
+    </x-admin.secao>
     @empty
     <p class="text-muted">O campeonato não tem categorias.</p>
     @endforelse

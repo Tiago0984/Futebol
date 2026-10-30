@@ -52,9 +52,9 @@
           <label class="form-check-label" for="{{ $prefixo }}_p_{{ $cat->id_categoria }}_{{ $time->id_time }}">
             {{ $time->nome_time }}
             @if($time->tipo_time === 'INTERNO')
-            <span class="badge-status ativo ms-1" style="font-size:0.6rem;">INT</span>
+            <span class="badge-status ativo mini ms-1">INT</span>
             @else
-            <span class="badge-status inativo ms-1" style="font-size:0.6rem;">EXT</span>
+            <span class="badge-status inativo mini ms-1">EXT</span>
             @endif
           </label>
         </div>

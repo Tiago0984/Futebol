@@ -22,7 +22,7 @@
             {{-- Cabeçalho: título e ações (editar, placar do jogo, cancelar/reativar, ocultar/mostrar, voltar) --}}
             @php $rotuloEvento = $jogo ? 'jogo' : 'evento'; @endphp
             <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                <h1 class="m-0 text-dark me-auto" style="font-size: 24px; font-weight: 700;">{{ $evento->titulo_evento_calendario }}</h1>
+                <h1 class="admin-titulo-evento me-auto">{{ $evento->titulo_evento_calendario }}</h1>
 
                 <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal"
                         data-bs-target="{{ $jogo ? '#modalEditarJogo' : '#modalEditarEvento' }}" id="btnEditarEvento">
@@ -221,7 +221,7 @@
                 $porTime    = $inscricoes->countBy(fn ($i) => $i->id_time ?? 0);
             @endphp
             <div class="card shadow-sm mb-4">
-                <div class="card-header bg-dark text-white fw-semibold">
+                <div class="card-header admin-card-topo">
                     <i class="bi bi-diagram-3 me-2"></i> Escalação:
                     {{ $jogo->timeCasa->nome_time }} x {{ $jogo->timeVisitante->nome_time }}
                     @if ($jogo->ehAmistoso()) <span class="badge bg-secondary ms-1">Amistoso</span> @endif
@@ -299,7 +299,7 @@
                 @if ($evento->categoria && ! $jogo)
                 <div class="col-12">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-dark text-white fw-semibold">
+                        <div class="card-header admin-card-topo">
                             <i class="bi bi-arrow-repeat me-2"></i> Pela categoria ({{ $evento->categoria->rotulo }})
                         </div>
                         <div class="card-body">
@@ -327,7 +327,7 @@
                      no time da AACJ do jogo. Sem time da AACJ (amistoso antigo), só o aviso --}}
                 <div class="col-12">
                     <div class="card shadow-sm">
-                        <div class="card-header bg-dark text-white fw-semibold">
+                        <div class="card-header admin-card-topo">
                             <i class="bi bi-person-check me-2"></i> Escolher atletas
                             @if ($jogo->timeDaAcj()) <span class="fw-normal">· jogam pelo {{ $jogo->timeDaAcj()->nome_time }}</span> @endif
                         </div>
@@ -358,13 +358,13 @@
                 @else
                 <div class="col-lg-6">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header bg-dark text-white fw-semibold">
+                        <div class="card-header admin-card-topo">
                             <i class="bi bi-person-plus me-2"></i> Inscrever atleta
                         </div>
                         <div class="card-body">
-                            <form action="{{ route('admin.calendario.eventos.inscricoes.store', $evento->id_evento_calendario) }}" method="POST" class="d-flex gap-2">
+                            <form action="{{ route('admin.calendario.eventos.inscricoes.store', $evento->id_evento_calendario) }}" method="POST" class="d-flex flex-wrap gap-2">
                                 @csrf
-                                <select name="id_atleta" class="form-select" required>
+                                <select name="id_atleta" class="form-select admin-campo-largo" required>
                                     <option value="">— Escolher atleta ativo —</option>
                                     @foreach ($disponiveis as $rotuloCategoria => $atletasDaCategoria)
                                     <optgroup label="{{ $rotuloCategoria }}">
@@ -384,7 +384,7 @@
                                     @endforeach
                                 </select>
                                 @if ($jogo && $escalaveis->isNotEmpty())
-                                <select name="id_time" class="form-select" style="max-width:40%" aria-label="Time">
+                                <select name="id_time" class="form-select admin-campo-medio" aria-label="Time">
                                     <option value="">Sem time</option>
                                     @foreach ($escalaveis as $time)
                                     <option value="{{ $time->id_time }}">{{ $time->nome_time }}</option>
@@ -399,7 +399,7 @@
 
                 <div class="col-lg-6">
                     <div class="card shadow-sm h-100">
-                        <div class="card-header bg-dark text-white fw-semibold">
+                        <div class="card-header admin-card-topo">
                             <i class="bi bi-people-fill me-2"></i> Adicionar todos de uma categoria
                         </div>
                         <div class="card-body">
@@ -425,7 +425,7 @@
 
             {{-- Inscritos (largura toda) --}}
             <div class="card shadow-sm">
-                <div class="card-header bg-dark text-white fw-semibold">
+                <div class="card-header admin-card-topo">
                     <i class="bi bi-people me-2"></i> Inscritos ({{ $inscricoes->count() }})
                 </div>
 
@@ -443,7 +443,7 @@
                                     {{ $bloco['titulo'] }}
                                     <span class="badge escal-badge-externo">Externo</span>
                                     <span class="fw-normal small">· {{ $bloco['papel'] }}</span>
-                                    <i class="bi bi-lock ms-auto" style="color:#9ca3af;"></i>
+                                    <i class="bi bi-lock ms-auto text-body-tertiary"></i>
                                 </div>
                                 <div class="px-3 py-3 text-muted small">
                                     @if ($bloco['outra_categoria'])
@@ -524,7 +524,7 @@
                                     @endif
                                 </td>
                                 <td class="text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</td>
-                                <td><span class="badge-cat" style="cursor:help" title="{{ $inscricao->origem_dica }}">{{ $inscricao->origem_label }}</span></td>
+                                <td><span class="badge-cat admin-cursor-ajuda" title="{{ $inscricao->origem_dica }}">{{ $inscricao->origem_label }}</span></td>
                                 <td class="text-muted small">
                                     {{ $inscricao->usuario?->nome_usuario ?? '—' }}<br>
                                     {{ $inscricao->data_evento_atleta?->format('d/m/Y H:i') }}
@@ -558,7 +558,7 @@
             {{-- Notificações enviadas aos atletas sobre este evento (só no admin: dados de menores).
                  As de AGENDA (resumo do mês, mover inscrições) não têm evento: ficam na página geral. --}}
             <div class="card shadow-sm mt-4">
-                <div class="card-header bg-dark text-white fw-semibold d-flex align-items-center">
+                <div class="card-header admin-card-topo d-flex align-items-center">
                     <span><i class="bi bi-bell me-2"></i> Notificações ({{ $notificacoes->count() }})</span>
                     <a href="{{ route('admin.notificacoes.index', ['evento' => $evento->id_evento_calendario]) }}"
                        class="ms-auto small text-white" id="verTodasNotificacoes">ver todas</a>

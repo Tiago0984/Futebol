@@ -18,7 +18,7 @@
     };
 @endphp
 <div class="card shadow-sm mt-4" id="sumula">
-    <div class="card-header bg-dark text-white fw-semibold">
+    <div class="card-header admin-card-topo">
         <i class="bi bi-clipboard-check me-2"></i> Súmula
         <span class="fw-normal small">· gols ({{ $sumula['gols']->count() }}) e cartões ({{ $sumula['cartoes']->count() }})</span>
     </div>

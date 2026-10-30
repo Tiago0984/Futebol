@@ -15,32 +15,20 @@
   <div class="container-fluid py-4">
 
     {{-- Linha de caminho: cada parte leva à lista dela; a última é esta tela --}}
-    <nav aria-label="Caminho" class="mb-2">
-      <ol class="breadcrumb mb-0 small" id="caminhoTimes">
-        @foreach ($caminho as [$rotulo, $url])
-          @if ($url)
-          <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
-          @else
-          <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
-          @endif
-        @endforeach
-      </ol>
-    </nav>
-
-    <div class="admin-page-header d-flex flex-wrap align-items-end justify-content-between gap-3">
-      <div>
-        <h1 class="page-title">{{ $campeonato ? 'Jogos · ' . $campeonato->nome_campeonato : 'Jogos de todos os campeonatos' }}</h1>
-        <p class="page-subtitle">Cada jogo com os dois times; clique num time interno para ver os jogadores escalados</p>
-      </div>
+    <x-admin.cabecalho :titulo="$campeonato ? 'Jogos · ' . $campeonato->nome_campeonato : 'Jogos de todos os campeonatos'"
+                       :caminho="$caminho" id-caminho="caminhoTimes"
+                       :logo="$campeonato?->logo_url" :logo-alt="$campeonato?->nome_campeonato ?? ''">
+      <x-slot:subtitulo>Cada jogo com os dois times; clique num time interno para ver os jogadores escalados</x-slot:subtitulo>
+      <x-slot:acoes>
       @if ($campeonato)
       {{-- Grupos e classificação por categoria (Fase H, Etapa H4) --}}
-      <a href="{{ route('admin.campeonatos.grupos', $campeonato->id_campeonato) }}" class="btn btn-sm btn-outline-primary ms-auto" id="btnGrupos">
+      <a href="{{ route('admin.campeonatos.grupos', $campeonato->id_campeonato) }}" class="btn btn-sm btn-outline-primary" id="btnGrupos">
         <i class="bi bi-diagram-3"></i> Grupos (chaves) e classificação
       </a>
       @endif
       <div>
         <label for="filtroCampeonato" class="form-label small text-muted mb-1">Campeonato</label>
-        <select id="filtroCampeonato" class="form-select form-select-sm" style="min-width: 220px;"
+        <select id="filtroCampeonato" class="form-select form-select-sm"
                 onchange="if (this.value) window.location.href = this.value">
           <option value="{{ route('admin.campeonatos.jogos') }}" @selected(! $campeonato)>Todos</option>
           {{-- Ativos primeiro; os inativos num grupo à parte, no fim (21/10/2026) --}}
@@ -55,18 +43,18 @@
           @endforeach
         </select>
       </div>
-    </div>
+      </x-slot:acoes>
+    </x-admin.cabecalho>
 
     @include('admin.jogos._mensagens')
 
     {{-- Convocação (Fase G): uma linha por time interno e categoria em que ele joga (a AACJ no Sub-13 e no Sub-15:
          duas linhas, desde 27/10/2026), com os convocados ativos e o botão da tela --}}
     @if ($convocacao->isNotEmpty())
-    <div class="card shadow-sm mb-4" id="blocoConvocacao">
-      <div class="card-body py-2">
-        <h2 class="h6 text-uppercase text-muted fw-bold mb-2">Convocação</h2>
+    <x-admin.secao titulo="Convocação" icone="person-lines-fill" id="blocoConvocacao"
+                   ajuda="Os atletas de cada time da AACJ em cada categoria, com a camisa. Os jogos inscrevem estes convocados.">
         @foreach ($convocacao as $participacao)
-        <div class="d-flex align-items-center gap-2 py-1 border-top" data-id-time="{{ $participacao->time->id_time }}"
+        <div @class(['d-flex align-items-center gap-2 py-1', 'border-top' => ! $loop->first]) data-id-time="{{ $participacao->time->id_time }}"
              data-id-categoria="{{ $participacao->categoria->id_categoria }}">
           <span class="fw-semibold">{{ $participacao->time->nome_time }}</span>
           <span class="text-muted small">· {{ $participacao->categoria->rotulo }}</span>
@@ -79,8 +67,7 @@
           </a>
         </div>
         @endforeach
-      </div>
-    </div>
+    </x-admin.secao>
     @endif
 
     @include('admin.partials.blocos-de-jogos', ['rotulo' => 'jogo'])
@@ -88,7 +75,8 @@
     {{-- Participantes que não aparecem em nenhum jogo acima (ainda sem jogo marcado, ou só em jogos mais
          antigos), um cartão por time e categoria (28/10/2026): o cartão da AACJ abre os convocados daquela categoria --}}
     @if ($semJogo->isNotEmpty())
-    <h2 class="h6 text-uppercase text-muted fw-bold mt-4 mb-2">Participantes sem jogo na lista</h2>
+    <x-admin.secao titulo="Participantes sem jogo na lista" icone="people" class="mt-4"
+                   ajuda="Times do campeonato que ainda não aparecem nos jogos acima. O cartão da AACJ abre os convocados.">
     <div class="row g-3" id="participantesSemJogo">
       @foreach ($semJogo as $participacao)
       <div class="col-md-4 col-lg-3" data-id-time="{{ $participacao->time->id_time }}" data-id-categoria="{{ $participacao->categoria->id_categoria }}">
@@ -101,6 +89,7 @@
       </div>
       @endforeach
     </div>
+    </x-admin.secao>
     @endif
 
   </div>

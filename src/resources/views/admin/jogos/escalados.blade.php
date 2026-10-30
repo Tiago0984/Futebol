@@ -13,40 +13,23 @@
 <main class="app-main">
   <div class="container-fluid py-4">
 
-    <nav aria-label="Caminho" class="mb-2">
-      <ol class="breadcrumb mb-0 small" id="caminhoEscalados">
-        @foreach ($caminho as [$rotulo, $url])
-          @if ($url)
-          <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
-          @else
-          <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
-          @endif
-        @endforeach
-      </ol>
-    </nav>
-
-    <div class="admin-page-header">
-      <div class="d-flex align-items-center gap-3">
-        <a href="{{ $voltar }}" class="btn btn-sm btn-outline-secondary" title="Voltar" aria-label="Voltar" id="btnVoltarEscalados">
-          <i class="bi bi-arrow-left"></i>
-        </a>
-        <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}" alt="{{ $time->nome_time }}"
-             style="width:40px;height:40px;object-fit:contain;border-radius:8px;"
-             onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
-        <div>
-          <h1 class="page-title mb-0">{{ $time->nome_time }} · jogadores do jogo</h1>
-          <p class="page-subtitle mb-0">
+    <x-admin.cabecalho :titulo="$time->nome_time . ' · jogadores do jogo'"
+                       :caminho="$caminho" id-caminho="caminhoEscalados"
+                       :voltar="$voltar" id-voltar="btnVoltarEscalados"
+                       :logo="asset('futebol/images/team/' . $time->logo_time)" :logo-alt="$time->nome_time"
+                       :logo-padrao="asset('futebol/images/team/default-team.png')">
+      <x-slot:subtitulo>
             {{ $jogo->timeCasa->nome_time }} x {{ $jogo->timeVisitante->nome_time }}
             · {{ $ev->data_evento_calendario->locale('pt_BR')->isoFormat('ddd, DD/MM/YYYY') }} · {{ $ev->horario_texto }}
             @if ($ev->local_evento_calendario) · {{ $ev->local_evento_calendario }} @endif
             @if ($ev->estaCancelado()) · <span class="badge-status inativo">Cancelado</span> @endif
-          </p>
-        </div>
-      </div>
+      </x-slot:subtitulo>
+      <x-slot:acoes>
       <a href="{{ route('admin.calendario.eventos.show', $ev->id_evento_calendario) }}" class="btn btn-sm btn-outline-primary">
         <i class="bi bi-diagram-3"></i> Abrir o jogo (escalação)
       </a>
-    </div>
+      </x-slot:acoes>
+    </x-admin.cabecalho>
 
     <div class="table-card">
       <div class="table-card-toolbar">

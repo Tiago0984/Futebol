@@ -11,24 +11,9 @@
 <main class="app-main">
   <div class="container-fluid py-4">
 
-    <nav aria-label="Caminho" class="mb-2">
-      <ol class="breadcrumb mb-0 small" id="caminhoTimes">
-        @foreach ($caminho as [$rotulo, $url])
-          @if ($url)
-          <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
-          @else
-          <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
-          @endif
-        @endforeach
-      </ol>
-    </nav>
-
-    <div class="admin-page-header">
-      <div>
-        <h1 class="page-title">Jogos dos amistosos</h1>
-        <p class="page-subtitle">Cada amistoso com os dois times; clique num time interno para ver os jogadores</p>
-      </div>
-    </div>
+    <x-admin.cabecalho titulo="Jogos dos amistosos" :caminho="$caminho" id-caminho="caminhoTimes">
+      <x-slot:subtitulo>Cada amistoso com os dois times; clique num time interno para ver os jogadores</x-slot:subtitulo>
+    </x-admin.cabecalho>
 
     @include('admin.jogos._mensagens')
 

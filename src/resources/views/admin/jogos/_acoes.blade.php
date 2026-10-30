@@ -35,7 +35,7 @@
 </button>
 {{-- Status é do evento: cancelar <-> reativar (oculto precisa ser mostrado antes) --}}
 @unless($ev->estaOculto())
-<form action="{{ route('admin.calendario.eventos.cancelar', $ev->id_evento_calendario) }}" method="POST" style="display:inline"
+<form action="{{ route('admin.calendario.eventos.cancelar', $ev->id_evento_calendario) }}" method="POST" class="d-inline"
       onsubmit="return confirm(@js($ev->estaCancelado() ? 'Reativar este jogo?' : 'Cancelar este jogo? Ele continua visível no site, com o selo "Cancelado".'))">
     @csrf @method('PATCH')
     @if($ev->estaCancelado())
@@ -50,7 +50,7 @@
 </form>
 @endunless
 {{-- Ocultar <-> mostrar: substitui a exclusão (o registro e os cartões ficam) --}}
-<form action="{{ route('admin.calendario.eventos.ocultar', $ev->id_evento_calendario) }}" method="POST" style="display:inline"
+<form action="{{ route('admin.calendario.eventos.ocultar', $ev->id_evento_calendario) }}" method="POST" class="d-inline"
       onsubmit="return confirm(@js($ev->estaOculto() ? 'Mostrar este jogo de novo?' : 'Ocultar este jogo? Ele some do calendário do site, mas o registro fica.'))">
     @csrf @method('PATCH')
     @if($ev->estaOculto())

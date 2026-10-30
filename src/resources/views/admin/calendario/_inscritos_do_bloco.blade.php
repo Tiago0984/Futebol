@@ -1,6 +1,7 @@
 {{--
-    Inscritos de um bloco da escalação lado a lado (um time do jogo, ou "Sem time"): nome com a categoria
-    embaixo, time (select e aviso do elenco), origem e remover. "Inscrito por" fica de fora para caber.
+    Inscritos de um bloco da escalação lado a lado (um time do jogo, ou "Sem time"): em cima, camisa, nome, origem
+    e a categoria; embaixo, posição e titular/reserva (times da AACJ) e o time (select e aviso da convocação);
+    remover na coluna da direita. "Inscrito por" fica de fora para caber.
     $lista (inscrições), $vazio (texto quando não há ninguém), $evento, $escalaveis, $elencos, $camisas
     (camisa da convocação no jogo de campeonato: "10 · Nome"), $inscritosAcimaDaIdade (selo de quem passa
     da idade do campeonato).
@@ -22,25 +23,31 @@
         @forelse ($grupos as $grupo)
         @if ($grupo['titulo'])
         <tr class="js-grupo-escalacao">
-            <td colspan="4" class="ps-3 py-1 bg-body-tertiary small fw-semibold text-uppercase text-muted">{{ $grupo['titulo'] }} ({{ $grupo['lista']->count() }})</td>
+            <td colspan="2" class="ps-3 py-1 bg-body-tertiary small fw-semibold text-uppercase text-muted">{{ $grupo['titulo'] }} ({{ $grupo['lista']->count() }})</td>
         </tr>
         @endif
         @foreach ($grupo['lista'] as $inscricao)
+        {{-- 30/10/2026: uma linha por atleta em duas faixas (antes, 4 colunas apertavam os selects num bloco de meia
+             tela: "GOl", "A d", "AACJ Sub-1"). Em cima, camisa, nome, categoria e origem; embaixo, posição,
+             titular/reserva e o time, cada um com largura própria e quebrando de linha quando não cabem --}}
         <tr>
             <td class="ps-3">
-                @if (isset($camisas[$inscricao->id_atleta]))
-                    <span class="badge text-bg-secondary me-1" title="Camisa na convocação do campeonato">{{ $camisas[$inscricao->id_atleta] }}</span>
-                @endif
-                <span class="fw-semibold">{{ $inscricao->atleta->nome_atleta }}</span>
+                <div class="d-flex flex-wrap align-items-center gap-1">
+                    @if (isset($camisas[$inscricao->id_atleta]))
+                        <span class="badge text-bg-secondary" title="Camisa na convocação do campeonato">{{ $camisas[$inscricao->id_atleta] }}</span>
+                    @endif
+                    <span class="fw-semibold">{{ $inscricao->atleta->nome_atleta }}</span>
+                    <span class="badge-cat admin-cursor-ajuda ms-auto" title="{{ $inscricao->origem_dica }}">{{ $inscricao->origem_label }}</span>
+                </div>
                 <small class="d-block text-muted">{{ $inscricao->atleta->categoriasAtivas->first()?->rotulo ?? '—' }}</small>
                 @if (isset($inscritosAcimaDaIdade[$inscricao->id_atleta]))
                     <small class="d-block text-danger fw-semibold">Acima da idade do campeonato</small>
                 @endif
+                <div class="admin-escalacao-campos mt-1">
                 @if ($formEscalacao)
                 @php $posicao = $inscricao->posicaoNaTela(); @endphp
-                <div class="d-flex gap-1 mt-1">
                     <select name="escalacao[{{ $inscricao->id_atleta }}][posicao]" form="{{ $formEscalacao }}"
-                            class="form-select form-select-sm" style="min-width:0" aria-label="Posição de {{ $inscricao->atleta->nome_atleta }} no jogo"
+                            class="form-select form-select-sm admin-escalacao-posicao" aria-label="Posição de {{ $inscricao->atleta->nome_atleta }} no jogo"
                             title="{{ $inscricao->posicaoSugerida() ? 'Sugerida: a posição principal do atleta (grava ao salvar)' : 'Posição no jogo' }}">
                         <option value="">Posição…</option>
                         @foreach ($porSetor as $setor => $posicoes)
@@ -52,18 +59,17 @@
                         @endforeach
                     </select>
                     <select name="escalacao[{{ $inscricao->id_atleta }}][titular]" form="{{ $formEscalacao }}"
-                            class="form-select form-select-sm" style="min-width:0;max-width:110px" aria-label="Titular ou reserva: {{ $inscricao->atleta->nome_atleta }}">
+                            class="form-select form-select-sm admin-escalacao-titular" aria-label="Titular ou reserva: {{ $inscricao->atleta->nome_atleta }}">
                         <option value="">A definir</option>
                         @foreach (\App\Models\EventoAtleta::TITULARIDADES as $valor => $rotulo)
                         <option value="{{ $valor }}" @selected($inscricao->titular_evento_atleta === $valor)>{{ $rotulo }}</option>
                         @endforeach
                     </select>
-                </div>
                 @endif
+                    <div class="admin-escalacao-time">@include('admin.calendario._time_da_inscricao')</div>
+                </div>
             </td>
-            <td style="min-width:150px">@include('admin.calendario._time_da_inscricao')</td>
-            <td><span class="badge-cat" style="cursor:help" title="{{ $inscricao->origem_dica }}">{{ $inscricao->origem_label }}</span></td>
-            <td class="text-center" style="width:50px">@include('admin.calendario._remover_inscricao')</td>
+            <td class="text-center align-top pt-2 admin-coluna-remover">@include('admin.calendario._remover_inscricao')</td>
         </tr>
         @endforeach
         @empty

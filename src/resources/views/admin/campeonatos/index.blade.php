@@ -132,23 +132,23 @@
                                 @if($camp->logo_evento)
                                 <img src="{{ asset('futebol/images/campeonatos/' . $camp->logo_evento) }}"
                                      alt="{{ $camp->nome_campeonato }}"
-                                     style="width:40px;height:40px;object-fit:contain;">
+                                     class="admin-logo-mini">
                                 @else
-                                <div style="width:40px;height:40px;background:#f0f0f0;border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                                <div class="admin-logo-vazia">
                                     <i class="bi bi-trophy text-muted"></i>
                                 </div>
                                 @endif
                             </td>
                             <td><span class="fw-semibold">{{ $camp->nome_campeonato }}</span></td>
                             <td><span class="badge-cat">{{ $camp->tipo_label ?: '—' }}</span></td>
-                            <td class="text-muted" style="font-size:0.82rem;">
+                            <td class="text-muted admin-texto-pequeno">
                                 {{ $camp->data_inicio_campeonato ? \Carbon\Carbon::parse($camp->data_inicio_campeonato)->format('d/m/Y') : '—' }}
                                 @if($camp->data_fim_campeonato)
                                     <br>até {{ \Carbon\Carbon::parse($camp->data_fim_campeonato)->format('d/m/Y') }}
                                 @endif
                             </td>
                             <td class="text-muted">{{ $camp->local_evento ?? '—' }}</td>
-                            <td class="text-muted" style="font-size:0.82rem;">
+                            <td class="text-muted admin-texto-pequeno">
                                 @forelse($camp->categorias as $catDoCamp)
                                     <div>{{ $catDoCamp->rotulo }}</div>
                                 @empty
@@ -189,7 +189,7 @@
                                         data-participantes="{{ json_encode((object) ($participantes[$camp->id_campeonato] ?? [])) }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
-                                    <form action="{{ route('admin.campeonatos.toggleStatus', $camp->id_campeonato) }}" method="POST" style="display:inline">
+                                    <form action="{{ route('admin.campeonatos.toggleStatus', $camp->id_campeonato) }}" method="POST" class="d-inline">
                                         @csrf @method('PATCH')
                                         @if(strtoupper($camp->status_campeonato) === 'ATIVO')
                                             <button type="submit" class="btn-tbl deactivate" title="Inativar">
@@ -203,7 +203,7 @@
                                     </form>
                                     @if(strtoupper($camp->status_campeonato) !== 'ATIVO')
                                     <form action="{{ route('admin.campeonatos.destroy', $camp->id_campeonato) }}" method="POST"
-                                          onsubmit="return confirm('Excluir permanentemente {{ addslashes($camp->nome_campeonato) }}?');" style="display:inline">
+                                          onsubmit="return confirm('Excluir permanentemente {{ addslashes($camp->nome_campeonato) }}?');" class="d-inline">
                                         @csrf @method('DELETE')
                                         <button type="submit" class="btn-tbl delete" title="Excluir">
                                             <i class="bi bi-trash"></i>

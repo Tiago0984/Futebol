@@ -18,30 +18,12 @@
 <main class="app-main">
   <div class="container-fluid py-4">
 
-    <nav aria-label="Caminho" class="mb-2">
-      <ol class="breadcrumb mb-0 small" id="caminhoConvocados">
-        @foreach ($caminho as [$rotulo, $url])
-          @if ($url)
-          <li class="breadcrumb-item"><a href="{{ $url }}">{{ $rotulo }}</a></li>
-          @else
-          <li class="breadcrumb-item active" aria-current="page">{{ $rotulo }}</li>
-          @endif
-        @endforeach
-      </ol>
-    </nav>
-
-    <div class="admin-page-header">
-      <div class="d-flex align-items-center gap-3">
-        <a href="{{ route('admin.campeonatos.times', $campeonato->id_campeonato) }}" class="btn btn-sm btn-outline-secondary"
-           title="Voltar" aria-label="Voltar" id="btnVoltarConvocados">
-          <i class="bi bi-arrow-left"></i>
-        </a>
-        <img src="{{ asset('futebol/images/team/' . $time->logo_time) }}" alt="{{ $time->nome_time }}"
-             style="width:40px;height:40px;object-fit:contain;border-radius:8px;"
-             onerror="this.src='{{ asset('futebol/images/team/default-team.png') }}'">
-        <div>
-          <h1 class="page-title mb-0">Convocados · {{ $time->nome_time }} · {{ $categoria->rotulo }}</h1>
-          <p class="page-subtitle mb-0" id="resumoConvocados">
+    <x-admin.cabecalho :titulo="'Convocados · ' . $time->nome_time . ' · ' . $categoria->rotulo"
+                       :caminho="$caminho" id-caminho="caminhoConvocados"
+                       :voltar="route('admin.campeonatos.times', $campeonato->id_campeonato)" id-voltar="btnVoltarConvocados"
+                       :logo="asset('futebol/images/team/' . $time->logo_time)" :logo-alt="$time->nome_time"
+                       :logo-padrao="asset('futebol/images/team/default-team.png')">
+      <x-slot:subtitulo id="resumoConvocados">
             {{ $campeonato->nome_campeonato }}
             @if ($categoria)
               &bull; {{ $categoria->limite_de_idade }} (idade pelo ano de {{ $campeonato->anoDaIdade() }})
@@ -49,10 +31,8 @@
               &bull; sem limite de idade
             @endif
             &bull; {{ $ativos }} convocado(s){{ $inativos ? " ({$inativos} inativo(s), não contam)" : '' }}
-          </p>
-        </div>
-      </div>
-    </div>
+      </x-slot:subtitulo>
+    </x-admin.cabecalho>
 
     @include('admin.jogos._mensagens')
 
@@ -65,7 +45,7 @@
     {{-- Lista dos convocados --}}
     @if ($convocados->isEmpty())
       <div class="text-center py-4 text-muted" id="semConvocados">
-        <i class="bi bi-people" style="font-size:2.5rem; opacity:.3;"></i>
+        <i class="bi bi-people admin-icone-vazio"></i>
         <p class="mt-2 mb-0">Nenhum atleta convocado pelo {{ $time->nome_time }} neste campeonato.</p>
       </div>
     @else
@@ -138,10 +118,11 @@
     @endif
 
     {{-- Convocar atletas: caixa por categoria, com a camisa de cada escolhido --}}
+    <x-admin.secao titulo="Convocar atletas" icone="person-plus"
+                   ajuda="Marque os atletas e informe a camisa de cada um. Quem passa da idade da categoria aparece desabilitado.">
     <form action="{{ route('admin.campeonatos.convocados.convocar', [$campeonato->id_campeonato, $time->id_time, 'categoria' => $categoria->id_categoria]) }}" method="POST"
-          class="card card-body shadow-sm" id="formConvocar">
+          id="formConvocar">
       @csrf
-      <h2 class="h6 fw-bold mb-3"><i class="bi bi-person-plus"></i> Convocar atletas</h2>
       @include('admin.partials.escolher-atletas', [
         'prefixo'    => 'conv',
         'grupos'     => $grupos,
@@ -159,6 +140,7 @@
         </button>
       </div>
     </form>
+    </x-admin.secao>
 
   </div>
 </main>
