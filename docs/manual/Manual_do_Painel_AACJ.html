@@ -50,7 +50,7 @@
   <div class="titulo">Manual do Painel Administrativo</div>
   <div class="sub">Escolinha de Futebol AACJ<br>Associação Atlética Cohab Jucelino e Adjacência</div>
   <div class="sub" style="margin-top:24px;font-size:11.5pt">Como cadastrar atletas, montar a agenda de treinos e jogos,<br>organizar campeonatos e avisar os atletas pelo aplicativo</div>
-  <div class="versao">Versão de 22/10/2026, com rodadas geradas pelo sistema, mata-mata (ida e volta, prorrogação e pênaltis), campeão, peneira e CPF · painel em <strong>/admin</strong> do site da escolinha</div>
+  <div class="versao">Versão de 30/10/2026, com a central do campeonato (abas), times com várias categorias, rodadas geradas pelo sistema, mata-mata, campeão, peneira e CPF · painel em <strong>/admin</strong> do site da escolinha</div>
 </div>
 
 <!-- ============================================================ ÍNDICE -->
@@ -96,7 +96,7 @@
   <tr><td><strong>Grade de treino</strong></td><td>O <strong>modelo</strong> da semana: "toda terça, das 9h às 11h, no Campo A". A grade sozinha não aparece para ninguém: ela serve para <strong>gerar</strong> os treinos de verdade, mês a mês.</td><td><span class="caminho">Esporte › Grade de treino</span></td></tr>
   <tr><td><strong>Evento</strong></td><td>Um compromisso com data e hora: um treino de um dia, um jogo, uma reunião, um exame. É o que vai para a agenda do atleta.</td><td><span class="caminho">Esporte › Eventos › Calendário</span></td></tr>
   <tr><td><strong>Inscrição</strong></td><td>A ligação "este atleta participa deste evento". Pode ser automática (pela categoria do evento ou pela convocação do campeonato) ou escolhida à mão (individual, como no amistoso).</td><td>Dentro de cada evento</td></tr>
-  <tr><td><strong>Time</strong></td><td><strong>Interno</strong> = um time da AACJ (ex.: "AACJ Sub-15"). <strong>Externo</strong> = o adversário (não tem atletas no sistema).</td><td><span class="caminho">Cadastros › Times</span></td></tr>
+  <tr><td><strong>Time</strong></td><td><strong>Interno</strong> = um time da AACJ (ex.: "AACJ Masculino", com as categorias em que joga). <strong>Externo</strong> = o adversário (não tem atletas no sistema).</td><td><span class="caminho">Cadastros › Times</span></td></tr>
   <tr><td><strong>Campeonato</strong></td><td>Competição com datas, <strong>uma ou mais categorias</strong> (ex.: Sub-11 e Sub-15) e os times de cada categoria. Pode ter <strong>grupos (chaves)</strong> em cada categoria.</td><td><span class="caminho">Eventos › Campeonatos</span></td></tr>
   <tr><td><strong>Convocação</strong></td><td>A lista de quem joga por cada time da AACJ <strong>naquele campeonato</strong>, com o número da camisa. Feita uma vez por campeonato.</td><td>Jogos do campeonato › bloco Convocação</td></tr>
   <tr><td><strong>Jogo</strong></td><td>Um evento do tipo jogo, com mandante, visitante, placar, <strong>categoria</strong> e <strong>fase</strong> (grupos, oitavas, final…). Na fase de grupos tem a <strong>rodada</strong>; no mata-mata pode ser <strong>ida e volta</strong> e ter <strong>prorrogação</strong> e <strong>pênaltis</strong>. No campeonato, já nasce com os convocados inscritos.</td><td><span class="caminho">Esporte › Jogos</span></td></tr>
@@ -122,7 +122,7 @@
   <li>A <strong>agenda</strong> mostra só os eventos em que o atleta está inscrito, já publicados, com a situação <span class="selo verde">Confirmado</span> ou <span class="selo vermelho">Cancelado</span>. Mostra também os 3 últimos eventos passados.</li>
   <li>Os <strong>avisos</strong> mostram tudo o que mudou: nova atividade, saiu de uma atividade, mudou horário ou local, cancelado, reativado e os recados escritos por você.</li>
   <li>No jogo, aparecem o adversário, o time pelo qual o atleta joga e o horário de <strong>chegada (1 hora antes)</strong>. A <strong>posição</strong> e o <strong>titular/reserva</strong> ficam só no painel, por enquanto: o atleta não vê.</li>
-  <li>O responsável vê tudo de cada filho ativo, só para leitura. Ele altera apenas o próprio e-mail, telefone e WhatsApp.</li>
+  <li>O responsável vê tudo de cada filho ativo, só para leitura. Ele altera os próprios dados: nome, CPF, e-mail, telefone, WhatsApp e endereço (o RG fica com a secretaria; as mudanças aparecem no "Editar" do atleta).</li>
 </ul>
 <h2>No site público</h2>
 <ul>
@@ -170,7 +170,7 @@
 <h2>R1. Preparar a escolinha (uma vez, ou no começo do ano)</h2>
 <ol class="passos">
   <li><strong>Categorias:</strong> as 10 oficiais já existem (Sub-9 a Sub-17, masculino e feminino). Só crie outra se o professor pedir.</li>
-  <li><strong>Times:</strong> em <span class="caminho">Cadastros › Times</span> › <span class="botao">Novo Time</span>, cadastre os times da AACJ como <strong>Interno</strong> (ex.: "AACJ Sub-15") e os adversários como <strong>Externo</strong>, com logo.</li>
+  <li><strong>Times:</strong> em <span class="caminho">Cadastros › Times</span> › <span class="botao">Novo Time</span>, cadastre os times da AACJ como <strong>Interno</strong> e os adversários como <strong>Externo</strong>, com logo, e marque as <strong>categorias</strong> em que cada um joga. Um cadastro por time: "AACJ Masculino" com o Sub-13 e o Sub-15 marcados, "AACJ Feminino" com as femininas.</li>
   <li><strong>Locais:</strong> em <span class="caminho">Cadastros › Locais</span> › <span class="botao">Novo local</span>, cadastre onde a escolinha treina e joga (ex.: "Campo da AACJ"), com o endereço. O <strong>link do Google Maps</strong> é opcional (no Google Maps: Compartilhar › Copiar link); sem ele, o "Abrir no mapa" procura pelo nome e pelo endereço. Os atletas usam esse endereço no aplicativo para chegar.</li>
   <li><strong>Grade de treino:</strong> cadastre os horários reais (veja o R3). Inative os horários antigos que não valem mais.</li>
   <li><strong>Atletas:</strong> confira se todo atleta ativo tem <strong>categoria</strong> e <strong>período escolar</strong>. A lista mostra o selo <span class="selo amarelo">Sem período escolar</span> em quem falta.</li>
@@ -247,28 +247,38 @@
 
 <h2>R5. Organizar um campeonato e seus jogos</h2>
 <p>Este roteiro segue um exemplo do começo ao fim. Troque os nomes pelos do seu campeonato.</p>
-<div class="caixa info"><strong>O exemplo: Copa da Cidade</strong>A AACJ vai jogar a Copa da Cidade em duas categorias, <strong>Sub-11</strong> e <strong>Sub-15</strong>. No Sub-15 são três times numa chave só: <strong>AACJ Sub-15</strong>, <strong>Botafogo</strong> e <strong>Vila Nova</strong>. Todos jogam contra todos e <strong>os 2 primeiros fazem a final</strong>.</div>
+<div class="caixa info"><strong>O exemplo: Copa da Cidade</strong>A AACJ vai jogar a Copa da Cidade em duas categorias, <strong>Sub-11</strong> e <strong>Sub-15</strong>, com o time <strong>AACJ Masculino</strong> (um cadastro só, com as duas categorias marcadas em Times). No Sub-15 são três times numa chave só: <strong>AACJ Masculino</strong>, <strong>Botafogo</strong> e <strong>Vila Nova</strong>. Todos jogam contra todos e <strong>os 2 primeiros fazem a final</strong>. O Sub-11 tem os seus próprios times, jogos e final.</div>
+
+<div class="caixa dica"><strong>A central do campeonato: tudo de um campeonato num lugar só</strong>Em <span class="caminho">Eventos › Campeonatos</span>, clique em <span class="botao">Abrir</span> (ou no nome) na linha do campeonato. O topo mostra o nome, o tipo, o período e as categorias, com <span class="botao">Editar campeonato</span> e <span class="botao">Ver no site</span>, e cinco abas, na ordem do trabalho:
+<ul style="margin:2px 0 0">
+  <li><strong>Visão geral:</strong> o que falta fazer ("Precisa da sua atenção") e, para cada categoria, os passos com o <span class="botao">Próximo passo</span>. <strong>Comece sempre por ela.</strong></li>
+  <li><strong>Participantes e convocação:</strong> os times de cada categoria e os convocados da AACJ (passo 3).</li>
+  <li><strong>Jogos:</strong> todos os jogos do campeonato, com as ações e a publicação (passos 4 a 6).</li>
+  <li><strong>Grupos (chaves) e classificação:</strong> os grupos, quantos passam e a tabela (passo 2).</li>
+  <li><strong>Mata-mata e campeão:</strong> as fases do mata-mata, o "Montar próxima fase" e o campeão de cada categoria (passo 7 e "O campeão").</li>
+</ul></div>
 
 <h3>Passo 1: cadastrar o campeonato</h3>
 <ol class="passos">
   <li><span class="caminho">Eventos › Campeonatos</span> › <span class="botao">Novo Campeonato</span>.</li>
   <li>Preencha nome, tipo e as datas de início e fim. <strong>Local principal</strong>, organizador, logo e banner são opcionais: cada jogo tem o seu local, e o local principal é só a sugestão para os jogos novos. Sem ele, o site mostra os locais dos jogos (ex.: "Arena A, Arena B e mais 2"); sem banner, o site usa um fundo escuro; sem logo, as iniciais do nome.</li>
   <li>Em <strong>Categorias do campeonato</strong>, marque todas as categorias que o campeonato tem. <em>No exemplo: Sub-11 Masculino e Sub-15 Masculino.</em></li>
-  <li>Para cada categoria marcada aparece uma lista de times. Marque os <strong>times que jogam naquela categoria</strong>. <em>No exemplo, no Sub-15: AACJ Sub-15, Botafogo e Vila Nova. No Sub-11: AACJ Sub-11 e os adversários do Sub-11.</em></li>
-  <li>Salve.</li>
+  <li>Para cada categoria marcada aparece uma lista de times (só os que têm essa categoria marcada no cadastro). Marque os <strong>times que jogam naquela categoria</strong>. <em>No exemplo, no Sub-15: AACJ Masculino, Botafogo e Vila Nova. No Sub-11: AACJ Masculino e os adversários do Sub-11.</em></li>
+  <li>Salve. Depois, clique em <span class="botao">Abrir</span> na linha do campeonato: a <strong>Visão geral</strong> mostra o próximo passo de cada categoria.</li>
 </ol>
-<div class="caixa atencao"><strong>Dois cuidados</strong>
+<div class="caixa atencao"><strong>Categorias no campeonato</strong>
 <ul style="margin:2px 0 0">
-  <li><strong>Cada time da AACJ joga em uma categoria só</strong> do campeonato. Por isso a AACJ tem um time por categoria (AACJ Sub-11, AACJ Sub-15…). O sistema recusa o mesmo time da AACJ em duas categorias.</li>
-  <li>O <strong>adversário pode estar em várias</strong>: o Botafogo pode ser marcado no Sub-11 e no Sub-15, com o mesmo cadastro.</li>
+  <li><strong>Cada categoria é uma competição à parte</strong>, com os seus jogos, a sua tabela e a sua final. <strong>Times de categorias diferentes nunca se enfrentam</strong>: o jogo de campeonato só aceita os times participantes da categoria do jogo, e uma categoria sem times não recebe jogo.</li>
+  <li>O <strong>mesmo time pode jogar em várias categorias</strong>: a AACJ Masculino no Sub-11 e no Sub-15, cada categoria com a sua convocação e as suas camisas. O adversário também (o Botafogo no Sub-11 e no Sub-15, com o mesmo cadastro).</li>
+  <li>Dois times da AACJ na <strong>mesma</strong> categoria (ex.: "AACJ Masculino" e "AACJ B") podem se enfrentar.</li>
 </ul></div>
 
 <h3>Passo 2: separar os grupos (chaves), se o campeonato tiver</h3>
 <p>Pule este passo se todos os times da categoria estão numa tabela só.</p>
 <ol class="passos">
-  <li>Na lista de campeonatos, clique em <span class="botao">Jogos</span> na linha do campeonato. No topo, clique em <span class="botao">Grupos (chaves) e classificação</span>.</li>
-  <li>A tela tem um bloco para cada categoria. No bloco da categoria, digite o nome do grupo e clique em <span class="botao">Criar</span>. <em>No exemplo, no Sub-15: "Chave A".</em></li>
-  <li>Em <strong>Times</strong>, escolha o grupo de cada time e clique em <span class="botao">Salvar grupos</span>. <em>No exemplo: AACJ Sub-15, Botafogo e Vila Nova na Chave A.</em></li>
+  <li>Abra o campeonato e vá na aba <span class="botao">Grupos (chaves) e classificação</span>.</li>
+  <li>A aba tem um bloco para cada categoria. No bloco da categoria, digite o nome do grupo e clique em <span class="botao">Criar</span>. <em>No exemplo, no Sub-15: "Chave A".</em></li>
+  <li>Em <strong>Times</strong>, escolha o grupo de cada time e clique em <span class="botao">Salvar grupos</span>. <em>No exemplo: AACJ Masculino, Botafogo e Vila Nova na Chave A.</em></li>
   <li>Em <strong>Classificam por grupo (chave)</strong>, digite quantos passam de cada grupo e clique em <span class="botao">Salvar</span>. <em>No exemplo: 2.</em> Esses times aparecem destacados como "Classificado" na tabela, no painel e no site.</li>
 </ol>
 <div class="caixa dica"><strong>A classificação se monta sozinha</strong>Cada placar lançado num jogo da <strong>fase de grupos</strong> entra na tabela do grupo (3 pontos por vitória, 1 por empate). Os jogos de mata-mata (semifinal, final…) e de repescagem <strong>não</strong> contam na tabela. O mata-mata é montado depois, pelo botão <span class="botao">Montar próxima fase</span> (passo 7).</div>
@@ -276,15 +286,15 @@
 
 <h3>Passo 3: convocar os atletas (uma vez por campeonato)</h3>
 <ol class="passos">
-  <li>Na tela de jogos do campeonato (botão <span class="botao">Jogos</span>), o bloco <strong>Convocação</strong> mostra cada time da AACJ, a categoria em que ele joga e quantos convocados tem.</li>
-  <li>Clique em <span class="botao">Convocados</span> no time, depois em <span class="botao">Convocar atletas</span>.</li>
+  <li>Abra o campeonato e vá na aba <span class="botao">Participantes e convocação</span>. Cada categoria lista os times dela, com o grupo, quantos jogos têm e, na linha da AACJ, quantos convocados ("Sem convocados" em amarelo quando ainda não há nenhum).</li>
+  <li>Clique em <span class="botao">Convocados</span> na linha da AACJ <strong>daquela categoria</strong>, depois em <span class="botao">Convocar atletas</span>. <em>No exemplo, a AACJ Masculino tem duas linhas, uma no Sub-11 e outra no Sub-15: cada uma com a sua convocação.</em></li>
   <li>Marque os atletas (a lista é separada por categoria e tem busca) e digite a <strong>camisa</strong> de cada um (1 a 99). Salve.</li>
 </ol>
 <div class="caixa info"><strong>Regras da convocação (o sistema confere)</strong>
 <ul style="margin:2px 0 0">
-  <li><strong>Idade:</strong> conta pelo ano de início do campeonato e pela <strong>categoria do time</strong>. O mais <strong>novo</strong> pode jogar acima; o mais <strong>velho</strong> nunca joga abaixo e aparece desabilitado ("acima da idade"). <em>Exemplo: um atleta de 16 anos não entra no AACJ Sub-15.</em></li>
+  <li><strong>Idade:</strong> conta pelo ano de início do campeonato e pela <strong>categoria da convocação</strong>. O mais <strong>novo</strong> pode jogar acima (a caixa mostra as categorias mais novas como "pode subir"); o mais <strong>velho</strong> nunca joga abaixo e aparece desabilitado ("acima da idade"). <em>Exemplo: um atleta de 16 anos não entra na convocação do Sub-15.</em></li>
   <li><strong>Um time por atleta em cada categoria.</strong> Um atleta do Sub-15 pode ser convocado também no Sub-17 do mesmo campeonato, por outro time e com outra camisa.</li>
-  <li><strong>A camisa não repete no mesmo time.</strong> O número pode repetir em outro time.</li>
+  <li><strong>A camisa não repete no mesmo time e categoria.</strong> O número pode repetir em outro time, ou no mesmo time em outra categoria (a camisa 10 no Sub-11 e no Sub-15 da AACJ).</li>
   <li><strong>Sexo diferente</strong> da categoria só gera um aviso, não bloqueia.</li>
   <li>Se algum atleta marcado não puder entrar, <strong>ninguém</strong> é gravado: corrija e envie de novo.</li>
 </ul></div>
@@ -294,7 +304,7 @@
 <p>Há dois jeitos. Para a fase de grupos, o mais rápido é deixar o sistema <strong>gerar todos os jogos</strong> de uma categoria de uma vez (jeito A). Para um jogo solto, use o jeito B.</p>
 <h3>Jeito A: gerar os jogos de todos contra todos</h3>
 <ol class="passos">
-  <li>Na tela <span class="botao">Grupos (chaves) e classificação</span>, no bloco da categoria, clique em <span class="botao">Gerar jogos (todos contra todos)</span>. Faça os grupos antes (passo 2), se houver.</li>
+  <li>Na aba <span class="botao">Grupos (chaves) e classificação</span>, no bloco da categoria, clique em <span class="botao">Gerar jogos (todos contra todos)</span>. Faça os grupos antes (passo 2), se houver. A Visão geral também leva até aqui, no passo "Jogos da fase de grupos".</li>
   <li>Escolha o <strong>Formato</strong>: <em>Só turno</em> (cada par joga uma vez) ou <em>Turno e returno</em> (joga de novo com o mando invertido, como no Brasileirão).</li>
   <li>Confira a programação: <strong>Data da 1ª rodada</strong> (vem o próximo sábado), <strong>Dias entre rodadas</strong> (7 = uma rodada por semana), <strong>Horário do 1º jogo</strong>, <strong>Minutos entre jogos do mesmo dia</strong> (60 = um jogo a cada hora; 0 = todos no mesmo horário), <strong>Duração do jogo</strong> (opcional, preenche o horário de fim) e <strong>Local</strong> (vazio = local principal do campeonato). Clique em <span class="botao">Atualizar prévia</span>.</li>
   <li>A <strong>prévia</strong> mostra as rodadas com os jogos e os horários, quem folga em cada rodada (número ímpar de times), os jogos que vão nascer em rascunho e os avisos. Nada é gravado ainda.</li>
@@ -309,13 +319,13 @@
 </ul></div>
 <h3>Jeito B: criar um jogo de cada vez</h3>
 <ol class="passos">
-  <li><span class="caminho">Esporte › Jogos</span> › <span class="botao">Novo Jogo</span>.</li>
-  <li>Escolha o <strong>campeonato</strong> e a <strong>Categoria do jogo</strong> (campeonato de uma categoria só já vem preenchido). Só aparecem os times daquela categoria.</li>
+  <li><span class="caminho">Esporte › Jogos</span> › <span class="botao">Novo Jogo</span> (ou, na aba Jogos do campeonato, <span class="botao">Lista e novo jogo</span>).</li>
+  <li>Escolha o <strong>campeonato</strong> e a <strong>Categoria do jogo</strong> (campeonato de uma categoria só já vem preenchido). Só aparecem os times daquela categoria: times de categorias diferentes não se enfrentam. Categoria ainda sem times mostra um aviso vermelho e não aceita o jogo.</li>
   <li>Escolha a <strong>Fase</strong>. Na primeira parte do campeonato, deixe <strong>Fase de grupos</strong> e informe a <strong>Rodada</strong>. Depois use Repescagem, 16 avos, Oitavas, Quartas, Semifinal, Disputa de 3º ou Final. No mata-mata, o jogo de volta é ligado à ida no campo <strong>Jogo de volta de…</strong> (os times ficam invertidos).</li>
   <li>Escolha o mandante e o visitante, data, horário e local. Cada jogo pode ser num local diferente; local vazio usa o local principal do campeonato (se houver).</li>
   <li>Salve. O jogo nasce como <span class="selo amarelo">Rascunho</span>, já com os <strong>convocados</strong> dos times da AACJ inscritos e escalados no time certo, e <strong>ninguém é avisado ainda</strong>.</li>
 </ol>
-<p><em>No exemplo: Copa da Cidade, categoria Sub-15 Masculino, fase de grupos, AACJ Sub-15 x Botafogo, sábado às 14:00.</em> Jogo só entre adversários (ex.: Botafogo x Vila Nova) também é cadastrado, para a tabela ficar completa; ele nasce publicado, porque não tem atleta da AACJ para avisar.</p>
+<p><em>No exemplo: Copa da Cidade, categoria Sub-15 Masculino, fase de grupos, AACJ Masculino x Botafogo, sábado às 14:00.</em> Jogo só entre adversários (ex.: Botafogo x Vila Nova) também é cadastrado, para a tabela ficar completa; ele nasce publicado, porque não tem atleta da AACJ para avisar.</p>
 
 <h3>Passo 5: montar a escalação (posição e titular/reserva)</h3>
 <p>A tela do jogo abre sozinha. Cada time da AACJ aparece num bloco, com a camisa ao lado do nome. Embaixo do nome de cada atleta há dois campos: <strong>Posição</strong> e <strong>Titular/Reserva</strong>.</p>
@@ -325,7 +335,7 @@
   <li>Clique em <span class="botao">Salvar escalação</span>, embaixo do time. <strong>Só esse botão grava</strong>: a posição sugerida, sozinha, não fica salva.</li>
   <li>O time passa a aparecer separado em <strong>Titulares</strong>, <strong>Reservas</strong> e <strong>A definir</strong>, do goleiro para o ataque.</li>
 </ol>
-<div class="caixa dica"><strong>Exemplo de escalação</strong>No AACJ Sub-15 x Botafogo, o técnico marca: Pedro, Goleiro, Titular; João, Volante (sugerida), Titular; Lucas, Centroavante, Titular; Tiago, Centroavante, Reserva. Depois de <span class="botao">Salvar escalação</span>, a tela mostra "3 titular(es) · 1 reserva(s) · 0 a definir", com o Pedro em primeiro.</div>
+<div class="caixa dica"><strong>Exemplo de escalação</strong>No AACJ Masculino x Botafogo (Sub-15), o técnico marca: Pedro, Goleiro, Titular; João, Volante (sugerida), Titular; Lucas, Centroavante, Titular; Tiago, Centroavante, Reserva. Depois de <span class="botao">Salvar escalação</span>, a tela mostra "3 titular(es) · 1 reserva(s) · 0 a definir", com o Pedro em primeiro.</div>
 <div class="caixa info"><strong>Os avisos da escalação (não impedem nada)</strong>
 <ul style="margin:2px 0 0">
   <li><strong>"Sem goleiro titular."</strong>: há titulares, mas nenhum como goleiro.</li>
@@ -337,15 +347,15 @@
 
 <h3>Passo 6: publicar</h3>
 <ol class="passos">
-  <li>Na faixa amarela do topo, clique em <span class="botao">Publicar e avisar os atletas</span>. Cada inscrito recebe "Nova atividade… Chegue às 13:00 (1 hora antes). Você joga pelo AACJ Sub-15."</li>
-  <li>A posição e o titular/reserva <strong>não</strong> vão no aviso: ficam só no painel, por enquanto. Dá para mudar a escalação depois de publicar, sem avisar ninguém.</li>
+  <li>Na faixa amarela do topo, clique em <span class="botao">Publicar e avisar os atletas</span>. Cada inscrito recebe "Nova atividade… Chegue às 13:00 (1 hora antes). Você joga pelo AACJ Masculino."</li>
+  <li>A posição e o titular/reserva <strong>não</strong> vão no aviso. No aplicativo, cada atleta vê os <strong>dele</strong> no detalhe do jogo (nunca os dos colegas). Dá para mudar a escalação depois de publicar, sem avisar ninguém.</li>
 </ol>
-<div class="caixa dica"><strong>Publicar a rodada inteira</strong>Nas telas de jogos do campeonato, o aviso amarelo de rascunhos tem botões <span class="botao">Publicar a Rodada N</span>: publicam de uma vez todos os rascunhos daquela rodada da categoria e avisam os atletas. Use depois de revisar as escalações.</div>
+<div class="caixa dica"><strong>Publicar a rodada inteira</strong>Na aba Jogos do campeonato, o aviso amarelo de rascunhos tem botões <span class="botao">Publicar a Rodada N</span>: publicam de uma vez todos os rascunhos daquela rodada da categoria e avisam os atletas. Use depois de revisar as escalações.</div>
 <div class="caixa atencao"><strong>Quando o Publicar fica bloqueado</strong>Se algum inscrito passa da idade da categoria do jogo, a tela mostra um aviso vermelho e o jogo não é publicado até você removê-lo. Um jogo que já aconteceu, está cancelado ou oculto é publicado <strong>sem avisar</strong> ninguém.</div>
 
 <h3>Passo 7: depois do jogo</h3>
 <ul>
-  <li>Lance o resultado pelo botão <span class="botao">Placar</span>. A classificação conta só jogos da <strong>fase de grupos</strong>, com placar, publicados e não cancelados. <em>No exemplo: AACJ Sub-15 3 x 1 Botafogo dá 3 pontos à AACJ na Chave A.</em></li>
+  <li>Lance o resultado pelo botão <span class="botao">Placar</span>. A classificação conta só jogos da <strong>fase de grupos</strong>, com placar, publicados e não cancelados. <em>No exemplo: AACJ Masculino 3 x 1 Botafogo dá 3 pontos à AACJ na Chave A.</em></li>
   <li><strong>Mata-mata empatado:</strong> o placar é sempre o do <strong>tempo normal</strong>. No <strong>jogo único</strong>, preencha a <strong>Prorrogação</strong> (só os gols dela) e, se continuar empatado, os <strong>Pênaltis</strong>. No <strong>ida e volta</strong>, vale a soma dos dois jogos (agregado); empatou no agregado, vai <strong>direto para os pênaltis</strong>, lançados no jogo de volta (sem gol fora e sem prorrogação). O sistema mostra quem passa: "Botafogo vence na prorrogação", "Santos passa nos pênaltis (4 × 3), depois do agregado 2 × 2".</li>
   <li><strong>Fase de grupos acabou?</strong> Use <span class="botao">Montar próxima fase</span> (abaixo). <em>No exemplo: os 2 primeiros da Chave A vão para a final.</em></li>
   <li><strong>Convocou alguém depois que os jogos existem?</strong> Ele não entra sozinho nos jogos já criados. A mensagem lembra quantos jogos futuros existem: abra cada jogo e use <span class="botao">Preencher pela convocação</span>.</li>
@@ -354,7 +364,7 @@
 </ul>
 <h3>Montar a próxima fase (mata-mata)</h3>
 <ol class="passos">
-  <li>Na tela <span class="botao">Grupos (chaves) e classificação</span>, no bloco da categoria, clique em <span class="botao">Montar próxima fase</span>.</li>
+  <li>Abra o campeonato e vá na aba <span class="botao">Mata-mata e campeão</span>. No bloco da categoria, clique em <span class="botao">Montar próxima fase</span>. Quando uma fase termina, a Visão geral avisa: "A fase terminou: monte a próxima do mata-mata".</li>
   <li>O sistema escolhe <strong>quem entra</strong>: da fase de grupos, os classificados de cada grupo (o número de "Classificam por grupo"); depois, os <strong>vencedores</strong> da última fase do mata-mata. A fase sai do número de times: 2 = Final, 4 = Semifinal, 8 = Quartas, 16 = Oitavas, 32 = 16 avos.</li>
   <li>Os <strong>confrontos sugeridos</strong>: tabela única, 1º contra o último; com grupos, o cruzamento (1º do A x 2º do B, 1º do B x 2º do A); vencedores, o do jogo 1 contra o do jogo 2. Para um <strong>sorteio</strong> ou outro arranjo, troque os times nos selects e clique em <span class="botao">Atualizar prévia</span>. Cada time só pode aparecer uma vez.</li>
   <li>Escolha o <strong>Formato</strong>: <em>Jogo único</em> (empate: prorrogação e pênaltis) ou <em>Ida e volta</em> (empate no agregado: pênaltis), com os <strong>Dias até a volta</strong>. O mais bem colocado na fase de grupos é o mandante do jogo único, ou decide em casa no ida e volta.</li>
@@ -366,10 +376,10 @@
 <h3>O campeão</h3>
 <ul>
   <li><strong>Com final:</strong> o campeão é o vencedor da final (publicada), com o vice e, se houve a disputa de 3º, o 3º lugar.</li>
-  <li><strong>Pontos corridos</strong> (uma tabela só, sem mata-mata): o campeão é o 1º da tabela, quando <strong>todos os jogos</strong> da fase de grupos estiverem publicados e com placar. Empate em todos os critérios no 1º lugar: "Campeão a definir (sorteio entre X e Y)".</li>
-  <li>O campeão aparece no bloco da categoria em <span class="botao">Grupos (chaves) e classificação</span>, no topo da página do campeonato no site, na lista de campeonatos e na página inicial ("🏆 Campeão: X"). Nada precisa ser cadastrado: é calculado pelos resultados.</li>
+  <li><strong>Pontos corridos</strong> (uma tabela só, sem mata-mata e sem "Classificam por grupo"): o campeão é o 1º da tabela, quando <strong>todos os jogos</strong> da fase de grupos estiverem publicados e com placar <strong>e você encerrar a categoria</strong>. O sistema não sabe se ainda vem um returno, por isso a decisão é sua: na aba <span class="botao">Mata-mata e campeão</span>, clique em <span class="botao">Encerrar categoria</span> (o botão só aparece com tudo jogado). <span class="botao">Reabrir</span> tira o campeão. Empate em todos os critérios no 1º lugar: "Campeão a definir (sorteio entre X e Y)".</li>
+  <li>O campeão aparece na aba <span class="botao">Mata-mata e campeão</span> e na Visão geral, no topo da página do campeonato no site, na lista de campeonatos e na página inicial ("🏆 Campeão: X"). Nada precisa ser cadastrado: é calculado pelos resultados.</li>
 </ul>
-<div class="caixa dica"><strong>Onde ver todos os jogos de um campeonato</strong><span class="caminho">Eventos › Campeonatos › Jogos</span>, com o filtro "Campeonato". Cada jogo aparece com os dois times, abas "Próximos" e "Já realizados" e o selo "Rascunho" com <span class="botao">Revisar e publicar</span>.</div>
+<div class="caixa dica"><strong>Onde ver os jogos</strong>Os de um campeonato: aba <span class="botao">Jogos</span> da central, com as abas "Próximos" e "Já realizados" e o selo "Rascunho" com <span class="botao">Revisar e publicar</span>. Os de todos os campeonatos juntos: <span class="caminho">Eventos › Campeonatos › Jogos</span>, com o filtro "Campeonato", que abre a central de cada um.</div>
 
 <h2>R6. Marcar um amistoso</h2>
 <ol class="passos">
@@ -471,30 +481,53 @@
 
 <h2>Eventos › Campeonatos</h2>
 <ul>
-  <li>Lista com logo, nome, tipo, período, local, <strong>categorias</strong>, quantidade de times e status. O filtro de categoria acha o campeonato por qualquer uma delas. Botões <span class="botao">Jogos</span>, editar e ativar/inativar.</li>
+  <li>Lista com logo, nome, tipo, período, local, <strong>categorias</strong>, quantidade de times e status. O filtro de categoria acha o campeonato por qualquer uma delas. Botões <span class="botao">Abrir</span> (a central do campeonato, abaixo; o nome também abre), editar e ativar/inativar.</li>
   <li>No formulário: <strong>Categorias do campeonato</strong> (marque ao menos uma) e, para cada categoria marcada, os <strong>times participantes</strong> dela (R5, passo 1).</li>
   <li><strong>Cada jogo tem a sua categoria.</strong> Mudar as categorias do campeonato não muda os jogos. Uma categoria que já tem jogos não sai do campeonato, e um time com convocados não sai da categoria em que convocou.</li>
   <li>Campeonato ou time com convocados ou jogos <strong>não é excluído</strong>. A lixeira só aparece depois de inativar.</li>
   <li><strong>Campeonato inativo</strong> some do site e do card do Dashboard, e não aceita jogo novo ("Reative-o…"). No painel, continua na lista (para reativar ou excluir) e, nos filtros "Campeonato", fica no grupo <strong>Inativos</strong>, no fim. Os jogos que ele já tem continuam editáveis.</li>
 </ul>
-<h3>Campeonatos › Jogos</h3>
+<h3>A central do campeonato</h3>
+<p>Aberta pelo <span class="botao">Abrir</span> da lista. Todas as abas têm o mesmo topo: o caminho (<span class="caminho">Eventos › Campeonatos › nome › aba</span>), a logo, o nome, o tipo, o período, as categorias, <span class="botao">Editar campeonato</span> (que volta para a central ao salvar) e <span class="botao">Ver no site</span> (só com o campeonato ativo). No menu, fica marcado <strong>Campeonatos</strong>.</p>
+<h3>Aba Visão geral</h3>
 <ul>
-  <li>Filtro "Campeonato": todos, ou um específico (a tela vira "Jogos · Nome do campeonato").</li>
-  <li><strong>Bloco Convocação</strong> (com um campeonato escolhido): cada time da AACJ, a categoria em que joga, quantos convocados tem e o botão <span class="botao">Convocados</span>.</li>
-  <li>Botão <span class="botao">Grupos (chaves) e classificação</span> (com um campeonato escolhido): abre a tela abaixo.</li>
+  <li><strong>Precisa da sua atenção:</strong> o que falta fazer em todas as categorias, cada item com o botão da tela onde se resolve (ex.: "Sub-15 Masculino · Convocação da AACJ: Sem convocados: AACJ Masculino" › <span class="botao">Convocar</span>).</li>
+  <li><strong>Um cartão por categoria</strong> com seis passos: times participantes, convocação da AACJ, grupos (chaves), jogos da fase de grupos, publicação e placares, campeão. Cada passo tem um ícone: ✔ verde (feito), ! amarelo (falta algo seu), ampulheta (depende dos jogos acontecerem), traço (opcional) e cadeado (depende de um passo anterior). Embaixo, o <span class="botao">Próximo passo</span>.</li>
+  <li><strong>Próximos jogos:</strong> os 5 mais perto, com o selo "Rascunho" e o botão <span class="botao">Abrir</span>.</li>
+  <li>A Visão geral só mostra. As regras continuam nas telas: se o gerador ou o montador recusar, a tela diz o motivo.</li>
+</ul>
+<h3>Aba Participantes e convocação</h3>
+<ul>
+  <li>Uma tabela por categoria: o <strong>time</strong> (AACJ ou Externo), o <strong>grupo (chave)</strong> ("Sem grupo" em amarelo quando a categoria tem grupos e ele ficou de fora), os <strong>jogos</strong> que ele tem na categoria ("Sem jogo" quando nenhum) e, na AACJ, os <strong>convocados</strong> com o botão <span class="botao">Convocados</span>.</li>
+  <li>Para incluir ou tirar times: <span class="botao">Editar campeonato</span>.</li>
+</ul>
+<h3>Aba Jogos</h3>
+<ul>
   <li>No cabeçalho de cada jogo aparecem a categoria e a fase (ex.: "Sub-15 Masculino · Fase de grupos · Rodada 2" ou "Oitavas de final · volta"), a prorrogação e os pênaltis ("prorr. 0 × 0 · pên. 5 × 4") e quem passou.</li>
   <li><strong>Abas</strong> "Próximos jogos" e "Já realizados" (os 10 últimos). Cada jogo mostra o mandante, o visitante e as ações. Clicar no cartão de um time mostra os jogadores escalados por ele naquele jogo, só para leitura.</li>
   <li>Aviso amarelo no topo quando há jogo em rascunho, com os botões <span class="botao">Publicar a Rodada N</span>.</li>
+  <li><span class="botao">Lista e novo jogo</span>: a lista de Jogos já filtrada por este campeonato, com os filtros e o <span class="botao">Novo Jogo</span>.</li>
 </ul>
-<h3>Campeonatos › Grupos (chaves) e classificação</h3>
+<h3>Aba Grupos (chaves) e classificação</h3>
 <ul>
   <li>Um bloco para cada categoria do campeonato.</li>
   <li><strong>Grupos:</strong> criar (<span class="botao">Criar</span>), renomear e remover. Grupo com times não é removido: tire os times dele antes.</li>
-  <li><strong>Classificam por grupo (chave):</strong> quantos passam de cada grupo (1 a 16). Vazio: ninguém fica destacado.</li>
+  <li><strong>Classificam por grupo (chave):</strong> quantos passam de cada grupo (1 a 16). Vazio: ninguém fica destacado (e, numa tabela só, a categoria é de pontos corridos).</li>
   <li><strong>Times:</strong> o grupo de cada time e o botão <span class="botao">Salvar grupos</span>. Time sem grupo aparece numa tabela "Sem grupo", que nunca destaca classificados.</li>
   <li><strong>Classificação</strong> de cada grupo, com os classificados destacados e o <strong>*</strong> de empate para sorteio. Conta só a fase de grupos.</li>
-  <li>Botões <span class="botao">Gerar jogos (todos contra todos)</span> e <span class="botao">Montar próxima fase</span> (R5, passos 4 e 7).</li>
-  <li>Faixa do <strong>campeão</strong> da categoria, quando já está definido (ou "Campeão a definir", com os empatados).</li>
+  <li>Botão <span class="botao">Gerar jogos (todos contra todos)</span> (R5, passo 4).</li>
+</ul>
+<h3>Aba Mata-mata e campeão</h3>
+<ul>
+  <li>Um bloco para cada categoria (cada uma tem a sua final), com o botão <span class="botao">Montar próxima fase</span> (R5, passo 7).</li>
+  <li>Faixa do <strong>campeão</strong>, quando já está definido (ou "Campeão a definir", com os empatados).</li>
+  <li>Nos pontos corridos, com todos os jogos jogados: <span class="botao">Encerrar categoria</span>; encerrada, <span class="botao">Reabrir</span>.</li>
+  <li>Os jogos do mata-mata <strong>por fase</strong> (repescagem, oitavas, quartas, semifinal, 3º lugar, final), com o placar, "Jogo de ida"/"Jogo de volta", quem passa e o selo "Rascunho" ou "Cancelado". Confronto empatado sem prorrogação e pênaltis mostra "Sem vencedor".</li>
+</ul>
+<h3>Campeonatos › Jogos (todos os campeonatos)</h3>
+<ul>
+  <li>O item "Jogos" do menu, dentro de Campeonatos: os jogos de todos os campeonatos ativos juntos, cada um com o nome do campeonato.</li>
+  <li>Filtro "Campeonato": escolher um abre a aba Jogos da central dele.</li>
 </ul>
 
 <h2>Eventos › Amistosos</h2>
@@ -523,7 +556,8 @@
 
 <h2>Times</h2>
 <ul>
-  <li>Cadastro de times internos e externos, com logo e categoria.</li>
+  <li>Cadastro de times internos e externos, com logo e as <strong>categorias em que o time joga</strong> (caixas em duas colunas, Masculino e Feminino; marcar uma coluna desabilita a outra). Um cadastro por time: "AACJ Masculino" com o Sub-13 e o Sub-15; masculino e feminino em cadastros separados.</li>
+  <li>No campeonato, o time só entra nas categorias marcadas aqui. Uma categoria em que o time já joga um campeonato não pode ser desmarcada.</li>
   <li>O time <strong>não tem lista fixa de atletas</strong>: o atleta é da AACJ, na categoria dele. Quem joga por um time da AACJ é a <strong>convocação</strong> de cada campeonato (com a camisa daquele campeonato); no amistoso, a escolha no próprio jogo.</li>
 </ul>
 
@@ -614,7 +648,10 @@
 <p><strong>O jogo de campeonato veio sem atletas.</strong> O time ainda não tem convocados. Convoque (R5, passo 3) e use "Preencher pela convocação".</p>
 <p><strong>Escolhi as posições e o titular, mas sumiram.</strong> Faltou clicar em "Salvar escalação" embaixo do time. Mudar o time de um atleta (no seletor) recarrega a página e perde o que não foi salvo: salve a escalação antes.</p>
 <p><strong>A final não mudou a classificação.</strong> Está certo: a tabela conta só os jogos da fase de grupos. Confira a fase de cada jogo no editar.</p>
-<p><strong>Não consigo pôr o mesmo time da AACJ em duas categorias.</strong> Cada time da AACJ joga em uma categoria só do campeonato. Use um time por categoria (ex.: "AACJ Sub-15" e "AACJ Sub-17").</p>
+<p><strong>Não sei por onde começar um campeonato.</strong> Abra o campeonato (botão "Abrir" na lista) e veja a Visão geral: ela mostra o que falta e o próximo passo de cada categoria.</p>
+<p><strong>O time da AACJ não aparece numa categoria do campeonato.</strong> O time só entra nas categorias marcadas no cadastro dele. Marque a categoria em Cadastros › Times e depois inclua o time pelo "Editar campeonato".</p>
+<p><strong>O jogo não deixa escolher um time de outra categoria.</strong> Está certo: times de categorias diferentes não se enfrentam. Cada categoria do campeonato tem os seus jogos e a sua final.</p>
+<p><strong>Todos os jogos têm placar e o campeão não aparece.</strong> Nos pontos corridos, o sistema espera você encerrar a categoria (pode vir um returno): aba "Mata-mata e campeão" › "Encerrar categoria".</p>
 <p><strong>Quero apagar um evento.</strong> Use "Ocultar". Não existe exclusão de evento, para guardar o histórico.</p>
 <p><strong>O atleta não consegue entrar no aplicativo.</strong> Ele precisa estar ativo, ter e-mail cadastrado e ter definido a senha pelo link. Use "Reenviar convite". O link vale 24 horas; no aplicativo também existe "Esqueci minha senha".</p>
 <p><strong>Mudei a grade e os treinos continuam com o horário antigo.</strong> A grade não altera os treinos já gerados. Edite os treinos no Calendário (filtro Origem: Grade).</p>
@@ -629,9 +666,8 @@
 <h2>O que ainda está em construção</h2>
 <ul>
 
-  <li><strong>Posição e titular/reserva no aplicativo:</strong> hoje ficam só no painel; o atleta ainda não vê.</li>
+  <li><strong>Aviso de mudança na escalação:</strong> o atleta vê a posição e o titular/reserva dele no aplicativo, mas mudar a escalação ainda não avisa.</li>
   <li><strong>Incluir um atleta novo em todos os treinos do mês</strong> de uma vez.</li>
-  <li><strong>E-mails de verdade:</strong> o servidor ainda não envia e-mail. Os convites mostram o link para copiar.</li>
   <li><strong>Grade real:</strong> os horários de terça e quinta (9h–11h e 14h–17h) e os jogos de sábado ainda precisam ser cadastrados, e os horários de teste inativados.</li>
 </ul>
 
