@@ -246,6 +246,7 @@ class JogoEscalacaoTest extends TestCase
             'organizador_campeonato' => 'Escola', 'tipo_campeonato' => 'MATA-MATA', 'data_inicio_campeonato' => now()->toDateString(),
             'data_fim_campeonato' => now()->addMonth()->toDateString(), 'local_evento' => 'Quadra A',
         ]);
+        $this->participantes($campeonato, [$this->azul, $this->preto, $this->verde]);
         $jogo = $this->jogo($this->azul, $this->preto, $campeonato);
         $noAzul  = $this->atleta('Otto');
         $noPreto = $this->atleta('Pia');

@@ -12,7 +12,8 @@ use Tests\TestCase;
 /**
  * Fase H, Etapa H3: o jogo de campeonato tem a categoria dele (a do evento, uma das categorias do campeonato).
  * Ela vale para os times oferecidos (participantes da categoria), a convocação e a idade. Jogo sem time da AACJ
- * nasce publicado. Mudar a categoria de um jogo não refaz as inscrições (decisão do dono do projeto, 15/10/2026).
+ * nasce publicado. Mudar a categoria de um jogo não refaz as inscrições (decisão do dono do projeto, 15/10/2026),
+ * mas exige os dois times na categoria nova (30/10/2026: times de categorias diferentes nunca se enfrentam).
  */
 class JogoCategoriaTest extends TestCase
 {
@@ -118,7 +119,9 @@ class JogoCategoriaTest extends TestCase
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_categoria' => $this->idSub17M, 'id_time_casa' => $this->aacj17]));
         $jogo = Jogo::sole();
 
-        // Passa o jogo para o Sub-15 (mesmos times, aceitos por já serem do jogo): o Caio continua inscrito, marcado acima da idade
+        // Passa o jogo para o Sub-15 (o time joga as duas categorias, como a AACJ Masculino): o Caio continua
+        // inscrito, marcado acima da idade
+        $this->participantes($this->copa, [$this->aacj17], $this->idSub15M);
         $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([
             'id_categoria' => $this->idSub15M, 'id_time_casa' => $this->aacj17,
         ]))->assertSessionHasNoErrors();
@@ -127,6 +130,41 @@ class JogoCategoriaTest extends TestCase
         $this->assertDatabaseHas('tbl_evento_atleta', ['id_evento_calendario' => $jogo->id_evento, 'id_atleta' => $caio]);
         $this->comoAdmin()->get(route('admin.calendario.eventos.show', $jogo->id_evento))
             ->assertSee('Acima da idade do campeonato (Sub-15 Masculino, até 15 anos)');
+    }
+
+    // 30/10/2026: times de categorias diferentes nunca se enfrentam. Mudar a categoria do jogo exige os dois times
+    // nela; sem mudar a categoria, os times que o jogo já tem continuam aceitos (participante que saiu depois)
+    public function test_passar_o_jogo_para_outra_categoria_exige_os_times_nela(): void
+    {
+        $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_categoria' => $this->idSub17M, 'id_time_casa' => $this->aacj17]))
+            ->assertSessionHasNoErrors();
+        $jogo = Jogo::sole();
+
+        $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([
+            'id_categoria' => $this->idSub15M, 'id_time_casa' => $this->aacj17,
+        ]))->assertSessionHasErrors(['id_time_casa' => 'O mandante não participa do Sub-15 Masculino do campeonato Copa São Carlos. '
+            . 'Inclua o time nos participantes dessa categoria, ou escolha outro.']);
+        $this->assertSame($this->idSub17M, (int) $jogo->evento->fresh()->id_categoria);
+
+        // O Botafogo sai do Sub-17 depois do jogo marcado: mudar só a data continua possível
+        DB::table('tbl_campeonato_time')->where('id_campeonato', $this->copa)->where('id_categoria', $this->idSub17M)
+            ->where('id_time', $this->botafogo)->delete();
+        $outroDia = now()->addDays(11)->toDateString();
+        $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo([
+            'id_categoria' => $this->idSub17M, 'id_time_casa' => $this->aacj17, 'data_evento_calendario' => $outroDia,
+        ]))->assertSessionHasNoErrors();
+        $this->assertSame($outroDia, $jogo->evento->fresh()->data_evento_calendario->toDateString());
+    }
+
+    public function test_categoria_sem_participantes_nao_recebe_jogo(): void
+    {
+        $idSub13M = $this->idCategoria('Sub-13', 'M');
+        DB::table('tbl_campeonato_categoria')->insert(['id_campeonato' => $this->copa, 'id_categoria' => $idSub13M]);
+
+        $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_categoria' => $idSub13M]))
+            ->assertSessionHasErrors(['id_categoria' => 'O Sub-13 Masculino ainda não tem times no campeonato Copa São Carlos. '
+                . 'Inclua os participantes dessa categoria (Editar campeonato) antes de marcar o jogo.']);
+        $this->assertSame(0, Jogo::count());
     }
 
     // ---------- apoio ----------

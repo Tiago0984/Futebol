@@ -4,9 +4,9 @@
       já vem escolhida): vale para a idade e a convocação (Fase H, Etapa H3). Amistoso: "Categoria do
       amistoso", opcional e só exibição, sugerindo a do time mandante quando ainda está vazia.
     - Times: no jogo de campeonato, só os participantes da categoria escolhida (data-participantes da opção;
-      sem categoria escolhida, os de todas); no amistoso, ou categoria sem participantes cadastrados, todos. O
-      time que o formulário abriu selecionado continua na lista (jogo antigo); o servidor confere de novo
-      (JogosController::conferirParticipantes).
+      sem categoria escolhida, os de todas); categoria sem participantes, nenhum (com aviso); no amistoso, todos.
+      O time que o formulário abriu selecionado continua na lista (jogo antigo) enquanto a categoria não muda;
+      o servidor confere de novo (JogosController::conferirParticipantes).
     window.atualizarFormJogo(form) refaz tudo (chamado depois de preencher o modal de edição).
     - Botão Editar das ações do jogo (admin.jogos._acoes): preenche o modal #modalEditarJogo.
 --}}
@@ -14,9 +14,9 @@
 (function () {
     const AMISTOSO = @js(\App\Http\Controllers\Admin\JogosController::AMISTOSO);
 
-    function filtrarTimes(form, participantes) {
+    function filtrarTimes(form, participantes, manterIniciais) {
         form.querySelectorAll('.js-time-casa, .js-time-visitante').forEach(sel => {
-            const inicial = sel.dataset.inicial ?? '';
+            const inicial = manterIniciais ? (sel.dataset.inicial ?? '') : '';
             sel.querySelectorAll('option[value]:not([value=""])').forEach(opt => {
                 const fora = participantes !== null && !participantes.includes(Number(opt.value)) && opt.value !== inicial;
                 opt.hidden = fora;
@@ -68,14 +68,16 @@
             ? "Amistoso: um time da AACJ contra um adversário externo. Os atletas são escolhidos na tela do jogo, depois de salvar."
             : (doCampeonato ? 'Quem joga são os convocados do campeonato na categoria do jogo.' : '');
 
-        // Participantes da categoria escolhida (sem categoria, os de todas); categoria sem participantes: todos
+        // Participantes da categoria escolhida (sem categoria, os de todas); no amistoso, todos. Categoria sem
+        // participantes: nenhum time, com o aviso (o servidor recusa). O time com que o formulário abriu só fica
+        // na lista enquanto a categoria for a mesma (30/10/2026: times de categorias diferentes nunca se enfrentam)
         const porCategoria = doCampeonato && opcao.dataset.participantes ? JSON.parse(opcao.dataset.participantes) : {};
-        const times = !doCampeonato ? [] : (categoria.value
+        const participantes = !doCampeonato ? null : (categoria.value
             ? (porCategoria[categoria.value] ?? [])
             : [...new Set(Object.values(porCategoria).flat())]);
-        const participantes = times.length ? times : null;
-        filtrarTimes(form, participantes);
-        form.querySelector('.js-aviso-participantes')?.classList.toggle('d-none', participantes === null);
+        filtrarTimes(form, participantes, categoria.value === (form.dataset.categoriaInicial ?? ''));
+        form.querySelector('.js-aviso-participantes')?.classList.toggle('d-none', participantes === null || participantes.length === 0);
+        form.querySelector('.js-aviso-sem-participantes')?.classList.toggle('d-none', participantes === null || participantes.length > 0);
 
         // Amistoso: sugere a categoria do mandante quando ele tem uma só no cadastro (com várias, o admin escolhe)
         const casa = form.querySelector('.js-time-casa').selectedOptions[0];
@@ -134,6 +136,7 @@
     // Guarda os times com que o formulário abriu (o modal de edição da lista chama de novo ao preencher)
     window.guardarTimesIniciais = function (form) {
         form.querySelectorAll('.js-time-casa, .js-time-visitante').forEach(sel => sel.dataset.inicial = sel.value);
+        form.dataset.categoriaInicial = form.querySelector('.js-categoria').value;
     };
 
     document.addEventListener('DOMContentLoaded', function () {

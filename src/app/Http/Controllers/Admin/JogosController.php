@@ -466,8 +466,9 @@ class JogosController extends Controller
 
     /**
      * Jogo de campeonato: mandante e visitante precisam estar entre os participantes da categoria do jogo
-     * (Fase H, Etapa H3; o select já mostra só eles). Categoria sem participantes cadastrados aceita qualquer
-     * time; na edição, os times que o jogo já tem continuam aceitos (jogos antigos). Amistoso: um time da AACJ
+     * (Fase H, Etapa H3; o select já mostra só eles): times de categorias diferentes nunca se enfrentam. Categoria
+     * sem participantes não recebe jogo; na edição sem mudar a categoria, os times que o jogo já tem continuam
+     * aceitos (jogos antigos). Amistoso: um time da AACJ
      * contra um externo (Fase G, Etapa 3; vale também ao editar os amistosos antigos de AACJ contra AACJ).
      */
     private function conferirParticipantes(Request $request, ?Jogo $jogoAtual): void
@@ -490,11 +491,20 @@ class JogosController extends Controller
 
         $categoria     = Categoria::find((int) $request->id_categoria);
         $participantes = $campeonato->participantesPorCategoria()[(int) $request->id_categoria] ?? [];
-        if (! $participantes) {
-            return;
+
+        // Os times que o jogo já tem continuam aceitos só na mesma categoria (jogo antigo, ou participante que saiu
+        // depois): passar o jogo para outra categoria exige os dois times nela (30/10/2026: um Sub-15 nunca
+        // enfrenta um Sub-13; antes, o jogo levava os times para a categoria nova)
+        $mesmaCategoria = $jogoAtual && (int) $jogoAtual->evento?->id_categoria === (int) $request->id_categoria;
+        if (! $participantes && ! $mesmaCategoria) {
+            throw ValidationException::withMessages(['id_categoria' =>
+                "O {$categoria->rotulo} ainda não tem times no campeonato {$campeonato->nome_campeonato}. "
+                . 'Inclua os participantes dessa categoria (Editar campeonato) antes de marcar o jogo.']);
         }
 
-        $aceitos = [...$participantes, (int) $jogoAtual?->id_time_casa, (int) $jogoAtual?->id_time_visitante];
+        $aceitos = $mesmaCategoria
+            ? [...$participantes, (int) $jogoAtual->id_time_casa, (int) $jogoAtual->id_time_visitante]
+            : $participantes;
         $erros   = [];
         foreach (['id_time_casa' => 'O mandante', 'id_time_visitante' => 'O visitante'] as $campo => $quem) {
             if (! in_array((int) $request->input($campo), $aceitos, true)) {

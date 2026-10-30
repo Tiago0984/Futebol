@@ -136,6 +136,7 @@ class EventoFluxoTest extends TestCase
 
     public function test_jogo_edita_pelo_formulario_do_jogo_e_placar_rapido(): void
     {
+        $this->participantes($this->copa, [$this->azul, $this->visitante]);
         $jogo = $this->jogo($this->copa);
         $show = route('admin.calendario.eventos.show', $jogo->id_evento);
 
@@ -166,6 +167,7 @@ class EventoFluxoTest extends TestCase
 
     public function test_criar_jogo_e_evento_sem_categoria_abrem_a_tela(): void
     {
+        $this->participantes($this->copa, [$this->azul, $this->visitante]);
         $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo())
             ->assertRedirect(route('admin.calendario.eventos.show', Jogo::sole()->id_evento));
 
@@ -243,12 +245,17 @@ class EventoFluxoTest extends TestCase
             ->assertDontSee('Os atletas ativos da categoria são inscritos no jogo.');
     }
 
-    public function test_campeonato_sem_participantes_aceita_qualquer_time_e_edicao_mantem_os_times_antigos(): void
+    // 30/10/2026: antes, campeonato sem participantes aceitava qualquer time (um Sub-15 contra um Sub-13)
+    public function test_categoria_sem_participantes_recusa_o_jogo_e_edicao_mantem_os_times_antigos(): void
     {
-        $jogo = $this->jogo($this->copa, $this->verde);
-        $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_time_casa' => $this->verde]))->assertSessionHasNoErrors();
+        $this->comoAdmin()->post(route('admin.jogos.store'), $this->dadosJogo(['id_time_casa' => $this->verde]))
+            ->assertSessionHasErrors(['id_categoria' => 'O Sub-11 Masculino ainda não tem times no campeonato Copa Escola. '
+                . 'Inclua os participantes dessa categoria (Editar campeonato) antes de marcar o jogo.']);
+        $this->assertSame(0, Jogo::count());
 
-        // Participantes cadastrados depois: o jogo antigo com o Verde continua editável
+        // Jogo antigo do Sub-11 com o Verde, que não está nos participantes: continua editável na mesma categoria
+        $jogo = $this->jogo($this->copa, $this->verde);
+        DB::table('tbl_evento_calendario')->where('id_evento_calendario', $jogo->id_evento)->update(['id_categoria' => $this->idSub11M]);
         $this->participantes($this->copa, [$this->azul]);
         $this->comoAdmin()->put(route('admin.jogos.update', $jogo->id_jogo), $this->dadosJogo(['id_time_casa' => $this->verde, 'local_evento_calendario' => 'Campo C']))
             ->assertSessionHasNoErrors();

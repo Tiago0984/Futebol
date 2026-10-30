@@ -76,6 +76,9 @@
     <div class="col-12 js-aviso-participantes d-none">
         <small class="text-muted"><i class="bi bi-info-circle"></i> Os times mostram só os participantes da categoria do jogo.</small>
     </div>
+    <div class="col-12 js-aviso-sem-participantes d-none">
+        <small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Esta categoria ainda não tem times no campeonato. Inclua os participantes dela em Campeonatos › Editar antes de marcar o jogo.</small>
+    </div>
     <div class="col-md-5">
         <label class="form-label">Time Mandante <span class="text-danger">*</span></label>
         <select name="id_time_casa" id="{{ $p }}id_time_casa" class="form-select js-time-casa" required>
