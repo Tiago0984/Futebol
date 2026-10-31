@@ -99,7 +99,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         // "Esqueci minha senha": 5 pedidos por minuto por IP e 3 a cada 10 minutos por e-mail e perfil
-        // (além do broker, que não gera outro link para a mesma conta em menos de 60 segundos)
+        // (além do serviço, que não gera outro código para a mesma conta em menos de 60 segundos)
         RateLimiter::for('esqueci-senha-api', function (Request $request) {
             $chave = $this->chaveEmailEPerfil($request);
 
@@ -108,12 +108,18 @@ class AppServiceProvider extends ServiceProvider
                 $chave ? Limit::perMinutes(10, 3)->by('esqueci-email:' . $chave) : null,
             ]);
         });
+
+        RateLimiter::for('validar-codigo-api', fn (Request $request) =>
+            Limit::perMinute(5)->by('validar-codigo-ip:' . $request->ip()));
+        RateLimiter::for('redefinir-senha-api', fn (Request $request) =>
+            Limit::perMinute(5)->by('redefinir-senha-ip:' . $request->ip()));
     }
 
     // "atleta:ana@exemplo.com" (sem perfil, vale atleta, como no login); null sem e-mail
     private function chaveEmailEPerfil(Request $request): ?string
     {
-        $email = mb_strtolower(trim((string) $request->input('email')));
+        $entrada = $request->input('email');
+        $email = is_string($entrada) ? mb_strtolower(trim($entrada)) : '';
         $perfil = $request->input('perfil') === 'responsavel' ? 'responsavel' : 'atleta';
 
         return $email === '' ? null : "{$perfil}:{$email}";

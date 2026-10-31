@@ -39,7 +39,7 @@
                             </table>
                             <p style="margin:0 0 16px; font-size:13px; line-height:1.6; color:#374151;">
                                 O link vale por <strong>{{ $horas }} horas</strong>. Se ele vencer, abra o app e use
-                                <strong>"Esqueci minha senha"</strong> para receber outro.
+                                <strong>"Esqueci minha senha"</strong> para recuperar o acesso por código.
                             </p>
                             <p style="margin:0 0 8px; font-size:12px; color:#6b7280;">
                                 Se o botão não funcionar, copie e cole o link abaixo no seu navegador:

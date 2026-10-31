@@ -9,8 +9,8 @@ use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Link para definir a senha do app (Fase 9): convite ("Defina sua senha", na aprovação e pelo admin) ou
- * "Esqueci minha senha". Vale 24 horas; vencido, basta pedir outro pelo "Esqueci minha senha" do app.
+ * Link para definir a senha do app: convites da aprovação e do painel, válidos por 24 horas.
+ * Mensagem antiga de recuperação preservada por compatibilidade; a API agora envia CodigoRecuperacaoSenhaMail.
  */
 class DefinirSenhaMail extends Mailable
 {

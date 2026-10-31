@@ -9,7 +9,6 @@ use App\Rules\CpfValido;
 use App\Support\Cpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 
 /**
@@ -115,19 +114,12 @@ class ResponsavelController extends Controller
             'nova_senha'  => 'required|string|min:8|confirmed|different:senha_atual',
         ]);
 
-        if (!Hash::check($dados['senha_atual'], $responsavel->senha_responsavel)) {
+        if (! $responsavel->trocarSenhaPeloApp($dados['senha_atual'], $dados['nova_senha'], $responsavel->currentAccessToken()->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Senha atual incorreta.',
             ], 422);
         }
-
-        $responsavel->forceFill(['senha_responsavel' => Hash::make($dados['nova_senha'])])->save();
-
-        // Encerra as sessões de outros aparelhos, mantendo o token atual
-        $responsavel->tokens()
-            ->where('id', '!=', $responsavel->currentAccessToken()->id)
-            ->delete();
 
         return response()->json([
             'success' => true,

@@ -116,8 +116,8 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
-        // Links "Defina sua senha" e "Esqueci minha senha" do app (Fase 9): um broker por perfil, cada um com a
-        // própria tabela (o mesmo e-mail pode ser do atleta e do responsável). Valem 24 horas.
+        // Convites "Defina sua senha": um broker por perfil, com sua própria tabela, válidos por 24 horas.
+        // A recuperação do app usa códigos e reset_tokens em tbl_recuperacao_senha, fora destes brokers.
         'atletas' => [
             'provider' => 'atletas',
             'table' => 'password_reset_tokens_atletas',

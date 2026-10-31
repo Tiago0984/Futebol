@@ -257,22 +257,67 @@ Content-Type: application/json
 
     <div class="card">
         <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/esqueci-senha</code><span class="acesso">Público</span></div>
-        <p>Envia ao e-mail do perfil um link para definir uma nova senha. A resposta é <strong>sempre a mesma</strong>, exista ou não o e-mail (não revela quem está cadastrado). O e-mail só sai para quem pode entrar no app (atleta <code>ATIVO</code>; responsável com filho <code>ATIVO</code>), e não sai outro para a mesma conta em menos de 60 segundos.</p>
+        <p>Envia ao e-mail do perfil um <strong>código de 4 dígitos, válido por 15 minutos</strong>. A resposta é <strong>sempre a mesma</strong>, exista ou não o e-mail. Só envia para quem pode entrar no app (atleta <code>ATIVO</code>; responsável com filho <code>ATIVO</code>), no máximo uma vez a cada 60 segundos por conta. Pedidos suprimidos pelo intervalo e falhas no e-mail também retornam a resposta genérica abaixo. Sem <code>perfil</code>, vale <code>atleta</code>, como no login.</p>
 <pre>POST /api/v1/auth/esqueci-senha
 { "email": "carla@exemplo.com", "perfil": "responsavel" }
 
 200 {
   "success": true,
-  "message": "Se o e-mail estiver cadastrado neste perfil, você vai receber um link para definir uma nova senha. O link vale por 24 horas."
+  "message": "Se o e-mail estiver cadastrado, enviaremos um código de verificação."
 }</pre>
         <p class="nota">Limite: 5 pedidos por minuto por IP e 3 a cada 10 minutos por e-mail e perfil (<code>429</code> depois disso).</p>
+        <p>Um novo envio invalida o código e o <code>reset_token</code> anteriores daquela conta. O código é guardado com hash. O app deve carregar e-mail e perfil até a tela de redefinição.</p>
+    </div>
+
+    <div class="card">
+        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/validar-codigo</code><span class="acesso">Público</span></div>
+        <p>Enviar o código como <strong>string com exatamente quatro dígitos</strong>, preservando zeros iniciais. Sem perfil, vale atleta. O código tem no máximo 5 tentativas erradas, mesmo trocando IP; a quinta invalida o código. Validar corretamente também consome o código.</p>
+<pre>POST /api/v1/auth/validar-codigo
+{ "email": "carla@exemplo.com", "perfil": "responsavel", "codigo": "0042" }
+
+200 {
+  "success": true,
+  "data": { "reset_token": "token-aleatorio-retornado-pela-api" }
+}</pre>
+        <p>O <code>reset_token</code> é uma string opaca, aleatória, de uso único e válida por <strong>10 minutos a partir da validação</strong>. É guardado com hash e vinculado à conta/perfil. Não é um token de login e não deve ser salvo no AsyncStorage: use-o na próxima chamada da mesma ação do app.</p>
+<pre>422 {
+  "success": false,
+  "message": "Código inválido ou expirado.",
+  "errors": { "codigo": ["Código inválido ou expirado."] }
+}</pre>
+        <p>A mesma mensagem vale para código incorreto, expirado, consumido, bloqueado, e-mail sem recuperação ou conta sem acesso. Limite adicional de 5 requisições por minuto por IP.</p>
+    </div>
+
+    <div class="card">
+        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/redefinir-senha</code><span class="acesso">Público</span></div>
+        <p>Enviar o token recebido na validação e as duas senhas. A nova senha exige pelo menos 8 caracteres. E-mail e perfil já estão vinculados ao token e não são enviados nesta etapa.</p>
+<pre>POST /api/v1/auth/redefinir-senha
+{
+  "reset_token": "token-retornado-na-validacao",
+  "nova_senha": "minha-nova-senha",
+  "nova_senha_confirmation": "minha-nova-senha"
+}
+
+200 {
+  "success": true,
+  "message": "Senha redefinida com sucesso. Faça login novamente."
+}
+
+422 {
+  "success": false,
+  "message": "A nova senha precisa ter pelo menos 8 caracteres.",
+  "errors": { "nova_senha": ["A nova senha precisa ter pelo menos 8 caracteres."] }
+}</pre>
+        <p>Senhas inválidas ou com confirmação diferente retornam <code>422</code> com <code>errors.nova_senha</code>, em português, sem consumir o token. Token inválido, usado ou expirado retorna <code>422</code> com <code>message: "Token de redefinição inválido ou expirado."</code> e <code>errors.reset_token</code>.</p>
+        <p>Ao concluir, todos os tokens Sanctum daquela conta são revogados, assim como seus códigos, tokens de redefinição e links antigos. O outro perfil, mesmo com o mesmo e-mail, não muda. O app só deve voltar ao login após sucesso desta chamada; ela não faz login automaticamente. Limite de 5 requisições por minuto por IP.</p>
+        <p>Nas três rotas, <code>429</code> segue o padrão de erros da API e traz <code>Retry-After</code> em segundos, exposto por CORS em <code>Access-Control-Expose-Headers</code> para leitura pelo app web.</p>
     </div>
 
     <div class="card">
         <h3>Links "Defina sua senha" (página do site, não é rota da API)</h3>
-        <p>O link chega por e-mail em três situações: na <strong>aprovação da matrícula</strong> (para o atleta, se tiver e-mail, e para o responsável que ainda não tem senha), quando a secretaria usa <strong>"Reenviar convite"</strong> e no <strong>"Esqueci minha senha"</strong>. Ele abre a página <code>{{ url('/senha/{perfil}/{token}') }}?email=...</code>, onde a pessoa digita a senha nova (mínimo de 8 caracteres).</p>
+        <p>Os convites continuam chegando por link na <strong>aprovação da matrícula</strong> (para o atleta, se tiver e-mail, e para o responsável que ainda não tem senha) e quando a secretaria usa <strong>"Reenviar convite"</strong>. O link abre a página <code>{{ url('/senha/{perfil}/{token}') }}?email=...</code>, onde a pessoa digita a senha nova (mínimo de 8 caracteres). O "Esqueci minha senha" do app usa o fluxo de código acima.</p>
         <ul>
-            <li>O link vale <strong>24 horas</strong> e só pode ser usado uma vez. Vencido, a página orienta a pedir outro pelo "Esqueci minha senha" do app.</li>
+            <li>O link vale <strong>24 horas</strong> e só pode ser usado uma vez. Vencido, a página orienta a recuperar o acesso por código no "Esqueci minha senha" do app.</li>
             <li>Ao definir a senha, as sessões do app daquele perfil são encerradas (os tokens antigos deixam de valer). O outro perfil, mesmo com o mesmo e-mail, continua conectado.</li>
         </ul>
     </div>
@@ -851,6 +896,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             <li><strong>Todas as rotas:</strong> 120 por minuto por conta logada (atleta ou responsável) e 60 por minuto por IP sem login. As respostas trazem os cabeçalhos <code>X-RateLimit-Limit</code> e <code>X-RateLimit-Remaining</code>. Guarde no app o que muda pouco (campeonatos, notícias, banners) em vez de buscar a cada tela.</li>
             <li><code>POST /auth/login</code>: 5 por minuto por IP e 5 por minuto por e-mail e perfil.</li>
             <li><code>POST /auth/esqueci-senha</code>: 5 por minuto por IP e 3 a cada 10 minutos por e-mail e perfil.</li>
+            <li><code>POST /auth/validar-codigo</code> e <code>POST /auth/redefinir-senha</code>: cada rota tem limite de 5 por minuto por IP. O código também tem no máximo 5 erros, independentemente do IP.</li>
             <li><code>POST</code> e <code>DELETE /atleta/foto</code>: juntos, 5 por minuto e 20 por hora por atleta.</li>
             <li><code>POST /fale-conosco</code>: 3 por minuto por conta (perfil + ID), além do limite geral.</li>
         </ul>
@@ -863,6 +909,8 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
         $todas = [
             ['POST',  '/auth/login', 'Público', 'email, senha, perfil?, device_name?'],
             ['POST',  '/auth/esqueci-senha', 'Público', 'email, perfil?'],
+            ['POST',  '/auth/validar-codigo', 'Público', 'email, perfil?, codigo (string com 4 dígitos)'],
+            ['POST',  '/auth/redefinir-senha', 'Público', 'reset_token, nova_senha, nova_senha_confirmation'],
             ['POST',  '/auth/logout', 'Qualquer perfil', '—'],
             ['POST',  '/fale-conosco', 'Atleta ou responsável', 'assunto, mensagem'],
             ['GET',   '/atleta', 'Atleta', '—'],

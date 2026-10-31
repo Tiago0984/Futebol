@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Mail\DefinirSenhaMail;
+use App\Mail\CodigoRecuperacaoSenhaMail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -19,7 +20,7 @@ class AppSenhasTest extends TestCase
 {
     use RefreshBancoDeTestes, CriaDadosDeAtleta;
 
-    private const RESPOSTA_ESQUECI = 'Se o e-mail estiver cadastrado neste perfil, você vai receber um link para definir uma nova senha. O link vale por 24 horas.';
+    private const RESPOSTA_ESQUECI = 'Se o e-mail estiver cadastrado, enviaremos um código de verificação.';
     private const LINK_INVALIDO = 'Link inválido ou vencido';
 
     // ---------- aprovação da matrícula ----------
@@ -209,12 +210,13 @@ class AppSenhasTest extends TestCase
                 ->assertExactJson(['success' => true, 'message' => self::RESPOSTA_ESQUECI]);
         }
 
-        Mail::assertSent(DefinirSenhaMail::class, 2);
-        Mail::assertSent(DefinirSenhaMail::class, fn ($m) => $m->hasTo('ana@exemplo.com') && ! $m->convite && $m->perfil === 'atleta');
-        Mail::assertSent(DefinirSenhaMail::class, fn ($m) => $m->hasTo('mae@exemplo.com') && $m->perfil === 'responsavel');
+        Mail::assertSent(CodigoRecuperacaoSenhaMail::class, 2);
+        Mail::assertNotSent(DefinirSenhaMail::class);
+        Mail::assertSent(CodigoRecuperacaoSenhaMail::class, fn ($m) => $m->hasTo('ana@exemplo.com') && $m->perfil === 'atleta');
+        Mail::assertSent(CodigoRecuperacaoSenhaMail::class, fn ($m) => $m->hasTo('mae@exemplo.com') && $m->perfil === 'responsavel');
     }
 
-    public function test_esqueci_senha_nao_gera_outro_link_em_menos_de_60_segundos_e_tem_limite(): void
+    public function test_esqueci_senha_nao_gera_outro_codigo_em_menos_de_60_segundos_e_tem_limite(): void
     {
         Mail::fake();
         $this->atletaAtivo('ana@exemplo.com');
@@ -224,11 +226,11 @@ class AppSenhasTest extends TestCase
 
         $pedir('10.0.2.1');
         $pedir('10.0.2.2');
-        Mail::assertSent(DefinirSenhaMail::class, 1); // o broker segura o 2º (menos de 60 segundos)
+        Mail::assertSent(CodigoRecuperacaoSenhaMail::class, 1); // o serviço segura o 2º (menos de 60 segundos)
 
         $this->travel(61)->seconds();
         $pedir('10.0.2.3');
-        Mail::assertSent(DefinirSenhaMail::class, 2); // passado o minuto, gera outro link
+        Mail::assertSent(CodigoRecuperacaoSenhaMail::class, 2); // passado o minuto, gera outro código
 
         // 4º pedido do mesmo e-mail e perfil em 10 minutos, mesmo de outro IP: 429
         $this->withServerVariables(['REMOTE_ADDR' => '10.0.2.99'])

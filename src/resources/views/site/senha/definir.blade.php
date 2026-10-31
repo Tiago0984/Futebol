@@ -32,7 +32,7 @@
         <div class="ja-assinado">
             <h2>ℹ️ Link inválido ou vencido</h2>
             <p>Este link não vale mais: ele dura 24 horas e só pode ser usado uma vez.<br>
-                Para receber outro, abra o app e use <strong>"Esqueci minha senha"</strong>.</p>
+                Para recuperar o acesso por código, abra o app e use <strong>"Esqueci minha senha"</strong>.</p>
         </div>
 
     @else
@@ -62,7 +62,7 @@
         </div>
 
         <div class="aviso">
-            O link vale por 24 horas. Se ele vencer, abra o app e use "Esqueci minha senha" para receber outro.
+            O link vale por 24 horas. Se ele vencer, abra o app e use "Esqueci minha senha" para recuperar o acesso por código.
         </div>
     @endif
 

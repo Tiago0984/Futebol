@@ -7,11 +7,12 @@ use App\Models\Atleta;
 use App\Models\Responsavel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\DB;
 
 /**
- * Página do link "Defina sua senha" / "Esqueci minha senha" do app (Fase 9). O link leva o perfil, o token
+ * Página dos convites "Defina sua senha" e dos links antigos de recuperação. O link leva o perfil, o token
  * e o e-mail. Link vencido, já usado ou com e-mail que não existe: a mesma mensagem (não revela quem
- * está cadastrado) e a orientação de pedir outro pelo "Esqueci minha senha" do app.
+ * está cadastrado) e a orientação de recuperar o acesso por código no "Esqueci minha senha" do app.
  */
 class SenhaController extends Controller
 {
@@ -49,10 +50,15 @@ class SenhaController extends Controller
         $model = self::MODELS[$perfil];
 
         // O broker confere o token (e a validade de 24 horas), chama o callback e apaga o token do link
-        $resultado = $model::broker()->reset(
-            [$model::COLUNA_EMAIL => $dados['email'], 'token' => $dados['token'], 'password' => $dados['senha']],
-            fn ($usuario, $senha) => $usuario->definirSenha($senha),
-        );
+        $resultado = DB::transaction(function () use ($model, $dados) {
+            // Confere o link dentro do mesmo bloqueio usado pela recuperação por código.
+            $model::where($model::COLUNA_EMAIL, $dados['email'])->lockForUpdate()->first();
+
+            return $model::broker()->reset(
+                [$model::COLUNA_EMAIL => $dados['email'], 'token' => $dados['token'], 'password' => $dados['senha']],
+                fn ($usuario, $senha) => $usuario->definirSenha($senha),
+            );
+        });
 
         if ($resultado !== Password::PASSWORD_RESET) {
             return redirect()->route('senha.definir', ['perfil' => $perfil, 'token' => $dados['token'], 'email' => $dados['email']]);

@@ -51,8 +51,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () use ($rotasDa
     // por IP e 5 por e-mail e perfil: limitador "login-api", no AppServiceProvider)
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:login-api');
 
-    // ESQUECI MINHA SENHA - rota pública, resposta sempre igual (limitador "esqueci-senha-api")
+    // Recuperação por código: três rotas públicas com limites por IP e resposta genérica na solicitação.
     Route::post('/auth/esqueci-senha', [AuthController::class, 'esqueciSenha'])->middleware('throttle:esqueci-senha-api');
+    Route::post('/auth/validar-codigo', [AuthController::class, 'validarCodigo'])->middleware('throttle:validar-codigo-api');
+    Route::post('/auth/redefinir-senha', [AuthController::class, 'redefinirSenha'])->middleware('throttle:redefinir-senha-api');
 
     // Logout: qualquer perfil
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');

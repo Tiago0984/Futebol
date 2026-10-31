@@ -11,7 +11,6 @@ use App\Services\TratadorDeImagem;
 use App\Support\Cpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Exceptions\RuntimeException as ImagemException;
@@ -170,19 +169,12 @@ class AtletaController extends Controller
             'nova_senha'  => 'required|string|min:8|confirmed|different:senha_atual',
         ]);
 
-        if (!Hash::check($dados['senha_atual'], $atleta->password)) {
+        if (! $atleta->trocarSenhaPeloApp($dados['senha_atual'], $dados['nova_senha'], $atleta->currentAccessToken()->id)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Senha atual incorreta.',
             ], 422);
         }
-
-        $atleta->update(['password' => Hash::make($dados['nova_senha'])]);
-
-        // Encerra as sessões de outros aparelhos, mantendo o token atual
-        $atleta->tokens()
-            ->where('id', '!=', $atleta->currentAccessToken()->id)
-            ->delete();
 
         return response()->json([
             'success' => true,
