@@ -69,6 +69,24 @@ class AppServiceProvider extends ServiceProvider
                 : Limit::perMinute(60)->by('api-ip:' . $request->ip());
         });
 
+        RateLimiter::for('fale-conosco-api', function (Request $request) {
+            $conta = $request->user();
+
+            return Limit::perMinute(3)->by('fale-conosco:' . get_class($conta) . ':' . $conta->getAuthIdentifier());
+        });
+
+        RateLimiter::for('contato-site', function (Request $request) {
+            return Limit::perMinute(3)->by('contato-site:' . $request->ip())
+                ->response(function (Request $request, array $headers) {
+                    $request->session()->flashInput($request->only('nome', 'email', 'telefone', 'assunto', 'mensagem'));
+                    $errors = (new \Illuminate\Support\ViewErrorBag)->put('default', new \Illuminate\Support\MessageBag([
+                        'envio' => 'Muitos envios. Aguarde um minuto e tente novamente.',
+                    ]));
+
+                    return response()->view('site.contato.contato', compact('errors'), 429, $headers);
+                });
+        });
+
         // Foto do atleta (enviar e remover; 29/10/2026): 5 por minuto e 20 por hora por atleta (cada envio pode ter
         // 10 MB e é tratado no servidor). Passou: 429 em JSON
         RateLimiter::for('foto-api', function (Request $request) {

@@ -74,6 +74,7 @@
             <li><a href="#responsavel">Área do responsável</a></li>
             <li><a href="#agenda">Agenda</a></li>
             <li><a href="#avisos">Avisos (notificações)</a></li>
+            <li><a href="#fale-conosco">Fale conosco</a></li>
             <li><a href="#erros">Erros e limites</a></li>
             <li><a href="#rotas">Todas as rotas</a></li>
         </ul>
@@ -793,6 +794,39 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
     </div>
 
     {{-- ================================================================== --}}
+    <h2 id="fale-conosco">Fale conosco</h2>
+    <div class="card">
+        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/fale-conosco</code><span class="acesso qualquer">Atleta ou responsável</span></div>
+        <p>Exige token Bearer de atleta ATIVO ou responsável com algum filho ATIVO. O remetente, o perfil e o e-mail de resposta são obtidos pelo token; não envie esses dados no corpo.</p>
+        <p><strong>Corpo JSON:</strong> assunto e mensagem obrigatórios, como texto, com até 100 e 2000 caracteres respectivamente. Espaços nas pontas são removidos; campos vazios são recusados.</p>
+<pre>{
+  "assunto": "Dúvida sobre os treinos",
+  "mensagem": "Gostaria de confirmar o horário do treino."
+}</pre>
+        <p><strong>Resposta 201 Created:</strong></p>
+<pre>{
+  "success": true,
+  "message": "Mensagem recebida com sucesso.",
+  "data": {
+    "id_fale_conosco": 123,
+    "data_envio": "2026-10-31T10:00:00-03:00"
+  }
+}</pre>
+        <p><code>id_fale_conosco</code> é o protocolo inteiro da mensagem; <code>data_envio</code> é uma string ISO 8601 no fuso de Brasília, sem milissegundos. O <strong>201 confirma a gravação</strong> para atendimento pelo painel. Uma falha no e-mail de aviso não desfaz a gravação nem muda essa resposta: não reenvie a mensagem nesse caso.</p>
+        <p><strong>422:</strong> <code>errors</code> contém as mensagens por campo; o app pode mostrá-las junto de assunto e mensagem:</p>
+<pre>{
+  "success": false,
+  "message": "O campo assunto é obrigatório.",
+  "errors": {
+    "assunto": ["O campo assunto é obrigatório."],
+    "mensagem": ["O campo mensagem é obrigatório."]
+  }
+}</pre>
+        <p><strong>429:</strong> limite de 3 requisições por minuto por conta (perfil + ID, compartilhado entre os tokens da conta). Não grava mensagem nem envia e-mail quando bloqueado. Aguarde os segundos informados no cabeçalho <code>Retry-After</code>. Esse cabeçalho está exposto pelo CORS (<code>Access-Control-Expose-Headers: Retry-After</code>) para leitura no app web. Requisições inválidas também contam para esse limite.</p>
+        <p><strong>401:</strong> token ausente, inválido ou vencido. <strong>403:</strong> perfil não permitido, atleta inativo ou responsável sem filho ativo.</p>
+        <p><strong>404 em servidor ainda sem esta rota:</strong> o app deve informar que o recurso ainda não está disponível. A resposta segue o padrão <code>{ "success": false, "message": "Endereço não encontrado." }</code>. A existência desta documentação no desenvolvimento não significa que a rota já foi publicada em produção.</p>
+    </div>
+
     <h2 id="erros">Erros e limites</h2>
     <div class="tabela">
     <table>
@@ -818,6 +852,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             <li><code>POST /auth/login</code>: 5 por minuto por IP e 5 por minuto por e-mail e perfil.</li>
             <li><code>POST /auth/esqueci-senha</code>: 5 por minuto por IP e 3 a cada 10 minutos por e-mail e perfil.</li>
             <li><code>POST</code> e <code>DELETE /atleta/foto</code>: juntos, 5 por minuto e 20 por hora por atleta.</li>
+            <li><code>POST /fale-conosco</code>: 3 por minuto por conta (perfil + ID), além do limite geral.</li>
         </ul>
     </div>
 
@@ -829,6 +864,7 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             ['POST',  '/auth/login', 'Público', 'email, senha, perfil?, device_name?'],
             ['POST',  '/auth/esqueci-senha', 'Público', 'email, perfil?'],
             ['POST',  '/auth/logout', 'Qualquer perfil', '—'],
+            ['POST',  '/fale-conosco', 'Atleta ou responsável', 'assunto, mensagem'],
             ['GET',   '/atleta', 'Atleta', '—'],
             ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'nome_atleta?, cpf_atleta?, data_nasc_atleta?, email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
             ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],

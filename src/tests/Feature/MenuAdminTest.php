@@ -844,6 +844,12 @@ class MenuAdminTest extends TestCase
             'admin.campeonatos.proxima-fase' => [$this->emAndamento, DB::table('tbl_campeonato')->where('id_campeonato', $this->emAndamento)->value('id_categoria')],
             'admin.jogos.times.show'        => [$jogoDaCopa->id_jogo, $this->azul],
             'admin.matriculas.show'         => $atleta,
+            'admin.fale-conosco.show'       => DB::table('tbl_fale_conosco')->insertGetId([
+                'origem_fale_conosco' => 'SITE', 'perfil_fale_conosco' => 'VISITANTE',
+                'nome_fale_conosco' => 'Visitante de Teste', 'email_fale_conosco' => 'visitante@example.test',
+                'assunto_fale_conosco' => 'Dúvida', 'mensagem_fale_conosco' => 'Mensagem de teste.',
+                'data_fale_conosco' => now(),
+            ]),
             'admin.atletas.afastamentos'    => $atleta,
             'admin.atletas.fotoPendente'    => $atleta, // sem foto pendente: 404
             'admin.locais.edit'             => DB::table('tbl_local')->insertGetId([

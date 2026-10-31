@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\AtletaController;
 use App\Http\Controllers\Api\V1\ResponsavelController;
 use App\Http\Controllers\Api\V1\AppDoAtletaController;
+use App\Http\Controllers\Api\V1\FaleConoscoController;
 
 // Agenda e avisos (Fase 9): as mesmas rotas para o atleta ("") e para o responsável ("/{idAtleta}", sob
 // /responsavel/atletas). As regras ficam em App\Services\AppDoAtleta. Junto, o perfil do responsável pela
@@ -55,6 +56,10 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () use ($rotasDa
 
     // Logout: qualquer perfil
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+    Route::post('/fale-conosco', [FaleConoscoController::class, 'store'])->middleware([
+        'auth:sanctum', 'perfil:atleta,responsavel', 'atleta.ativo', 'responsavel.ativo', 'throttle:fale-conosco-api',
+    ]);
 
     // ROTAS DO RESPONSÁVEL (token do perfil responsável e algum filho ATIVO)
     Route::middleware(['auth:sanctum', 'perfil:responsavel', 'responsavel.ativo'])->group(function () use ($rotasDaAgendaEDosAvisos) {

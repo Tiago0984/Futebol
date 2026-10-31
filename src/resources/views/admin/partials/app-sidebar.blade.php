@@ -25,6 +25,13 @@
           </a>
         </li>
 
+        <li class="nav-item">
+          <a href="{{ route('admin.fale-conosco.index') }}" class="nav-link {{ request()->routeIs('admin.fale-conosco.*') ? 'active' : '' }}">
+            <i class="nav-icon bi bi-envelope"></i>
+            <p>Fale conosco</p>
+          </a>
+        </li>
+
         <li class="nav-header">CONTEÚDO DO SITE</li>
 
         {{-- Notícias, Banners, Galeria e Vídeos: sem subitens, cada um abre a lista dele --}}

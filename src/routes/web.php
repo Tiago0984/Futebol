@@ -68,6 +68,7 @@ Route::get('/parcerias', [ParceriasController::class, 'parcerias'])->name('parce
 Route::post('/parcerias', [ParceriasController::class, 'form'])->name('parcerias.form');
 
 Route::get('/contato', [ContatoController::class, 'contato'])->name('contato');
+Route::post('/contato', [ContatoController::class, 'enviar'])->middleware('throttle:contato-site')->name('contato.enviar');
 
 // Cadastro público de atletas
 Route::get('/cadastro',  [CadastroController::class, 'index'])->name('cadastro.index');
@@ -99,6 +100,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
 
     Route::get('/', [DashController::class, 'index'])->name('dash');
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');
+
+    Route::get('fale-conosco', [\App\Http\Controllers\Admin\FaleConoscoController::class, 'index'])->name('fale-conosco.index');
+    Route::get('fale-conosco/{id}', [\App\Http\Controllers\Admin\FaleConoscoController::class, 'show'])->whereNumber('id')->name('fale-conosco.show');
+    Route::patch('fale-conosco/{id}/leitura', [\App\Http\Controllers\Admin\FaleConoscoController::class, 'leitura'])->whereNumber('id')->name('fale-conosco.leitura');
 
     // Resources só com as ações que existem: criar e editar são modais das listas (sem páginas
     // create/edit/show, que davam erro 500). Campeonatos têm também as páginas create e edit

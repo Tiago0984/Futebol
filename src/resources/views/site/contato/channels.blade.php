@@ -7,26 +7,38 @@
         </div>
 
         <div class="contact-channels-grid">
+            @php
+                $telefone = trim((string) config('contato.telefone'));
+                $whatsapp = trim((string) config('contato.whatsapp'));
+                $telefoneDigitos = preg_replace('/\D/', '', $telefone);
+                $whatsappDigitos = preg_replace('/\D/', '', $whatsapp);
+            @endphp
+            @if($telefoneDigitos !== '')
             <div class="channel-card">
                 <div class="card-icon-box">📞</div>
                 <h3>Telefone Geral</h3>
-                <p class="channel-detail">(11) 3333-3333</p>
+                <p class="channel-detail"><a href="tel:+{{ $telefoneDigitos }}">{{ $telefone }}</a></p>
                 <p class="channel-sub text-muted">Dúvidas rápidas e administrativa</p>
             </div>
+            @endif
 
+            @if($whatsappDigitos !== '')
             <div class="channel-card highlight-whatsapp">
                 <div class="card-icon-box">💬</div>
                 <h3>WhatsApp Oficial</h3>
-                <p class="channel-detail">(11) 99999-9999</p>
+                <p class="channel-detail"><a href="https://wa.me/{{ $whatsappDigitos }}">{{ $whatsapp }}</a></p>
                 <p class="channel-sub">Inscrições, matrículas e agendamentos</p>
             </div>
+            @endif
 
+            @if(config('contato.email'))
             <div class="channel-card">
                 <div class="card-icon-box">✉️</div>
                 <h3>E-mail</h3>
-                <p class="channel-detail">contato@escolinha.com.br</p>
+                <p class="channel-detail"><a href="mailto:{{ config('contato.email') }}">{{ config('contato.email') }}</a></p>
                 <p class="channel-sub text-muted">Parcerias, corporativo e imprensa</p>
             </div>
+            @endif
         </div>
     </div>
 </section>

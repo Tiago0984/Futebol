@@ -20,19 +20,24 @@ class PerfilDoApp
         'responsavel' => Responsavel::class,
     ];
 
-    public function handle(Request $request, Closure $next, string $perfil): Response
+    public function handle(Request $request, Closure $next, string ...$perfis): Response
     {
-        $model = self::MODELS[$perfil] ?? null;
-
-        if (! $model || ! $request->user() instanceof $model) {
-            return response()->json([
-                'success' => false,
-                'message' => $perfil === 'responsavel'
-                    ? 'Esta área é do perfil responsável. Entre no app como responsável.'
-                    : 'Esta área é do perfil atleta. Entre no app como atleta.',
-            ], 403);
+        foreach ($perfis as $perfil) {
+            $model = self::MODELS[$perfil] ?? null;
+            if ($model && $request->user() instanceof $model) {
+                return $next($request);
+            }
         }
 
-        return $next($request);
+        $perfil = $perfis[0] ?? '';
+
+        return response()->json([
+            'success' => false,
+            'message' => count($perfis) > 1
+                ? 'Entre no app como atleta ou responsável.'
+                : ($perfil === 'responsavel'
+                    ? 'Esta área é do perfil responsável. Entre no app como responsável.'
+                    : 'Esta área é do perfil atleta. Entre no app como atleta.'),
+        ], 403);
     }
 }

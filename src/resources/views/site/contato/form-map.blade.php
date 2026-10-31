@@ -1,44 +1,54 @@
 <section id="enviar-mensagem" class="contact-form-map-section">
+    @php
+        $valorAnterior = fn (string $campo, string $padrao = '') => is_string(old($campo)) ? old($campo) : $padrao;
+    @endphp
     <div class="container-contact form-map-flex">
 
         <div class="form-side-container">
             <div class="form-header-left">
                 <h3>Envie sua mensagem</h3>
-                <p>Preencha os campos abaixo e entraremos em contato em até 24 horas úteis.</p>
+                <p>Preencha os campos abaixo para falar com a nossa equipe.</p>
             </div>
 
-            <form action="#" method="POST" onsubmit="event.preventDefault();">
+            @if(session('sucesso'))
+                <div class="alert alert-success" role="status">{{ session('sucesso') }}</div>
+            @endif
+            @if($errors->any())
+                <div class="alert alert-danger" role="alert">
+                    <ul>@foreach($errors->all() as $erro)<li>{{ $erro }}</li>@endforeach</ul>
+                </div>
+            @endif
+            <form action="{{ route('contato.enviar') }}" method="POST">
                 @csrf
 
                 <div class="form-group-full">
-                    <label>Nome Completo *</label>
-                    <input type="text" name="nome" required class="form-input">
+                    <label for="contato-nome">Nome Completo *</label>
+                    <input id="contato-nome" type="text" name="nome" value="{{ $valorAnterior('nome') }}" required maxlength="150" autocomplete="name" class="form-input">
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>E-mail Corporativo/Pessoal *</label>
-                        <input type="email" name="email" required class="form-input">
+                        <label for="contato-email">E-mail Corporativo/Pessoal *</label>
+                        <input id="contato-email" type="email" name="email" value="{{ $valorAnterior('email') }}" required maxlength="255" autocomplete="email" class="form-input">
                     </div>
                     <div class="form-group">
-                        <label>WhatsApp / Telefone *</label>
-                        <input type="text" name="telefone" required class="form-input">
+                        <label for="contato-telefone">WhatsApp / Telefone *</label>
+                        <input id="contato-telefone" type="tel" name="telefone" value="{{ $valorAnterior('telefone') }}" required maxlength="20" autocomplete="tel" class="form-input">
                     </div>
                 </div>
 
                 <div class="form-group-full">
-                    <label>Assunto Principal</label>
-                    <select name="assunto" class="form-input form-select">
-                        <option value="matricula">Matrículas e Categorias</option>
-                        <option value="horarios">Horários e Unidades</option>
-                        <option value="financeiro">Financeiro / Mensalidades</option>
-                        <option value="sugestao">Sugestões ou Elogios</option>
+                    <label for="contato-assunto">Assunto Principal *</label>
+                    <select id="contato-assunto" name="assunto" required class="form-input form-select">
+                        @foreach(\App\Http\Requests\ContatoSiteRequest::ASSUNTOS as $valor => $rotulo)
+                            <option value="{{ $valor }}" @selected($valorAnterior('assunto', 'matricula') === $valor)>{{ $rotulo }}</option>
+                        @endforeach
                     </select>
                 </div>
 
                 <div class="form-group-full">
-                    <label>Sua Mensagem *</label>
-                    <textarea name="mensagem" rows="4" required class="form-input form-textarea"></textarea>
+                    <label for="contato-mensagem">Sua Mensagem *</label>
+                    <textarea id="contato-mensagem" name="mensagem" rows="4" required maxlength="2000" class="form-input form-textarea">{{ $valorAnterior('mensagem') }}</textarea>
                 </div>
 
                 <div class="form-submit-block-left">
