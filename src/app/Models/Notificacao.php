@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use App\Models\Concerns\SerializaDatasComFuso;
+use App\Services\EnviaPushDaNotificacao;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Notificação para o atleta (Fase 8): título e mensagem congelados no envio, gravada na mesma
@@ -409,7 +411,7 @@ class Notificacao extends Model
 
     /**
      * Grava uma notificação para cada atleta ATIVO da lista (inativo, rejeitado ou pendente não recebe),
-     * numa inserção só. $linhaPara(id_atleta) devolve as colunas de linha().
+     * na transação da ação. $linhaPara(id_atleta) devolve as colunas de linha().
      */
     private static function gravarParaAtivos(array $idsAtletas, ?int $idUsuario, callable $linhaPara): int
     {
@@ -428,9 +430,14 @@ class Notificacao extends Model
             'data_notificacao' => $agora,
         ], $ativos);
 
-        foreach (array_chunk($linhas, 500) as $bloco) {
-            self::insert($bloco);
-        }
+        DB::transaction(function () use ($linhas) {
+            $ids = [];
+            foreach ($linhas as $linha) {
+                // IDs exatos, sem inferir faixas de AUTO_INCREMENT (inserções concorrentes podem intercalar).
+                $ids[] = self::query()->insertGetId($linha, 'id_notificacao');
+            }
+            app(EnviaPushDaNotificacao::class)->agendar($ids);
+        });
 
         return count($linhas);
     }
