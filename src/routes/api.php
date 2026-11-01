@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\AtletaController;
 use App\Http\Controllers\Api\V1\ResponsavelController;
 use App\Http\Controllers\Api\V1\AppDoAtletaController;
 use App\Http\Controllers\Api\V1\FaleConoscoController;
+use App\Http\Controllers\Api\V1\DispositivoController;
 
 // Agenda e avisos (Fase 9): as mesmas rotas para o atleta ("") e para o responsável ("/{idAtleta}", sob
 // /responsavel/atletas). As regras ficam em App\Services\AppDoAtleta. Junto, o perfil do responsável pela
@@ -58,6 +59,12 @@ Route::prefix('v1')->middleware('throttle:api')->group(function () use ($rotasDa
 
     // Logout: qualquer perfil
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+
+    // Permite remover/desligar o aparelho mesmo se a conta perdeu acesso por inatividade.
+    Route::middleware(['auth:sanctum', 'perfil:atleta,responsavel'])->group(function () {
+        Route::post('/dispositivos', [DispositivoController::class, 'store']);
+        Route::delete('/dispositivos', [DispositivoController::class, 'destroy']);
+    });
 
     Route::post('/fale-conosco', [FaleConoscoController::class, 'store'])->middleware([
         'auth:sanctum', 'perfil:atleta,responsavel', 'atleta.ativo', 'responsavel.ativo', 'throttle:fale-conosco-api',

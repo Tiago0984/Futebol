@@ -75,6 +75,7 @@
             <li><a href="#agenda">Agenda</a></li>
             <li><a href="#avisos">Avisos (notificações)</a></li>
             <li><a href="#fale-conosco">Fale conosco</a></li>
+            <li><a href="#dispositivos">Aparelhos e notificações push</a></li>
             <li><a href="#erros">Erros e limites</a></li>
             <li><a href="#rotas">Todas as rotas</a></li>
         </ul>
@@ -872,6 +873,27 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
         <p><strong>404 em servidor ainda sem esta rota:</strong> o app deve informar que o recurso ainda não está disponível. A resposta segue o padrão <code>{ "success": false, "message": "Endereço não encontrado." }</code>. A existência desta documentação no desenvolvimento não significa que a rota já foi publicada em produção.</p>
     </div>
 
+    <h2 id="dispositivos">Aparelhos e notificações push</h2>
+    <div class="card">
+        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/dispositivos</code><span class="acesso qualquer">Atleta ou responsável</span></div>
+        <p>Token Bearer Sanctum obrigatório. Registre o aparelho ao abrir o app logado e ao mudar a preferência de notificações. O dono vem da autenticação; não envie IDs de contas. O token é único e diferencia maiúsculas/minúsculas. Se outra pessoa entrar no mesmo aparelho, o POST transfere o token para ela.</p>
+<pre>{ "token": "ExponentPushToken[xxxx]", "plataforma": "android", "notificacoes_ativas": true }
+200 { "success": true }</pre>
+        <p>Todos os campos são obrigatórios. Token Expo com até 255 caracteres, prefixo <code>ExponentPushToken[</code> ou <code>ExpoPushToken[</code>, conteúdo não vazio e fechamento <code>]</code>. Plataforma <code>android</code> ou <code>ios</code>; preferência booleana. <code>false</code> guarda o aparelho desativado. Validação: 422 com <code>errors</code> por campo em português. Limite geral da API (429 com <code>Retry-After</code>), sem limite adicional.</p>
+        <div class="rota"><span class="metodo DELETE">DELETE</span><code>/api/v1/dispositivos</code><span class="acesso qualquer">Atleta ou responsável</span></div>
+<pre>{ "token": "ExponentPushToken[xxxx]" }
+200 { "success": true }</pre>
+        <p>No logout, envie DELETE antes de encerrar o token Sanctum. Apaga somente o aparelho da conta autenticada; se o token não existir ou pertencer a outra conta, responde o mesmo 200. As duas rotas exigem autenticação (401 sem token) e perfil atleta ou responsável (403 para outros perfis). Permitem desligar/remover o aparelho mesmo após inativação; o envio só contempla atletas ativos.</p>
+        <p>Os avisos continuam gravados no app. Após o commit e a resposta HTTP, o backend tenta enviar push aos aparelhos ativos do atleta e dos responsáveis vinculados. Responsável com mais de um filho recebe o título com o primeiro nome do filho (ex.: “Joana · Aviso da escolinha”). Sem aparelho ativo, não há chamada à Expo. Falha no push não desfaz a ação nem a notificação.</p>
+<pre>{
+  "id_notificacao": 310,
+  "id_atleta": 17,
+  "id_evento": 42,
+  "tipo": "INSCRICAO"
+}</pre>
+        <p>Este é o campo <code>data</code> do push, com IDs inteiros. <code>id_evento</code> só existe quando o aviso possui evento: abrir o compromisso; sem ele, abrir a lista de avisos. No perfil responsável, selecionar primeiro o filho por <code>id_atleta</code>. O push não marca o aviso como lido; usar as rotas de leitura existentes.</p>
+    </div>
+
     <h2 id="erros">Erros e limites</h2>
     <div class="tabela">
     <table>
@@ -912,6 +934,8 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             ['POST',  '/auth/validar-codigo', 'Público', 'email, perfil?, codigo (string com 4 dígitos)'],
             ['POST',  '/auth/redefinir-senha', 'Público', 'reset_token, nova_senha, nova_senha_confirmation'],
             ['POST',  '/auth/logout', 'Qualquer perfil', '—'],
+            ['POST',  '/dispositivos', 'Atleta ou responsável', 'token, plataforma, notificacoes_ativas'],
+            ['DELETE', '/dispositivos', 'Atleta ou responsável', 'token'],
             ['POST',  '/fale-conosco', 'Atleta ou responsável', 'assunto, mensagem'],
             ['GET',   '/atleta', 'Atleta', '—'],
             ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'nome_atleta?, cpf_atleta?, data_nasc_atleta?, email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
