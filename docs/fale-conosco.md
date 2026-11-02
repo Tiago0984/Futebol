@@ -18,7 +18,7 @@ Preencher telefone e WhatsApp com DDI + DDD + número, por exemplo no formato `+
 
 Após mudar o `.env`, limpar ou reconstruir o cache de configuração conforme o procedimento do ambiente. Nenhum contato tem valor padrão no código.
 
-O envio usa o mailer já configurado, de forma síncrona. Localmente, `MAIL_MAILER=log` registra o e-mail no log; não envia e-mail externo. O remetente continua sendo o SMTP configurado; `Reply-To` aponta para quem enviou a mensagem. Os testes usam `Mail::fake()` e endereços fictícios, sem entrega externa.
+O envio vai para a fila `database` (job `EnviaEmailFaleConosco`, até 3 tentativas, com 1 e 5 minutos entre elas), processada pelo agendador a cada minuto (`docs/agendador.md`): o e-mail pode levar até cerca de 1 minuto. Com `QUEUE_CONNECTION=sync`, sai na hora, como antes. Localmente, `MAIL_MAILER=log` registra o e-mail no log; não envia e-mail externo. O remetente continua sendo o SMTP configurado; `Reply-To` aponta para quem enviou a mensagem. Os testes usam `Mail::fake()` e endereços fictícios, sem entrega externa.
 
 ## Contrato para o app
 
@@ -53,7 +53,7 @@ O contrato também está em `/api/documentacao`, incluindo a tabela de todas as 
 
 O painel exige login administrativo e permite listar, abrir, filtrar e marcar mensagens como lidas ou não lidas. Abrir uma mensagem não altera a leitura automaticamente. Nome e e-mail ficam preservados como eram no envio, mesmo após alteração ou exclusão do cadastro.
 
-A mensagem é salva antes do e-mail. `status_email_fale_conosco` indica `PENDENTE`, `ENVIADO` ou `FALHOU`; o painel mostra esse estado no detalhe. `ENVIADO` significa aceito pelo mailer configurado, não confirmação de entrega na caixa do destinatário. Em caso de falha, há registro no log com o protocolo e a classe do erro, sem copiar o conteúdo da mensagem. A secretaria pode atender pelo painel; não há reenvio automático de e-mail nem necessidade de o usuário repetir a mensagem.
+A mensagem é salva antes do e-mail. `status_email_fale_conosco` indica `PENDENTE`, `ENVIADO` ou `FALHOU`; o painel mostra esse estado no detalhe. `ENVIADO` significa aceito pelo mailer configurado, não confirmação de entrega na caixa do destinatário. Fica `PENDENTE` enquanto está na fila; vira `FALHOU` depois da última tentativa (ou na hora, com o destinatário inválido), com registro no log com o protocolo e a classe do erro, sem copiar o conteúdo da mensagem. A secretaria pode atender pelo painel; não há reenvio manual nem necessidade de o usuário repetir a mensagem.
 
 O site mantém CSRF, validação em português e limite independente de 3 requisições por minuto por IP. Campos válidos são preservados quando há erro; ao exceder o limite, a página retorna `429` com `Retry-After`.
 

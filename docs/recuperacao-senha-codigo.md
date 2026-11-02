@@ -18,7 +18,7 @@ Resposta `200`, também para conta inexistente, inativa, pedido suprimido pelo i
 { "success": true, "message": "Se o e-mail estiver cadastrado, enviaremos um código de verificação." }
 ```
 
-Só envia para atleta ativo ou responsável com filho ativo. Código de quatro dígitos, gerado com aleatoriedade criptográfica e guardado com hash, válido por 15 minutos. No máximo um envio por minuto por conta. Um novo envio substitui a recuperação anterior daquela conta, inclusive um token já emitido pela validação. Não envia link pela API.
+Só envia para atleta ativo ou responsável com filho ativo. Código de quatro dígitos, gerado com aleatoriedade criptográfica e guardado com hash, válido por 15 minutos. No máximo um envio por minuto por conta. Um novo envio substitui a recuperação anterior daquela conta, inclusive um token já emitido pela validação. Não envia link pela API. O e-mail sai depois da resposta (`defer`, como o push), sem fila: a resposta não espera o SMTP e tem o mesmo tempo com ou sem conta, e o código em texto puro não é gravado na tabela `jobs`. Sem nova tentativa: se o SMTP falhar, fica só o log e a pessoa pede outro código depois de 60 segundos.
 
 Mantidos os limites de 5 requisições/minuto por IP e 3 requisições/10 minutos por e-mail e perfil. Pedidos inválidos também contam nos limitadores de requisições.
 

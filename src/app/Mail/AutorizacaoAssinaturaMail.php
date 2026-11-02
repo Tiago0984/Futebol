@@ -14,6 +14,10 @@ class AutorizacaoAssinaturaMail extends Mailable
 {
     use Queueable, SerializesModels;
 
+    // Valem só quando vai pela fila (cadastro pelo site); o painel envia na hora.
+    public int $tries = 3;
+    public array $backoff = [60, 300];
+
     public function __construct(
         public Atleta $atleta,
         public Responsavel $responsavel,

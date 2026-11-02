@@ -12,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
 
+use function Illuminate\Support\defer;
+
 class RecuperaSenhaPorCodigo
 {
     public const MINUTOS_CODIGO = 15;
@@ -54,14 +56,23 @@ class RecuperaSenhaPorCodigo
 
         if ($envio) {
             [$conta, $codigo] = $envio;
-            try {
-                Mail::to($conta->emailDoApp())->send(new CodigoRecuperacaoSenhaMail($conta->nomeNoApp(), $perfil, $codigo));
-            } catch (Throwable $e) {
-                // Não devolver código/token na API ou registrar esses segredos no log de falhas.
-                Log::warning('Falha ao enviar código de recuperação do app.', [
-                    'perfil' => $perfil, 'id' => $conta->getKey(), 'tipo_erro' => get_class($e),
-                ]);
-            }
+            // Depois da resposta (como o push): a API responde no mesmo tempo com ou sem conta, sem
+            // esperar o SMTP, e o código chega na hora. Sem fila de propósito: o código em texto
+            // puro não é gravado na tabela jobs. Sem nova tentativa; a pessoa pede outro após 60 s.
+            // always: o código já foi gravado, mesmo se outra etapa da resposta der erro.
+            defer(fn () => $this->enviarCodigo($conta, $perfil, $codigo))->always();
+        }
+    }
+
+    private function enviarCodigo(Atleta|Responsavel $conta, string $perfil, string $codigo): void
+    {
+        try {
+            Mail::to($conta->emailDoApp())->send(new CodigoRecuperacaoSenhaMail($conta->nomeNoApp(), $perfil, $codigo));
+        } catch (Throwable $e) {
+            // Não devolver código/token na API ou registrar esses segredos no log de falhas.
+            Log::warning('Falha ao enviar código de recuperação do app.', [
+                'perfil' => $perfil, 'id' => $conta->getKey(), 'tipo_erro' => get_class($e),
+            ]);
         }
     }
 

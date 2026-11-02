@@ -31,6 +31,8 @@ class AgendadorLimpezaTest extends TestCase
             'auth:clear-resets atletas' => '5 3 * * *',
             'auth:clear-resets responsaveis' => '5 3 * * *',
             'model:prune' => '10 3 * * *',
+            'queue:prune-failed --hours=720' => '15 3 * * *',
+            'queue:work --stop-when-empty --max-time=50' => '* * * * *',
         ], $eventos->all());
     }
 

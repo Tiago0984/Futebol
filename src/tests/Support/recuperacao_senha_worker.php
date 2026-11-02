@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Services\RecuperaSenhaPorCodigo;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Defer\DeferredCallbackCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 
@@ -28,6 +29,7 @@ fflush(STDOUT);
 
 if ($dados['operacao'] === 'solicitar') {
     $servico->solicitar($dados['email'], 'atleta');
+    app(DeferredCallbackCollection::class)->invoke(); // o envio sai depois da resposta (defer)
     $resultado = Mail::sent(CodigoRecuperacaoSenhaMail::class)->last()?->codigo;
 } elseif ($dados['operacao'] === 'validar') {
     $resultado = $servico->validar($dados['email'], 'atleta', $dados['codigo']);

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\AutorizacaoAssinaturaMail;
 use App\Models\Atleta;
 use App\Models\Notificacao;
 use App\Models\Responsavel;
@@ -214,6 +215,9 @@ class ResponsavelUnicoTest extends TestCase
         $this->assertSame($enderecosAntes + 1, DB::table('tbl_endereco')->count());       // só o do atleta
         $this->assertDatabaseHas('tbl_responsavel', ['id_responsavel' => $existente, 'nome_responsavel' => 'Responsável Cadastrado']); // não muda
         $this->assertDatabaseHas('tbl_autorizacoes', ['id_atleta' => $atleta->id_atleta, 'id_responsavel' => $existente]);
+        // O link de assinatura do cadastro pelo site vai pela fila (o painel envia na hora).
+        Mail::assertQueued(AutorizacaoAssinaturaMail::class, fn ($m) => $m->hasTo('mae@familia.com'));
+        Mail::assertNotSent(AutorizacaoAssinaturaMail::class);
     }
 
     public function test_site_recusa_cpf_cadastrado_com_outro_email(): void

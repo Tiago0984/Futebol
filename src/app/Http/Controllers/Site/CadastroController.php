@@ -165,11 +165,13 @@ class CadastroController extends Controller
         // 9. Monta o link de assinatura
         $linkAssinatura = route('assinar.show', $tokenAssinatura);
 
-        // 10. Envia o link de assinatura por e-mail ao responsável
+        // 10. Envia o link de assinatura por e-mail ao responsável, pela fila (até 3 tentativas;
+        // a família não espera o SMTP). O link para copiar só aparece se nem a fila aceitar
+        // (ou, com a fila "sync", se o envio falhar na hora). O painel continua enviando na hora.
         $emailEnviado = true;
         try {
             Mail::to($responsavel->email_responsavel)
-                ->send(new AutorizacaoAssinaturaMail($atleta, $responsavel, $linkAssinatura));
+                ->queue(new AutorizacaoAssinaturaMail($atleta, $responsavel, $linkAssinatura));
         } catch (\Throwable $e) {
             $emailEnviado = false;
             Log::error('Falha ao enviar e-mail de autorização de assinatura', [
@@ -179,7 +181,7 @@ class CadastroController extends Controller
         }
 
         $mensagemSucesso = $emailEnviado
-            ? 'Cadastro enviado com sucesso! Um link de assinatura foi enviado para o e-mail do responsável.'
+            ? 'Cadastro enviado com sucesso! Um link de assinatura será enviado em instantes para o e-mail do responsável.'
             : 'Cadastro enviado com sucesso, mas não foi possível enviar o e-mail ao responsável. Use o link abaixo para enviar manualmente.';
 
         return redirect()->route('cadastro.index')
