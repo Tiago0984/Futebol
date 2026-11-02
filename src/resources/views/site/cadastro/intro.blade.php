@@ -14,7 +14,7 @@
                 <ul>
                     <li><i class="fa fa-users"></i> Categorias disponíveis: <strong>9 a 17 anos</strong></li>
                     <li><i class="fa fa-id-card-o"></i> <strong>CPF e RG</strong> do atleta</li>
-                    <li><i class="fa fa-whatsapp"></i> <strong>WhatsApp do responsável</strong> para assinatura digital</li>
+                    <li><i class="fa fa-envelope-o"></i> <strong>E-mail do responsável</strong> para assinatura digital</li>
                     <li><i class="fa fa-camera"></i> Foto do atleta <strong>(opcional)</strong></li>
                     <li><i class="fa fa-check-circle"></i> Após envio, nossa equipe <strong>entrará em contato</strong></li>
                 </ul>
