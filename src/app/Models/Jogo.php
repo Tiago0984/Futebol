@@ -145,34 +145,25 @@ class Jogo extends Model
     public const ANTECEDENCIA_MINUTOS = 60;
     public const ANTECEDENCIA_TEXTO   = '1 hora';
 
-    // Titulares por modalidade (Fase D, Etapa D2): o contador da escalação informa quando bate o número de uma
-    // delas e avisa acima do maior (só aviso: a modalidade do jogo não é cadastrada)
-    public const TITULARES_POR_MODALIDADE = [5 => 'futsal', 7 => 'society', 11 => 'campo'];
-
     /**
-     * Resumo da escalação de um time (inscrições escaladas nele): quantos titulares, reservas e a definir, e os
-     * avisos (sem goleiro titular; mais titulares que o campo). 'modalidade' = a de quem tem exatamente esse
-     * número de titulares ("número do futsal"), ou null.
+     * Resumo da escalação de um time (inscrições escaladas nele): quantos titulares, reservas e a definir, e o
+     * aviso sem goleiro titular. Mais de Escalacao::TITULARES_MAX titulares não é salvo (03/11/2026; antes, só avisava
+     * e mostrava o "número do futsal/society/campo").
      */
     public static function resumoDaEscalacao(Collection $inscricoes): array
     {
         $titulares = $inscricoes->where('titular_evento_atleta', 'TITULAR');
-        $maximo    = max(array_keys(self::TITULARES_POR_MODALIDADE));
         $avisos    = [];
 
         if ($titulares->isNotEmpty() && ! $titulares->contains('posicao_evento_atleta', 'GOLEIRO')) {
             $avisos[] = 'Sem goleiro titular.';
         }
-        if ($titulares->count() > $maximo) {
-            $avisos[] = "Mais de {$maximo} titulares (o número do " . self::TITULARES_POR_MODALIDADE[$maximo] . ').';
-        }
 
         return [
-            'titulares'  => $titulares->count(),
-            'reservas'   => $inscricoes->where('titular_evento_atleta', 'RESERVA')->count(),
-            'a_definir'  => $inscricoes->whereNull('titular_evento_atleta')->count(),
-            'modalidade' => self::TITULARES_POR_MODALIDADE[$titulares->count()] ?? null,
-            'avisos'     => $avisos,
+            'titulares' => $titulares->count(),
+            'reservas'  => $inscricoes->where('titular_evento_atleta', 'RESERVA')->count(),
+            'a_definir' => $inscricoes->whereNull('titular_evento_atleta')->count(),
+            'avisos'    => $avisos,
         ];
     }
 

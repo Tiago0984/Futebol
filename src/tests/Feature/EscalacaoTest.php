@@ -3,7 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Atleta;
-use App\Services\EscalacaoDaCategoria;
+use App\Services\Escalacao;
 use Illuminate\Support\Facades\DB;
 use Tests\CriaDadosDeAtleta;
 use Tests\RefreshBancoDeTestes;
@@ -11,9 +11,9 @@ use Tests\TestCase;
 
 /**
  * "Nossas categorias" da home (03/11/2026): a escalação de cada categoria num campo, pelas posições do cadastro
- * (EscalacaoDaCategoria). A formação é a que põe mais atletas na posição deles; o resto vai para o banco.
+ * (Escalacao). A formação é a que põe mais atletas na posição deles; o resto vai para o banco.
  */
-class SiteHomeEscalacaoTest extends TestCase
+class EscalacaoTest extends TestCase
 {
     use RefreshBancoDeTestes, CriaDadosDeAtleta;
 
@@ -40,7 +40,7 @@ class SiteHomeEscalacaoTest extends TestCase
     {
         $atletas = Atleta::with(['posicoes', 'convocacoes'])->where('status_atleta', 'ATIVO')->orderBy('nome_atleta')->get();
 
-        return EscalacaoDaCategoria::montar($atletas, $this->idSub13M);
+        return Escalacao::daCategoria($atletas, $this->idSub13M);
     }
 
     private function quemJogaEm(array $escalacao, string $sigla): array
@@ -107,8 +107,8 @@ class SiteHomeEscalacaoTest extends TestCase
 
     public function test_nome_curto(): void
     {
-        $this->assertSame('Ana Silva', EscalacaoDaCategoria::nomeCurto('Ana Maria Gomes da Silva'));
-        $this->assertSame('Caio', EscalacaoDaCategoria::nomeCurto(' Caio '));
+        $this->assertSame('Ana Silva', Escalacao::nomeCurto('Ana Maria Gomes da Silva'));
+        $this->assertSame('Caio', Escalacao::nomeCurto(' Caio '));
     }
 
     public function test_home_mostra_a_escalacao_de_cada_categoria(): void

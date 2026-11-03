@@ -433,7 +433,8 @@
                 <div class="card-body">
                     <div class="row g-3">
                         @foreach ($blocosDosTimes as $bloco)
-                        <div class="{{ $blocosDosTimes->count() > 1 ? 'col-md-6' : 'col-12' }}">
+                        {{-- Cada time na largura toda (03/11/2026: o campo e a lista não cabem em meia tela) --}}
+                        <div class="col-12">
                             @if ($bloco['externo'])
                             {{-- Time externo: travado, só para ver (sem select, sem remover) --}}
                             <div class="border rounded h-100 bg-body-tertiary js-bloco-externo" title="Time externo: só para visualizar">
@@ -464,17 +465,8 @@
                                     {{ $bloco['titulo'] }}
                                     <span class="fw-normal text-muted small">· {{ $bloco['papel'] }} ({{ $bloco['inscricoes']->count() }})</span>
                                 </div>
-                                @include('admin.calendario._resumo_da_escalacao', ['lista' => $bloco['inscricoes']])
-                                @include('admin.calendario._inscritos_do_bloco', ['lista' => $bloco['inscricoes'], 'vazio' => 'Ninguém escalado neste time.',
-                                    'formEscalacao' => 'escalacao-' . $bloco['id_time']])
-                                @if ($bloco['inscricoes']->isNotEmpty())
-                                {{-- Os selects de posição e titular/reserva das linhas apontam para este formulário (atributo form) --}}
-                                <form id="escalacao-{{ $bloco['id_time'] }}" class="px-3 py-2 border-top text-end" method="POST"
-                                      action="{{ route('admin.calendario.eventos.escalacao.salvar', [$evento->id_evento_calendario, $bloco['id_time']]) }}">
-                                    @csrf @method('PATCH')
-                                    <button type="submit" class="btn btn-sm btn-primary"><i class="bi bi-check2"></i> Salvar escalação</button>
-                                </form>
-                                @endif
+                                {{-- Escalação no campo (03/11/2026): formação, vagas, lista dos escalados e "Salvar escalação" --}}
+                                @include('admin.calendario._campo_do_time')
                             </div>
                             </div>
                             @endif

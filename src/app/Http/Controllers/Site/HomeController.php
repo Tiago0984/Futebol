@@ -12,7 +12,7 @@ use App\Models\Banner;
 use App\Models\Noticia;
 use App\Models\Campeonato;
 use App\Models\Video;
-use App\Services\EscalacaoDaCategoria;
+use App\Services\Escalacao;
 
 class HomeController extends Controller
 {
@@ -43,14 +43,14 @@ class HomeController extends Controller
             ->values();
 
         // Escalação de cada categoria (03/11/2026): os atletas ativos num campo, pelas posições do cadastro, com a
-        // camisa da convocação mais recente na categoria (EscalacaoDaCategoria)
+        // camisa da convocação mais recente na categoria (Escalacao)
         $atletasPorCategoria = Atleta::with(['posicoes', 'categoriasAtivas', 'convocacoes'])
             ->where('status_atleta', 'ATIVO')
             ->orderBy('nome_atleta')
             ->get()
             ->groupBy(fn ($atleta) => $atleta->categoriasAtivas->first()?->id_categoria);
 
-        $escalacoes = $categoriasDaAcj->mapWithKeys(fn ($categoria) => [$categoria->id_categoria => EscalacaoDaCategoria::montar(
+        $escalacoes = $categoriasDaAcj->mapWithKeys(fn ($categoria) => [$categoria->id_categoria => Escalacao::daCategoria(
             $atletasPorCategoria->get($categoria->id_categoria, collect())->values(),
             $categoria->id_categoria,
         )])->all();

@@ -11553,3 +11553,179 @@ body.lp-body {
 @media (prefers-reduced-motion: reduce) {
     .escalacao-jogador { animation: none; }
 }
+
+/* ==========================================================================
+   79. ESCALAÇÃO NO CAMPO NA TELA DO JOGO — PAINEL (03/11/2026)
+   O campo é o da home (seção 78: .escalacao-campo, .escalacao-gramado, .escalacao-jogador); aqui, as cores do
+   tema do painel (claro e escuro), a vaga escolhida, o "×" de tirar e a lista dos escalados ao lado.
+   JS em coderatech/js/escalacao-campo.js; partial admin/calendario/_campo_do_time.
+   ========================================================================== */
+.admin-campo-barra {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+}
+.admin-campo-formacao { width: auto; }
+.admin-campo-contador { margin-left: auto; font-size: 0.85rem; color: var(--bs-secondary-color); }
+.admin-campo-contador strong { color: var(--bs-body-color); }
+
+.admin-campo-corpo {
+    display: grid;
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: 1rem;
+    padding: 0.75rem;
+    align-items: stretch;
+}
+.admin-campo .escalacao-campo { border-color: var(--bs-border-color); background: var(--bs-tertiary-bg); }
+.admin-campo .escalacao-jogador { animation: none; }
+.admin-campo .escalacao-jogador.vazio { opacity: 1; }
+.admin-campo .escalacao-jogador.vazio .escalacao-foto {
+    border: 2px dashed rgba(255, 255, 255, 0.85);
+    background: rgba(0, 0, 0, 0.18);
+    font-size: 20px;
+    box-shadow: none;
+}
+.admin-campo .escalacao-jogador.vazio .escalacao-placa { background: rgba(255, 255, 255, 0.7); color: #555; }
+.admin-campo-vaga-botao {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0;
+    border: 0;
+    background: none;
+    cursor: pointer;
+}
+.admin-campo-vaga-botao:hover .escalacao-foto { transform: scale(1.07); }
+.admin-campo-vaga-botao:focus-visible { outline: none; }
+.admin-campo-vaga-botao:focus-visible .escalacao-foto { outline: 3px solid #fff; outline-offset: 2px; }
+.admin-campo .escalacao-foto { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+.admin-campo .escalacao-jogador.escolhida .escalacao-foto {
+    border-color: var(--aacj-red, #ff4a17);
+    border-style: solid;
+    box-shadow: 0 0 0 4px rgba(255, 74, 23, 0.45);
+}
+.admin-campo-tirar {
+    position: absolute;
+    top: -6px;
+    left: calc(50% - 36px);
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: #dc3545;
+    color: #fff;
+    font-size: 14px;
+    line-height: 20px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.admin-campo-avisos { color: var(--bs-warning-text-emphasis); font-size: 0.85rem; font-weight: 600; }
+.admin-campo-avisos:empty { display: none; }
+
+/* Arrastar: a vaga sob o atleta arrastado, o atleta que está sendo arrastado e a lista como destino (tirar do campo) */
+.admin-campo-escolher[draggable="true"],
+.admin-campo-vaga-botao[draggable="true"] { cursor: grab; }
+.admin-campo .escalacao-jogador.arrastando { opacity: 0.45; }
+.admin-campo-atleta.arrastando { opacity: 0.5; }
+.admin-campo .escalacao-jogador.alvo .escalacao-foto {
+    border-color: #fff;
+    border-style: solid;
+    box-shadow: 0 0 0 5px rgba(25, 135, 84, 0.75);
+    transform: scale(1.12);
+}
+.admin-campo-lista.alvo { outline: 2px dashed var(--bs-secondary-color); outline-offset: -2px; }
+
+/* Lista dos escalados: com a mesma altura do campo (a coluna estica com a linha da grade e a lista a ocupa
+   por inteiro, rolando o resto); no celular, embaixo do campo, com altura própria */
+.admin-campo-lado { position: relative; min-height: 240px; }
+.admin-campo-lista {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 14px;
+    background: var(--bs-body-bg);
+}
+.admin-campo-dica {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color);
+    background: var(--bs-body-bg);
+    font-size: 0.8rem;
+    color: var(--bs-secondary-color);
+    transition: background 0.2s ease;
+}
+.admin-campo-dica strong { color: var(--bs-body-color); }
+.admin-campo-dica-alerta { background: var(--bs-warning-bg-subtle); color: var(--bs-warning-text-emphasis); }
+.admin-campo-atleta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent);
+}
+.admin-campo-atleta:last-child { border-bottom: 0; }
+.admin-campo-atleta.joga-na-vaga { background: var(--bs-success-bg-subtle); }
+.admin-campo-escolher {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    width: 100%;
+    padding: 0.25rem;
+    border: 0;
+    border-radius: 0.4rem;
+    background: none;
+    color: inherit;
+    text-align: left;
+}
+.admin-campo-escolher:hover { background: var(--bs-tertiary-bg); }
+.admin-campo-foto {
+    display: flex;
+    flex: none;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    overflow: hidden;
+    border-radius: 50%;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+.admin-campo-atleta.no-campo .admin-campo-foto { box-shadow: 0 0 0 2px var(--bs-success); }
+.admin-campo-foto img { width: 100%; height: 100%; object-fit: cover; }
+.admin-campo-info { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.admin-campo-nome { font-weight: 600; }
+.admin-campo-status { flex: none; }
+.admin-campo-acoes {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    padding-left: 2.85rem;
+}
+.admin-campo-acoes .admin-escalacao-time { flex: 1 1 180px; min-width: 0; }
+.admin-campo-salvar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.5rem 0.75rem;
+    border-top: 1px solid var(--bs-border-color);
+}
+
+@media (max-width: 991px) {
+    .admin-campo-corpo { grid-template-columns: minmax(0, 1fr); }
+    .admin-campo-lado { position: static; min-height: 0; }
+    .admin-campo-lista { position: static; max-height: 480px; }
+}
+/* A regra antiga do site .form-select { height: 52px } pega os selects do painel: aqui, a altura normal */
+.admin-campo .form-select { height: auto; }
+.admin-campo-acoes .form-select { width: auto; max-width: 100%; padding-top: 0.15rem; padding-bottom: 0.15rem; font-size: 0.8rem; }
+.admin-campo-acoes small { font-size: 0.75rem; }

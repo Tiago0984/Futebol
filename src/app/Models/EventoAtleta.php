@@ -77,16 +77,11 @@ class EventoAtleta extends Model
             + ($idTime === null ? ['posicao_evento_atleta' => null] : []);
     }
 
-    // Posição no jogo para a tela: a gravada ou, sem ela, a principal do atleta (sugerida, ainda não gravada).
-    // Precisa de atleta.posicoes carregado
+    // Posição no jogo para ordenar a lista: a gravada ou, sem ela, a principal do atleta. Precisa de
+    // atleta.posicoes carregado
     public function posicaoNaTela(): ?string
     {
         return $this->posicao_evento_atleta ?? $this->atleta?->posicoes->first()?->posicao_atleta_posicao;
-    }
-
-    public function posicaoSugerida(): bool
-    {
-        return $this->posicao_evento_atleta === null && $this->posicaoNaTela() !== null;
     }
 
     // Ordem na escalação: pela posição (do goleiro ao ataque, a ordem de Atleta::POSICOES), sem posição no fim

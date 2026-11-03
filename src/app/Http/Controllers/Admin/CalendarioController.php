@@ -16,6 +16,7 @@ use App\Models\GradeTreino;
 use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Models\Time;
+use App\Services\Escalacao;
 use App\Support\CentralDoCampeonato;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Http\Request;
@@ -421,6 +422,7 @@ class CalendarioController extends Controller
             'escalacao'           => 'required|array',
             'escalacao.*.posicao' => ['nullable', Rule::in(array_keys(Atleta::POSICOES))],
             'escalacao.*.titular' => ['nullable', Rule::in(array_keys(EventoAtleta::TITULARIDADES))],
+            'formacao'            => ['nullable', Rule::in(array_keys(Escalacao::FORMACOES))],
         ], [
             'escalacao.*.posicao.in' => 'Posição inválida: escolha uma da lista.',
             'escalacao.*.titular.in' => 'Escolha Titular, Reserva ou A definir.',
@@ -429,6 +431,13 @@ class CalendarioController extends Controller
         $inscricoes = $evento->inscricoes()->where('id_time', $time->id_time)
             ->whereIn('id_atleta', array_keys($request->input('escalacao')))
             ->get();
+
+        // No máximo 11 titulares no campo (03/11/2026); o resto é reserva. Conta só quem é do time no jogo
+        $titulares = $inscricoes->filter(fn ($i) => $request->input("escalacao.{$i->id_atleta}.titular") === 'TITULAR')->count();
+        if ($titulares > Escalacao::TITULARES_MAX) {
+            return back()->with('erro', "O {$time->nome_time} ficaria com {$titulares} titulares: o máximo é "
+                . Escalacao::TITULARES_MAX . '. Deixe os outros como reserva.');
+        }
 
         DB::transaction(function () use ($inscricoes, $request) {
             foreach ($inscricoes as $inscricao) {
@@ -443,10 +452,12 @@ class CalendarioController extends Controller
         $resumo = Jogo::resumoDaEscalacao($evento->inscricoes()->where('id_time', $time->id_time)
             ->whereHas('atleta', fn ($q) => $q->where('status_atleta', 'ATIVO'))->get());
 
+        // A formação escolhida na tela volta na próxima abertura (no empate de Escalacao::doJogo; não é gravada)
         return back()
             ->with('sucesso', "Escalação do {$time->nome_time} salva: {$resumo['titulares']} titular(es), "
                 . "{$resumo['reservas']} reserva(s), {$resumo['a_definir']} a definir.")
-            ->with('aviso', $resumo['avisos'] ? implode(' ', $resumo['avisos']) : null);
+            ->with('aviso', $resumo['avisos'] ? implode(' ', $resumo['avisos']) : null)
+            ->with("formacao.{$time->id_time}", $request->input('formacao'));
     }
 
     /**

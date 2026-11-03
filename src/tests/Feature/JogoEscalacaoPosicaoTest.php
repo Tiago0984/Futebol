@@ -3,19 +3,21 @@
 namespace Tests\Feature;
 
 use App\Models\Atleta;
+use App\Models\EventoAtleta;
 use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Models\User;
+use App\Services\Escalacao;
 use Illuminate\Support\Facades\DB;
 use Tests\CriaDadosDeAtleta;
 use Tests\RefreshBancoDeTestes;
 use Tests\TestCase;
 
 /**
- * Fase D, Etapa D2: posição no jogo e titular/reserva (por jogo) na escalação de cada time da AACJ. A tela
- * sugere a posição principal do atleta (pré-selecionada, só gravada no "Salvar escalação"), divide o time em
- * Titulares, Reservas e A definir, conta os titulares (5 futsal, 7 society, 11 campo) e avisa sem goleiro titular
- * e acima de 11. Trocar de time limpa o titular/reserva; ficar sem time limpa os dois. Sem aviso ao atleta.
+ * Fase D, Etapa D2: posição no jogo e titular/reserva (por jogo) na escalação de cada time da AACJ. Desde
+ * 03/11/2026, a tela é um campo (Escalacao::doJogo reconhece a formação pelas posições gravadas), nunca mais de 11
+ * titulares (o servidor recusa) e quem está fora do campo é reserva; avisa sem goleiro titular. Trocar de time
+ * limpa o titular/reserva; ficar sem time limpa os dois. Sem aviso ao atleta.
  */
 class JogoEscalacaoPosicaoTest extends TestCase
 {
@@ -38,39 +40,61 @@ class JogoEscalacaoPosicaoTest extends TestCase
         $this->rival    = $this->time('Rival FC', 'EXTERNO');
     }
 
-    public function test_tela_sugere_a_principal_e_salvar_grava_posicao_e_titular(): void
+    public function test_tela_mostra_o_campo_e_salvar_grava_posicao_e_titular(): void
     {
         $ana  = $this->atleta('Ana', ['VOLANTE', 'MEIA_CENTRAL']);
         $bia  = $this->atleta('Bia', []);
         $jogo = $this->amistosoCom([$ana, $bia]);
 
-        // Sugerida: pré-selecionada, mas nada gravado
+        // Campo (03/11/2026): formação, os dois na lista e nada gravado até salvar
         $this->tela($jogo)
-            ->assertSee('<option value="VOLANTE" selected>VOL · Volante (sugerida)</option>', false)
-            ->assertSee('Salvar escalação')
-            ->assertSee('A definir (2)');
+            ->assertSee('js-campo-dados', false)
+            ->assertSee('<option value="4-3-3" selected>4-3-3</option>', false)
+            ->assertSee('data-id="' . $ana . '"', false)
+            ->assertSee('data-id="' . $bia . '"', false)
+            ->assertSee('Sugerir pelo cadastro')
+            ->assertSee('Salvar escalação');
         $this->assertNull($this->linha($jogo, $ana)->posicao_evento_atleta);
 
-        $this->salvar($jogo, $this->acj, [
-            $ana => ['posicao' => 'VOLANTE', 'titular' => 'TITULAR'],
-            $bia => ['posicao' => 'GOLEIRO', 'titular' => 'RESERVA'],
-        ])->assertSessionHas('sucesso', 'Escalação do AACJ Sub-13 salva: 1 titular(es), 1 reserva(s), 0 a definir.')
-          ->assertSessionHas('aviso', 'Sem goleiro titular.');
+        // O que o JS manda: o titular com a posição da vaga; quem está fora do campo, reserva sem posição
+        $this->actingAs($this->admin, 'admin')
+            ->patch(route('admin.calendario.eventos.escalacao.salvar', [$jogo->id_evento, $this->acj]), [
+                'formacao'  => '4-4-2',
+                'escalacao' => [
+                    $ana => ['posicao' => 'VOLANTE', 'titular' => 'TITULAR'],
+                    $bia => ['posicao' => '', 'titular' => 'RESERVA'],
+                ],
+            ])
+            ->assertSessionHas('sucesso', 'Escalação do AACJ Sub-13 salva: 1 titular(es), 1 reserva(s), 0 a definir.')
+            ->assertSessionHas('aviso', 'Sem goleiro titular.');
 
         $this->assertSame(['VOLANTE', 'TITULAR'], $this->valores($jogo, $ana));
-        $this->assertSame(['GOLEIRO', 'RESERVA'], $this->valores($jogo, $bia));
+        $this->assertSame([null, 'RESERVA'], $this->valores($jogo, $bia));
         $this->assertSame(0, Notificacao::count()); // só no admin
 
-        // Gravada: sem "(sugerida)"; grupos Titulares e Reservas
-        $this->tela($jogo)
-            ->assertSee('<option value="VOLANTE" selected>VOL · Volante</option>', false)
-            ->assertDontSee('(sugerida)')
-            ->assertSee('Titulares (1)')
-            ->assertSee('Reservas (1)');
+        // Reaberta logo depois: a formação escolhida (o volante cabe nas quatro; no empate, a que foi salva)
+        $this->tela($jogo)->assertSee('<option value="4-4-2" selected>4-4-2</option>', false);
 
         // Vazio volta a "a definir"
         $this->salvar($jogo, $this->acj, [$ana => ['posicao' => '', 'titular' => '']])->assertSessionHasNoErrors();
         $this->assertSame([null, null], $this->valores($jogo, $ana));
+    }
+
+    public function test_no_maximo_onze_titulares(): void
+    {
+        $atletas = array_map(fn ($n) => $this->atleta("Atleta {$n}", ['ZAGUEIRO']), range(1, 12));
+        $jogo    = $this->amistosoCom($atletas);
+        $todos   = fn (string $titular) => collect($atletas)->mapWithKeys(fn ($id) => [$id => ['posicao' => 'ZAGUEIRO', 'titular' => $titular]])->all();
+
+        $this->salvar($jogo, $this->acj, $todos('TITULAR'))
+            ->assertSessionHas('erro', 'O AACJ Sub-13 ficaria com 12 titulares: o máximo é 11. Deixe os outros como reserva.');
+        $this->assertSame(0, DB::table('tbl_evento_atleta')->where('id_evento_calendario', $jogo->id_evento)->whereNotNull('titular_evento_atleta')->count());
+
+        // Com 11 titulares e um reserva, salva
+        $escalacao = $todos('TITULAR');
+        $escalacao[$atletas[11]]['titular'] = 'RESERVA';
+        $this->salvar($jogo, $this->acj, $escalacao)
+            ->assertSessionHas('sucesso', 'Escalação do AACJ Sub-13 salva: 11 titular(es), 1 reserva(s), 0 a definir.');
     }
 
     public function test_valores_invalidos_e_time_que_nao_e_da_aacj_sao_recusados(): void
@@ -134,24 +158,28 @@ class JogoEscalacaoPosicaoTest extends TestCase
         $this->assertSame($this->acjB, (int) $this->linha($jogo, $ana)->id_time);
     }
 
-    public function test_contador_de_titulares_por_modalidade_e_acima_de_onze(): void
+    public function test_campo_reconhece_a_formacao_pelas_posicoes_gravadas(): void
     {
-        $vazia = fn (array $titulares) => collect($titulares)->map(fn ($posicao) => (object) [
-            'titular_evento_atleta' => 'TITULAR', 'posicao_evento_atleta' => $posicao,
-        ]);
+        $inscricoes = fn (array $titulares) => collect($titulares)->values()->map(fn ($posicao, $i) => (new EventoAtleta)->forceFill([
+            'id_atleta' => $i + 1, 'titular_evento_atleta' => 'TITULAR', 'posicao_evento_atleta' => $posicao,
+        ]));
 
-        $cinco = Jogo::resumoDaEscalacao($vazia(['GOLEIRO', 'ZAGUEIRO', 'VOLANTE', 'MEIA_CENTRAL', 'CENTROAVANTE']));
-        $this->assertSame('futsal', $cinco['modalidade']);
-        $this->assertSame([], $cinco['avisos']);
+        // As posições de um 3-5-2 completo: a formação volta e cada um na vaga da posição dele
+        $tres = ['GOLEIRO', 'ZAGUEIRO', 'LIBERO', 'ZAGUEIRO', 'MEIA_ESQUERDA', 'VOLANTE', 'MEIA_OFENSIVO', 'VOLANTE',
+            'MEIA_DIREITA', 'CENTROAVANTE', 'SEGUNDO_ATACANTE'];
+        $campo = Escalacao::doJogo($inscricoes($tres));
+        $this->assertSame('3-5-2', $campo['formacao']);
+        $this->assertSame(range(1, 11), $campo['vagas']);
+        $this->assertSame([], $campo['sem_vaga']);
 
-        $this->assertSame('society', Jogo::resumoDaEscalacao($vazia(['GOLEIRO', ...array_fill(0, 6, 'ZAGUEIRO')]))['modalidade']);
-        $this->assertSame('campo', Jogo::resumoDaEscalacao($vazia(['GOLEIRO', ...array_fill(0, 10, 'ZAGUEIRO')]))['modalidade']);
+        // Só o goleiro: empata em todas; vale a escolhida na tela (ou a primeira)
+        $this->assertSame('4-3-3', Escalacao::doJogo($inscricoes(['GOLEIRO']))['formacao']);
+        $this->assertSame('4-2-3-1', Escalacao::doJogo($inscricoes(['GOLEIRO']), '4-2-3-1')['formacao']);
 
-        $doze = Jogo::resumoDaEscalacao($vazia(['GOLEIRO', ...array_fill(0, 11, 'ZAGUEIRO')]));
-        $this->assertNull($doze['modalidade']);
-        $this->assertSame(['Mais de 11 titulares (o número do campo).'], $doze['avisos']);
+        // Doze titulares gravados antes do limite: um fica sem vaga (vira reserva ao salvar)
+        $this->assertCount(1, Escalacao::doJogo($inscricoes(['GOLEIRO', ...array_fill(0, 11, 'ZAGUEIRO')]))['sem_vaga']);
 
-        $this->assertSame(['Sem goleiro titular.'], Jogo::resumoDaEscalacao($vazia(['ZAGUEIRO']))['avisos']);
+        $this->assertSame(['Sem goleiro titular.'], Jogo::resumoDaEscalacao($inscricoes(['ZAGUEIRO']))['avisos']);
     }
 
     public function test_tela_ordena_pela_posicao_e_jogadores_do_time_mostram_posicao_e_titular(): void

@@ -1,11 +1,7 @@
 {{-- Nossas categorias (03/11/2026, no estilo das escalações de videogame): à esquerda as categorias com atletas
-     ativos; à direita a escalação da escolhida, num campo, pelas posições do cadastro (EscalacaoDaCategoria), e o
+     ativos; à direita a escalação da escolhida, num campo, pelas posições do cadastro (Escalacao), e o
      banco com o resto. Não é a escalação de um jogo (essa fica só no admin). Trocar de categoria não recarrega a
      página (script.js, "Nossas categorias"). Estilos no estilo.css, seção 78 --}}
-@php
-    $iniciais = fn ($nome) => collect(preg_split('/\s+/', trim($nome)))->filter()->map(fn ($p) => mb_substr($p, 0, 1))
-        ->pipe(fn ($l) => $l->count() > 1 ? $l->first() . $l->last() : $l->first());
-@endphp
 <section class="section-escalacao">
 	<div class="container">
 
@@ -71,7 +67,7 @@
 									@if($vaga['atleta'] && $vaga['atleta']->urlFoto())
 										<img src="{{ $vaga['atleta']->urlFoto() }}" alt="" loading="lazy">
 									@elseif($vaga['atleta'])
-										{{ mb_strtoupper($iniciais($vaga['atleta']->nome_atleta)) }}
+										{{ \App\Services\Escalacao::iniciais($vaga['atleta']->nome_atleta) }}
 									@else
 										?
 									@endif
@@ -79,7 +75,7 @@
 								</span>
 								<span class="escalacao-placa">
 									@if($vaga['camisa'])<b>{{ $vaga['camisa'] }}</b>@endif
-									{{ $vaga['atleta'] ? \App\Services\EscalacaoDaCategoria::nomeCurto($vaga['atleta']->nome_atleta) : 'A definir' }}
+									{{ $vaga['atleta'] ? \App\Services\Escalacao::nomeCurto($vaga['atleta']->nome_atleta) : 'A definir' }}
 								</span>
 							</div>
 							@endforeach
@@ -90,7 +86,7 @@
 							@forelse($escalacao['reservas'] as $reserva)
 							<div class="escalacao-reserva" title="{{ $reserva['atleta']->nome_atleta }}">
 								<span class="escalacao-reserva-numero">{{ $reserva['camisa'] ?? '' }}</span>
-								<span class="escalacao-reserva-nome">{{ \App\Services\EscalacaoDaCategoria::nomeCurto($reserva['atleta']->nome_atleta) }}</span>
+								<span class="escalacao-reserva-nome">{{ \App\Services\Escalacao::nomeCurto($reserva['atleta']->nome_atleta) }}</span>
 								<span class="escalacao-reserva-sigla">{{ $reserva['sigla'] }}</span>
 							</div>
 							@empty
