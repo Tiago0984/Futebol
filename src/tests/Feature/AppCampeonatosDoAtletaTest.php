@@ -53,7 +53,9 @@ class AppCampeonatosDoAtletaTest extends TestCase
             'tipo_label', 'banner_url', 'data_inicio_campeonato', 'situacao', 'convocada'])));
         $this->assertStringEndsWith('/futebol/images/campeonatos/logo.png', $data[0]['logo_url']);
         // Só a categoria dele (o Sub-15 do campeonato fica fora)
-        $this->assertSame([['id_categoria' => $this->sub13, 'nome_categoria' => 'Sub-13', 'sexo_categoria' => 'M', 'rotulo' => 'Sub-13 Masculino']], $data[0]['categorias']);
+        // (o resumo por categoria é conferido no AppCampeonatoAndamentoTest)
+        $this->assertSame([['id_categoria' => $this->sub13, 'nome_categoria' => 'Sub-13', 'sexo_categoria' => 'M', 'rotulo' => 'Sub-13 Masculino',
+            'encerrada' => false, 'campeao' => null]], array_map(fn ($c) => array_diff_key($c, ['resumo' => 0]), $data[0]['categorias']));
         $this->assertSame([['id_categoria' => $this->sub13, 'rotulo' => 'Sub-13 Masculino', 'camisa' => 8]], $data[0]['convocacoes']);
     }
 

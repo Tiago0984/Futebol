@@ -70,7 +70,7 @@ class AppCampeonatosAppTest extends TestCase
 
         $this->assertSame([
             'fase_atual' => 'GRUPOS', 'fase_atual_label' => 'Fase de grupos', 'rodada_atual' => 2, 'total_rodadas' => 3,
-            'jogos_realizados' => 2, 'total_jogos' => 4,
+            'jogos_realizados' => 2, 'total_jogos' => 4, 'jogos_aguardando_resultado' => 0,
         ], $this->resumoDaLista());
 
         // Grupos jogados e a semifinal marcada (sem placar): fase atual é a semifinal, sem rodada; o total cresce
@@ -79,7 +79,7 @@ class AppCampeonatosAppTest extends TestCase
         $this->assertSame([
             'fase_atual' => 'SEMIFINAL', 'fase_atual_label' => 'Semifinal', 'rodada_atual' => null, 'total_rodadas' => null,
             // os 3 ocultos/cancelados/rascunho receberam placar no update, mas continuam fora
-            'jogos_realizados' => 4, 'total_jogos' => 5,
+            'jogos_realizados' => 4, 'total_jogos' => 5, 'jogos_aguardando_resultado' => 0,
         ], $this->resumoDaLista());
 
         // Sem nenhum jogo: tudo vazio
@@ -89,7 +89,7 @@ class AppCampeonatosAppTest extends TestCase
         ]);
         $this->assertSame([
             'fase_atual' => null, 'fase_atual_label' => null, 'rodada_atual' => null, 'total_rodadas' => null,
-            'jogos_realizados' => 0, 'total_jogos' => 0,
+            'jogos_realizados' => 0, 'total_jogos' => 0, 'jogos_aguardando_resultado' => 0,
         ], collect($this->getJson('/api/v1/campeonatos')->json('data'))->firstWhere('nome_campeonato', 'Copa Nova')['resumo']);
     }
 

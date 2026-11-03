@@ -246,19 +246,21 @@ class AppDoAtleta
             ->pluck('id_categoria')->map(fn ($id) => (int) $id)
             ->when($pelaCategoria->contains($c->id_campeonato), fn ($ids) => $ids->push((int) $idCategoriaAtual))
             ->unique()->values()->all()])->all();
-        $resumos = Campeonato::resumos($campeonatos, $categorias);
+        $andamentos = Campeonato::andamentos($campeonatos, $categorias);
 
         return $campeonatos
-            ->map(function (Campeonato $campeonato) use ($convocacoes, $categorias, $resumos, $hoje) {
+            ->map(function (Campeonato $campeonato) use ($convocacoes, $categorias, $andamentos, $hoje) {
                 $doCampeonato = $convocacoes->get($campeonato->id_campeonato, collect());
                 $ids = $categorias[$campeonato->id_campeonato];
+                // Só as categorias do atleta, com resumo, encerrada e campeao; "encerrado" conta todas as do campeonato
+                $andamento = $campeonato->categoriasComAndamento($andamentos[$campeonato->id_campeonato]['categorias'], $campeonato->campeoesNaApi(), $ids);
 
                 return collect($campeonato->toArray())->only([
                     'id_campeonato', 'nome_campeonato', 'organizador_campeonato', 'descricao_campeonato', 'tipo_campeonato', 'tipo_label',
                     'logo_evento', 'logo_url', 'banner_evento', 'banner_url', 'data_inicio_campeonato', 'data_fim_campeonato', 'local_evento',
                 ])->all() + [
                     'situacao'     => $campeonato->data_inicio_campeonato->toDateString() <= $hoje ? 'EM_ANDAMENTO' : 'PROXIMO',
-                    'categorias'   => $campeonato->categoriasNaApi($ids),
+                    'categorias'   => $andamento['categorias'],
                     'convocada'    => $doCampeonato->isNotEmpty(),
                     'convocacoes'  => $doCampeonato->sortBy(fn ($c) => [$c->categoria?->idade_max_categoria, $c->id_convocacao])
                         ->map(fn ($c) => [
@@ -266,7 +268,8 @@ class AppDoAtleta
                             'rotulo'       => $c->categoria?->rotulo,
                             'camisa'       => $c->camisa_convocacao,
                         ])->values()->all(),
-                    'resumo'       => $resumos[$campeonato->id_campeonato],
+                    'resumo'       => $andamentos[$campeonato->id_campeonato]['resumo'],
+                    'encerrado'    => $andamento['encerrado'],
                 ];
             })
             ->values()->all();

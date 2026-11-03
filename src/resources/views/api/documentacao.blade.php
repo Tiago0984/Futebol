@@ -162,14 +162,22 @@
         <div class="tabela">
         <table>
             <tr><th>Campo</th><th>Descrição</th></tr>
-            <tr><td><code>categorias</code></td><td>As categorias do campeonato: <code>[{ "id_categoria": 2, "nome_categoria": "Sub-15", "sexo_categoria": "M", "rotulo": "Sub-15 Masculino" }]</code>. O campo antigo <code>categoria</code> continua (uma delas), para não quebrar o app; use <code>categorias</code></td></tr>
-            <tr><td><code>da_aacj</code></td><td>Em todo time (<code>times[]</code>, <code>jogos[].time_casa</code> / <code>time_visitante</code>, as linhas da <code>classificacao</code> e o <code>campeao</code>, <code>vice</code> e <code>terceiro</code>): <code>true</code> quando o time é da AACJ, <code>false</code> quando é adversário. Use para destacar a escolinha. Vem também nos times da agenda (<code>time_casa</code>, <code>time_visitante</code>, <code>time_do_atleta</code>, <code>adversario</code>)</td></tr>
-            <tr><td><code>resumo</code></td><td>Só em <code>/campeonatos</code> e <code>/campeonatos-do-atleta</code>, para o card: <code>{ "fase_atual": "OITAVAS", "fase_atual_label": "Oitavas de final", "rodada_atual": null, "total_rodadas": null, "jogos_realizados": 14, "total_jogos": 20 }</code>.
+            <tr><td><code>categorias</code></td><td>As categorias do campeonato (em <code>/campeonatos-do-atleta</code>, só as do atleta): <code>[{ "id_categoria": 2, "nome_categoria": "Sub-15", "sexo_categoria": "M", "rotulo": "Sub-15 Masculino", "resumo": { ... }, "encerrada": false, "campeao": null }]</code>. O campo antigo <code>categoria</code> continua (uma delas), para não quebrar o app; use <code>categorias</code>.
                 <ul>
-                    <li>Contam só os jogos publicados e ativos (cancelados ficam fora). Em <code>/campeonatos-do-atleta</code>, só os das categorias do atleta.</li>
+                    <li><code>resumo</code>: os mesmos campos do <code>resumo</code> do campeonato (abaixo), contando <strong>só os jogos daquela categoria</strong>. Use este para mostrar a fase e os números de cada categoria: é igual nas três rotas (lista, detalhe e campeonatos do atleta). Categoria sem jogo: <code>fase_atual</code> <code>null</code> e os números zerados.</li>
+                    <li><code>encerrada</code>: <code>true</code> quando a categoria terminou: tem campeão (final decidida, ou pontos corridos encerrados pela escolinha) ou acabou empatada em tudo no 1º lugar (<code>campeao.situacao</code> = <code>sorteio</code>).</li>
+                    <li><code>campeao</code>: o mesmo objeto de <code>classificacao[].campeao</code> (abaixo), ou <code>null</code> enquanto não terminou.</li>
+                </ul>
+            </td></tr>
+            <tr><td><code>encerrado</code></td><td>Nas três rotas: <code>true</code> só quando <strong>todas</strong> as categorias do campeonato estão encerradas (em <code>/campeonatos-do-atleta</code>, conta também as que não são do atleta). Não depende das datas: um campeonato pode passar da data de fim sem estar encerrado, e vice-versa</td></tr>
+            <tr><td><code>da_aacj</code></td><td>Em todo time (<code>times[]</code>, <code>jogos[].time_casa</code> / <code>time_visitante</code>, as linhas da <code>classificacao</code> e o <code>campeao</code>, <code>vice</code> e <code>terceiro</code>): <code>true</code> quando o time é da AACJ, <code>false</code> quando é adversário. Use para destacar a escolinha. Vem também nos times da agenda (<code>time_casa</code>, <code>time_visitante</code>, <code>time_do_atleta</code>, <code>adversario</code>)</td></tr>
+            <tr><td><code>resumo</code></td><td>Nas três rotas, para o card: <code>{ "fase_atual": "OITAVAS", "fase_atual_label": "Oitavas de final", "rodada_atual": null, "total_rodadas": null, "jogos_realizados": 14, "total_jogos": 20, "jogos_aguardando_resultado": 1 }</code>.
+                <ul>
+                    <li>Contam só os jogos publicados e ativos (cancelados ficam fora), <strong>de todas as categorias juntas</strong> (com Sub-13 e Sub-15 em fases diferentes, a fase é a do próximo jogo de qualquer uma). Em <code>/campeonatos-do-atleta</code>, só os das categorias do atleta. Para cada categoria, use <code>categorias[].resumo</code>.</li>
                     <li><code>fase_atual</code>: a do próximo jogo ainda sem placar; com todos jogados, a do último; sem jogos, <code>null</code>.</li>
                     <li><code>rodada_atual</code> / <code>total_rodadas</code>: só na fase de grupos com rodadas (a do próximo jogo sem placar e a maior rodada marcada); senão, <code>null</code>.</li>
                     <li><code>jogos_realizados</code> / <code>total_jogos</code>: jogos com placar sobre os <strong>jogos já marcados</strong> ("14 de 20 jogos"). O mata-mata só existe depois que a escolinha monta a próxima fase, então o total cresce durante o campeonato (12 de 12 vira 12 de 16 quando as quartas são marcadas): não é o total final.</li>
+                    <li><code>jogos_aguardando_resultado</code>: jogos que já terminaram (data passada, ou hoje com o horário de fim já passado; sem fim, o de início) e ainda sem placar lançado. Um jogo assim "segura" a <code>fase_atual</code> nele até a escolinha lançar o placar.</li>
                 </ul>
             </td></tr>
             <tr><td><code>tipo_campeonato</code> / <code>tipo_label</code></td><td>O tipo (<code>LIGA</code>, <code>COPA</code>, <code>TORNEIO</code>, <code>MATA-MATA</code>, <code>PONTOS CORRIDOS</code>, <code>AMISTOSO</code>) e o rótulo para mostrar ("Pontos Corridos")</td></tr>
@@ -463,10 +471,11 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
             <tr><td><code>descricao_campeonato</code>, <code>organizador_campeonato</code>, <code>local_evento</code></td><td>Podem vir <code>null</code></td></tr>
             <tr><td><code>logo_evento</code> / <code>logo_url</code>, <code>banner_evento</code> / <code>banner_url</code></td><td>Podem vir <code>null</code> (campeonato sem imagem): use uma imagem padrão</td></tr>
             <tr><td><code>situacao</code></td><td><code>EM_ANDAMENTO</code> (já começou) ou <code>PROXIMO</code></td></tr>
-            <tr><td><code>categorias</code></td><td><strong>Só as do atleta</strong> no campeonato (as das convocações e a categoria atual, quando a AACJ joga nela), no formato de <code>GET /campeonatos</code></td></tr>
+            <tr><td><code>categorias</code></td><td><strong>Só as do atleta</strong> no campeonato (as das convocações e a categoria atual, quando a AACJ joga nela), no formato de <code>GET /campeonatos</code> (com <code>resumo</code>, <code>encerrada</code> e <code>campeao</code> de cada uma)</td></tr>
             <tr><td><code>convocada</code></td><td><code>true</code> se o atleta foi convocado no campeonato; <code>false</code> quando aparece só pela categoria (convocação ainda não feita ou não chamado)</td></tr>
             <tr><td><code>convocacoes</code></td><td>Cada convocação: <code>{ id_categoria, rotulo, camisa }</code> (sem o time). A camisa é sempre definida na convocação (1 a 99). Vazio quando <code>convocada</code> é <code>false</code></td></tr>
             <tr><td><code>resumo</code></td><td>O andamento para o card, como em <a href="#campeonatos">Campeonatos</a>, mas contando <strong>só os jogos das categorias do atleta</strong></td></tr>
+            <tr><td><code>encerrado</code></td><td>Como em <a href="#campeonatos">Campeonatos</a>: <code>true</code> só com <strong>todas</strong> as categorias do campeonato encerradas, inclusive as que não são do atleta (a dele pode estar encerrada e o campeonato não)</td></tr>
         </table>
         </div>
 <pre>200 {
@@ -478,11 +487,15 @@ await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
       "logo_evento": "copa.png", "logo_url": "https://.../futebol/images/campeonatos/copa.png", "banner_evento": null, "banner_url": null,
       "data_inicio_campeonato": "2026-10-03T00:00:00-03:00", "data_fim_campeonato": "2026-11-28T00:00:00-03:00", "local_evento": "Arena Norte",
       "situacao": "EM_ANDAMENTO",
-      "categorias": [ { "id_categoria": 3, "nome_categoria": "Sub-13", "sexo_categoria": "M", "rotulo": "Sub-13 Masculino" } ],
+      "categorias": [ { "id_categoria": 3, "nome_categoria": "Sub-13", "sexo_categoria": "M", "rotulo": "Sub-13 Masculino",
+                        "resumo": { "fase_atual": "GRUPOS", "fase_atual_label": "Fase de grupos", "rodada_atual": 3, "total_rodadas": 5,
+                                    "jogos_realizados": 4, "total_jogos": 10, "jogos_aguardando_resultado": 0 },
+                        "encerrada": false, "campeao": null } ],
       "convocada": true,
       "convocacoes": [ { "id_categoria": 3, "rotulo": "Sub-13 Masculino", "camisa": 8 } ],
       "resumo": { "fase_atual": "GRUPOS", "fase_atual_label": "Fase de grupos", "rodada_atual": 3, "total_rodadas": 5,
-                  "jogos_realizados": 4, "total_jogos": 10 }
+                  "jogos_realizados": 4, "total_jogos": 10, "jogos_aguardando_resultado": 0 },
+      "encerrado": false
     }
   ]
 }</pre>

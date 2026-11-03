@@ -28,14 +28,20 @@ class CampeonatoController extends Controller
                 'id_categoria',
             ]);
 
-        // Andamento para o card (fase, rodada, jogos realizados / já marcados), numa consulta só
-        $resumos = Campeonato::resumos($campeonatos);
+        // Andamento para o card (fase, rodada, jogos realizados / já marcados), geral e por categoria, numa consulta só
+        $andamentos = Campeonato::andamentos($campeonatos);
 
         return response()->json([
             'success' => true,
-            'data'    => $campeonatos->map(fn ($camp) => [
-                ...$camp->toArray(), 'categorias' => $camp->categoriasNaApi(), 'resumo' => $resumos[$camp->id_campeonato],
-            ]),
+            'data'    => $campeonatos->map(function ($camp) use ($andamentos) {
+                // Por categoria: resumo, encerrada e campeao; "encerrado" com todas encerradas (02/11/2026)
+                $andamento = $camp->categoriasComAndamento($andamentos[$camp->id_campeonato]['categorias'], $camp->campeoesNaApi());
+
+                return [
+                    ...$camp->toArray(), 'categorias' => $andamento['categorias'],
+                    'resumo' => $andamentos[$camp->id_campeonato]['resumo'], 'encerrado' => $andamento['encerrado'],
+                ];
+            }),
         ]);
     }
 
@@ -72,16 +78,15 @@ class CampeonatoController extends Controller
         // Se o time é da AACJ, pelos times já carregados (participantes e os dos jogos): sem consulta a mais
         $daAacj = $campeonato->times->merge($campeonato->jogos->pluck('timeCasa'))->merge($campeonato->jogos->pluck('timeVisitante'))
             ->filter()->mapWithKeys(fn (Time $t) => [(int) $t->id_time => $t->da_aacj])->all();
-        $time = fn (?array $t) => $t ? [...$t, 'logo_url' => Time::urlDaImagem($t['logo'], 'team'), 'da_aacj' => $daAacj[$t['id_time']] ?? false] : null;
+        $campeoesNaApi = $campeonato->campeoesNaApi($campeoes, $daAacj);
+        // Mesmo andamento da lista (02/11/2026): resumo geral e por categoria, encerrada, campeao e encerrado
+        $andamentos = Campeonato::andamentos(collect([$campeonato]))[$campeonato->id_campeonato];
+        $andamento  = $campeonato->categoriasComAndamento($andamentos['categorias'], $campeoesNaApi);
 
         $classificacao = collect($classificacoes)->map(fn ($c) => [
             'id_categoria'  => (int) $c['categoria']->id_categoria,
             'categoria'     => $c['categoria']->rotulo,
-            'campeao'       => ($campeao = $campeoes[(int) $c['categoria']->id_categoria] ?? null) ? [
-                'situacao' => $campeao['situacao'], 'modo' => $campeao['modo'], 'como' => $campeao['como'],
-                'campeao'  => $time($campeao['campeao']), 'vice' => $time($campeao['vice']), 'terceiro' => $time($campeao['terceiro']),
-                'empatados' => $campeao['empatados'],
-            ] : null,
+            'campeao'       => $campeoesNaApi[(int) $c['categoria']->id_categoria] ?? null,
             'classificados' => $c['classificados'],
             'grupos'        => array_map(fn ($tabela) => [
                 'grupo'         => $tabela['grupo'],
@@ -100,7 +105,10 @@ class CampeonatoController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => [...$campeonato->toArray(), 'categorias' => $campeonato->categoriasNaApi(), 'classificacao' => $classificacao],
+            'data'    => [
+                ...$campeonato->toArray(), 'categorias' => $andamento['categorias'], 'resumo' => $andamentos['resumo'],
+                'encerrado' => $andamento['encerrado'], 'classificacao' => $classificacao,
+            ],
         ]);
     }
 }

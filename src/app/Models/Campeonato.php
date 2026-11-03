@@ -115,21 +115,25 @@ class Campeonato extends Model
     }
 
     /**
-     * Resumo do andamento para o card do app (29/10/2026), de vários campeonatos com uma consulta só:
-     * [id_campeonato => {fase_atual, fase_atual_label, rodada_atual, total_rodadas, jogos_realizados, total_jogos}].
+     * Andamento para o card do app (29/10/2026; por categoria desde 02/11/2026), de vários campeonatos com uma
+     * consulta só: [id_campeonato => ['resumo' => {...}, 'categorias' => [id_categoria => {...}]]], cada resumo com
+     * fase_atual, fase_atual_label, rodada_atual, total_rodadas, jogos_realizados, total_jogos e
+     * jogos_aguardando_resultado.
      * Contam os jogos publicados e ATIVOS (rascunho, oculto e cancelado fora); com $categorias
      * [id_campeonato => int[]], só os jogos dessas categorias (campeonatos do atleta).
      * - fase_atual: a do próximo jogo sem placar (pela data); com todos jogados, a do último; sem jogos, null;
      * - rodada_atual / total_rodadas: só na fase de grupos com rodada (a do próximo jogo sem placar, ou a última);
      * - total_jogos: os jogos JÁ MARCADOS. O mata-mata só existe depois de montado, então o total cresce e a
      *   barra do app pode recuar (12 de 12 vira 12 de 16 quando as quartas são criadas).
+     * O geral (o "resumo" que o app já usa) respeita $categorias; o por categoria tem todas as do campeonato, e
+     * quem monta o JSON escolhe quais mostrar. Categoria sem jogo tem o resumo zerado (fase null).
      *
      * @param  Collection<int, Campeonato> $campeonatos
      * @param  array<int, int[]>           $categorias
      */
-    public static function resumos(Collection $campeonatos, array $categorias = []): array
+    public static function andamentos(Collection $campeonatos, array $categorias = []): array
     {
-        $jogos = Jogo::with('evento:id_evento_calendario,id_categoria')
+        $jogos = Jogo::with('evento:id_evento_calendario,id_categoria,data_evento_calendario,horario_inicio_evento_calendario,horario_fim_evento_calendario')
             ->whereIn('tbl_jogos.id_campeonato', $campeonatos->pluck('id_campeonato'))
             ->whereHas('evento', fn ($q) => $q->publicados()->where('status_evento_calendario', 'ATIVO'))
             ->ordenadosPelaData()->orderBy('tbl_jogos.id_jogo')
@@ -138,25 +142,83 @@ class Campeonato extends Model
 
         return $campeonatos->mapWithKeys(function (Campeonato $campeonato) use ($jogos, $categorias) {
             $id = (int) $campeonato->id_campeonato;
-            $doCampeonato = $jogos->get($id, collect())
-                ->when(isset($categorias[$id]), fn ($js) => $js->filter(fn (Jogo $j) => in_array((int) $j->evento?->id_categoria, $categorias[$id], true)))
-                ->values();
-            $pendente = $doCampeonato->first(fn (Jogo $j) => ! $j->temPlacar());
-            $atual = $pendente ?? $doCampeonato->last();
-            $fase = $atual?->fase_jogo ?? ($atual ? Jogo::FASE_PADRAO : null);
-
-            $rodadas = $doCampeonato->filter(fn (Jogo $j) => ($j->fase_jogo ?? Jogo::FASE_PADRAO) === Jogo::FASE_PADRAO)->pluck('rodada_jogo')->filter();
-            $nosGrupos = $fase === Jogo::FASE_PADRAO && $rodadas->isNotEmpty();
+            $doCampeonato = $jogos->get($id, collect());
+            $porCategoria = $doCampeonato->groupBy(fn (Jogo $j) => (int) $j->evento?->id_categoria);
 
             return [$id => [
-                'fase_atual'       => $fase,
-                'fase_atual_label' => $fase ? Jogo::FASES[$fase] : null,
-                'rodada_atual'     => $nosGrupos && $atual->rodada_jogo !== null ? (int) $atual->rodada_jogo : null,
-                'total_rodadas'    => $nosGrupos ? (int) $rodadas->max() : null,
-                'jogos_realizados' => $doCampeonato->filter(fn (Jogo $j) => $j->temPlacar())->count(),
-                'total_jogos'      => $doCampeonato->count(),
+                'resumo' => self::resumoDosJogos($doCampeonato
+                    ->when(isset($categorias[$id]), fn ($js) => $js->filter(fn (Jogo $j) => in_array((int) $j->evento?->id_categoria, $categorias[$id], true)))
+                    ->values()),
+                'categorias' => $campeonato->categorias->mapWithKeys(fn ($categoria) => [(int) $categoria->id_categoria
+                    => self::resumoDosJogos($porCategoria->get((int) $categoria->id_categoria, collect())->values())])->all(),
             ]];
         })->all();
+    }
+
+    // Jogos em ordem de data (resumos/andamentos). jogos_aguardando_resultado: já concluídos (data passada, ou
+    // hoje com o horário de fim já passado: EventoCalendario::estaConcluido) e ainda sem placar.
+    private static function resumoDosJogos(Collection $jogos): array
+    {
+        $pendente = $jogos->first(fn (Jogo $j) => ! $j->temPlacar());
+        $atual = $pendente ?? $jogos->last();
+        $fase = $atual?->fase_jogo ?? ($atual ? Jogo::FASE_PADRAO : null);
+
+        $rodadas = $jogos->filter(fn (Jogo $j) => ($j->fase_jogo ?? Jogo::FASE_PADRAO) === Jogo::FASE_PADRAO)->pluck('rodada_jogo')->filter();
+        $nosGrupos = $fase === Jogo::FASE_PADRAO && $rodadas->isNotEmpty();
+
+        return [
+            'fase_atual'                 => $fase,
+            'fase_atual_label'           => $fase ? Jogo::FASES[$fase] : null,
+            'rodada_atual'               => $nosGrupos && $atual->rodada_jogo !== null ? (int) $atual->rodada_jogo : null,
+            'total_rodadas'              => $nosGrupos ? (int) $rodadas->max() : null,
+            'jogos_realizados'           => $jogos->filter(fn (Jogo $j) => $j->temPlacar())->count(),
+            'total_jogos'                => $jogos->count(),
+            'jogos_aguardando_resultado' => $jogos->filter(fn (Jogo $j) => ! $j->temPlacar() && $j->evento?->estaConcluido())->count(),
+        ];
+    }
+
+    /**
+     * Campeão de cada categoria no formato da API (o de classificacao[].campeao do detalhe): [id_categoria =>
+     * {situacao, modo, como, campeao, vice, terceiro, empatados} | null]; cada time com id_time, nome, logo,
+     * logo_url e da_aacj. $daAacj [id_time => bool] evita a consulta quando os times já foram carregados.
+     */
+    public function campeoesNaApi(?array $campeoes = null, ?array $daAacj = null): array
+    {
+        $campeoes ??= $this->campeoes();
+        if ($daAacj === null) {
+            $ids = collect($campeoes)->filter()->flatMap(fn ($c) => [$c['campeao']['id_time'] ?? null, $c['vice']['id_time'] ?? null, $c['terceiro']['id_time'] ?? null])->filter()->unique();
+            $daAacj = $ids->isEmpty() ? [] : Time::whereIn('id_time', $ids)->pluck('tipo_time', 'id_time')
+                ->map(fn ($tipo) => $tipo === 'INTERNO')->all();   // a mesma regra de Time::da_aacj
+        }
+        $time = fn (?array $t) => $t ? [...$t, 'logo_url' => Time::urlDaImagem($t['logo'], 'team'), 'da_aacj' => $daAacj[$t['id_time']] ?? false] : null;
+
+        return array_map(fn ($campeao) => $campeao ? [
+            'situacao' => $campeao['situacao'], 'modo' => $campeao['modo'], 'como' => $campeao['como'],
+            'campeao'  => $time($campeao['campeao']), 'vice' => $time($campeao['vice']), 'terceiro' => $time($campeao['terceiro']),
+            'empatados' => $campeao['empatados'],
+        ] : null, $campeoes);
+    }
+
+    /**
+     * categorias[] da API com o andamento de cada uma (02/11/2026): os campos de categoriasNaApi() + resumo,
+     * encerrada (há campeão ou sorteio) e campeao; e "encerrado" do campeonato, true só com TODAS as categorias
+     * do campeonato encerradas ($ids escolhe as mostradas, não as que contam no encerrado).
+     *
+     * @return array{categorias: array, encerrado: bool}
+     */
+    public function categoriasComAndamento(array $resumosPorCategoria, array $campeoesNaApi, ?array $ids = null): array
+    {
+        $encerrada = fn (int $idCategoria) => ($campeoesNaApi[$idCategoria] ?? null) !== null;
+        $todas = $this->categorias->pluck('id_categoria')->map(fn ($id) => (int) $id);
+
+        return [
+            'categorias' => array_map(fn ($c) => $c + [
+                'resumo'    => $resumosPorCategoria[$c['id_categoria']] ?? self::resumoDosJogos(collect()),
+                'encerrada' => $encerrada($c['id_categoria']),
+                'campeao'   => $campeoesNaApi[$c['id_categoria']] ?? null,
+            ], $this->categoriasNaApi($ids)),
+            'encerrado' => $todas->isNotEmpty() && $todas->every($encerrada),
+        ];
     }
 
     // Categorias no JSON da API: [{id_categoria, nome_categoria, sexo_categoria, rotulo}]; com $ids, só essas
