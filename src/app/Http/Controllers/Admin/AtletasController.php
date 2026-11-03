@@ -233,6 +233,14 @@ class AtletasController extends Controller
         $responsavelAtual     = $atleta->responsaveis->first();
         $responsavelExistente = $responsavelAtual ? null : Responsavel::porCpf($request->cpf_responsavel);
 
+        // CPF do responsável trocado para o de OUTRO responsável já cadastrado (03/11/2026, dono do projeto: o
+        // mesmo responsável, com o mesmo CPF e e-mail, pode ter vários filhos): o atleta passa para esse
+        // responsável, como no cadastro, sem mudar os dados dele. Antes, a edição recusava
+        $responsavelDoCpf = $responsavelAtual
+            && Responsavel::digitosCpf($request->cpf_responsavel) !== Responsavel::digitosCpf($responsavelAtual->cpf_responsavel)
+            ? Responsavel::porCpf($request->cpf_responsavel, exceto: $responsavelAtual->id_responsavel)
+            : null;
+
         // Bag "edicao": os erros da edição não podem abrir o modal de cadastro (que usa a bag padrão)
         $request->validateWithBag('edicao', [
             'nome_atleta'                 => 'required|string|max:255',
@@ -251,7 +259,8 @@ class AtletasController extends Controller
             'status_atleta'               => 'nullable|in:ATIVO,INATIVO',
             'nome_responsavel'            => 'required|string|max:255',
             'cpf_responsavel'             => ['required', 'string', 'max:14', new CpfValido(self::MENSAGEM_CPF_RESPONSAVEL)],
-            'email_responsavel'           => ['nullable', 'email', 'max:150', $this->emailResponsavelUnico($responsavelAtual ?? $responsavelExistente)],
+            // O e-mail do responsável do CPF é dele mesmo: não conta como "de outro responsável"
+            'email_responsavel'           => ['nullable', 'email', 'max:150', $this->emailResponsavelUnico($responsavelDoCpf ?? $responsavelAtual ?? $responsavelExistente)],
             'whatsapp_responsavel'        => 'required|string|max:20',
             'grau_parentesco_responsavel' => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
             'cep_endereco'                => 'required|string|max:9',
@@ -263,16 +272,6 @@ class AtletasController extends Controller
             'estado_endereco'             => 'required|string|max:2',
         ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL,
             'cpf_atleta.unique' => self::MENSAGEM_CPF_REPETIDO]);
-
-        // CPF do responsável trocado para o de OUTRO responsável já cadastrado: recusa (viraria um cadastro
-        // repetido). Trocar o responsável do atleta por um já cadastrado ainda não é possível pela edição
-        if ($responsavelAtual
-            && Responsavel::digitosCpf($request->cpf_responsavel) !== Responsavel::digitosCpf($responsavelAtual->cpf_responsavel)
-            && ($outro = Responsavel::porCpf($request->cpf_responsavel, exceto: $responsavelAtual->id_responsavel))) {
-            throw ValidationException::withMessages([
-                'cpf_responsavel' => "Este CPF já é do responsável {$outro->nome_responsavel}, de outro cadastro. Confira o CPF.",
-            ])->errorBag('edicao');
-        }
 
         // Só valida a categoria quando ela muda: editar outro campo de um atleta que já está
         // numa categoria (por exemplo, acima da idade, com motivo) não pode ser bloqueado
@@ -288,7 +287,7 @@ class AtletasController extends Controller
             throw ValidationException::withMessages(['id_categoria' => self::MENSAGEM_SEM_CATEGORIA])->errorBag('edicao');
         }
 
-        DB::transaction(function () use ($request, $atleta, $responsavelExistente) {
+        DB::transaction(function () use ($request, $atleta, $responsavelExistente, $responsavelDoCpf) {
 
             // 1. Atualiza atleta
             $fotoPath = $atleta->foto_atleta;
@@ -334,7 +333,18 @@ class AtletasController extends Controller
 
             // 3. Atualiza responsável (ou, se o atleta não tem, vincula o já cadastrado com o CPF ou cria)
             $responsavel = $atleta->responsaveis->first();
-            if ($responsavel) {
+            if ($responsavelDoCpf) {
+                // CPF de outro responsável já cadastrado (o irmão já é dele): o atleta passa para ele, sem mudar
+                // os dados dele; só o e-mail é preenchido se estava vazio (é o login do app). O responsável
+                // antigo fica no cadastro (débito "Responsável e endereço"); sem filho ativo, perde o app
+                $atleta->responsaveis()->detach($responsavel->id_responsavel);
+                $atleta->responsaveis()->attach($responsavelDoCpf->id_responsavel, [
+                    'grau_parentesco_responsavel' => $request->grau_parentesco_responsavel,
+                ]);
+                if (blank($responsavelDoCpf->email_responsavel) && filled($request->email_responsavel)) {
+                    $responsavelDoCpf->update(['email_responsavel' => $request->email_responsavel]);
+                }
+            } elseif ($responsavel) {
                 $responsavel->update([
                     'nome_responsavel'     => $request->nome_responsavel,
                     'cpf_responsavel'      => $request->cpf_responsavel,
@@ -380,7 +390,13 @@ class AtletasController extends Controller
             // são da convocação de cada campeonato
         });
 
-        $resposta = redirect()->route('admin.atletas.index')->with('sucesso', 'Atleta atualizado com sucesso.');
+        $mensagem = 'Atleta atualizado com sucesso.';
+        if ($responsavelDoCpf) {
+            $mensagem .= " O responsável {$responsavelDoCpf->nome_responsavel} já estava cadastrado com este CPF:"
+                . " o atleta passou a ser vinculado a ele (antes: {$responsavelAtual->nome_responsavel}) e os dados dele não foram alterados"
+                . ($responsavelDoCpf->wasChanged('email_responsavel') ? ' (só o e-mail, que estava vazio, foi preenchido).' : '.');
+        }
+        $resposta = redirect()->route('admin.atletas.index')->with('sucesso', $mensagem);
 
         // Trocou de categoria: avisa dos eventos futuros a mover (nada muda sem o admin confirmar)
         $idNova = $request->filled('id_categoria') ? (int) $request->id_categoria : null;

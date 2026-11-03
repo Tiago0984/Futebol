@@ -289,21 +289,43 @@ class ResponsavelUnicoTest extends TestCase
         $this->assertDatabaseHas('tbl_responsavel', ['id_responsavel' => $idResponsavel, 'email_responsavel' => "responsavel{$idAtleta}@teste.com"]);
     }
 
-    public function test_admin_edicao_recusa_cpf_de_outro_responsavel_e_aceita_o_cpf_de_sempre(): void
+    // 03/11/2026 (dono do projeto): o mesmo responsável, com o mesmo CPF e e-mail, pode ter vários filhos. Antes,
+    // a edição recusava o CPF de outro responsável ("Este CPF já é do responsável …, de outro cadastro")
+    public function test_admin_edicao_com_cpf_de_outro_responsavel_passa_o_atleta_para_ele(): void
     {
         $idAtleta = $this->criarAtleta($this->nascidoComIdade(12), 'M', 'ATIVO');
         $this->colocarNaCategoria($idAtleta, $this->idCategoria('Sub-13', 'M'));
         $idResponsavel = $this->criarResponsavel($idAtleta);
+        $nomeAntigo = DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->value('nome_responsavel');
         // Repetido antigo do mesmo CPF (só os dígitos: o índice único compara o texto)
         $this->responsavel(Cpf::digitos(DB::table('tbl_responsavel')->where('id_responsavel', $idResponsavel)->value('cpf_responsavel')), 'repetido@familia.com');
-        $this->responsavel($this->cpfDeTeste(300000009), 'outro@familia.com', 'Pai de Outro Atleta');
+        $doIrmao = $this->responsavel($this->cpfDeTeste(300000009), 'mae@familia.com', 'Mãe do Irmão');
+        $this->responsavel($this->cpfDeTeste(300000010), 'terceiro@familia.com', 'Terceiro Responsável');
 
-        // CPF de sempre (mesmo com um repetido antigo): a edição segue
+        // CPF de sempre (mesmo com um repetido antigo): a edição segue, com o mesmo responsável
         $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta))
             ->assertSessionHasNoErrors('edicao');
+        $this->assertSame([$idResponsavel], Atleta::find($idAtleta)->responsaveis()->pluck('tbl_responsavel.id_responsavel')->all());
 
-        $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, ['cpf_responsavel' => $this->cpfDeTeste(300000009)]))
-            ->assertSessionHasErrorsIn('edicao', ['cpf_responsavel' => 'Este CPF já é do responsável Pai de Outro Atleta, de outro cadastro. Confira o CPF.']);
+        // CPF do responsável do irmão com o e-mail de um terceiro: continua recusado
+        $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, [
+            'cpf_responsavel' => $this->cpfDeTeste(300000009), 'email_responsavel' => 'terceiro@familia.com',
+        ]))->assertSessionHasErrorsIn('edicao', ['email_responsavel' => 'Este e-mail já está cadastrado para outro responsável.']);
+
+        // Mesmo CPF e mesmo e-mail do responsável do irmão: o atleta passa para ele, sem mudar os dados dele
+        $this->comoAdmin()->put(route('admin.atletas.update', $idAtleta), $this->dadosEdicao($idAtleta, [
+            'cpf_responsavel' => $this->cpfDeTeste(300000009), 'email_responsavel' => 'mae@familia.com',
+            'nome_responsavel' => 'Nome Digitado Diferente', 'grau_parentesco_responsavel' => 'Mãe',
+        ]))->assertSessionHasNoErrors('edicao')
+            ->assertSessionHas('sucesso', fn ($msg) => str_contains($msg, 'O responsável Mãe do Irmão já estava cadastrado com este CPF')
+                && str_contains($msg, "(antes: {$nomeAntigo})"));
+
+        $this->assertSame([$doIrmao], Atleta::find($idAtleta)->responsaveis()->pluck('tbl_responsavel.id_responsavel')->all());
+        $this->assertDatabaseHas('tbl_atleta_responsavel', ['id_atleta' => $idAtleta, 'id_responsavel' => $doIrmao, 'grau_parentesco_responsavel' => 'Mãe']);
+        $this->assertDatabaseHas('tbl_responsavel', ['id_responsavel' => $doIrmao, 'nome_responsavel' => 'Mãe do Irmão', 'email_responsavel' => 'mae@familia.com']);
+        // O antigo fica no cadastro, sem o atleta
+        $this->assertDatabaseHas('tbl_responsavel', ['id_responsavel' => $idResponsavel]);
+        $this->assertDatabaseMissing('tbl_atleta_responsavel', ['id_atleta' => $idAtleta, 'id_responsavel' => $idResponsavel]);
     }
 
     public function test_admin_edicao_de_atleta_sem_responsavel_vincula_o_do_mesmo_cpf(): void
