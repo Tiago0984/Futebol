@@ -366,3 +366,23 @@ $(document).ready(function () {
         });
     });
 })();
+
+// ── NOSSAS CATEGORIAS (home): a categoria escolhida mostra a escalação dela, sem recarregar ──
+(function () {
+    document.querySelectorAll('.js-escalacao').forEach(function (painel) {
+        var botoes = painel.querySelectorAll('.js-escalacao-categoria');
+        var abas   = painel.querySelectorAll('.js-escalacao-aba');
+
+        botoes.forEach(function (botao) {
+            botao.addEventListener('click', function () {
+                botoes.forEach(function (b) {
+                    b.classList.toggle('ativa', b === botao);
+                    b.setAttribute('aria-selected', b === botao ? 'true' : 'false');
+                });
+                abas.forEach(function (aba) {
+                    aba.hidden = aba.dataset.escalacaoAba !== botao.dataset.escalacao;
+                });
+            });
+        });
+    });
+})();

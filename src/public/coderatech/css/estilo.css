@@ -11318,3 +11318,238 @@ body.lp-body {
     margin: 1rem 0 0.25rem;
 }
 .admin-subtitulo:first-of-type { margin-top: 0; }
+
+/* ==========================================================================
+   78. NOSSAS CATEGORIAS NA HOME — ESCALAÇÃO NO CAMPO (03/11/2026)
+   As categorias à esquerda e a escalação da escolhida num campo em perspectiva, com o banco ao lado. A posição
+   de cada atleta vem em --x (0 = esquerda, 100 = direita) e --y (0 = ataque, 100 = próprio gol); o calc acompanha
+   a perspectiva do gramado (mais estreito em cima). A aba escondida usa o atributo hidden. Fundo claro, com a
+   paleta da home (branco, bordas #eef0f4, texto #1a1a1a e #95a5a6, destaque #ff4a17); só o campo é verde.
+   ========================================================================== */
+.section-escalacao {
+    padding: 60px 0;
+    background: #fff;
+    color: #1a1a1a;
+}
+.escalacao-vazia { text-align: center; color: #95a5a6; }
+
+.escalacao-painel {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: 24px;
+    align-items: start;
+}
+
+/* Categorias */
+.escalacao-categorias { display: flex; flex-direction: column; gap: 10px; }
+.escalacao-categoria {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 14px 16px;
+    border: 1px solid #eef0f4;
+    border-left: 4px solid transparent;
+    border-radius: 10px;
+    background: #fff;
+    color: #1a1a1a;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+    text-align: left;
+    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+}
+.escalacao-categoria:hover { border-color: #ffd2c4; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06); transform: translateX(3px); }
+.escalacao-categoria:focus-visible { outline: 2px solid #ff4a17; outline-offset: 2px; }
+.escalacao-categoria.ativa {
+    border-color: #ffd2c4;
+    border-left-color: #ff4a17;
+    background: linear-gradient(90deg, #fff1ec 0%, #fff 75%);
+}
+.escalacao-categoria-logo { width: 34px; height: 34px; object-fit: contain; flex: none; }
+.escalacao-categoria-texto { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+.escalacao-categoria-nome { font-size: 13px; font-weight: 800; letter-spacing: 0.3px; }
+.escalacao-categoria-total { font-size: 11px; color: #95a5a6; }
+.escalacao-categoria .fa { color: #c3c8d3; font-size: 18px; }
+.escalacao-categoria.ativa .fa { color: #ff4a17; }
+
+/* Escalação da categoria */
+.escalacao-aba[hidden] { display: none !important; }
+.escalacao-topo {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 18px;
+    margin-bottom: 14px;
+    border: 1px solid #eef0f4;
+    border-bottom: 3px solid #ff4a17;
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+.escalacao-topo-logo { width: 42px; height: 42px; object-fit: contain; }
+.escalacao-topo-titulo span { font-size: 11px; font-weight: 700; color: #ff4a17; letter-spacing: 1px; }
+.escalacao-topo-titulo h3 { margin: 0; font-size: 24px; font-weight: 900; color: #111; letter-spacing: 0.5px; }
+.escalacao-formacao { margin-left: auto; font-size: 30px; font-weight: 900; color: #ff4a17; letter-spacing: 1px; }
+
+.escalacao-corpo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 230px;
+    gap: 18px;
+    align-items: start;
+}
+
+/* Campo */
+.escalacao-campo {
+    position: relative;
+    aspect-ratio: 4 / 3.7;
+    overflow: hidden;
+    border-radius: 14px;
+    border: 1px solid #eef0f4;
+    background: linear-gradient(180deg, #f6f7f9 0%, #eceff3 100%);
+}
+.escalacao-gramado {
+    position: absolute;
+    inset: 2% 4%;
+    border: 2px solid rgba(255, 255, 255, 0.75);
+    background: repeating-linear-gradient(180deg, #2f8f3a 0 10%, #2a8234 10% 20%);
+    transform: perspective(1200px) rotateX(16deg);
+    transform-origin: 50% 100%;
+    box-shadow: 0 18px 30px rgba(0, 0, 0, 0.18);
+}
+.escalacao-gramado span { position: absolute; border: 2px solid rgba(255, 255, 255, 0.75); }
+.escalacao-gramado .escalacao-linha-meio { left: 0; right: 0; top: 50%; border-width: 2px 0 0; }
+.escalacao-circulo { left: 50%; top: 50%; width: 22%; aspect-ratio: 1; border-radius: 50%; transform: translate(-50%, -50%); }
+.escalacao-area { left: 22%; right: 22%; height: 17%; }
+.escalacao-pequena-area { left: 37%; right: 37%; height: 7%; }
+.escalacao-gramado .escalacao-area-cima { top: -2px; border-top: 0; }
+.escalacao-gramado .escalacao-area-baixo { bottom: -2px; border-bottom: 0; }
+
+.escalacao-jogador {
+    position: absolute;
+    left: calc(50% + (var(--x) - 50) * (0.817 + 0.00103 * var(--y)) * 1%);
+    top: calc(16% + var(--y) * (0.724 + 0.00096 * var(--y)) * 1%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 124px;
+    transform: translate(-50%, -50%);
+    animation: escalacao-entrar 0.45s ease both;
+    animation-delay: calc(var(--i) * 45ms);
+}
+.escalacao-foto {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border: 3px solid #fff;
+    border-radius: 50%;
+    background: #1a1a1a;
+    color: #fff;
+    font-size: 18px;
+    font-weight: 800;
+    box-shadow: 0 6px 14px rgba(0, 0, 0, 0.3);
+}
+.escalacao-foto img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.escalacao-sigla {
+    position: absolute;
+    top: -4px;
+    right: -14px;
+    padding: 1px 5px;
+    border-radius: 3px;
+    background: #ff4a17;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 800;
+    line-height: 1.4;
+}
+.escalacao-placa {
+    max-width: 124px;
+    margin-top: 4px;
+    padding: 3px 8px;
+    overflow: hidden;
+    border-radius: 3px;
+    background: #fff;
+    color: #111;
+    font-size: 10.5px;
+    font-weight: 800;
+    text-overflow: ellipsis;
+    text-transform: uppercase;
+    white-space: nowrap;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+.escalacao-placa b { margin-right: 4px; color: #ff4a17; }
+.escalacao-jogador.vazio { animation-name: escalacao-entrar-vazio; opacity: 0.55; }
+.escalacao-jogador.vazio .escalacao-foto { border-style: dashed; }
+
+@keyframes escalacao-entrar {
+    from { opacity: 0; transform: translate(-50%, -30%) scale(0.85); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+@keyframes escalacao-entrar-vazio {
+    from { opacity: 0; transform: translate(-50%, -30%) scale(0.85); }
+    to { opacity: 0.55; transform: translate(-50%, -50%) scale(1); }
+}
+
+/* Banco de reservas */
+.escalacao-banco {
+    display: flex;
+    flex-direction: column;
+    max-height: 540px;
+    padding: 16px;
+    overflow-y: auto;
+    border: 1px solid #eef0f4;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+}
+.escalacao-banco h4 { margin: 0 0 10px; color: #ff4a17; font-size: 16px; font-weight: 900; letter-spacing: 1px; }
+.escalacao-reserva {
+    display: grid;
+    grid-template-columns: 24px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 7px 0;
+    border-bottom: 1px solid #f1f3f6;
+}
+.escalacao-reserva-numero { color: #ff4a17; font-size: 12px; font-weight: 800; text-align: right; }
+.escalacao-reserva-nome { overflow: hidden; color: #1a1a1a; font-size: 12px; font-weight: 700; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.escalacao-reserva-sigla { padding: 1px 6px; border-radius: 3px; background: #f1f3f6; color: #5b6270; font-size: 10px; font-weight: 700; }
+.escalacao-banco-vazio { color: #95a5a6; font-size: 12px; }
+.escalacao-ver-todos {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 14px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #ff4a17;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+}
+.escalacao-ver-todos:hover, .escalacao-ver-todos:focus { background: #e03c0e; color: #fff; text-decoration: none; }
+.escalacao-nota { margin: 10px 0 0; color: #95a5a6; font-size: 11px; }
+
+@media (max-width: 991px) {
+    .escalacao-painel { grid-template-columns: minmax(0, 1fr); }
+    .escalacao-categorias { flex-direction: row; overflow-x: auto; padding-bottom: 4px; }
+    .escalacao-categoria { flex: none; width: auto; min-width: 210px; }
+    .escalacao-categoria:hover { transform: none; }
+}
+@media (max-width: 767px) {
+    .escalacao-corpo { grid-template-columns: minmax(0, 1fr); }
+    .escalacao-campo { aspect-ratio: 3 / 3.6; }
+    .escalacao-jogador { width: 76px; }
+    .escalacao-foto { width: 42px; height: 42px; border-width: 2px; font-size: 14px; }
+    .escalacao-sigla { right: -10px; font-size: 8px; }
+    .escalacao-placa { max-width: 76px; padding: 2px 5px; font-size: 9px; }
+    .escalacao-topo-titulo h3 { font-size: 18px; }
+    .escalacao-formacao { font-size: 22px; }
+    .escalacao-banco { max-height: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .escalacao-jogador { animation: none; }
+}

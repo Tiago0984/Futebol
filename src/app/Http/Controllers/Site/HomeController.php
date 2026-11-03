@@ -12,6 +12,7 @@ use App\Models\Banner;
 use App\Models\Noticia;
 use App\Models\Campeonato;
 use App\Models\Video;
+use App\Services\EscalacaoDaCategoria;
 
 class HomeController extends Controller
 {
@@ -40,6 +41,19 @@ class HomeController extends Controller
             ->get()
             ->where('total_atletas', '>', 0)
             ->values();
+
+        // Escalação de cada categoria (03/11/2026): os atletas ativos num campo, pelas posições do cadastro, com a
+        // camisa da convocação mais recente na categoria (EscalacaoDaCategoria)
+        $atletasPorCategoria = Atleta::with(['posicoes', 'categoriasAtivas', 'convocacoes'])
+            ->where('status_atleta', 'ATIVO')
+            ->orderBy('nome_atleta')
+            ->get()
+            ->groupBy(fn ($atleta) => $atleta->categoriasAtivas->first()?->id_categoria);
+
+        $escalacoes = $categoriasDaAcj->mapWithKeys(fn ($categoria) => [$categoria->id_categoria => EscalacaoDaCategoria::montar(
+            $atletasPorCategoria->get($categoria->id_categoria, collect())->values(),
+            $categoria->id_categoria,
+        )])->all();
 
         // Próximo jogo em destaque (LIGA PREMIERE): mesma regra da agenda do site (jogo de campeonato ou, desde a
         // Fase F, amistoso, com o rótulo "AMISTOSO"), ativo, de hoje em diante, como o "Próximo Evento" do
@@ -91,6 +105,6 @@ class HomeController extends Controller
 
         $videos = Video::doSite('home')->get();
 
-        return view('site.home.home', compact('galerias', 'banners', 'noticias', 'categoriasDaAcj', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato', 'videos'));
+        return view('site.home.home', compact('galerias', 'banners', 'noticias', 'categoriasDaAcj', 'escalacoes', 'proximoJogo', 'campeonatos', 'classificacaoPorCampeonato', 'videos'));
     }
 }
