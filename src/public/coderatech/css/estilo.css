@@ -11159,6 +11159,23 @@ body.lp-body {
    148 px). Na largura toda, o slide fica em 16:9 (o formato dos Banners, 1920×1080) com qualquer arquivo.
    ========================================================================== */
 .banner .carousel-inner > .item > img { width: 100%; }
+/* Título e subtítulo do banner: a altura acompanha a do slide (16:9), para o texto não entrar atrás do menu e do
+   logo, que ficam por cima do slide. Os 200px fixos do style.css jogavam o texto para fora do slide no celular,
+   onde ele sai do slide e fica logo abaixo da foto. */
+@media (min-width: 768px) {
+    .banner .carousel-caption { padding-bottom: min(22.5vw, calc(45vw - 270px)); }
+}
+@media (max-width: 767px) {
+    .banner .carousel-caption { position: static; padding: 0; background-color: #000; }
+    .banner .carousel-caption .container { padding-right: 0; padding-left: 0; }
+    .banner .wrap-caption { max-width: none; }
+    .item .carousel-caption .caption-heading { font-size: 20px; line-height: 28px; padding: 10px 15px; }
+    .item.active .carousel-caption .caption-heading { margin-bottom: 0; }
+    .item .caption-desc { padding: 10px 15px; }
+    .item.active .caption-desc { margin-bottom: 0; }
+    /* As bolinhas ficam no pé da foto (16:9), não em cima do texto */
+    .banner .carousel-indicators { top: calc(56.25vw - 30px); bottom: auto; }
+}
 
 /* ==========================================================================
    77. PADRÃO DAS TELAS DO PAINEL (30/10/2026)
