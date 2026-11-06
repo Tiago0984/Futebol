@@ -119,7 +119,8 @@
                                             data-titulo="{{ $banner->titulo_banner }}"
                                             data-subtitulo="{{ $banner->subtitulo_banner }}"
                                             data-ordem="{{ $banner->ordem_banner }}"
-                                            data-status="{{ strtolower($banner->status_banner) }}">
+                                            data-status="{{ strtolower($banner->status_banner) }}"
+                                            data-foto="{{ $banner->foto_url }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form action="{{ route('admin.banners.toggleStatus', $banner->id_banner) }}"
@@ -180,6 +181,12 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_ordem').value     = this.dataset.ordem ?? '';
             const sel = document.getElementById('edit_status');
             if (sel) sel.value = this.dataset.status ?? 'ativo';
+
+            // Foto atual em miniatura e no "Como vai ficar" (data-foto: o endereço completo; vazio = sem foto)
+            const atual = document.getElementById('edit_foto_atual');
+            atual.hidden = !this.dataset.foto;
+            atual.querySelector('img').src = this.dataset.foto || '';
+            atual.closest('.js-campo-imagem').dispatchEvent(new CustomEvent('imagem:atual', { detail: { url: this.dataset.foto } }));
         });
     });
 

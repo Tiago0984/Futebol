@@ -11746,3 +11746,81 @@ body.lp-body {
 .admin-campo .form-select { height: auto; }
 .admin-campo-acoes .form-select { width: auto; max-width: 100%; padding-top: 0.15rem; padding-bottom: 0.15rem; font-size: 0.8rem; }
 .admin-campo-acoes small { font-size: 0.75rem; }
+
+/* ==========================================================================
+   80. "COMO VAI FICAR" — IMAGENS DO CAMPEONATO E BANNERS DA HOME NO PAINEL (06/11/2026)
+   As peças do campeonato são as classes do site; aqui só a moldura, a escala e o que não existe no painel (o menu e
+   o app). O carrossel da home usa o style.css, que o painel não carrega: .previa-home-* repete os valores dele.
+   ========================================================================== */
+.previa-camp-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.previa-camp { margin: 0; min-width: 0; }
+.previa-camp-topo { grid-column: 1 / -1; }
+.previa-camp figcaption { margin-bottom: 4px; font-size: 0.75rem; color: var(--bs-secondary-color); }
+.previa-camp-moldura { overflow: hidden; border: 1px solid var(--aacj-border); border-radius: 8px; }
+.previa-camp-escala { transform-origin: top left; pointer-events: none; }
+/* min-height fixa: no site é 65vh, e aqui dependeria do tamanho da tela do painel */
+.previa-camp .camp-hero-section { min-height: 520px; }
+.previa-camp .camp-card { box-shadow: none; }
+/* O darkmode.css põe todo título em branco com !important: aqui ele ficaria branco sobre o cartão branco */
+html[data-bs-theme="dark"] .previa-camp .camp-card-title { color: #111111 !important; }
+/* O menu do site fica por cima do topo do banner */
+.previa-camp-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 110px;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.previa-app-slide {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 2.1;
+    border-radius: 14px;
+    background-color: #0a0a0a;
+    background-size: cover;
+    background-position: center;
+}
+.previa-app-slide.sem-imagem { background-image: linear-gradient(135deg, #2a0707 0%, #0a0a0a 70%); }
+.previa-app-degrade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 65%); }
+.previa-app-logo { position: absolute; left: 10px; bottom: 10px; width: 40px; height: 40px; object-fit: contain; }
+.previa-app-nome { position: absolute; left: 58px; right: 10px; bottom: 10px; color: #ffffff; font-size: 0.82rem; line-height: 1.2; }
+.previa-app-logo[hidden] + .previa-app-nome { left: 10px; }
+.previa-camp-home { overflow: hidden; border: 1px solid var(--aacj-border); border-radius: 8px; background: #ffffff; }
+/* Carrossel da home na largura de 1366 px (container de 1170 + o padding-bottom da seção 76, a 1366 px) */
+.previa-home-grade { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); align-items: start; }
+.previa-home-slide {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background-color: #0a0a0a;
+    background-size: cover;
+    background-position: center;
+}
+.previa-home-slide.sem-imagem { background-image: linear-gradient(135deg, #2a0707 0%, #0a0a0a 70%); }
+.previa-home-legenda { position: absolute; left: 113px; bottom: 327px; max-width: 560px; color: #ffffff; }
+.previa-home-titulo {
+    margin-bottom: 8px;
+    padding: 20px;
+    border-left: 4px solid #000000;
+    background-color: #ff0000;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 42px;
+}
+.previa-home-subtitulo { padding: 20px; border-left: 4px solid #ff0000; background-color: #000000; font-size: 14px; }
+/* No celular, o texto sai de cima da foto e fica logo abaixo dela (seção 76) */
+.previa-home-celular { background-color: #000000; color: #ffffff; }
+.previa-home-celular .previa-home-legenda { position: static; max-width: none; }
+.previa-home-celular .previa-home-titulo { margin-bottom: 0; padding: 10px 15px; font-size: 20px; line-height: 28px; }
+.previa-home-celular .previa-home-subtitulo { padding: 10px 15px; }
+@media (max-width: 767px) {
+    .previa-camp-grade { grid-template-columns: minmax(0, 1fr); }
+}

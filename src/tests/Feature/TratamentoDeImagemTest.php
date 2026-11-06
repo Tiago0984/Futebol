@@ -92,6 +92,129 @@ class TratamentoDeImagemTest extends TestCase
         $this->assertNull(TratadorDeImagem::logo($this->imagem(189, 280), 'campeonatos', 'logo-campeonato')['aviso']);
     }
 
+    public function test_logo_usa_o_recorte_livre_e_mantem_o_fundo_transparente(): void
+    {
+        // Metade esquerda vermelha, direita azul: o recorte fica só com a direita
+        $origem = $this->imagem(800, 400, true);
+
+        $direita = TratadorDeImagem::logo($origem, 'campeonatos', 'logo-campeonato', '400,0,400,400');
+        $this->assertSame([400, 400, IMAGETYPE_PNG], $this->medidas('campeonatos', $direita['arquivo']));
+        $this->assertSame('azul', $this->corEm('campeonatos', $direita['arquivo'], 10, 200));
+
+        // Recorte mais largo que alto: fica inteiro no quadrado, com as sobras transparentes
+        $faixa = TratadorDeImagem::logo($origem, 'campeonatos', 'logo-campeonato', '0,0,800,200');
+        $png = imagecreatefromstring(Storage::disk('imagens')->get("campeonatos/{$faixa['arquivo']}"));
+        $this->assertSame([512, 512, IMAGETYPE_PNG], $this->medidas('campeonatos', $faixa['arquivo']));
+        $this->assertSame(127, imagecolorat($png, 256, 10) >> 24);
+
+        // O transparente de um PNG continua transparente depois do recorte
+        $comFundo = TratadorDeImagem::logo($origem, 'campeonatos', 'logo-campeonato');
+        $caminho = Storage::disk('imagens')->path("campeonatos/{$comFundo['arquivo']}");
+        $recortada = TratadorDeImagem::logo($caminho, 'campeonatos', 'logo-campeonato', '0,0,512,300');
+        $png = imagecreatefromstring(Storage::disk('imagens')->get("campeonatos/{$recortada['arquivo']}"));
+        $this->assertSame(127, imagecolorat($png, 256, 110) >> 24);
+
+        // Inválido ou fora da imagem: a imagem inteira
+        foreach (['qualquer coisa', '9000,0,100,100'] as $invalido) {
+            $inteira = TratadorDeImagem::logo($this->imagem(800, 800, true), 'campeonatos', 'logo-campeonato', $invalido);
+            $this->assertSame('vermelho', $this->corEm('campeonatos', $inteira['arquivo'], 100, 256), $invalido);
+            $this->assertSame('azul', $this->corEm('campeonatos', $inteira['arquivo'], 400, 256), $invalido);
+        }
+    }
+
+    public function test_editar_imagem_recorta_a_atual_do_campeonato_sem_enviar_de_novo(): void
+    {
+        $sub15 = $this->idCategoria('Sub-15', 'M');
+        $dados = ['nome_campeonato' => 'Copa', 'tipo_campeonato' => 'COPA', 'data_inicio_campeonato' => now()->toDateString(),
+            'data_fim_campeonato' => now()->addMonth()->toDateString(), 'categorias' => [$sub15]];
+
+        $this->comoAdmin()->post(route('admin.campeonatos.store'), $dados + ['recorte_logo_evento' => '0,0,10,10', 'recorte_banner_evento' => '0,0,20,10'])->assertSessionHasNoErrors();
+        $copa = Campeonato::where('nome_campeonato', 'Copa')->sole();
+        $this->assertNull($copa->logo_evento, 'Recorte sem imagem nenhuma não grava nada');
+        $this->assertNull($copa->banner_evento);
+
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), $dados + [
+            'logo_evento' => new UploadedFile($this->imagem(800, 800, true), 'logo.jpg', 'image/jpeg', null, true),
+            'banner_evento' => new UploadedFile($this->imagem(2000, 1000, true), 'banner.jpg', 'image/jpeg', null, true),
+        ])->assertSessionHasNoErrors();
+        $copa->refresh();
+        [$logoAntiga, $bannerAntigo] = [$copa->logo_evento, $copa->banner_evento];
+
+        // Sem recorte, nada muda (abrir a edição e não mexer no quadro manda o campo vazio)
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), $dados + ['recorte_logo_evento' => '', 'recorte_banner_evento' => '']);
+        $this->assertSame([$logoAntiga, $bannerAntigo], [$copa->fresh()->logo_evento, $copa->fresh()->banner_evento]);
+
+        // Só o recorte da metade direita de cada uma
+        $this->comoAdmin()->put(route('admin.campeonatos.update', $copa->id_campeonato), $dados + [
+            'recorte_logo_evento' => '256,0,256,512', 'recorte_banner_evento' => '960,240,960,480',
+        ])->assertSessionHasNoErrors();
+        $copa->refresh();
+
+        $this->assertNotSame($logoAntiga, $copa->logo_evento);
+        $this->assertNotSame($bannerAntigo, $copa->banner_evento);
+        Storage::disk('imagens')->assertMissing("campeonatos/{$logoAntiga}");
+        Storage::disk('imagens')->assertMissing("campeonatos/{$bannerAntigo}");
+        $this->assertSame([512, 512, IMAGETYPE_PNG], $this->medidas('campeonatos', $copa->logo_evento));
+        $this->assertSame('azul', $this->corEm('campeonatos', $copa->logo_evento, 256, 256));
+        $this->assertSame([960, 480, IMAGETYPE_JPEG], $this->medidas('campeonatos', $copa->banner_evento));
+        $this->assertSame('azul', $this->corNoCentro('campeonatos', $copa->banner_evento));
+    }
+
+    public function test_editar_imagem_recorta_a_foto_atual_do_banner_sem_enviar_de_novo(): void
+    {
+        $dados = ['titulo_banner' => 'Banner', 'ordem_banner' => 1, 'status_banner' => 'ativo'];
+
+        $this->comoAdmin()->post(route('admin.banners.store'), $dados + [
+            'foto_banner' => new UploadedFile($this->imagem(1920, 1080, true), 'foto.jpg', 'image/jpeg', null, true),
+        ])->assertSessionHasNoErrors();
+        $banner = Banner::where('titulo_banner', 'Banner')->sole();
+        $antiga = $banner->foto_banner;
+
+        // Sem recorte, a foto fica (abrir a edição e não mexer no quadro manda o campo vazio)
+        $this->comoAdmin()->put(route('admin.banners.update', $banner->id_banner), $dados + ['recorte_foto_banner' => '']);
+        $this->assertSame($antiga, $banner->fresh()->foto_banner);
+
+        // Só a metade direita
+        $this->comoAdmin()->put(route('admin.banners.update', $banner->id_banner), $dados + ['recorte_foto_banner' => '960,270,960,540'])
+            ->assertSessionHasNoErrors()
+            ->assertSessionHas('avisos_imagem', fn ($avisos) => str_contains(implode(' ', $avisos), 'Imagem pequena'));
+        $banner->refresh();
+
+        $this->assertNotSame($antiga, $banner->foto_banner);
+        Storage::disk('imagens')->assertMissing("banner/{$antiga}");
+        $this->assertSame([960, 540, IMAGETYPE_JPEG], $this->medidas('banner', $banner->foto_banner));
+        $this->assertSame('azul', $this->corNoCentro('banner', $banner->foto_banner));
+
+        // O editar precisa da foto para abrir, e a lista leva o endereço ao modal
+        $this->comoAdmin()->get(route('admin.banners.index'))->assertOk()
+            ->assertSee('btn-outline-secondary js-editar-atual', false)
+            ->assertSee('Como vai ficar')
+            ->assertSee('Home: carrossel no computador')
+            ->assertSee('data-foto="' . $banner->foto_url . '"', false);
+    }
+
+    public function test_formulario_do_campeonato_tem_o_editar_imagem_e_a_previa(): void
+    {
+        $idCampeonato = DB::table('tbl_campeonato')->insertGetId([
+            'nome_campeonato' => 'Copa da Cidade', 'tipo_campeonato' => 'COPA', 'id_categoria' => $this->idCategoria('Sub-15', 'M'),
+            'data_inicio_campeonato' => now()->toDateString(), 'data_fim_campeonato' => now()->addMonth()->toDateString(),
+            'status_campeonato' => 'ATIVO', 'logo_evento' => 'logo.png', 'banner_evento' => 'banner.jpg',
+        ]);
+
+        $this->comoAdmin()->get(route('admin.campeonatos.edit', $idCampeonato))->assertOk()
+            ->assertSee('btn-outline-secondary js-editar-atual', false)
+            ->assertSee('name="recorte_logo_evento"', false)
+            ->assertSee('name="recorte_banner_evento"', false)
+            ->assertSee('Como vai ficar')
+            ->assertSee('Site: cartão da lista de campeonatos')
+            ->assertSee('App: carrossel da Home');
+
+        // Campeonato novo: a prévia sim, mas sem imagem atual a editar
+        $this->comoAdmin()->get(route('admin.campeonatos.create'))->assertOk()
+            ->assertSee('Como vai ficar')
+            ->assertDontSee('btn-outline-secondary js-editar-atual', false);
+    }
+
     public function test_campeonato_trata_logo_e_banner_e_apaga_o_antigo_so_se_e_gerado_e_ninguem_usa(): void
     {
         $sub15 = $this->idCategoria('Sub-15', 'M');

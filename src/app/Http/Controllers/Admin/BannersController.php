@@ -37,7 +37,7 @@ class BannersController extends Controller
             'status_banner',
         ]);
 
-        $foto = $this->tratarFoto($request);
+        $foto = $this->tratarFoto($request, $request->file('foto_banner')->getRealPath());
         $dados['foto_banner'] = $foto['arquivo'];
 
         Banner::create($dados);
@@ -68,8 +68,9 @@ class BannersController extends Controller
 
         $antiga = $banner->foto_banner;
         $aviso = null;
-        if ($request->hasFile('foto_banner')) {
-            $foto = $this->tratarFoto($request);
+        // Sem arquivo novo, o recorte vale para a foto atual ("Editar imagem", 06/11/2026)
+        if ($origem = TratadorDeImagem::origemDoEnvio($request, 'foto_banner', self::PASTA, $antiga)) {
+            $foto = $this->tratarFoto($request, $origem);
             $dados['foto_banner'] = $foto['arquivo'];
             $aviso = $foto['aviso'];
         }
@@ -102,12 +103,11 @@ class BannersController extends Controller
     }
 
     // Foto do carrossel da home: 1920×1080 (16:9), pelo recorte do formulário ou pelo centro (TratadorDeImagem)
-    private function tratarFoto(Request $request): array
+    private function tratarFoto(Request $request, string $origem): array
     {
         [$largura, $altura] = TratadorDeImagem::BANNER_SITE;
 
-        return TratadorDeImagem::capa($request->file('foto_banner')->getRealPath(), self::PASTA, 'banner-site',
-            $largura, $altura, $request->input('recorte_foto_banner'));
+        return TratadorDeImagem::capa($origem, self::PASTA, 'banner-site', $largura, $altura, $request->input('recorte_foto_banner'));
     }
 
     private function mensagens(): array

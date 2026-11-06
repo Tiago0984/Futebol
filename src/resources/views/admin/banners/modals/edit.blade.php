@@ -32,7 +32,7 @@
                             </select>
                         </div>
                         <div class="col-12">
-                            @include('admin.banners.modals._foto', ['rotulo' => 'Alterar imagem (opcional)', 'ajuda' => ' Deixe vazio para manter a imagem atual.'])
+                            @include('admin.banners.modals._foto', ['rotulo' => 'Alterar imagem (opcional)', 'ajuda' => ' Deixe vazio para manter a imagem atual.', 'idAtual' => 'edit_foto_atual'])
                         </div>
                     </div>
                 </div>

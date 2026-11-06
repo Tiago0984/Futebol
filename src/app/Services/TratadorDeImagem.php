@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Intervention\Image\Interfaces\ImageInterface;
@@ -12,8 +13,8 @@ use Intervention\Image\ImageManager;
  * entende de imagem poder usar qualquer foto:
  * - capa (Banners da home 1920×1080, banner do campeonato 1920×960): recorte na proporção (o do formulário, pelo
  *   Cropper.js, ou o centro) e redução, em JPG; menor que o formato não é ampliada (só borraria);
- * - logo do campeonato: a imagem inteira, sem cortar, centralizada num quadrado de até 512×512 com fundo
- *   transparente, em PNG;
+ * - logo do campeonato: a imagem inteira (ou o recorte livre do formulário, para tirar sobras), centralizada num
+ *   quadrado de até 512×512 com fundo transparente, em PNG;
  * - foto do atleta enviada pelo app (29/10/2026): quadrado do centro, até 512×512, em JPG.
  * A rotação das fotos de celular (EXIF) é acertada na leitura. Grava no disco "imagens" (public/futebol/images)
  * com nome gerado; quem chama grava o nome no banco e apaga o antigo (apagarSeNinguemUsa).
@@ -56,6 +57,21 @@ class TratadorDeImagem
     private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time|foto-atleta)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
 
     /**
+     * O que tratar num formulário com "Editar imagem" (06/11/2026): o arquivo enviado ou, sem ele, a imagem atual, se
+     * veio um recorte para ela ("recorte_{campo}"). Nenhum dos dois: null (a imagem não muda).
+     */
+    public static function origemDoEnvio(Request $request, string $campo, string $pasta, ?string $atual): ?string
+    {
+        if ($request->hasFile($campo)) {
+            return $request->file($campo)->getRealPath();
+        }
+
+        return $atual && $request->filled("recorte_{$campo}") && Storage::disk('imagens')->exists("{$pasta}/{$atual}")
+            ? Storage::disk('imagens')->path("{$pasta}/{$atual}")
+            : null;
+    }
+
+    /**
      * Capa no formato $largura × $altura, em JPG. $recorte: "x,y,largura,altura" em pixels da imagem já virada
      * (o do Cropper.js); inválido, fora da imagem ou noutra proporção = o centro.
      *
@@ -86,13 +102,22 @@ class TratadorDeImagem
     }
 
     /**
-     * Logo inteira num quadrado de lado min(512, maior lado da imagem), centralizada, fundo transparente, em PNG.
+     * Logo num quadrado de lado min(512, maior lado da imagem), centralizada, fundo transparente, em PNG.
+     * $recorte: "x,y,largura,altura", em qualquer proporção (a logo não tem formato: o quadro só tira as sobras);
+     * inválido ou fora da imagem = a imagem inteira.
      *
      * @return array{arquivo: string, largura: int, altura: int, aviso: ?string}
      */
-    public static function logo(string $origem, string $pasta, string $prefixo): array
+    public static function logo(string $origem, string $pasta, string $prefixo, ?string $recorte = null): array
     {
         $imagem = self::ler($origem);
+
+        if ($area = self::recorteValido($recorte, $imagem->width(), $imagem->height())) {
+            [$x, $y, $l, $a] = $area;
+            // Fundo transparente: sem ele, a parte vazia de um PNG viraria branca
+            $imagem->crop($l, $a, $x, $y, 'rgba(0, 0, 0, 0)');
+        }
+
         $maior = max($imagem->width(), $imagem->height());
         $lado = min(self::LOGO, $maior);
 
@@ -195,8 +220,8 @@ class TratadorDeImagem
             && in_array(mime_content_type($origem), ['image/heic', 'image/heif'], true);
     }
 
-    // "x,y,largura,altura" dentro da imagem e na proporção (com tolerância), ou null
-    private static function recorteValido(?string $recorte, int $largura, int $altura, float $proporcao): ?array
+    // "x,y,largura,altura" dentro da imagem e na proporção (com tolerância; sem proporção, qualquer uma), ou null
+    private static function recorteValido(?string $recorte, int $largura, int $altura, ?float $proporcao = null): ?array
     {
         if (! $recorte || ! preg_match('/^\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*$/', $recorte, $m)) {
             return null;
@@ -207,7 +232,11 @@ class TratadorDeImagem
         $l = min($l, $largura - $x);
         $a = min($a, $altura - $y);
 
-        if ($l < 1 || $a < 1 || abs($l / $a - $proporcao) / $proporcao > self::TOLERANCIA_PROPORCAO) {
+        if ($l < 1 || $a < 1) {
+            return null;
+        }
+
+        if ($proporcao !== null && abs($l / $a - $proporcao) / $proporcao > self::TOLERANCIA_PROPORCAO) {
             return null;
         }
 

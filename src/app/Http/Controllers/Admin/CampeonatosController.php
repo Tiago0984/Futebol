@@ -122,7 +122,7 @@ class CampeonatosController extends Controller
         ]);
         [$dados['id_local'], $dados['local_evento']] = $this->localEscolhido($request, 'local_evento', $campeonato->id_local, $campeonato->local_evento);
 
-        [$imagens, $avisosImagem] = $this->tratarImagens($request);
+        [$imagens, $avisosImagem] = $this->tratarImagens($request, $campeonato);
         $dados += $imagens;
         $antigas = $campeonato->only(array_keys($imagens));
 
@@ -201,6 +201,7 @@ class CampeonatosController extends Controller
             // A logo e o banner são reduzidos no servidor (TratadorDeImagem): a foto pode vir direto do celular
             'logo_evento'            => 'nullable|image|max:' . TratadorDeImagem::ENVIO_MAX_KB,
             'banner_evento'          => 'nullable|image|max:' . TratadorDeImagem::ENVIO_MAX_KB,
+            'recorte_logo_evento'    => 'nullable|string|max:60',
             'recorte_banner_evento'  => 'nullable|string|max:60',
             'participantes'          => 'nullable|array',
             'participantes.*'        => 'array',
@@ -216,23 +217,24 @@ class CampeonatosController extends Controller
     }
 
     /**
-     * Logo (512×512 PNG, inteira, fundo transparente) e banner (1920×960 JPG, pelo recorte do formulário ou pelo
-     * centro), tratados pelo TratadorDeImagem: [colunas => arquivo, avisos de imagem pequena].
+     * Logo (512×512 PNG, fundo transparente, inteira ou pelo recorte do formulário) e banner (1920×960 JPG, pelo
+     * recorte do formulário ou pelo centro), tratados pelo TratadorDeImagem: [colunas => arquivo, avisos de imagem
+     * pequena]. Sem arquivo novo, o recorte vale para a imagem atual do campeonato ("Editar imagem", 06/11/2026).
      */
-    private function tratarImagens(Request $request): array
+    private function tratarImagens(Request $request, ?Campeonato $campeonato = null): array
     {
         $imagens = [];
         $avisos = [];
 
-        if ($request->hasFile('logo_evento')) {
-            $logo = TratadorDeImagem::logo($request->file('logo_evento')->getRealPath(), self::PASTA_IMAGENS, 'logo-campeonato');
+        if ($origem = TratadorDeImagem::origemDoEnvio($request, 'logo_evento', self::PASTA_IMAGENS, $campeonato?->logo_evento)) {
+            $logo = TratadorDeImagem::logo($origem, self::PASTA_IMAGENS, 'logo-campeonato', $request->input('recorte_logo_evento'));
             $imagens['logo_evento'] = $logo['arquivo'];
             $avisos[] = $logo['aviso'];
         }
 
-        if ($request->hasFile('banner_evento')) {
+        if ($origem = TratadorDeImagem::origemDoEnvio($request, 'banner_evento', self::PASTA_IMAGENS, $campeonato?->banner_evento)) {
             [$largura, $altura] = TratadorDeImagem::BANNER_CAMPEONATO;
-            $banner = TratadorDeImagem::capa($request->file('banner_evento')->getRealPath(), self::PASTA_IMAGENS, 'banner-campeonato',
+            $banner = TratadorDeImagem::capa($origem, self::PASTA_IMAGENS, 'banner-campeonato',
                 $largura, $altura, $request->input('recorte_banner_evento'));
             $imagens['banner_evento'] = $banner['arquivo'];
             $avisos[] = $banner['aviso'];

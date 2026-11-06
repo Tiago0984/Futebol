@@ -430,6 +430,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 const bloco = document.getElementById(id);
                 bloco.hidden = !url;
                 bloco.querySelector('img').src = url || '';
+                bloco.closest('.js-campo-imagem').dispatchEvent(new CustomEvent('imagem:atual', { detail: { url } }));
             });
 
             // Tipo gravado em maiúsculas (Campeonato::TIPOS); valor antigo fora da lista entra como opção
