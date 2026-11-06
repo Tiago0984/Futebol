@@ -39,10 +39,12 @@ class CategoriaController extends Controller
             ], 404);
         }
 
+        // Com a tabela tbl_time_categoria (27/10/2026), as colunas precisam do nome da tabela: id_time existe nas duas
         $times = $categoria->times()
             ->where('status_time', 'ATIVO')
             ->orderBy('nome_time')
-            ->get(['id_time', 'nome_time', 'logo_time', 'tipo_time', 'id_categoria']);
+            ->get(['tbl_time.id_time', 'nome_time', 'logo_time', 'tipo_time'])
+            ->each->makeHidden('pivot');
 
         return response()->json([
             'success' => true,
