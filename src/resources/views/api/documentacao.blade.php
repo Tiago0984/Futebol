@@ -1,1007 +1,125 @@
+{{--
+    Documentação da API (06/11/2026): menu com os métodos e filtro à esquerda, texto no centro e exemplos à direita, com a
+    identidade da escolinha, clara: prancheta com linhas de campo, número de camisa e cartões nos status. O conteúdo vem de App\Support\DocumentacaoApi e dos arquivos de resources/documentacao-api;
+    estilos em coderatech/css/api-documentacao.css e JS em coderatech/js/api-documentacao.js.
+--}}
+@php
+    $base       = url('/api/v1');
+    $grupos     = \App\Support\DocumentacaoApi::grupos();
+    $endpoints  = \App\Support\DocumentacaoApi::endpoints();
+    $servidores = \App\Support\DocumentacaoApi::servidores($base);
+    $textos     = ['{BASE}' => $base, '{PRODUCAO}' => \App\Support\DocumentacaoApi::PRODUCAO, '{LOCAL}' => \App\Support\DocumentacaoApi::LOCAL];
+@endphp
 <!DOCTYPE html>
 <html lang="pt-BR">
 
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+    <title>Documentação da API – Escolinha de Futebol AACJ</title>
 
-    <title>API – Escolinha de Futebol</title>
-
-    <style>
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: #f4f6f5; color: #1d2b24; line-height: 1.5; }
-        header { background: #0f5132; color: #fff; padding: 32px 16px; }
-        header h1 { margin: 0 0 4px; font-size: 1.8rem; }
-        header p { margin: 0; opacity: .85; }
-        main { max-width: 960px; margin: 0 auto; padding: 24px 16px 48px; }
-        h2 { margin: 32px 0 12px; font-size: 1.25rem; border-bottom: 2px solid #0f5132; padding-bottom: 4px; }
-        h3 { margin: 0 0 8px; font-size: 1rem; }
-        .card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-        .rota { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 4px; }
-        .metodo { font-weight: 700; font-size: .75rem; padding: 2px 8px; border-radius: 4px; color: #fff; }
-        .GET { background: #198754; } .POST { background: #0d6efd; } .PUT { background: #fd7e14; } .PATCH { background: #6f42c1; } .DELETE { background: #dc3545; }
-        .acesso { font-size: .75rem; padding: 2px 8px; border-radius: 4px; background: #e9ecef; }
-        .acesso.atleta { background: #fff3cd; } .acesso.responsavel { background: #cfe2ff; } .acesso.qualquer { background: #e2d9f3; }
-        code { font-family: ui-monospace, Consolas, monospace; font-size: .9rem; word-break: break-all; }
-        pre { background: #1d2b24; color: #d1e7dd; padding: 12px; border-radius: 6px; overflow-x: auto; font-size: .85rem; margin: 8px 0; }
-        table { width: 100%; border-collapse: collapse; background: #fff; }
-        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #dee2e6; font-size: .9rem; vertical-align: top; }
-        .tabela { overflow-x: auto; }
-        nav ul { margin: 0; padding-left: 20px; columns: 2; }
-        @media (max-width: 600px) { nav ul { columns: 1; } }
-        .nota { font-size: .9rem; color: #495057; }
-        .ficha th { width: 160px; white-space: nowrap; }
-        .ficha th, .ficha td { border-bottom: 1px solid #eef1ef; }
-        .param { font-size: .85rem; color: #495057; }
-    </style>
+    <link rel="shortcut icon" href="{{ asset('futebol/images/logo2.png') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Open+Sans:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ asset('coderatech/css/api-documentacao.css') }}?v={{ filemtime(public_path('coderatech/css/api-documentacao.css')) }}">
+    <noscript><style>.nav-group.fechado .nav-itens { display: block; }</style></noscript>
 </head>
 
-<body>
+<body data-base="{{ $base }}">
 
-<header>
-    <h1>API – Escolinha de Futebol</h1>
+<header class="topbar">
+    <button class="menu-toggle" type="button" aria-label="Abrir menu" id="menuToggle"><span aria-hidden="true">☰</span></button>
 
-    <p>
-        Documentação da API utilizada pelo aplicativo. Base: <code>{{ url('/api/v1') }}</code>
-    </p>
+    <a href="#introducao" class="brand">
+        <span class="brand-escudo"><img src="{{ asset('futebol/images/logo2.png') }}" alt="Logo da AACJ"></span>
+        <span class="brand-texto">
+            <span class="brand-nome"><b>AACJ</b> Futebol</span>
+            <span class="brand-tipo">Documentação da API</span>
+        </span>
+    </a>
+    <span class="badge-version">v1</span>
+
+    <div class="topbar-base">
+        <div class="ambientes" role="group" aria-label="Ambiente">
+            @foreach ($servidores as $servidor)
+                <button type="button" class="ambiente{{ $servidor['url'] === $base ? ' ativo' : '' }}" data-url="{{ $servidor['url'] }}">{{ $servidor['nome'] }}</button>
+            @endforeach
+        </div>
+        <code class="js-base base-url">{{ $base }}</code>
+    </div>
+
+    <button type="button" class="btn-postman" id="postman"><span aria-hidden="true">⬇</span> <span class="rotulo-longo">Coleção</span> Postman</button>
 </header>
 
-<main>
+<nav class="sidebar" id="sidebar" aria-label="Rotas da API">
+    <div class="menu-filtros">
+        <input type="search" class="search" id="search" placeholder="Buscar rota..." aria-label="Buscar rota">
 
-    <div class="card">
-        <h3>Identificação da API</h3>
-        <table class="ficha">
-            <tr><th>Nome</th><td>API da Escolinha de Futebol AACJ (Associação Atlética Cohab Jucelino e Adjacência)</td></tr>
-            <tr><th>Uso</th><td>Aplicativo do atleta e do responsável: dados, agenda de treinos e jogos, avisos; dados públicos do site</td></tr>
-            <tr><th>Versão</th><td><strong>v1</strong> (todas as rotas começam com <code>/api/v1</code>)</td></tr>
-            <tr><th>URL base</th><td><code>{{ url('/api/v1') }}</code></td></tr>
-            <tr><th>Formato</th><td>JSON (envie <code>Accept: application/json</code>; corpo das requisições em <code>application/json</code>)</td></tr>
-            <tr><th>Autenticação</th><td>Token Bearer (Laravel Sanctum), obtido em <code>POST /api/v1/auth/login</code> e enviado em <code>Authorization: Bearer SEU_TOKEN</code>; vale 30 dias. Rotas marcadas como <strong>Público</strong> não pedem token.</td></tr>
-        </table>
+        <div class="filtros" role="group" aria-label="Filtrar pelo método">
+            <button type="button" class="filtro ativo" data-metodo="">Todos</button>
+            @foreach (['GET', 'POST', 'PUT', 'PATCH', 'DELETE'] as $metodo)
+                <button type="button" class="filtro {{ strtolower($metodo) }}" data-metodo="{{ $metodo }}">
+                    {{ $metodo }}
+                    <span class="filtro-conta">{{ collect($endpoints)->filter(fn ($rota) => in_array($metodo, $rota['metodos'], true))->count() }}</span>
+                </button>
+            @endforeach
+        </div>
+
+        <div class="menu-acoes">
+            <span id="navContador" aria-live="polite"></span>
+            <button type="button" id="alternarGrupos">Expandir tudo</button>
+        </div>
     </div>
 
-    <nav class="card">
-        <h3>Conteúdo</h3>
-        <ul>
-            <li><a href="#padrao">Padrão das respostas, datas e paginação</a></li>
-            <li><a href="#perfis">Perfis e token</a></li>
-            <li><a href="#publicas">Rotas públicas</a></li>
-            <li><a href="#campeonatos">Campeonatos (categorias, fase e classificação)</a></li>
-            <li><a href="#autenticacao">Login, logout e senha</a></li>
-            <li><a href="#atleta">Área do atleta</a></li>
-            <li><a href="#responsavel">Área do responsável</a></li>
-            <li><a href="#agenda">Agenda</a></li>
-            <li><a href="#avisos">Avisos (notificações)</a></li>
-            <li><a href="#fale-conosco">Fale conosco</a></li>
-            <li><a href="#dispositivos">Aparelhos e notificações push</a></li>
-            <li><a href="#erros">Erros e limites</a></li>
-            <li><a href="#rotas">Todas as rotas</a></li>
-        </ul>
-    </nav>
-
-    {{-- ================================================================== --}}
-    <h2 id="padrao">Padrão das respostas</h2>
-    <div class="card">
-        <p>Todas as respostas são JSON e têm o campo <code>success</code>: em caso de sucesso os dados vêm em <code>data</code>; em caso de erro (qualquer um: 401, 403, 404, 405, 422, 429, 500) vem uma <code>message</code> em português, que o app pode mostrar como está.</p>
-<pre>{ "success": true,  "data": { ... } }
-{ "success": false, "message": "Atleta não encontrado." }</pre>
-        <p>No <code>422</code> (dados inválidos) vem também <code>errors</code>, com as mensagens de cada campo; <code>message</code> é a primeira delas. Envie o cabeçalho <code>Accept: application/json</code>. Veja <a href="#erros">Erros e limites</a>.</p>
-    </div>
-
-    <div class="card">
-        <h3>Imagens</h3>
-        <p>Os campos de imagem trazem o nome do arquivo (<code>logo_time</code>, <code>logo_evento</code>, <code>banner_evento</code>, <code>foto_banner</code>, <code>foto_noticia</code>, <code>foto_atleta</code>) e, ao lado, o <strong>endereço completo</strong> para mostrar no app: <code>logo_url</code>, <code>banner_url</code> ou <code>foto_url</code>. Sem imagem: <code>null</code>.</p>
-<pre>"logo_time": "aacj.png",
-"logo_url": "https://coderatech.tipi5.smpsistema.com.br/AACJ/futebol/images/team/aacj.png"</pre>
-    </div>
-
-    <div class="card">
-        <h3>Datas e horários</h3>
-        <p>Datas no formato ISO 8601 com o fuso de Brasília e sem milissegundos: <code>2026-10-12T18:00:00-03:00</code>. Quem converte a data (<code>new Date(...)</code>) acerta o instante; quem só recorta o texto lê a hora local.</p>
-        <p>Data sem hora (dia do evento, data de nascimento) vem com a meia-noite: <code>2026-10-12T00:00:00-03:00</code>.</p>
-        <p>Horários soltos vêm sem segundos, como texto: <code>"18:00"</code>. Sem horário definido: <code>null</code>.</p>
-    </div>
-
-    <div class="card">
-        <h3>Paginação</h3>
-        <p>As listas paginadas (agenda e avisos) recebem <code>?page=N</code> (padrão 1) e têm <strong>20 itens por página</strong>. Junto com a lista vem o bloco <code>paginacao</code>:</p>
-<pre>"paginacao": { "pagina_atual": 1, "ultima_pagina": 3, "por_pagina": 20, "total": 47 }</pre>
-        <p>Página além da última devolve a lista vazia, com a mesma <code>paginacao</code>.</p>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="perfis">Perfis e token</h2>
-    <div class="card">
-        <p>O app tem <strong>dois perfis de login</strong>, cada um com o próprio e-mail e senha:</p>
-        <ul>
-            <li><strong>atleta</strong> (padrão): vê e edita os próprios dados, vê a sua agenda e os seus avisos. Só entra com o cadastro <code>ATIVO</code>.</li>
-            <li><strong>responsavel</strong>: vê os próprios dados e, de cada filho <code>ATIVO</code>, tudo o que o atleta vê, em modo leitura. Escolhe o filho pela lista de <code>/responsavel/atletas</code>. Só entra com pelo menos um filho <code>ATIVO</code>.</li>
-        </ul>
-        <p>O mesmo e-mail pode ser de um atleta e de um responsável; o campo <code>perfil</code> do login diz qual conta usar.</p>
-        <p><strong>Token:</strong> o login devolve um token que vale <strong>30 dias</strong>. Envie em todas as rotas protegidas:</p>
-<pre>Authorization: Bearer SEU_TOKEN</pre>
-        <p>Depois de 30 dias, ou depois do logout, o token responde <code>401</code>: faça login de novo. O token também deixa de valer quando o atleta é inativado (ou o responsável fica sem filho ativo) e quando a senha é definida pelo link "Defina sua senha".</p>
-        <p><strong>Cada token só entra na área do seu perfil:</strong> o token do atleta recebe <code>403</code> nas rotas <code>/responsavel...</code> e o do responsável recebe <code>403</code> nas rotas do atleta.</p>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="publicas">Rotas públicas</h2>
-
-    @php
-        $publicas = [
-            ['GET', '/status', 'Verifica se a API está online', '—'],
-            ['GET', '/banners', 'Banners ativos da home, na ordem de exibição', '—'],
-            ['GET', '/categorias', 'Categorias ativas (Sub-9 a Sub-17, masculino e feminino)', '—'],
-            ['GET', '/categorias/{id}/times', 'Times ativos de uma categoria', '{id}: id da categoria'],
-            ['GET', '/noticias', 'Notícias ativas. Filtro opcional: ?categoria=Campeonatos', 'categoria? (filtro pela categoria da notícia)'],
-            ['GET', '/noticias/{id}', 'Notícia completa', '{id}: id da notícia'],
-            ['GET', '/campeonatos', 'Campeonatos ativos, com as categorias de cada um (ver "Campeonatos")', '—'],
-            ['GET', '/campeonatos/{id}', 'Detalhes do campeonato: categorias, times, jogos (com fase e categoria; data_jogo com fuso) e a classificação por categoria e grupo (ver "Campeonatos")', '{id}: id do campeonato'],
-        ];
-    @endphp
-
-    @foreach ($publicas as [$metodo, $rota, $descricao, $parametros])
-        <div class="card">
-            <div class="rota">
-                <span class="metodo {{ $metodo }}">{{ $metodo }}</span>
-                <code>/api/v1{{ $rota }}</code>
-                <span class="acesso">Público</span>
+    @foreach ($grupos as $grupo)
+        <div class="nav-group fechado">
+            <button type="button" class="nav-title" aria-expanded="false">
+                <span>{{ $grupo['titulo'] }}</span>
+                <span class="nav-conta">{{ count($grupo['itens']) }}</span>
+                <span class="nav-seta" aria-hidden="true"></span>
+            </button>
+            <div class="nav-itens">
+                @foreach ($grupo['itens'] as $item)
+                    @php $ehGuia = $item['guia'] ?? false; @endphp
+                    <a class="nav-link" href="#{{ $item['id'] }}"
+                       data-metodos="{{ $ehGuia ? '' : implode(' ', $item['metodos']) }}"
+                       data-busca="{{ mb_strtolower($item['titulo'] . ' ' . ($item['rota'] ?? '')) }}">
+                        <span class="nav-metodos">
+                            @if ($ehGuia)
+                                <span class="method guia">GUIA</span>
+                            @else
+                                @foreach ($item['metodos'] as $metodo)
+                                    <span class="method {{ strtolower($metodo) }}">{{ $metodo }}</span>
+                                @endforeach
+                            @endif
+                        </span>
+                        <span class="nav-texto">{{ $item['titulo'] }}</span>
+                    </a>
+                @endforeach
             </div>
-            <div>{{ $descricao }}</div>
-            <div class="param">Parâmetros: <code>{{ $parametros }}</code></div>
         </div>
     @endforeach
 
-    {{-- ================================================================== --}}
-    <h2 id="campeonatos">Campeonatos</h2>
-    <p class="nota">Um campeonato pode ter várias categorias (ex.: Sub-11, Sub-15 e Sub-17). Cada jogo é de uma categoria e de uma fase. A classificação é por categoria e grupo (chave) e conta só a fase de grupos.</p>
+    <p class="nav-empty" id="navEmpty" hidden>Nenhuma rota encontrada.</p>
+</nav>
 
-    <div class="card">
-        <div class="tabela">
-        <table>
-            <tr><th>Campo</th><th>Descrição</th></tr>
-            <tr><td><code>categorias</code></td><td>As categorias do campeonato (em <code>/campeonatos-do-atleta</code>, só as do atleta): <code>[{ "id_categoria": 2, "nome_categoria": "Sub-15", "sexo_categoria": "M", "rotulo": "Sub-15 Masculino", "resumo": { ... }, "encerrada": false, "campeao": null }]</code>. O campo antigo <code>categoria</code> continua (uma delas), para não quebrar o app; use <code>categorias</code>.
-                <ul>
-                    <li><code>resumo</code>: os mesmos campos do <code>resumo</code> do campeonato (abaixo), contando <strong>só os jogos daquela categoria</strong>. Use este para mostrar a fase e os números de cada categoria: é igual nas três rotas (lista, detalhe e campeonatos do atleta). Categoria sem jogo: <code>fase_atual</code> <code>null</code> e os números zerados.</li>
-                    <li><code>encerrada</code>: <code>true</code> quando a categoria terminou: tem campeão (final decidida, ou pontos corridos encerrados pela escolinha) ou acabou empatada em tudo no 1º lugar (<code>campeao.situacao</code> = <code>sorteio</code>).</li>
-                    <li><code>campeao</code>: o mesmo objeto de <code>classificacao[].campeao</code> (abaixo), ou <code>null</code> enquanto não terminou.</li>
-                </ul>
-            </td></tr>
-            <tr><td><code>encerrado</code></td><td>Nas três rotas: <code>true</code> só quando <strong>todas</strong> as categorias do campeonato estão encerradas (em <code>/campeonatos-do-atleta</code>, conta também as que não são do atleta). Não depende das datas: um campeonato pode passar da data de fim sem estar encerrado, e vice-versa</td></tr>
-            <tr><td><code>da_aacj</code></td><td>Em todo time (<code>times[]</code>, <code>jogos[].time_casa</code> / <code>time_visitante</code>, as linhas da <code>classificacao</code> e o <code>campeao</code>, <code>vice</code> e <code>terceiro</code>): <code>true</code> quando o time é da AACJ, <code>false</code> quando é adversário. Use para destacar a escolinha. Vem também nos times da agenda (<code>time_casa</code>, <code>time_visitante</code>, <code>time_do_atleta</code>, <code>adversario</code>)</td></tr>
-            <tr><td><code>resumo</code></td><td>Nas três rotas, para o card: <code>{ "fase_atual": "OITAVAS", "fase_atual_label": "Oitavas de final", "rodada_atual": null, "total_rodadas": null, "jogos_realizados": 14, "total_jogos": 20, "jogos_aguardando_resultado": 1 }</code>.
-                <ul>
-                    <li>Contam só os jogos publicados e ativos (cancelados ficam fora), <strong>de todas as categorias juntas</strong> (com Sub-13 e Sub-15 em fases diferentes, a fase é a do próximo jogo de qualquer uma). Em <code>/campeonatos-do-atleta</code>, só os das categorias do atleta. Para cada categoria, use <code>categorias[].resumo</code>.</li>
-                    <li><code>fase_atual</code>: a do próximo jogo ainda sem placar; com todos jogados, a do último; sem jogos, <code>null</code>.</li>
-                    <li><code>rodada_atual</code> / <code>total_rodadas</code>: só na fase de grupos com rodadas (a do próximo jogo sem placar e a maior rodada marcada); senão, <code>null</code>.</li>
-                    <li><code>jogos_realizados</code> / <code>total_jogos</code>: jogos com placar sobre os <strong>jogos já marcados</strong> ("14 de 20 jogos"). O mata-mata só existe depois que a escolinha monta a próxima fase, então o total cresce durante o campeonato (12 de 12 vira 12 de 16 quando as quartas são marcadas): não é o total final.</li>
-                    <li><code>jogos_aguardando_resultado</code>: jogos que já terminaram (data passada, ou hoje com o horário de fim já passado; sem fim, o de início) e ainda sem placar lançado. Um jogo assim "segura" a <code>fase_atual</code> nele até a escolinha lançar o placar.</li>
-                </ul>
-            </td></tr>
-            <tr><td><code>tipo_campeonato</code> / <code>tipo_label</code></td><td>O tipo (<code>LIGA</code>, <code>COPA</code>, <code>TORNEIO</code>, <code>MATA-MATA</code>, <code>PONTOS CORRIDOS</code>, <code>AMISTOSO</code>) e o rótulo para mostrar ("Pontos Corridos")</td></tr>
-            <tr><td><code>local_evento</code>, <code>organizador_campeonato</code>, <code>logo_evento</code> / <code>logo_url</code>, <code>banner_evento</code> / <code>banner_url</code></td><td>Opcionais: podem vir <code>null</code>. <code>local_evento</code> é só o local principal; cada jogo tem o seu, em <code>jogos[].local_jogo</code> (os jogos de um campeonato podem ser em locais diferentes)</td></tr>
-            <tr><td><code>jogos[].fase_jogo</code> / <code>jogos[].fase</code></td><td>A fase do jogo: <code>GRUPOS</code>, <code>REPESCAGEM</code>, <code>DEZESSEIS_AVOS</code>, <code>OITAVAS</code>, <code>QUARTAS</code>, <code>SEMIFINAL</code>, <code>TERCEIRO</code>, <code>FINAL</code>; <code>fase</code> é o rótulo ("Fase de grupos", "Disputa de 3º lugar")</td></tr>
-            <tr><td><code>jogos[].rodada_jogo</code></td><td>A rodada na fase de grupos (<code>null</code> sem rodada e no mata-mata)</td></tr>
-            <tr><td><code>jogos[].placar_time_casa_jogos</code> / <code>_visitante_</code></td><td>Placar do <strong>tempo normal</strong> (<code>null</code> = ainda não jogado)</td></tr>
-            <tr><td><code>jogos[].prorrogacao_time_casa_jogos</code> / <code>_visitante_</code>, <code>jogos[].penaltis_time_casa_jogos</code> / <code>_visitante_</code></td><td>Só no mata-mata: os gols da prorrogação (jogo único empatado) e a disputa de pênaltis; <code>null</code> quando não houve</td></tr>
-            <tr><td><code>jogos[].id_jogo_ida</code></td><td>No jogo de volta do mata-mata, o <code>id_jogo</code> da ida (na ida e no jogo único, <code>null</code>). Empate no agregado vai direto para os pênaltis, sem gol fora</td></tr>
-            <tr><td><code>jogos[].confronto</code></td><td>Mata-mata decidido: <code>{ "id_time": 9, "como": "pênaltis", "agregado": [3, 3], "texto": "Botafogo passa nos pênaltis (4 × 3), depois do agregado 3 × 3" }</code>. <code>como</code>: <code>tempo normal</code>, <code>prorrogação</code>, <code>agregado</code> ou <code>pênaltis</code>; <code>agregado</code> só na volta, na ordem mandante × visitante deste jogo. <code>null</code> fora do mata-mata, na ida (decide na volta) e enquanto não há vencedor</td></tr>
-            <tr><td><code>jogos[].id_categoria</code></td><td>A categoria do jogo (uma das <code>categorias</code>)</td></tr>
-            <tr><td><code>classificacao</code></td><td>Só em <code>/campeonatos/{id}</code>: uma entrada por categoria, com <code>id_categoria</code>, <code>categoria</code> (rótulo), <code>classificados</code> (quantos passam de cada grupo, ou <code>null</code>) e <code>grupos</code></td></tr>
-            <tr><td><code>classificacao[].campeao</code></td><td>O campeão da categoria, ou <code>null</code> enquanto não há: <code>situacao</code> (<code>campeao</code> ou <code>sorteio</code>), <code>modo</code> (<code>final</code>: o vencedor da final; <code>tabela</code>: pontos corridos, o 1º depois que a escolinha encerra a categoria, com todos os jogos da fase de grupos publicados e com placar; com "classificam N por grupo", o campeão sai da final), <code>como</code> (texto), <code>campeao</code>, <code>vice</code> e <code>terceiro</code> (<code>{ id_time, nome, logo, logo_url, da_aacj }</code> ou <code>null</code>; vice e 3º só com final) e <code>empatados</code> (nomes, quando o 1º lugar está empatado em tudo e o campeão sai por sorteio)</td></tr>
-            <tr><td><code>classificacao[].grupos[]</code></td><td><code>grupo</code> (nome, ou <code>null</code> na categoria sem grupos; "Sem grupo" para quem não está em nenhum), <code>classificados</code> e <code>tabela</code>: <code>posicao</code>, <code>id_time</code>, <code>time</code>, <code>logo</code>, <code>logo_url</code>, <code>pontos</code>, <code>jogos</code>, <code>vitorias</code>, <code>empates</code>, <code>derrotas</code>, <code>gols_marcados</code>, <code>gols_sofridos</code>, <code>saldo</code>, <code>da_aacj</code>, <code>classificado</code> (true para os primeiros que passam) e <code>empate_sorteio</code> (true quando o time está empatado com outro em todos os critérios: se continuar assim no fim, a ordem sai por sorteio)</td></tr>
-            <tr><td>Ordem da tabela</td><td>Como no Brasileirão: pontos (vitória 3, empate 1), vitórias, saldo de gols, gols marcados e, com só dois times empatados nisso tudo, o confronto direto (pontos nos jogos entre eles). Sem cartões. Empate em tudo: <code>empate_sorteio</code> e, enquanto isso, ordem alfabética</td></tr>
-        </table>
-        </div>
-<pre>"classificacao": [
-  {
-    "id_categoria": 2, "categoria": "Sub-15 Masculino", "classificados": 2,
-    "grupos": [
-      {
-        "grupo": "Grupo 01", "classificados": 2,
-        "tabela": [
-          { "posicao": 1, "id_time": 3, "time": "AACJ Sub-15", "logo": "aacj.png",
-            "logo_url": "https://.../futebol/images/team/aacj.png", "da_aacj": true, "pontos": 6, "jogos": 2, "vitorias": 2,
-            "empates": 0, "derrotas": 0, "gols_marcados": 5, "gols_sofridos": 1, "saldo": 4, "classificado": true }
-        ]
-      }
-    ]
-  }
-]</pre>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="autenticacao">Login, logout e senha</h2>
-
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/login</code><span class="acesso">Público</span></div>
-        <p>Login de um dos perfis. <code>perfil</code> é <code>atleta</code> (padrão, quando não é enviado) ou <code>responsavel</code>. <code>device_name</code> é opcional (nome do aparelho no token).</p>
-<pre>POST /api/v1/auth/login
-Content-Type: application/json
-
-{ "email": "joana@exemplo.com", "senha": "********", "perfil": "atleta", "device_name": "celular-da-joana" }</pre>
-        <p>Resposta do <strong>atleta</strong> (200):</p>
-<pre>{
-  "success": true,
-  "message": "Login realizado com sucesso.",
-  "data": {
-    "token": "12|AbCdEf...",
-    "perfil": "atleta",
-    "atleta": {
-      "id_atleta": 7, "nome_atleta": "Joana Exemplo", "email_atleta": "joana@exemplo.com",
-      "numero_matricula_atleta": "A100", "foto_atleta": null, "foto_url": null
-    }
-  }
-}</pre>
-        <p>Resposta do <strong>responsável</strong> (200), com os filhos <code>ATIVO</code>:</p>
-<pre>{
-  "success": true,
-  "message": "Login realizado com sucesso.",
-  "data": {
-    "token": "13|GhIjKl...",
-    "perfil": "responsavel",
-    "responsavel": { "id_responsavel": 5, "nome_responsavel": "Carla Exemplo", "email_responsavel": "carla@exemplo.com" },
-    "atletas": [
-      { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100",
-        "foto_atleta": null, "foto_url": null, "grau_parentesco_responsavel": "Mãe" }
-    ]
-  }
-}</pre>
-        <p>Erros:</p>
-<pre>401 { "success": false, "message": "E-mail ou senha inválidos." }
-403 { "success": false, "message": "Cadastro não está ativo. Procure a secretaria da escolinha." }            (atleta)
-403 { "success": false, "message": "Nenhum atleta ativo vinculado a este responsável. Procure a secretaria da escolinha." }
-422 { "success": false, "message": "O valor de perfil não é válido.", "errors": { "perfil": [...] } }   (campos inválidos)
-429 { "success": false, "message": "Muitas tentativas. Aguarde um pouco e tente de novo." }                     (limite de tentativas)</pre>
-        <p class="nota">Limite: 5 tentativas por minuto por IP e 5 por minuto por e-mail e perfil (errar a senha do responsável não bloqueia o atleta do mesmo e-mail).</p>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/logout</code><span class="acesso qualquer">Qualquer perfil</span></div>
-        <p>Invalida só o token usado na requisição.</p>
-<pre>200 { "success": true, "message": "Logout realizado com sucesso." }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/esqueci-senha</code><span class="acesso">Público</span></div>
-        <p>Envia ao e-mail do perfil um <strong>código de 4 dígitos, válido por 15 minutos</strong>. A resposta é <strong>sempre a mesma</strong>, exista ou não o e-mail. Só envia para quem pode entrar no app (atleta <code>ATIVO</code>; responsável com filho <code>ATIVO</code>), no máximo uma vez a cada 60 segundos por conta. Pedidos suprimidos pelo intervalo e falhas no e-mail também retornam a resposta genérica abaixo. Sem <code>perfil</code>, vale <code>atleta</code>, como no login.</p>
-<pre>POST /api/v1/auth/esqueci-senha
-{ "email": "carla@exemplo.com", "perfil": "responsavel" }
-
-200 {
-  "success": true,
-  "message": "Se o e-mail estiver cadastrado, enviaremos um código de verificação."
-}</pre>
-        <p class="nota">Limite: 5 pedidos por minuto por IP e 3 a cada 10 minutos por e-mail e perfil (<code>429</code> depois disso).</p>
-        <p>Um novo envio invalida o código e o <code>reset_token</code> anteriores daquela conta. O código é guardado com hash. O app deve carregar e-mail e perfil até a tela de redefinição.</p>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/validar-codigo</code><span class="acesso">Público</span></div>
-        <p>Enviar o código como <strong>string com exatamente quatro dígitos</strong>, preservando zeros iniciais. Sem perfil, vale atleta. O código tem no máximo 5 tentativas erradas, mesmo trocando IP; a quinta invalida o código. Validar corretamente também consome o código.</p>
-<pre>POST /api/v1/auth/validar-codigo
-{ "email": "carla@exemplo.com", "perfil": "responsavel", "codigo": "0042" }
-
-200 {
-  "success": true,
-  "data": { "reset_token": "token-aleatorio-retornado-pela-api" }
-}</pre>
-        <p>O <code>reset_token</code> é uma string opaca, aleatória, de uso único e válida por <strong>10 minutos a partir da validação</strong>. É guardado com hash e vinculado à conta/perfil. Não é um token de login e não deve ser salvo no AsyncStorage: use-o na próxima chamada da mesma ação do app.</p>
-<pre>422 {
-  "success": false,
-  "message": "Código inválido ou expirado.",
-  "errors": { "codigo": ["Código inválido ou expirado."] }
-}</pre>
-        <p>A mesma mensagem vale para código incorreto, expirado, consumido, bloqueado, e-mail sem recuperação ou conta sem acesso. Limite adicional de 5 requisições por minuto por IP.</p>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/auth/redefinir-senha</code><span class="acesso">Público</span></div>
-        <p>Enviar o token recebido na validação e as duas senhas. A nova senha exige pelo menos 8 caracteres. E-mail e perfil já estão vinculados ao token e não são enviados nesta etapa.</p>
-<pre>POST /api/v1/auth/redefinir-senha
-{
-  "reset_token": "token-retornado-na-validacao",
-  "nova_senha": "minha-nova-senha",
-  "nova_senha_confirmation": "minha-nova-senha"
-}
-
-200 {
-  "success": true,
-  "message": "Senha redefinida com sucesso. Faça login novamente."
-}
-
-422 {
-  "success": false,
-  "message": "A nova senha precisa ter pelo menos 8 caracteres.",
-  "errors": { "nova_senha": ["A nova senha precisa ter pelo menos 8 caracteres."] }
-}</pre>
-        <p>Senhas inválidas ou com confirmação diferente retornam <code>422</code> com <code>errors.nova_senha</code>, em português, sem consumir o token. Token inválido, usado ou expirado retorna <code>422</code> com <code>message: "Token de redefinição inválido ou expirado."</code> e <code>errors.reset_token</code>.</p>
-        <p>Ao concluir, todos os tokens Sanctum daquela conta são revogados, assim como seus códigos, tokens de redefinição e links antigos. O outro perfil, mesmo com o mesmo e-mail, não muda. O app só deve voltar ao login após sucesso desta chamada; ela não faz login automaticamente. Limite de 5 requisições por minuto por IP.</p>
-        <p>Nas três rotas, <code>429</code> segue o padrão de erros da API e traz <code>Retry-After</code> em segundos, exposto por CORS em <code>Access-Control-Expose-Headers</code> para leitura pelo app web.</p>
-    </div>
-
-    <div class="card">
-        <h3>Links "Defina sua senha" (página do site, não é rota da API)</h3>
-        <p>Os convites continuam chegando por link na <strong>aprovação da matrícula</strong> (para o atleta, se tiver e-mail, e para o responsável que ainda não tem senha) e quando a secretaria usa <strong>"Reenviar convite"</strong>. O link abre a página <code>{{ url('/senha/{perfil}/{token}') }}?email=...</code>, onde a pessoa digita a senha nova (mínimo de 8 caracteres). O "Esqueci minha senha" do app usa o fluxo de código acima.</p>
-        <ul>
-            <li>O link vale <strong>24 horas</strong> e só pode ser usado uma vez. Vencido, a página orienta a recuperar o acesso por código no "Esqueci minha senha" do app.</li>
-            <li>Ao definir a senha, as sessões do app daquele perfil são encerradas (os tokens antigos deixam de valer). O outro perfil, mesmo com o mesmo e-mail, continua conectado.</li>
-        </ul>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="atleta">Área do atleta</h2>
-    <p class="nota">Rotas com o token do perfil <strong>atleta</strong> e o cadastro <code>ATIVO</code>. A agenda e os avisos estão nas seções <a href="#agenda">Agenda</a> e <a href="#avisos">Avisos</a>.</p>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Dados do atleta logado, com o endereço e a categoria atual. O atleta é da AACJ, na categoria dele: <code>times</code> vem sempre vazio (mantido para não quebrar o app); o time de cada jogo vem na agenda, em <code>time_do_atleta</code>. Posições: <code>posicoes</code> (até 3, a principal primeiro; <code>posicao</code> é o código fixo, <code>sigla</code> e <code>nome</code> são para mostrar) e <code>posicao_atleta</code> com o código da principal (<code>null</code> sem posição). Códigos: {{ implode(', ', array_keys(\App\Models\Atleta::POSICOES)) }}. Responsáveis: <code>responsaveis</code>, só com <code>nome</code> e <code>grau_parentesco</code> (lista vazia quando não há; CPF e contatos do responsável não vêm).</p>
-<pre>200 {
-  "success": true,
-  "data": {
-    "id_atleta": 7, "nome_atleta": "Joana Exemplo", "data_nasc_atleta": "2013-06-15T00:00:00-03:00",
-    "email_atleta": "joana@exemplo.com", "numero_matricula_atleta": "A100", "status_atleta": "ATIVO",
-    "escola_atleta": "...", "serie_atleta": "...", "peso_atleta": "45.00", "altura_atleta": "1.55", ...,
-    "posicao_atleta": "VOLANTE", "foto_url": "https://.../futebol/images/our-teams/joana.jpg", "foto_pendente": false,
-    "endereco": { "cep_endereco": "01000-000", "rua_endereco": "...", ... },
-    "categorias": [
-      { "id_categoria": 5, "nome_categoria": "Sub-13",
-        "pivot": { "id_atleta": 7, "id_categoria": 5,
-                   "data_inicio_categoria_atleta": "2026-02-01T09:30:00-03:00",
-                   "data_fim_categoria_atleta": null,
-                   "data_atualizacao_categoria_atleta": "2026-02-01T09:30:00-03:00",
-                   "status_categoria_atleta": "ATIVO", "observacao_categoria_atleta": null } }
-    ],
-    "posicoes": [
-      { "posicao": "VOLANTE", "sigla": "VOL", "nome": "Volante", "ordem_atleta_posicao": 1 },
-      { "posicao": "MEIA_CENTRAL", "sigla": "MC", "nome": "Meia-central", "ordem_atleta_posicao": 2 }
-    ],
-    "responsaveis": [
-      { "nome": "Carla Exemplo", "grau_parentesco": "Mãe" }
-    ],
-    "times": []
-  }
-}</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo PUT">PUT</span><span class="metodo PATCH">PATCH</span><code>/api/v1/atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Atualiza os dados que o atleta pode mudar (pode mandar só alguns; campos fora desta lista são ignorados): <code>nome_atleta</code>, <code>cpf_atleta</code>, <code>data_nasc_atleta</code>, <code>email_atleta</code> (único), <code>telefone_atleta</code>, <code>escola_atleta</code>, <code>serie_atleta</code>, <code>sala_atleta</code>, <code>periodo_escolar_atleta</code>, <code>turno_treino_atleta</code>, <code>peso_atleta</code>, <code>altura_atleta</code>, <code>descricao_atleta</code>. RG, matrícula, status e o <strong>ano</strong> de nascimento só a secretaria muda. A resposta traz o atleta no mesmo formato de <code>GET /api/v1/atleta</code>.</p>
-        <p><strong>Nome, CPF e data de nascimento</strong> ficam registrados para a secretaria (o painel mostra o antes e o depois):</p>
-        <ul>
-            <li><code>nome_atleta</code>: de 3 a 100 caracteres.</li>
-            <li><code>cpf_atleta</code>: com ou sem pontuação (<code>194.727.789-84</code> ou <code>19472778984</code>); volta sempre como <code>000.000.000-00</code>. Os dígitos verificadores são conferidos e o CPF não pode ser de outro atleta ("Este CPF já está cadastrado para outro atleta.").</li>
-            <li><code>data_nasc_atleta</code>: <code>AAAA-MM-DD</code>, uma data que existe, anterior a hoje e de quem tem de 9 a 17 anos no ano. <strong>Só o dia e o mês</strong> podem mudar: outro ano dá 422 com "Para mudar o ano de nascimento, procure a secretaria da escolinha." (o ano decide a categoria e a idade nos campeonatos).</li>
-        </ul>
-        <p><code>periodo_escolar_atleta</code> (quando vier, não pode ser vazio): <code>MANHA</code>, <code>TARDE</code>, <code>NOITE</code> ou <code>INTEGRAL</code>. O treino é no turno oposto ao da escola (integral treina à tarde). Com <code>NOITE</code>, mande junto <code>turno_treino_atleta</code>: <code>MANHA</code>, <code>TARDE</code> ou <code>AMBOS</code>; nos outros períodos ele volta como <code>null</code>.</p>
-<pre>PATCH /api/v1/atleta
-{ "nome_atleta": "Joana Exemplo da Silva", "cpf_atleta": "19472778984", "data_nasc_atleta": "2014-05-20" }
-
-200 { "success": true, "message": "Dados atualizados com sucesso.", "data": { ...o mesmo de GET /api/v1/atleta... } }
-
-422 { "success": false, "message": "Para mudar o ano de nascimento, procure a secretaria da escolinha.",
-      "errors": { "data_nasc_atleta": ["Para mudar o ano de nascimento, procure a secretaria da escolinha."] } }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo PUT">PUT</span><code>/api/v1/atleta/senha</code><span class="acesso atleta">Atleta</span></div>
-        <p>Troca a senha (mínimo de 8 caracteres) e encerra as sessões dos outros aparelhos (o token atual continua valendo).</p>
-<pre>{ "senha_atual": "********", "nova_senha": "********", "nova_senha_confirmation": "********" }
-
-200 { "success": true, "message": "Senha alterada com sucesso." }
-422 { "success": false, "message": "Senha atual incorreta." }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/atleta/foto</code><span class="acesso atleta">Atleta</span></div>
-        <p>Envia uma foto nova do atleta. <strong>O corpo é <code>multipart/form-data</code></strong> (não JSON), com o arquivo no campo <code>foto</code>: não defina o <code>Content-Type</code> à mão (o <code>FormData</code> e o <code>curl -F</code> põem o <em>boundary</em> sozinhos). Aceita JPG, PNG e WebP (HEIC do iPhone só se o servidor conseguir abrir), até <strong>10 MB</strong>. A foto é recortada no quadrado do centro e reduzida a até 512 × 512, em JPG.</p>
-        <p><strong>A foto nova espera a aprovação da secretaria</strong> (o atleta é menor e a foto aparece no site): até lá, <code>foto_url</code> continua com a foto atual e <code>foto_pendente</code> vem <code>true</code>. Mandar outra antes da aprovação troca a que esperava. A resposta traz o atleta no mesmo formato de <code>GET /api/v1/atleta</code>. O responsável não troca a foto do filho.</p>
-<pre>curl -X POST https://.../api/v1/atleta/foto \
-  -H "Accept: application/json" -H "Authorization: Bearer SEU_TOKEN" \
-  -F "foto=@joana.jpg"
-
-// JavaScript (navegador ou React Native)
-const corpo = new FormData();
-corpo.append('foto', arquivo);   // File/Blob, ou { uri, name: 'foto.jpg', type: 'image/jpeg' } no React Native
-await fetch(`${SERVIDOR}/api/v1/atleta/foto`, {
-  method: 'POST',
-  headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },   // sem Content-Type
-  body: corpo,
-});
-
-200 { "success": true, "message": "Foto enviada. Ela aparece no app depois que a secretaria aprovar.",
-      "data": { ...o mesmo de GET /api/v1/atleta, com "foto_pendente": true... } }
-
-422 { "success": false, "message": "A foto deve ser uma imagem JPG ou PNG.",
-      "errors": { "foto": ["A foto deve ser uma imagem JPG ou PNG."] } }
-422 { "success": false, "message": "A foto deve ter no máximo 10 MB.",
-      "errors": { "foto": ["A foto deve ter no máximo 10 MB."] } }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo DELETE">DELETE</span><code>/api/v1/atleta/foto</code><span class="acesso atleta">Atleta</span></div>
-        <p>Tira a foto do atleta <strong>na hora</strong> (volta para a padrão: <code>foto_url</code> <code>null</code>, e o app mostra as iniciais) e descarta a foto que esperava aprovação. Responde no mesmo formato do envio.</p>
-<pre>200 { "success": true, "message": "Foto removida.", "data": { ...o mesmo de GET /api/v1/atleta, com "foto_url": null, "foto_pendente": false... } }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/atleta/estatisticas</code><span class="acesso atleta">Atleta</span></div>
-        <p>Os números do atleta desde que entrou na escolinha, no <code>total</code> e <code>por_time</code> (cada time em que jogou ou foi convocado, do que tem mais partidas para o que tem menos; <code>categoria</code> são as categorias do cadastro do time, num texto: um time tem várias, como "Sub-13 Masculino, Sub-15 Masculino"), e os da <code>categoria_atual</code> dele:</p>
-        <ul>
-            <li><code>partidas</code>: jogos (campeonato ou amistoso) em que ele foi <strong>escalado num time</strong>, publicados, não cancelados e já realizados. Inscrito sem time não conta.</li>
-            <li><code>convocacoes</code>: convocações para campeonatos (uma por campeonato e categoria).</li>
-            <li><code>cartoes_amarelos</code>, <code>cartoes_vermelhos</code>: no time em que ele estava escalado naquele jogo.</li>
-            <li><code>gols</code>, <code>assistencias</code>: da <strong>súmula</strong> que a secretaria lança no painel, só nos jogos que contam como partida e que têm súmula (algum gol lançado). Gol contra não conta como gol do atleta. Jogo sem súmula não entra (o placar pode ter gols dele que ninguém lançou). <strong><code>null</code> quando nenhum jogo daquele recorte (<code>total</code>, cada time, <code>categoria_atual</code>) tem súmula</strong>: não registrado, diferente de <code>0</code> (jogou com súmula e não marcou). Mostre "—" no <code>null</code>.</li>
-            <li><code>categoria_atual</code>: os mesmos números, só os da categoria em que o atleta está hoje (a mesma de <code>GET /atleta</code>; uma só). Contam os jogos <strong>daquela categoria</strong> (a categoria do jogo; no amistoso sem categoria, a do time em que ele jogou, se o time tem uma só) e as convocações nela: o Sub-13 que sobe para jogar no Sub-15 tem essas partidas no <code>total</code>, não na <code>categoria_atual</code>. <code>nome_categoria</code> é o nome curto ("Sub-13") e <code>categoria</code> traz o sexo ("Sub-13 Masculino"). Sem categoria: <code>null</code>.</li>
-        </ul>
-<pre>200 {
-  "success": true,
-  "data": {
-    "total": { "partidas": 12, "convocacoes": 6, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": 4, "assistencias": 2 },
-    "por_time": [
-      { "id_time": 1, "nome_time": "AACJ Masculino", "logo_url": "https://.../images/team/logo-time-20261028-094455-86yx1l.png",
-        "categoria": "Sub-15 Masculino, Sub-17 Masculino",
-        "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": 4, "assistencias": 2 },
-      { "id_time": 5, "nome_time": "AACJ B", "logo_url": "https://.../images/team/logo-time-20261028-101500-a1b2c3.png",
-        "categoria": "Sub-15 Masculino",
-        "partidas": 2, "convocacoes": 1, "cartoes_amarelos": 0, "cartoes_vermelhos": 0, "gols": null, "assistencias": null }
-    ],
-    "categoria_atual": { "id_categoria": 9, "nome_categoria": "Sub-17", "categoria": "Sub-17 Masculino",
-      "partidas": 10, "convocacoes": 5, "cartoes_amarelos": 1, "cartoes_vermelhos": 0, "gols": 4, "assistencias": 2 }
-  }
-}</pre>
-        <p>No exemplo, os 2 jogos pelo AACJ B não têm súmula: <code>null</code> nesse time, e o <code>total</code> soma só o que foi lançado.</p>
-        <p>Atleta que ainda não jogou: <code>0</code> no <code>total</code> (gols e assistências <code>null</code>) e <code>por_time</code> vazio. O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/estatisticas</code>.</p>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/campeonatos-do-atleta</code><span class="acesso atleta">Atleta</span></div>
-        <p>Os campeonatos de que o atleta participa (para o carrossel da Home): só campeonatos <strong>ativos</strong> e <strong>ainda não terminados</strong> (data de fim hoje ou depois). O atleta participa quando:</p>
-        <ul>
-            <li>foi <strong>convocado</strong> no campeonato, em qualquer categoria (inclusive numa categoria acima da dele); ou</li>
-            <li>a <strong>categoria atual</strong> dele está no campeonato e a AACJ tem time participante nela (o campeonato já aparece antes da convocação).</li>
-        </ul>
-        <p>Ordem: os <strong>em andamento</strong> primeiro (do que termina antes), depois os <strong>próximos</strong> pela data de início. Sem paginação. Nenhum campeonato: <code>data</code> vazio.</p>
-        <div class="tabela">
-        <table>
-            <tr><th>Campo</th><th>Descrição</th></tr>
-            <tr><td><code>id_campeonato</code>, <code>nome_campeonato</code>, <code>tipo_campeonato</code> / <code>tipo_label</code>, <code>data_inicio_campeonato</code>, <code>data_fim_campeonato</code></td><td>Os mesmos de <code>GET /campeonatos</code>; <code>tipo_label</code> é o rótulo ("Pontos Corridos")</td></tr>
-            <tr><td><code>descricao_campeonato</code>, <code>organizador_campeonato</code>, <code>local_evento</code></td><td>Podem vir <code>null</code></td></tr>
-            <tr><td><code>logo_evento</code> / <code>logo_url</code>, <code>banner_evento</code> / <code>banner_url</code></td><td>Podem vir <code>null</code> (campeonato sem imagem): use uma imagem padrão</td></tr>
-            <tr><td><code>situacao</code></td><td><code>EM_ANDAMENTO</code> (já começou) ou <code>PROXIMO</code></td></tr>
-            <tr><td><code>categorias</code></td><td><strong>Só as do atleta</strong> no campeonato (as das convocações e a categoria atual, quando a AACJ joga nela), no formato de <code>GET /campeonatos</code> (com <code>resumo</code>, <code>encerrada</code> e <code>campeao</code> de cada uma)</td></tr>
-            <tr><td><code>convocada</code></td><td><code>true</code> se o atleta foi convocado no campeonato; <code>false</code> quando aparece só pela categoria (convocação ainda não feita ou não chamado)</td></tr>
-            <tr><td><code>convocacoes</code></td><td>Cada convocação: <code>{ id_categoria, rotulo, camisa }</code> (sem o time). A camisa é sempre definida na convocação (1 a 99). Vazio quando <code>convocada</code> é <code>false</code></td></tr>
-            <tr><td><code>resumo</code></td><td>O andamento para o card, como em <a href="#campeonatos">Campeonatos</a>, mas contando <strong>só os jogos das categorias do atleta</strong></td></tr>
-            <tr><td><code>encerrado</code></td><td>Como em <a href="#campeonatos">Campeonatos</a>: <code>true</code> só com <strong>todas</strong> as categorias do campeonato encerradas, inclusive as que não são do atleta (a dele pode estar encerrada e o campeonato não)</td></tr>
-        </table>
-        </div>
-<pre>200 {
-  "success": true,
-  "data": [
-    {
-      "id_campeonato": 1, "nome_campeonato": "Copa Regional de Base", "organizador_campeonato": "Liga Regional",
-      "descricao_campeonato": "Campeonato de base com as categorias Sub-13 e Sub-15.", "tipo_campeonato": "COPA", "tipo_label": "Copa",
-      "logo_evento": "copa.png", "logo_url": "https://.../futebol/images/campeonatos/copa.png", "banner_evento": null, "banner_url": null,
-      "data_inicio_campeonato": "2026-10-03T00:00:00-03:00", "data_fim_campeonato": "2026-11-28T00:00:00-03:00", "local_evento": "Arena Norte",
-      "situacao": "EM_ANDAMENTO",
-      "categorias": [ { "id_categoria": 3, "nome_categoria": "Sub-13", "sexo_categoria": "M", "rotulo": "Sub-13 Masculino",
-                        "resumo": { "fase_atual": "GRUPOS", "fase_atual_label": "Fase de grupos", "rodada_atual": 3, "total_rodadas": 5,
-                                    "jogos_realizados": 4, "total_jogos": 10, "jogos_aguardando_resultado": 0 },
-                        "encerrada": false, "campeao": null } ],
-      "convocada": true,
-      "convocacoes": [ { "id_categoria": 3, "rotulo": "Sub-13 Masculino", "camisa": 8 } ],
-      "resumo": { "fase_atual": "GRUPOS", "fase_atual_label": "Fase de grupos", "rodada_atual": 3, "total_rodadas": 5,
-                  "jogos_realizados": 4, "total_jogos": 10, "jogos_aguardando_resultado": 0 },
-      "encerrado": false
-    }
-  ]
-}</pre>
-        <p>No exemplo, o atleta é do Sub-11 e foi convocado para jogar no Sub-13: o slide pode mostrar "Convocado no Sub-13 · camisa 8". O responsável tem a mesma rota sob o filho: <code>GET /api/v1/responsavel/atletas/{idAtleta}/campeonatos-do-atleta</code>.</p>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="responsavel">Área do responsável</h2>
-    <p class="nota">Rotas com o token do perfil <strong>responsavel</strong> e pelo menos um filho <code>ATIVO</code>. Em todas as rotas de um filho, o servidor confere que o atleta é filho do responsável logado e está <code>ATIVO</code>; senão responde <code>404</code> (o mesmo para atleta de outra família, inativado ou inexistente).</p>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/responsavel</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Dados do responsável logado, o endereço e os filhos <code>ATIVO</code>. A senha nunca vem. <code>endereco.compartilhado_com</code>: os filhos que moram no <strong>mesmo endereço</strong> do responsável (o mesmo cadastro de endereço, ou outro com o mesmo endereço escrito; lista vazia quando nenhum), para o app perguntar se a mudança vale também para eles.</p>
-<pre>200 {
-  "success": true,
-  "data": {
-    "id_responsavel": 5, "nome_responsavel": "Carla Exemplo", "email_responsavel": "carla@exemplo.com",
-    "cpf_responsavel": "123.456.789-09", "rg_responsavel": "...", "telefone_responsavel": null,
-    "whatsapp_responsavel": "(11) 90000-0000",
-    "endereco": { "cep_endereco": "...", "rua_endereco": "...", "numero_endereco": "...", "bairro_endereco": "...",
-                  "complemento_endereco": null, "cidade_endereco": "...", "estado_endereco": "SP",
-                  "compartilhado_com": [ { "id_atleta": 7, "nome_atleta": "Joana Exemplo" } ] },
-    "atletas": [ { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100",
-                   "foto_atleta": null, "foto_url": null, "grau_parentesco_responsavel": "Mãe" } ]
-  }
-}</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo PUT">PUT</span><span class="metodo PATCH">PATCH</span><code>/api/v1/responsavel</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Atualiza os dados do responsável (mande só o que mudou; campos fora desta lista, como o RG, são ignorados). Responde com os mesmos dados do GET, já atualizados. Cada mudança fica registrada para a secretaria (o painel mostra o antes e o depois).</p>
-        <ul>
-            <li><code>nome_responsavel</code>: de 3 a 100 caracteres.</li>
-            <li><code>cpf_responsavel</code>: com ou sem pontuação; volta como <code>000.000.000-00</code>. Os dígitos verificadores são conferidos ("Informe um CPF válido.") e o CPF não pode ser de outro responsável ("Este CPF já está cadastrado para outro responsável.").</li>
-            <li><code>email_responsavel</code> (o login; único entre responsáveis, gravado em minúsculas), <code>telefone_responsavel</code>, <code>whatsapp_responsavel</code>.</li>
-            <li><code>endereco</code>: o <strong>bloco inteiro</strong>, com <code>cep_endereco</code> (8 dígitos, com ou sem hífen; volta como <code>00000-000</code>), <code>rua_endereco</code> (até 100), <code>numero_endereco</code> (até 6), <code>bairro_endereco</code> (até 50), <code>complemento_endereco</code> (opcional), <code>cidade_endereco</code> (até 50) e <code>estado_endereco</code> (UF, 2 letras). Os erros vêm com a chave de cada campo, como <code>errors["endereco.cep_endereco"]</code>.</li>
-            <li><code>endereco_dos_filhos</code> (<code>true</code>/<code>false</code>, padrão <code>true</code>): só conta quando o endereço é compartilhado (<code>endereco.compartilhado_com</code> do GET). <code>true</code> muda o endereço do responsável e o desses filhos; <code>false</code> muda só o do responsável, e o dos filhos fica como estava. O endereço de quem não está na lista (outro responsável, por exemplo) nunca muda.</li>
-        </ul>
-<pre>PATCH /api/v1/responsavel
-{ "nome_responsavel": "Carla Exemplo da Silva", "cpf_responsavel": "19472778984",
-  "endereco": { "cep_endereco": "13560000", "rua_endereco": "Rua das Flores", "numero_endereco": "120",
-                "bairro_endereco": "Centro", "complemento_endereco": null, "cidade_endereco": "São Carlos",
-                "estado_endereco": "SP" },
-  "endereco_dos_filhos": false }
-
-200 { "success": true, "data": { ...o mesmo de GET /api/v1/responsavel, com os dados novos... } }
-
-422 { "success": false, "message": "Este CPF já está cadastrado para outro responsável.",
-      "errors": { "cpf_responsavel": ["Este CPF já está cadastrado para outro responsável."] } }
-422 { "success": false, "message": "Informe um CEP com 8 dígitos (ex.: 13560-000).",
-      "errors": { "endereco.cep_endereco": ["Informe um CEP com 8 dígitos (ex.: 13560-000)."] } }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo PUT">PUT</span><code>/api/v1/responsavel/senha</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Igual à troca de senha do atleta: <code>senha_atual</code>, <code>nova_senha</code> e <code>nova_senha_confirmation</code>; encerra os outros aparelhos.</p>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/responsavel/atletas</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Os filhos <code>ATIVO</code>, para escolher de qual ver a agenda e os avisos. Cada um com os avisos ainda não lidos <strong>por este responsável</strong>.</p>
-<pre>200 {
-  "success": true,
-  "data": [
-    { "id_atleta": 7, "nome_atleta": "Joana Exemplo", "numero_matricula_atleta": "A100", "foto_atleta": null, "foto_url": null,
-      "grau_parentesco_responsavel": "Mãe", "notificacoes_nao_lidas": 3 }
-  ]
-}</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/responsavel/atletas/{idAtleta}</code><span class="acesso responsavel">Responsável</span></div>
-        <p>Os dados do filho, <strong>exatamente o mesmo JSON</strong> de <code>GET /api/v1/atleta</code>. Sem edição.</p>
-<pre>404 { "success": false, "message": "Atleta não encontrado." }</pre>
-    </div>
-
-    <div class="card">
-        <h3>Agenda, avisos e estatísticas do filho</h3>
-        <p>As mesmas rotas do atleta, sob <code>/api/v1/responsavel/atletas/{idAtleta}</code>, com as mesmas respostas:</p>
-        <ul>
-            <li><code>GET .../estatisticas</code></li>
-            <li><code>GET .../campeonatos-do-atleta</code></li>
-            <li><code>GET .../agenda</code>, <code>GET .../agenda/{idEvento}</code></li>
-            <li><code>GET .../comissao-tecnica/{id}</code> (o perfil do responsável pela atividade)</li>
-            <li><code>GET .../notificacoes</code>, <code>GET .../notificacoes/nao-lidas</code></li>
-            <li><code>PATCH .../notificacoes/{idNotificacao}/lida</code>, <code>PATCH .../notificacoes/lidas</code></li>
-        </ul>
-        <p>A leitura é <strong>de cada pessoa</strong>: o que o responsável marca como lido não muda a leitura do atleta nem a do outro responsável, e a contagem de não lidos é própria.</p>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="agenda">Agenda</h2>
-
-    <div class="card">
-        <div class="rota">
-            <span class="metodo GET">GET</span><code>/api/v1/agenda?page=1</code><span class="acesso atleta">Atleta</span>
-            <code>/api/v1/responsavel/atletas/{idAtleta}/agenda?page=1</code><span class="acesso responsavel">Responsável</span>
-        </div>
-        <ul>
-            <li>Só os eventos em que o atleta está <strong>inscrito</strong> (treinos, jogos, avaliações, reuniões...). Eventos ocultos pela secretaria e jogos ainda em rascunho (sendo montados, antes de publicar) não aparecem.</li>
-            <li><code>situacao</code>: <code>CONFIRMADO</code> ou <code>CANCELADO</code>. Mudanças de data, horário ou local chegam pelos <a href="#avisos">avisos</a>; a agenda já mostra os dados novos.</li>
-            <li><code>proximos</code>: o que ainda não terminou (inclusive o de hoje em andamento e os cancelados), do mais perto ao mais longe, <strong>paginado</strong>. No mesmo dia, evento sem horário vem por último.</li>
-            <li><code>passados</code>: os <strong>3 últimos concluídos e não cancelados</strong>, do mais recente ao mais antigo; iguais em todas as páginas.</li>
-            <li><code>local</code>: o nome do local, para mostrar (ou <code>null</code>, sem local). <code>local_detalhe</code>: quando o local é <strong>cadastrado</strong> pela escolinha, <code>{ nome, endereco, mapa_url }</code>:
-                <ul>
-                    <li><code>endereco</code>: uma linha pronta para mostrar, sem o nome (<code>"Avenida Brasil, 500, Portão 2 – Vila Nova, São Carlos/SP, 13560-000"</code>; sem CEP, termina na UF). Para o Google Agenda, use <code>nome + ", " + endereco</code>.</li>
-                    <li><code>mapa_url</code>: sempre um endereço <code>https</code> do Google Maps, para abrir direto (no celular, abre o app Maps): o link que a escolinha cadastrou ou, sem ele, a busca pelo nome e pelo endereço.</li>
-                    <li><code>null</code> quando o evento não tem local ou tem só um local <strong>escrito à mão</strong> (de antes do cadastro de locais): mostre só o <code>local</code>, sem o "Abrir mapa".</li>
-                </ul>
-            </li>
-            <li>Concluído: dia anterior a hoje, ou hoje com o horário de fim já passado (sem fim, vale o início; sem nenhum dos dois, só no dia seguinte). Cada evento traz <code>concluido</code> (<code>true</code>/<code>false</code>) com essa regra.</li>
-            <li><code>?tipo=JOGO</code> (opcional): só os eventos desses tipos, em <code>proximos</code> e <code>passados</code>. Aceita vários separados por vírgula (<code>?tipo=JOGO,CAMPEONATO</code>), sem diferenciar maiúsculas. Tipo desconhecido: 422. Use para achar o próximo jogo sem passar pelas páginas de treinos.</li>
-            <li><code>totais</code>: quantos <code>proximos</code> existem de cada tipo, somando <strong>todas as páginas</strong> (todos os tipos, com 0). <strong>Não considera o <code>?tipo</code></strong>, para os contadores dos outros filtros continuarem certos; o total da lista filtrada está em <code>paginacao.total</code>.</li>
-        </ul>
-<pre>200 {
-  "success": true,
-  "data": {
-    "proximos": [
-      {
-        "id_evento": 44,
-        "titulo": "Treino Sub-13 Masculino",
-        "tipo": "TREINO",
-        "tipo_label": "TREINO",
-        "subtipo": null,
-        "descricao": null,
-        "categoria": "Sub-13 Masculino",
-        "data": "2026-10-12T00:00:00-03:00",
-        "horario_inicio": "18:00",
-        "horario_fim": "19:30",
-        "inicio": "2026-10-12T18:00:00-03:00",
-        "fim": "2026-10-12T19:30:00-03:00",
-        "local": "Campo da AACJ",
-        "local_detalhe": {
-          "nome": "Campo da AACJ",
-          "endereco": "Rua das Palmeiras, S/N – Centro, São Carlos/SP, 13560-000",
-          "mapa_url": "https://maps.app.goo.gl/AbCdEf123"
-        },
-        "responsavel": "Carlos Mendes",
-        "responsavel_id": 4,
-        "situacao": "CONFIRMADO",
-        "concluido": false,
-        "jogo": null
-      },
-      {
-        "id_evento": 80,
-        "titulo": "AACJ Sub-13 x Rival FC",
-        "tipo": "JOGO",
-        "tipo_label": "JOGO",
-        "subtipo": null,
-        "descricao": null,
-        "categoria": "Sub-13 Masculino",
-        "data": "2026-10-15T00:00:00-03:00",
-        "horario_inicio": "10:00",
-        "horario_fim": null,
-        "inicio": "2026-10-15T10:00:00-03:00",
-        "fim": null,
-        "local": "Campo do Rival",
-        "local_detalhe": null,
-        "responsavel": null,
-        "responsavel_id": null,
-        "situacao": "CONFIRMADO",
-        "concluido": false,
-        "jogo": {
-          "id_jogo": 12,
-          "amistoso": false,
-          "campeonato": { "id_campeonato": 2, "nome_campeonato": "Copa AACJ" },
-          "time_casa": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png", "da_aacj": true },
-          "time_visitante": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png", "da_aacj": false },
-          "placar": null,
-          "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", "logo_time": "aacj.png", "logo_url": "https://.../futebol/images/team/aacj.png", "da_aacj": true },
-          "horario_chegada": "09:00",
-          "chegada": "2026-10-15T09:00:00-03:00"
-        }
-      }
-    ],
-    "paginacao": { "pagina_atual": 1, "ultima_pagina": 3, "por_pagina": 20, "total": 47 },
-    "passados": [ { ...mesmo formato... } ],
-    "totais": { "JOGO": 3, "TREINO": 12, "CAMPEONATO": 0, "EVENTO": 0, "REUNIAO": 1, "CONFRATERNIZACAO": 0, "AVALIACAO": 0 }
-  }
-}
-422 { "success": false, "message": "Tipo desconhecido: FESTA. Use JOGO, TREINO, CAMPEONATO, EVENTO, REUNIAO, CONFRATERNIZACAO, AVALIACAO.", "errors": { "tipo": ["..."] } }</pre>
-
-        <h3>Agenda de um período (semana, mês)</h3>
-        <div class="rota">
-            <span class="metodo GET">GET</span><code>/api/v1/agenda?de=2026-11-01&amp;ate=2026-11-30</code><span class="acesso atleta">Atleta</span>
-            <code>/api/v1/responsavel/atletas/{idAtleta}/agenda?de=2026-11-01&amp;ate=2026-11-30</code><span class="acesso responsavel">Responsável</span>
-        </div>
-        <ul>
-            <li>Com <code>de</code> e <code>ate</code> (os dois, em <code>AAAA-MM-DD</code>, dias de Brasília, inclusive), a resposta muda: <code>eventos</code> traz <strong>todos</strong> os eventos do período, já concluídos ou não, confirmados ou cancelados, do mais antigo ao mais novo (no mesmo dia, sem horário por último), <strong>sem paginação</strong> (<code>page</code> é ignorado). Mesmas regras de inscrição, oculto e rascunho.</li>
-            <li>Período de no máximo <strong>{{ \App\Http\Controllers\Api\V1\AppDoAtletaController::PERIODO_MAX_DIAS }} dias</strong> (um mês com as semanas das pontas cabe com folga).</li>
-            <li>Aceita o mesmo <code>?tipo=</code>. <code>totais</code> conta os eventos do período por tipo, sem o filtro de tipo.</li>
-            <li>Cada evento no mesmo formato da lista acima; use <code>concluido</code> para separar o que já passou.</li>
-        </ul>
-<pre>200 {
-  "success": true,
-  "data": {
-    "periodo": { "de": "2026-11-01", "ate": "2026-11-30" },
-    "eventos": [ { "id_evento": 51, ..., "situacao": "CONFIRMADO", "concluido": true, "jogo": null }, ... ],
-    "totais": { "JOGO": 2, "TREINO": 9, "CAMPEONATO": 0, "EVENTO": 0, "REUNIAO": 0, "CONFRATERNIZACAO": 0, "AVALIACAO": 1 }
-  }
-}
-422 { "success": false, "message": "Informe a data \"até\" no formato AAAA-MM-DD (ex.: 2026-11-01).", "errors": { "ate": ["..."] } }
-422 ... "A data \"até\" não pode ser antes da data \"de\"."  /  "O período pode ter no máximo {{ \App\Http\Controllers\Api\V1\AppDoAtletaController::PERIODO_MAX_DIAS }} dias."</pre>
-
-        <h3>Detalhe de um evento ("Ver detalhes")</h3>
-        <div class="rota">
-            <span class="metodo GET">GET</span><code>/api/v1/agenda/{idEvento}</code><span class="acesso atleta">Atleta</span>
-            <code>/api/v1/responsavel/atletas/{idAtleta}/agenda/{idEvento}</code><span class="acesso responsavel">Responsável</span>
-        </div>
-        <ul>
-            <li>O evento com <strong>os mesmos campos da lista</strong> (<code>id_evento</code> é o mesmo da agenda e do <code>id_evento</code> dos avisos).</li>
-            <li>No jogo, o bloco <code>jogo</code> traz também: <code>adversario</code> (o outro time, pelo time em que o atleta está escalado; sem escalação, o adversário do time da AACJ; <code>null</code> quando os dois times são da AACJ e o atleta ainda não foi escalado), <code>fase_jogo</code> e <code>fase</code> (<code>null</code> no amistoso), <code>fase_completa</code> ("Oitavas de final · volta"), <code>rodada</code> (só na fase de grupos), <code>perna</code> (<code>IDA</code>, <code>VOLTA</code> ou <code>null</code> no jogo único), <code>prorrogacao</code> e <code>penaltis</code> (<code>{ "casa", "visitante" }</code> ou <code>null</code>) e <code>confronto</code> (quem passa no mata-mata, o mesmo bloco da <a href="#campeonatos">API de campeonatos</a>; <code>null</code> fora do mata-mata, na ida ou sem o resultado).</li>
-            <li><code>participacao</code> ("Sua participação"), <strong>sempre presente</strong> no jogo, só com os dados do próprio atleta:
-                <ul>
-                    <li><code>convocado</code> (<code>true</code>/<code>false</code>; <code>null</code> no amistoso, que não tem convocação) e <code>camisa</code> (a da convocação, ou <code>null</code>);</li>
-                    <li><code>escalado</code> (<code>true</code>/<code>false</code>) e <code>time</code> (o time em que ele joga, ou <code>null</code>);</li>
-                    <li><code>titular</code> (<code>TITULAR</code>, <code>RESERVA</code> ou <code>null</code> = a definir) com <code>titular_label</code>, e <code>posicao</code> (<code>{ "codigo", "sigla", "nome" }</code> ou <code>null</code>): o que o técnico já salvou na escalação.</li>
-                </ul>
-                Ex.: "Convocado · camisa 10 · escalação a definir" com <code>convocado: true</code>, <code>camisa: 10</code>, <code>escalado: false</code>. Mudar a escalação <strong>não gera aviso</strong>: a agenda mostra o que estiver salvo quando o app consultar.
-            </li>
-            <li>Não traz os colegas inscritos nem a escalação do time (dados de outros atletas).</li>
-            <li>Evento em que o atleta não está inscrito, oculto, jogo em rascunho ou inexistente: 404 (as mesmas regras da lista).</li>
-        </ul>
-<pre>200 {
-  "success": true,
-  "data": {
-    "id_evento": 81,
-    "titulo": "Rival FC x AACJ Sub-13",
-    "tipo": "JOGO",
-    ...os mesmos campos da lista...,
-    "jogo": {
-      "id_jogo": 13,
-      ...os mesmos campos da lista...,
-      "placar": { "casa": 1, "visitante": 1 },
-      "time_do_atleta": { "id_time": 3, "nome_time": "AACJ Sub-13", ... },
-      "adversario": { "id_time": 9, "nome_time": "Rival FC", "logo_time": "rival.png", "logo_url": "https://.../futebol/images/team/rival.png", "da_aacj": false },
-      "fase_jogo": "SEMIFINAL",
-      "fase": "Semifinal",
-      "fase_completa": "Semifinal · volta",
-      "rodada": null,
-      "perna": "VOLTA",
-      "prorrogacao": null,
-      "penaltis": { "casa": 3, "visitante": 4 },
-      "confronto": { "id_time": 3, "como": "pênaltis", "agregado": [3, 3], "texto": "AACJ Sub-13 passa nos pênaltis (4 × 3), depois do agregado 3 × 3" },
-      "participacao": {
-        "convocado": true,
-        "camisa": 10,
-        "escalado": true,
-        "time": { "id_time": 3, "nome_time": "AACJ Sub-13", ..., "da_aacj": true },
-        "titular": "TITULAR",
-        "titular_label": "Titular",
-        "posicao": { "codigo": "VOLANTE", "sigla": "VOL", "nome": "Volante" }
-      }
-    }
-  }
-}
-404 { "success": false, "message": "Evento não encontrado." }</pre>
-
-        <h3 id="comissao-tecnica">Perfil do responsável pela atividade (comissão técnica)</h3>
-        <div class="rota">
-            <span class="metodo GET">GET</span><code>/api/v1/comissao-tecnica/{id}</code><span class="acesso atleta">Atleta</span>
-            <code>/api/v1/responsavel/atletas/{idAtleta}/comissao-tecnica/{id}</code><span class="acesso responsavel">Responsável</span>
-        </div>
-        <ul>
-            <li>O <code>{id}</code> é o <code>responsavel_id</code> do evento da agenda. Não há lista: o app abre o perfil pelo evento.</li>
-            <li><code>foto_url</code> só quando o profissional autorizou mostrar a foto no app; senão <code>null</code> (mostre as iniciais).</li>
-            <li><code>contato</code> é só o institucional (da escolinha): <code>{ "telefone", "email" }</code>, cada um podendo vir <code>null</code>; o telefone vem <strong>só com os dígitos</strong> (DDD + número, 10 ou 11: formate como "(11) 4000-0000" / "(11) 94000-0000"); o bloco inteiro é <code>null</code> sem nenhum dos dois (esconda o "Entrar em contato").</li>
-            <li><code>tempo_na_aacj</code> é contado da <code>data_inicio</code> até hoje; <code>null</code> sem a data (ou com a data no futuro). <code>licenca</code> e <code>especialidade</code> podem vir <code>null</code>.</li>
-            <li>Profissional desativado ou inexistente: 404. No responsável, o filho também precisa ser dele e estar ativo (senão, 404 "Atleta não encontrado.").</li>
-        </ul>
-<pre>200 {
-  "success": true,
-  "data": {
-    "id_comissao_tecnica": 3,
-    "nome": "Carlos Mendes",
-    "cargo": "TREINADOR_TECNICO",
-    "cargo_label": "Treinador técnico",
-    "foto_url": "https://.../futebol/images/comissao/a1b2c3.png",
-    "categoria_principal": { "id_categoria": 3, "nome_categoria": "Sub-13", "categoria": "Sub-13 Masculino" },
-    "categorias_atendidas": [
-      { "id_categoria": 3, "nome_categoria": "Sub-13", "categoria": "Sub-13 Masculino" },
-      { "id_categoria": 4, "nome_categoria": "Sub-15", "categoria": "Sub-15 Masculino" }
-    ],
-    "data_inicio": "2024-03-01",
-    "tempo_na_aacj": { "anos": 2, "meses": 7, "texto": "2 anos e 7 meses" },
-    "licenca": "Licença C CBF",
-    "especialidade": "Categorias de base",
-    "contato": { "telefone": "1133334444", "email": "carlos@aacj.com.br" }
-  }
-}
-404 { "success": false, "message": "Profissional não encontrado." }</pre>
-        <h3>Campos do evento</h3>
-        <div class="tabela">
-        <table>
-            <tr><th>Campo</th><th>Descrição</th></tr>
-            <tr><td><code>tipo</code> / <code>tipo_label</code></td><td><code>JOGO</code>, <code>TREINO</code>, <code>CAMPEONATO</code>, <code>EVENTO</code>, <code>REUNIAO</code>, <code>CONFRATERNIZACAO</code>, <code>AVALIACAO</code>; o rótulo vem com acento (<code>REUNIÃO</code>)</td></tr>
-            <tr><td><code>categoria</code></td><td>"Sub-13 Masculino", ou <code>null</code> em evento sem categoria (ex.: Treino Integrado, exame individual)</td></tr>
-            <tr><td><code>data</code></td><td>Dia do evento, com fuso (meia-noite)</td></tr>
-            <tr><td><code>horario_inicio</code> / <code>horario_fim</code></td><td><code>"HH:MM"</code> ou <code>null</code> ("A definir")</td></tr>
-            <tr><td><code>inicio</code> / <code>fim</code></td><td>Data e hora completas com fuso; <code>null</code> quando o horário não está definido</td></tr>
-            <tr><td><code>responsavel</code></td><td>Nome de quem conduz a atividade (professor, técnico), ou <code>null</code> quando não foi informado. Mostre como "Responsável: Carlos Mendes". Em eventos antigos pode vir um texto escrito à mão ("Prof. Carlos"), sem perfil</td></tr>
-            <tr><td><code>responsavel_id</code></td><td>Id do profissional da comissão técnica, para abrir o perfil dele (e o "Entrar em contato"); <code>null</code> quando é o texto antigo ou não há responsável: esconda o botão. Profissional desativado continua com o nome e o id no evento, mas o perfil responde 404</td></tr>
-            <tr><td><code>situacao</code></td><td><code>CONFIRMADO</code> ou <code>CANCELADO</code></td></tr>
-            <tr><td><code>concluido</code></td><td><code>true</code> quando o evento já terminou (regra acima)</td></tr>
-            <tr><td><code>jogo</code></td><td><code>null</code> fora de jogo. No jogo: <code>amistoso</code>; <code>campeonato</code> (<code>null</code> no amistoso); <code>time_casa</code> e <code>time_visitante</code>; <code>placar</code> <code>{ "casa": 2, "visitante": 1 }</code> ou <code>null</code> se ainda não jogado; <code>time_do_atleta</code>, o time em que o atleta está escalado, ou <code>null</code> se ainda não foi escalado; <code>horario_chegada</code> (<code>"09:00"</code>) e <code>chegada</code> (data e hora), a hora em que o atleta deve chegar, 1 hora antes do início, ou <code>null</code> se o jogo ainda não tem horário. Mostre como "Chegar às 09:00"</td></tr>
-        </table>
-        </div>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="avisos">Avisos (notificações)</h2>
-    <p class="nota">Rotas do atleta abaixo; para o responsável, as mesmas sob <code>/api/v1/responsavel/atletas/{idAtleta}</code>, com a leitura própria dele.</p>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/notificacoes?page=1</code><span class="acesso atleta">Atleta</span></div>
-        <p>Os avisos do atleta, do mais novo para o mais antigo, paginados (20 por página). <code>lida</code> e <code>data_leitura</code> são de quem está lendo.</p>
-<pre>200 {
-  "success": true,
-  "data": {
-    "notificacoes": [
-      {
-        "id_notificacao": 310,
-        "tipo": "ALTERACAO",
-        "tipo_label": "Alteração",
-        "titulo": "Atividade alterada",
-        "mensagem": "Treino Sub-13 Masculino · seg, 12/10 · 18:00 às 19:30 · Campo B. Mudanças: local Campo A → Campo B.",
-        "id_evento": 44,
-        "data": "2026-10-10T09:15:00-03:00",
-        "lida": false,
-        "data_leitura": null
-      }
-    ],
-    "paginacao": { "pagina_atual": 1, "ultima_pagina": 1, "por_pagina": 20, "total": 1 }
-  }
-}</pre>
-        <p>Tipos: <code>INSCRICAO</code>, <code>REMOCAO</code>, <code>ALTERACAO</code>, <code>CANCELAMENTO</code>, <code>REATIVACAO</code> (com <code>id_evento</code>), <code>AGENDA</code> (resumo, como "Agenda de dezembro disponível", com <code>id_evento</code> <code>null</code>) e <code>AVISO</code> (recado escrito pelo admin, também com <code>id_evento</code> <code>null</code>). Título e mensagem ficam como foram enviados.</p>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo GET">GET</span><code>/api/v1/notificacoes/nao-lidas</code><span class="acesso atleta">Atleta</span></div>
-<pre>200 { "success": true, "data": { "nao_lidas": 3 } }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo PATCH">PATCH</span><code>/api/v1/notificacoes/{idNotificacao}/lida</code><span class="acesso atleta">Atleta</span></div>
-        <p>Marca um aviso como lido e devolve o aviso atualizado. Marcar de novo mantém a data da primeira leitura. Aviso de outro atleta, ou inexistente: 404.</p>
-<pre>200 { "success": true, "data": { "id_notificacao": 310, ..., "lida": true, "data_leitura": "2026-10-10T12:00:00-03:00" } }
-404 { "success": false, "message": "Notificação não encontrada." }</pre>
-    </div>
-
-    <div class="card">
-        <div class="rota"><span class="metodo PATCH">PATCH</span><code>/api/v1/notificacoes/lidas</code><span class="acesso atleta">Atleta</span></div>
-        <p>Marca todos os avisos não lidos como lidos; devolve quantos mudaram.</p>
-<pre>200 { "success": true, "data": { "marcadas": 3 } }</pre>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="fale-conosco">Fale conosco</h2>
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/fale-conosco</code><span class="acesso qualquer">Atleta ou responsável</span></div>
-        <p>Exige token Bearer de atleta ATIVO ou responsável com algum filho ATIVO. O remetente, o perfil e o e-mail de resposta são obtidos pelo token; não envie esses dados no corpo.</p>
-        <p><strong>Corpo JSON:</strong> assunto e mensagem obrigatórios, como texto, com até 100 e 2000 caracteres respectivamente. Espaços nas pontas são removidos; campos vazios são recusados.</p>
-<pre>{
-  "assunto": "Dúvida sobre os treinos",
-  "mensagem": "Gostaria de confirmar o horário do treino."
-}</pre>
-        <p><strong>Resposta 201 Created:</strong></p>
-<pre>{
-  "success": true,
-  "message": "Mensagem recebida com sucesso.",
-  "data": {
-    "id_fale_conosco": 123,
-    "data_envio": "2026-10-31T10:00:00-03:00"
-  }
-}</pre>
-        <p><code>id_fale_conosco</code> é o protocolo inteiro da mensagem; <code>data_envio</code> é uma string ISO 8601 no fuso de Brasília, sem milissegundos. O <strong>201 confirma a gravação</strong> para atendimento pelo painel. Uma falha no e-mail de aviso não desfaz a gravação nem muda essa resposta: não reenvie a mensagem nesse caso.</p>
-        <p><strong>422:</strong> <code>errors</code> contém as mensagens por campo; o app pode mostrá-las junto de assunto e mensagem:</p>
-<pre>{
-  "success": false,
-  "message": "O campo assunto é obrigatório.",
-  "errors": {
-    "assunto": ["O campo assunto é obrigatório."],
-    "mensagem": ["O campo mensagem é obrigatório."]
-  }
-}</pre>
-        <p><strong>429:</strong> limite de 3 requisições por minuto por conta (perfil + ID, compartilhado entre os tokens da conta). Não grava mensagem nem envia e-mail quando bloqueado. Aguarde os segundos informados no cabeçalho <code>Retry-After</code>. Esse cabeçalho está exposto pelo CORS (<code>Access-Control-Expose-Headers: Retry-After</code>) para leitura no app web. Requisições inválidas também contam para esse limite.</p>
-        <p><strong>401:</strong> token ausente, inválido ou vencido. <strong>403:</strong> perfil não permitido, atleta inativo ou responsável sem filho ativo.</p>
-        <p><strong>404 em servidor ainda sem esta rota:</strong> o app deve informar que o recurso ainda não está disponível. A resposta segue o padrão <code>{ "success": false, "message": "Endereço não encontrado." }</code>. A existência desta documentação no desenvolvimento não significa que a rota já foi publicada em produção.</p>
-    </div>
-
-    <h2 id="dispositivos">Aparelhos e notificações push</h2>
-    <div class="card">
-        <div class="rota"><span class="metodo POST">POST</span><code>/api/v1/dispositivos</code><span class="acesso qualquer">Atleta ou responsável</span></div>
-        <p>Token Bearer Sanctum obrigatório. Registre o aparelho ao abrir o app logado e ao mudar a preferência de notificações. O dono vem da autenticação; não envie IDs de contas. O token é único e diferencia maiúsculas/minúsculas. Se outra pessoa entrar no mesmo aparelho, o POST transfere o token para ela.</p>
-<pre>{ "token": "ExponentPushToken[xxxx]", "plataforma": "android", "notificacoes_ativas": true }
-200 { "success": true }</pre>
-        <p>Todos os campos são obrigatórios. Token Expo com até 255 caracteres, prefixo <code>ExponentPushToken[</code> ou <code>ExpoPushToken[</code>, conteúdo não vazio e fechamento <code>]</code>. Plataforma <code>android</code> ou <code>ios</code>; preferência booleana. <code>false</code> guarda o aparelho desativado. Validação: 422 com <code>errors</code> por campo em português. Limite geral da API (429 com <code>Retry-After</code>), sem limite adicional.</p>
-        <div class="rota"><span class="metodo DELETE">DELETE</span><code>/api/v1/dispositivos</code><span class="acesso qualquer">Atleta ou responsável</span></div>
-<pre>{ "token": "ExponentPushToken[xxxx]" }
-200 { "success": true }</pre>
-        <p>No logout, envie DELETE antes de encerrar o token Sanctum. Apaga somente o aparelho da conta autenticada; se o token não existir ou pertencer a outra conta, responde o mesmo 200. As duas rotas exigem autenticação (401 sem token) e perfil atleta ou responsável (403 para outros perfis). Permitem desligar/remover o aparelho mesmo após inativação; o envio só contempla atletas ativos.</p>
-        <p>Os avisos continuam gravados no app. Após o commit e a resposta HTTP, o backend tenta enviar push aos aparelhos ativos do atleta e dos responsáveis vinculados. Responsável com mais de um filho recebe o título com o primeiro nome do filho (ex.: “Joana · Aviso da escolinha”). Sem aparelho ativo, não há chamada à Expo. Falha no push não desfaz a ação nem a notificação.</p>
-<pre>{
-  "id_notificacao": 310,
-  "id_atleta": 17,
-  "id_evento": 42,
-  "tipo": "INSCRICAO"
-}</pre>
-        <p>Este é o campo <code>data</code> do push, com IDs inteiros. <code>id_evento</code> só existe quando o aviso possui evento: abrir o compromisso; sem ele, abrir a lista de avisos. No perfil responsável, selecionar primeiro o filho por <code>id_atleta</code>. O push não marca o aviso como lido; usar as rotas de leitura existentes.</p>
-    </div>
-
-    <h2 id="erros">Erros e limites</h2>
-    <div class="tabela">
-    <table>
-        <tr><th>Código</th><th>Quando</th><th>Corpo</th></tr>
-        <tr><td>200</td><td>Sucesso</td><td><code>{ "success": true, ... }</code></td></tr>
-        <tr><td>401</td><td>Login com e-mail ou senha errados</td><td><code>{ "success": false, "message": "E-mail ou senha inválidos." }</code></td></tr>
-        <tr><td>401</td><td>Rota protegida sem token, com token inválido, vencido (30 dias) ou já encerrado</td><td><code>{ "success": false, "message": "Faça login para continuar: o token não foi enviado, é inválido ou venceu." }</code></td></tr>
-        <tr><td>403</td><td>Atleta sem cadastro ativo; responsável sem filho ativo (os tokens dele são apagados)</td><td><code>{ "success": false, "message": "..." }</code></td></tr>
-        <tr><td>403</td><td>Token de um perfil na área do outro</td><td><code>{ "success": false, "message": "Esta área é do perfil responsável. Entre no app como responsável." }</code></td></tr>
-        <tr><td>404</td><td>Filho que não é do responsável, inativado ou inexistente; aviso que não é daquele atleta</td><td><code>{ "success": false, "message": "Atleta não encontrado." }</code> / <code>"Notificação não encontrada."</code></td></tr>
-        <tr><td>404</td><td>Endereço que não existe na API</td><td><code>{ "success": false, "message": "Endereço não encontrado." }</code></td></tr>
-        <tr><td>405</td><td>Método não aceito na rota (ex.: <code>PATCH</code> nos dados do filho)</td><td><code>{ "success": false, "message": "Método não aceito nesta rota." }</code></td></tr>
-        <tr><td>422</td><td>Dados inválidos, com a mensagem de cada campo em português</td><td><code>{ "success": false, "message": "O campo e-mail é obrigatório.", "errors": { "email": ["O campo e-mail é obrigatório."] } }</code></td></tr>
-        <tr><td>429</td><td>Limite de requisições (abaixo); aguarde os segundos do cabeçalho <code>Retry-After</code> e tente de novo</td><td><code>{ "success": false, "message": "Muitas tentativas. Aguarde um pouco e tente de novo." }</code></td></tr>
-        <tr><td>500</td><td>Erro interno no servidor; tente de novo em instantes</td><td><code>{ "success": false, "message": "Erro interno. Tente de novo em instantes." }</code></td></tr>
-    </table>
-    </div>
-
-    <div class="card" style="margin-top:12px">
-        <h3>Limites de requisições</h3>
-        <ul>
-            <li><strong>Todas as rotas:</strong> 120 por minuto por conta logada (atleta ou responsável) e 60 por minuto por IP sem login. As respostas trazem os cabeçalhos <code>X-RateLimit-Limit</code> e <code>X-RateLimit-Remaining</code>. Guarde no app o que muda pouco (campeonatos, notícias, banners) em vez de buscar a cada tela.</li>
-            <li><code>POST /auth/login</code>: 5 por minuto por IP e 5 por minuto por e-mail e perfil.</li>
-            <li><code>POST /auth/esqueci-senha</code>: 5 por minuto por IP e 3 a cada 10 minutos por e-mail e perfil.</li>
-            <li><code>POST /auth/validar-codigo</code> e <code>POST /auth/redefinir-senha</code>: cada rota tem limite de 5 por minuto por IP. O código também tem no máximo 5 erros, independentemente do IP.</li>
-            <li><code>POST</code> e <code>DELETE /atleta/foto</code>: juntos, 5 por minuto e 20 por hora por atleta.</li>
-            <li><code>POST /fale-conosco</code>: 3 por minuto por conta (perfil + ID), além do limite geral.</li>
-        </ul>
-    </div>
-
-    {{-- ================================================================== --}}
-    <h2 id="rotas">Todas as rotas</h2>
-
-    @php
-        $todas = [
-            ['POST',  '/auth/login', 'Público', 'email, senha, perfil?, device_name?'],
-            ['POST',  '/auth/esqueci-senha', 'Público', 'email, perfil?'],
-            ['POST',  '/auth/validar-codigo', 'Público', 'email, perfil?, codigo (string com 4 dígitos)'],
-            ['POST',  '/auth/redefinir-senha', 'Público', 'reset_token, nova_senha, nova_senha_confirmation'],
-            ['POST',  '/auth/logout', 'Qualquer perfil', '—'],
-            ['POST',  '/dispositivos', 'Atleta ou responsável', 'token, plataforma, notificacoes_ativas'],
-            ['DELETE', '/dispositivos', 'Atleta ou responsável', 'token'],
-            ['POST',  '/fale-conosco', 'Atleta ou responsável', 'assunto, mensagem'],
-            ['GET',   '/atleta', 'Atleta', '—'],
-            ['PUT',   '/atleta', 'Atleta', $camposDoAtleta = 'nome_atleta?, cpf_atleta?, data_nasc_atleta?, email_atleta?, telefone_atleta?, escola_atleta?, serie_atleta?, sala_atleta?, periodo_escolar_atleta?, turno_treino_atleta?, peso_atleta?, altura_atleta?, descricao_atleta?'],
-            ['PATCH', '/atleta', 'Atleta', $camposDoAtleta],
-            ['PUT',   '/atleta/senha', 'Atleta', $camposDaSenha = 'senha_atual, nova_senha, nova_senha_confirmation'],
-            ['POST',  '/atleta/foto', 'Atleta', 'foto (arquivo, multipart/form-data)'],
-            ['DELETE', '/atleta/foto', 'Atleta', '—'],
-            ['GET',   '/atleta/estatisticas', 'Atleta', '—'],
-            ['GET',   '/campeonatos-do-atleta', 'Atleta', '—'],
-            ['GET',   '/agenda', 'Atleta', 'page?, tipo?, de?, ate?'],
-            ['GET',   '/agenda/{idEvento}', 'Atleta', '{idEvento}'],
-            ['GET',   '/comissao-tecnica/{id}', 'Atleta', '{id}'],
-            ['GET',   '/notificacoes', 'Atleta', 'page?'],
-            ['GET',   '/notificacoes/nao-lidas', 'Atleta', '—'],
-            ['PATCH', '/notificacoes/{idNotificacao}/lida', 'Atleta', '{idNotificacao}'],
-            ['PATCH', '/notificacoes/lidas', 'Atleta', '—'],
-            ['GET',   '/responsavel', 'Responsável', '—'],
-            ['PUT',   '/responsavel', 'Responsável', $camposDoResponsavel = 'nome_responsavel?, cpf_responsavel?, email_responsavel?, telefone_responsavel?, whatsapp_responsavel?, endereco? { cep_endereco, rua_endereco, numero_endereco, bairro_endereco, complemento_endereco?, cidade_endereco, estado_endereco }, endereco_dos_filhos?'],
-            ['PATCH', '/responsavel', 'Responsável', $camposDoResponsavel],
-            ['PUT',   '/responsavel/senha', 'Responsável', $camposDaSenha],
-            ['GET',   '/responsavel/atletas', 'Responsável', '—'],
-            ['GET',   '/responsavel/atletas/{idAtleta}', 'Responsável', '{idAtleta}'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/estatisticas', 'Responsável', '{idAtleta}'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/campeonatos-do-atleta', 'Responsável', '{idAtleta}'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/agenda', 'Responsável', '{idAtleta}, page?, tipo?, de?, ate?'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/agenda/{idEvento}', 'Responsável', '{idAtleta}, {idEvento}'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/comissao-tecnica/{id}', 'Responsável', '{idAtleta}, {id}'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes', 'Responsável', '{idAtleta}, page?'],
-            ['GET',   '/responsavel/atletas/{idAtleta}/notificacoes/nao-lidas', 'Responsável', '{idAtleta}'],
-            ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/{idNotificacao}/lida', 'Responsável', '{idAtleta}, {idNotificacao}'],
-            ['PATCH', '/responsavel/atletas/{idAtleta}/notificacoes/lidas', 'Responsável', '{idAtleta}'],
-        ];
-    @endphp
-
-    <p class="nota">
-        <strong>Parâmetros:</strong> <code>{nome}</code> vai no caminho da URL; <code>?</code> no fim do nome = opcional (os outros são obrigatórios);
-        nas rotas <code>GET</code> os parâmetros vão na query string (ex.: <code>?page=2</code>) e nas demais no corpo JSON (a foto, em <code>multipart/form-data</code>); <code>—</code> = sem parâmetros.
-        <strong>Acesso:</strong> as rotas que não são <strong>Público</strong> exigem <code>Authorization: Bearer SEU_TOKEN</code> do perfil indicado.
-    </p>
-
-    <div class="tabela">
-    <table>
-        <tr><th>Método</th><th>Rota</th><th>Acesso</th><th>Parâmetros</th></tr>
-        @foreach ($publicas as [$metodo, $rota, $descricao, $parametros])
-            <tr><td><span class="metodo {{ $metodo }}">{{ $metodo }}</span></td><td><code>/api/v1{{ $rota }}</code></td><td>Público</td><td class="param"><code>{{ $parametros }}</code></td></tr>
+<main class="content">
+    @php $camisa = 0; @endphp
+    @foreach ($grupos as $grupo)
+        @foreach ($grupo['itens'] as $item)
+            @if ($item['guia'] ?? false)
+                @include('api._guia')
+            @else
+                @include('api._endpoint', ['camisa' => ++$camisa])
+            @endif
         @endforeach
-        @foreach ($todas as [$metodo, $rota, $acesso, $parametros])
-            <tr><td><span class="metodo {{ $metodo }}">{{ $metodo }}</span></td><td><code>/api/v1{{ $rota }}</code></td><td>{{ $acesso }}</td><td class="param"><code>{{ $parametros }}</code></td></tr>
-        @endforeach
-    </table>
-    </div>
-
+    @endforeach
 </main>
+
+<script type="application/json" id="colecaoPostman">@json(\App\Support\DocumentacaoApi::colecaoPostman($base))</script>
+<script src="{{ asset('coderatech/js/api-documentacao.js') }}?v={{ filemtime(public_path('coderatech/js/api-documentacao.js')) }}"></script>
 
 </body>
 </html>
