@@ -42,7 +42,8 @@ class AppDoAtleta
 
     // ── Dados ───────────────────────────────────────────────────────────────
 
-    // GET /atleta (e o mesmo para o responsável): só a categoria atual; as chaves do JSON não mudam.
+    // GET /atleta (e o mesmo para o responsável). "categorias" (06/11/2026): o histórico inteiro, da mais recente para
+    // a mais antiga, para o app mostrar por onde o atleta passou; a atual é a de status ATIVO sem data de fim.
     // "times" fica sempre vazio (Fase G, Etapa 4: sem elenco fixo; o time de cada jogo vem na agenda, em
     // time_do_atleta), para não quebrar o app. Posições (Fase D): "posicoes" (até 3, a principal primeiro, com
     // código, sigla e nome) e "posicao_atleta" com o código da principal (antes, texto livre), também para o app
@@ -53,9 +54,16 @@ class AppDoAtleta
         $atleta = $this->atleta->load([
             'endereco',
             'categorias' => fn ($q) => $q->select('tbl_categoria.id_categoria', 'nome_categoria')
-                ->wherePivot('status_categoria_atleta', Atleta::CATEGORIA_ATIVA),
+                ->orderByDesc('tbl_categoria_atleta.data_inicio_categoria_atleta')
+                ->orderByDesc('tbl_categoria_atleta.id_categoria_atleta'),
             'posicoes',
         ])->setRelation('times', collect());
+
+        // A observação é anotação interna da secretaria (ex.: o motivo de subir de categoria) e não vai para o atleta
+        // nem para a família: a chave continua no pivô, sempre null. Só na resposta: o banco e o painel não mudam
+        $atleta->categorias->each(function ($categoria) {
+            $categoria->pivot->observacao_categoria_atleta = null;
+        });
 
         // Responsáveis (21/10/2026, para o app parar de mostrar um nome fixo): só o nome e o grau de parentesco
         // (decisão do dono do projeto; CPF, e-mail e telefone são dados de outra pessoa e ficam fora)

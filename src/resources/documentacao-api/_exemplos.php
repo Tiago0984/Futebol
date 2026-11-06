@@ -43,13 +43,22 @@ $atleta = [
         'id_endereco' => 12, 'rua_endereco' => 'Rua das Flores', 'numero_endereco' => '120', 'bairro_endereco' => 'Centro',
         'complemento_endereco' => null, 'cep_endereco' => '13560-000', 'cidade_endereco' => 'São Carlos', 'estado_endereco' => 'SP',
     ],
-    'categorias' => [[
-        'id_categoria' => 6, 'nome_categoria' => 'Sub-13',
-        'pivot' => [
-            'id_atleta' => 7, 'id_categoria' => 6, 'data_inicio_categoria_atleta' => '2026-02-01T09:30:00-03:00', 'data_fim_categoria_atleta' => null,
-            'data_atualizacao_categoria_atleta' => '2026-02-01T09:30:00-03:00', 'status_categoria_atleta' => 'ATIVO', 'observacao_categoria_atleta' => null,
+    'categorias' => [
+        [
+            'id_categoria' => 6, 'nome_categoria' => 'Sub-13',
+            'pivot' => [
+                'id_atleta' => 7, 'id_categoria' => 6, 'data_inicio_categoria_atleta' => '2026-02-01T09:30:00-03:00', 'data_fim_categoria_atleta' => null,
+                'data_atualizacao_categoria_atleta' => '2026-02-01T09:30:00-03:00', 'status_categoria_atleta' => 'ATIVO', 'observacao_categoria_atleta' => null,
+            ],
         ],
-    ]],
+        [
+            'id_categoria' => 4, 'nome_categoria' => 'Sub-11',
+            'pivot' => [
+                'id_atleta' => 7, 'id_categoria' => 4, 'data_inicio_categoria_atleta' => '2024-02-05T10:00:00-03:00', 'data_fim_categoria_atleta' => '2026-02-01T09:30:00-03:00',
+                'data_atualizacao_categoria_atleta' => '2026-02-01T09:30:00-03:00', 'status_categoria_atleta' => 'ENCERRADO', 'observacao_categoria_atleta' => null,
+            ],
+        ],
+    ],
     'posicoes' => [
         ['ordem_atleta_posicao' => 1, 'posicao' => 'VOLANTE', 'sigla' => 'VOL', 'nome' => 'Volante'],
         ['ordem_atleta_posicao' => 2, 'posicao' => 'MEIA_CENTRAL', 'sigla' => 'MC', 'nome' => 'Meia-central'],

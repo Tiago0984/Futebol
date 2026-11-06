@@ -67,7 +67,7 @@ return [
         [
             'titulo' => 'Dados do filho', 'metodo' => 'GET', 'rota' => '/responsavel/atletas/{idAtleta}', 'acesso' => 'responsavel',
             'doc' => <<<'HTML'
-                <p>Os dados do filho, <strong>exatamente o mesmo JSON</strong> de <a href="#get-atleta"><code>GET /atleta</code></a>, em modo leitura: o responsável não edita o filho (<code>405</code>).</p>
+                <p>Os dados do filho, <strong>exatamente o mesmo JSON</strong> de <a href="#get-atleta"><code>GET /atleta</code></a>, inclusive o histórico em <code>categorias</code>, em modo leitura: o responsável não edita o filho (<code>405</code>).</p>
                 <p>Em todas as rotas de um filho, o servidor confere que o atleta é filho do responsável logado e está <code>ATIVO</code>; senão, <code>404</code> (o mesmo para atleta de outra família, inativado ou inexistente).</p>
                 HTML,
             'parametros' => [['{idAtleta}', 'inteiro', 'caminho', true, 'O filho, da lista de <code>/responsavel/atletas</code>.']],

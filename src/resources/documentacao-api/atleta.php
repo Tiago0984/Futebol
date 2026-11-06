@@ -13,8 +13,9 @@ return [
     'itens'  => [
         [
             'titulo' => 'Dados do atleta', 'metodo' => 'GET', 'rota' => '/atleta', 'acesso' => 'atleta',
-            'doc' => '<p>Os dados do atleta logado, com o endereço e a categoria atual. O atleta é da AACJ, na categoria dele; o time de cada jogo vem na agenda, em <code>time_do_atleta</code>.</p>',
+            'doc' => '<p>Os dados do atleta logado, com o endereço e o histórico de categorias. O atleta é da AACJ, na categoria dele; o time de cada jogo vem na agenda, em <code>time_do_atleta</code>.</p>',
             'campos' => [
+                ['categorias', 'O <strong>histórico</strong> de categorias do atleta, inclusive as encerradas, da mais recente para a mais antiga. A mesma categoria pode aparecer mais de uma vez, se ele voltou a ela. A <strong>atual</strong> é a de <code>pivot.status_categoria_atleta</code> = <code>ATIVO</code> com <code>pivot.data_fim_categoria_atleta</code> nula: há no máximo uma; não dependa da posição na lista. As encerradas têm status <code>ENCERRADO</code> e data de fim. <code>pivot.observacao_categoria_atleta</code> vem sempre <code>null</code>: é anotação interna da secretaria.'],
                 ['times', 'Sempre vazio (mantido para não quebrar o app).'],
                 ['posicoes', "Até 3, a principal primeiro; <code>posicao</code> é o código fixo, <code>sigla</code> e <code>nome</code> são para mostrar. Códigos: {$codigos}."],
                 ['posicao_atleta', 'O código da principal (<code>null</code> sem posição).'],
