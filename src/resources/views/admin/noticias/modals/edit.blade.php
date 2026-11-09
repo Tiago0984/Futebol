@@ -29,12 +29,11 @@
                             <input type="datetime-local" name="data_publicacao_noticia" id="edit_data" class="form-control" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Foto de Capa <span class="text-muted fw-normal">(opcional — deixe vazio para manter)</span></label>
-                            <input type="file" name="foto_noticia" class="form-control" accept="image/*">
-                        </div>
-                        <div class="col-12">
                             <label class="form-label">Conteúdo <span class="text-danger">*</span></label>
                             <textarea name="conteudo_noticia" id="edit_conteudo" class="form-control" rows="6" required></textarea>
+                        </div>
+                        <div class="col-12">
+                            @include('admin.noticias.modals._capa', ['rotulo' => 'Alterar capa (opcional)', 'ajuda' => ' Deixe vazio para manter a capa atual.', 'idAtual' => 'edit_capa_atual'])
                         </div>
                     </div>
                 </div>

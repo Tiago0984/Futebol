@@ -27,6 +27,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
         </div>
         @endif
+        @include('admin.partials.avisos-imagem')
 
         @if ($errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
@@ -130,7 +131,8 @@
                                             data-conteudo="{{ $noticia->conteudo_noticia }}"
                                             data-categoria="{{ $noticia->categoria_noticia }}"
                                             data-autor="{{ $noticia->autor_noticia }}"
-                                            data-data="{{ \Carbon\Carbon::parse($noticia->data_publicacao_noticia)->format('Y-m-d\TH:i') }}">
+                                            data-data="{{ \Carbon\Carbon::parse($noticia->data_publicacao_noticia)->format('Y-m-d\TH:i') }}"
+                                            data-foto="{{ $noticia->foto_url }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form action="{{ route('admin.noticias.destroy', $noticia->id_noticia) }}"
@@ -176,6 +178,12 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_categoria').value = this.dataset.categoria;
             document.getElementById('edit_autor').value     = this.dataset.autor;
             document.getElementById('edit_data').value      = this.dataset.data;
+
+            // Capa atual em miniatura e no "Como vai ficar" (data-foto: o endereço completo; vazio = sem capa)
+            const atual = document.getElementById('edit_capa_atual');
+            atual.hidden = !this.dataset.foto;
+            atual.querySelector('img').src = this.dataset.foto || '';
+            atual.closest('.js-campo-imagem').dispatchEvent(new CustomEvent('imagem:atual', { detail: { url: this.dataset.foto } }));
         });
     });
 

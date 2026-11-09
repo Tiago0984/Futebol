@@ -1,6 +1,6 @@
 /* ==========================================================================
-   "COMO VAI FICAR" — imagens no painel (06/11/2026; partials admin/campeonatos/_previa_das_imagens e
-   admin/banners/modals/_previa). Mostra a imagem (a atual, a nova ou o recorte em andamento) com os dados digitados.
+   "COMO VAI FICAR" — imagens no painel (06/11/2026; partials admin/campeonatos/_previa_das_imagens,
+   admin/banners/modals/_previa e, desde 09/11/2026, admin/noticias/modals/_previa). Mostra a imagem (a atual, a nova ou o recorte em andamento) com os dados digitados.
    As imagens chegam pelo evento "imagem:mudou" do partial admin.partials.campo-de-imagem, em campo.fonteDaPrevia.
    Nada aqui é gravado: o recorte vai pelo campo escondido de cada imagem.
    ========================================================================== */
@@ -141,8 +141,65 @@
     acompanhar(bloco, () => { atualizarTextos(); atualizarImagem(); escalar(bloco); });
   }
 
+  // Mês abreviado como o translatedFormat('M') do site, em pt_BR
+  const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+
+  // Str::limit do site: corta e põe "..." (o cartão da home corta em 70, os posts recentes em 55)
+  function limitar(texto, limite) {
+    return limite && texto.length > limite ? texto.slice(0, limite).trimEnd() + '...' : texto;
+  }
+
+  // Capa da notícia (09/11/2026; partial admin/noticias/modals/_previa): topo da notícia, lista, home e miniatura
+  function iniciarNoticia(bloco) {
+    const form = bloco.closest('form');
+    const valor = nome => form.querySelector('[name="' + nome + '"]')?.value.trim() || '';
+    const todos = seletor => bloco.querySelectorAll(seletor);
+
+    function escrever(seletor, texto) {
+      todos(seletor).forEach(elemento => { elemento.textContent = limitar(texto, parseInt(elemento.dataset.limite, 10)); });
+    }
+
+    function atualizarTextos() {
+      const categoria = valor('categoria_noticia') || 'Categoria';
+      // datetime-local: "2026-11-09T14:30"
+      const [data] = valor('data_publicacao_noticia').split('T');
+      const [ano, mes, dia] = data ? data.split('-') : [];
+
+      escrever('.js-previa-titulo', valor('titulo_noticia') || 'Título da notícia');
+      escrever('.js-previa-categoria', categoria);
+      escrever('.js-previa-autor', valor('autor_noticia') || 'Autor');
+      escrever('.js-previa-dia', dia || 'dd');
+      escrever('.js-previa-mes', mes ? MESES[parseInt(mes, 10) - 1] : 'mês');
+      escrever('.js-previa-data', data ? dia + '/' + mes + '/' + ano : 'dd/mm/aaaa');
+      escrever('.js-previa-data-curta', data ? dia + ' ' + MESES[parseInt(mes, 10) - 1] + ', ' + ano : 'dd mês, aaaa');
+      escrever('.js-previa-data-longa', data ? dia + ' de ' + MESES[parseInt(mes, 10) - 1] + ', ' + ano : 'dd de mês, aaaa');
+    }
+
+    function atualizarImagem() {
+      const capa = form.querySelector('.js-campo-imagem')?.fonteDaPrevia || '';
+
+      todos('.js-previa-capa').forEach(imagem => {
+        imagem.hidden = !capa;
+        if (capa) {
+          imagem.src = capa;
+        } else {
+          imagem.removeAttribute('src');
+        }
+      });
+      todos('.js-previa-fundo').forEach(elemento => { elemento.style.backgroundImage = capa ? 'url("' + capa + '")' : ''; });
+      todos('.js-previa-sem-capa').forEach(elemento => { elemento.hidden = Boolean(capa); });
+      todos('.js-previa-sem-capa-aviso').forEach(elemento => { elemento.hidden = Boolean(capa); });
+    }
+
+    form.addEventListener('input', () => { atualizarTextos(); escalar(bloco); });
+    form.addEventListener('imagem:mudou', () => { atualizarImagem(); escalar(bloco); });
+
+    acompanhar(bloco, () => { atualizarTextos(); atualizarImagem(); escalar(bloco); });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.js-previa-campeonato').forEach(iniciarCampeonato);
     document.querySelectorAll('.js-previa-banner-home').forEach(iniciarBannerDaHome);
+    document.querySelectorAll('.js-previa-noticia').forEach(iniciarNoticia);
   });
 })();

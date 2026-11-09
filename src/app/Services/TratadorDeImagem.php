@@ -11,7 +11,7 @@ use Intervention\Image\ImageManager;
 /**
  * Tratamento das imagens enviadas pelo painel (26/10/2026; formatos aprovados pelo dono do projeto), para quem não
  * entende de imagem poder usar qualquer foto:
- * - capa (Banners da home 1920×1080, banner do campeonato 1920×960): recorte na proporção (o do formulário, pelo
+ * - capa (Banners da home 1920×1080, banner do campeonato 1920×960, capa da notícia 1920×1080): recorte na proporção (o do formulário, pelo
  *   Cropper.js, ou o centro) e redução, em JPG; menor que o formato não é ampliada (só borraria);
  * - logo do campeonato: a imagem inteira (ou o recorte livre do formulário, para tirar sobras), centralizada num
  *   quadrado de até 512×512 com fundo transparente, em PNG;
@@ -23,6 +23,9 @@ class TratadorDeImagem
 {
     public const BANNER_SITE = [1920, 1080];
     public const BANNER_CAMPEONATO = [1920, 960];
+    // Capa da notícia (09/11/2026): 16:9. O site corta as bordas de jeitos diferentes (cartão da home 16:10, lista
+    // ~2:1, topo da notícia em largura total, miniatura quadrada): a prévia "Como vai ficar" mostra cada um
+    public const NOTICIA = [1920, 1080];
     public const LOGO = 512;
     public const FOTO = 512;
     public const QUALIDADE_JPG = 82;
@@ -54,7 +57,7 @@ class TratadorDeImagem
 
     // Nome gerado: "banner-campeonato-20261026-141500-a1b2c3.jpg". Só arquivos com esse nome são apagados (os que
     // vieram com o projeto, no Git, ficam)
-    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time|foto-atleta)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
+    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time|foto-atleta|capa-noticia)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
 
     /**
      * O que tratar num formulário com "Editar imagem" (06/11/2026): o arquivo enviado ou, sem ele, a imagem atual, se

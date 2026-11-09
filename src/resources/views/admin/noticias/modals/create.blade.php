@@ -28,13 +28,11 @@
                             <input type="datetime-local" name="data_publicacao_noticia" class="form-control" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Foto de Capa</label>
-                            <input type="file" name="foto_noticia" class="form-control" accept="image/*">
-                            <span class="form-text">Formatos aceitos: JPG, PNG, WEBP. Máx. 2MB</span>
-                        </div>
-                        <div class="col-12">
                             <label class="form-label">Conteúdo <span class="text-danger">*</span></label>
                             <textarea name="conteudo_noticia" class="form-control" rows="6" placeholder="Escreva o conteúdo da notícia aqui..." required></textarea>
+                        </div>
+                        <div class="col-12">
+                            @include('admin.noticias.modals._capa', ['rotulo' => 'Foto de capa (opcional)'])
                         </div>
                     </div>
                 </div>
