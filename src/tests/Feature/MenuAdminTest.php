@@ -115,7 +115,7 @@ class MenuAdminTest extends TestCase
         $this->criarAtleta($this->nascidoComIdade(11), 'M', 'PENDENTE');
         $this->criarAtleta($this->nascidoComIdade(12), 'M', 'PENDENTE');
 
-        $this->assertStringContainsString('font-size:0.65rem;">2</span>',
+        $this->assertStringContainsString('title="Matrículas aguardando aprovação">2</span>',
             $this->barra($this->comoAdmin()->get(route('admin.dashboard'))));
     }
 

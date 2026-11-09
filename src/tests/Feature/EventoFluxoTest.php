@@ -438,13 +438,18 @@ class EventoFluxoTest extends TestCase
         ]);
 
         $consultas = [];
-        DB::listen(function ($q) use (&$consultas) { $consultas[] = $q->sql; });
+        $pendentes = 0;
+        DB::listen(function ($q) use (&$consultas, &$pendentes) {
+            $consultas[] = $q->sql;
+            $pendentes += str_contains($q->sql, 'from `tbl_atletas`') && in_array('PENDENTE', $q->bindings, true) ? 1 : 0;
+        });
         $this->comoAdmin()->get(route('admin.calendario.index'))->assertOk();
 
         $this->assertEmpty(array_filter($consultas, fn ($sql) => str_contains($sql, 'tbl_noticias')));
         $this->assertEmpty(array_filter($consultas, fn ($sql) => str_contains($sql, 'select * from `tbl_campeonato` order by `nome_campeonato`')));
-        // O contador de matrículas roda uma vez (barra e header usam o mesmo valor)
-        $this->assertCount(1, array_filter($consultas, fn ($sql) => str_contains($sql, 'from `tbl_atletas` where `status_atleta` in')));
+        // O contador de matrículas roda uma vez (barra, sino do header e dashboard usam o mesmo valor:
+        // InicioDoPainel::contagens, guardado na requisição)
+        $this->assertSame(1, $pendentes);
 
         // Site: notícias no header e campeonatos no menu
         $this->get('/')->assertOk()->assertSee('Notícia Recente XYZ')->assertSee('Copa Escola');

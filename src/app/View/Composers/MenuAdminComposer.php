@@ -2,16 +2,18 @@
 
 namespace App\View\Composers;
 
-use App\Models\Atleta;
 use App\Models\EventoCalendario;
 use App\Models\Jogo;
+use App\Services\InicioDoPainel;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Dados da barra lateral e do header do admin (Fase 10), montados num lugar só: matrículas pendentes e o item
- * ativo. Registrado no layout.admin (os partials herdam), então roda uma vez por página: uma consulta (mais uma
- * na tela de um evento, para achar o ramo dele, e uma nos jogadores de um time num jogo).
+ * Dados da barra lateral e do header do admin (Fase 10), montados num lugar só: os números do menu (matrículas,
+ * fotos para aprovar, Fale conosco não lido), o sino do topo e o item ativo. Registrado no layout.admin (os partials
+ * herdam), então roda uma vez por página: as contagens fixas do InicioDoPainel (mais uma consulta para as últimas
+ * mensagens, quando há não lidas; mais uma na tela de um evento, para achar o ramo dele, e uma nos jogadores de um
+ * time num jogo). Nada cresce com a quantidade de registros.
  */
 class MenuAdminComposer
 {
@@ -19,10 +21,17 @@ class MenuAdminComposer
     {
     }
 
+    // Números do menu e o sino do topo vêm do InicioDoPainel (as mesmas contagens do dashboard, 09/11/2026)
     public function compose(View $view): void
     {
+        $inicio = app(InicioDoPainel::class);
+        $contagens = $inicio->contagens();
+
         $view->with([
-            'matriculasPendentes' => Atleta::whereIn('status_atleta', ['PENDENTE', 'pendente'])->count(),
+            'matriculasPendentes' => $contagens['matriculas'],
+            'fotosParaAprovar'    => $contagens['fotos'],
+            'faleNaoLidas'        => $contagens['fale_nao_lidas'],
+            'avisosDoSino'        => $inicio->avisosDoSino(),
             'menuAtivo'           => $this->itemAtivo(),
         ]);
     }

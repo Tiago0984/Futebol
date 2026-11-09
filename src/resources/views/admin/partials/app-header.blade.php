@@ -1,7 +1,8 @@
 @php
-  // Contador do MenuAdminComposer (registrado no layout.admin; o mesmo da barra lateral)
-  $notifMatriculas = $matriculasPendentes ?? 0;
-  $notifTotal      = $notifMatriculas;
+  // Sino do topo: o que chega de fora e pede resposta (InicioDoPainel::avisosDoSino, pelo MenuAdminComposer; as
+  // mesmas contagens do menu lateral e do dashboard). Não confundir com o item "Notificações" do menu, que são os
+  // avisos enviados aos atletas.
+  $sino = $avisosDoSino ?? ['total' => 0, 'itens' => [], 'mensagens' => collect()];
 @endphp
 <!--begin::Header-->
       <nav class="app-header navbar navbar-expand bg-body">
@@ -21,29 +22,48 @@
           <ul class="navbar-nav ms-auto">
             <!--begin::Notifications Dropdown Menu-->
             <li class="nav-item dropdown">
-              <a class="nav-link" data-bs-toggle="dropdown" href="javascript:void(0)" aria-label="Notificações">
+              <a class="nav-link" data-bs-toggle="dropdown" href="javascript:void(0)" id="sinoDoPainel"
+                 aria-label="Avisos do painel{{ $sino['total'] ? ': ' . $sino['total'] : '' }}" title="Avisos do painel">
                 <i class="bi bi-bell-fill"></i>
-                @if(($notifTotal ?? 0) > 0)
-                  <span class="navbar-badge badge text-bg-warning">{{ $notifTotal }}</span>
+                @if($sino['total'] > 0)
+                  <span class="navbar-badge badge text-bg-warning">{{ $sino['total'] > 99 ? '99+' : $sino['total'] }}</span>
                 @endif
               </a>
-              <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
+              <div class="dropdown-menu dropdown-menu-lg dropdown-menu-end sino-painel" id="avisosDoSino">
                 <span class="dropdown-item dropdown-header">
-                  {{ $notifTotal ?? 0 }} {{ ($notifTotal ?? 0) == 1 ? 'Notificação' : 'Notificações' }}
+                  @if($sino['total'])
+                    {{ $sino['total'] }} {{ $sino['total'] == 1 ? 'aviso' : 'avisos' }} para ver
+                  @else
+                    Nenhum aviso novo
+                  @endif
                 </span>
 
-                @if(($notifMatriculas ?? 0) > 0)
+                @foreach($sino['itens'] as $item)
                   <div class="dropdown-divider"></div>
-                  <a href="{{ route('admin.matriculas.index') }}" class="dropdown-item">
-                    <i class="bi bi-person-plus-fill me-2 text-danger"></i>
-                    {{ $notifMatriculas }} matrícula{{ $notifMatriculas != 1 ? 's' : '' }} pendente{{ $notifMatriculas != 1 ? 's' : '' }}
-                    <span class="float-end text-secondary fs-7">novo</span>
+                  <a href="{{ $item['url'] }}" class="dropdown-item sino-painel__item">
+                    <i class="bi bi-{{ $item['icone'] }} me-2 text-{{ $item['nivel'] }}"></i>{{ $item['texto'] }}
                   </a>
-                @endif
+                  @if(($item['chave'] ?? null) === 'fale')
+                    @foreach($sino['mensagens'] as $mensagem)
+                      <a href="{{ route('admin.fale-conosco.show', $mensagem->id_fale_conosco) }}" class="dropdown-item sino-painel__mensagem">
+                        <span class="sino-painel__nome">{{ $mensagem->nome_fale_conosco }}</span>
+                        <span class="sino-painel__quando">{{ $mensagem->data_fale_conosco->locale('pt_BR')->diffForHumans() }}</span>
+                        <span class="sino-painel__assunto">{{ \Illuminate\Support\Str::limit($mensagem->assunto_fale_conosco, 45) }}</span>
+                      </a>
+                    @endforeach
+                  @endif
+                @endforeach
+
+                @unless($sino['total'])
+                  <div class="dropdown-divider"></div>
+                  <span class="dropdown-item text-body-secondary sino-painel__vazio">
+                    <i class="bi bi-check-circle me-2 text-success"></i>Sem mensagens, matrículas ou fotos para ver.
+                  </span>
+                @endunless
 
                 <div class="dropdown-divider"></div>
-                <a href="{{ route('admin.matriculas.index') }}" class="dropdown-item dropdown-footer">
-                  Ver todas as notificações
+                <a href="{{ route('admin.dashboard') }}" class="dropdown-item dropdown-footer">
+                  Ver tudo no dashboard
                 </a>
               </div>
             </li>

@@ -40,6 +40,87 @@ class InicioDoPainel
     // Tarefa esperando na fila há mais que isto = o agendador do Plesk não está rodando (roda a cada minuto)
     public const FILA_PARADA_MINUTOS = 10;
 
+    // Mensagens do Fale conosco listadas no sino (as mais recentes ainda não lidas)
+    public const MENSAGENS_NO_SINO = 5;
+
+    /**
+     * Contagens do que chega de fora (site, app, fila), usadas pelo sino do topo, pelos números do menu lateral
+     * e pelo dashboard: uma regra só, para os três nunca mostrarem números diferentes. Guardadas na requisição,
+     * então cada página conta uma vez (o menu e o dashboard da mesma página dividem as consultas).
+     *
+     * fila_parada_desde: quando entrou a tarefa mais antiga que espera há mais de FILA_PARADA_MINUTOS (null = a
+     * fila anda); fila_falhas: tarefas que falharam em todas as tentativas (failed_jobs, limpas em 30 dias).
+     */
+    public function contagens(): array
+    {
+        $chave = 'inicio-do-painel.contagens';
+        $requisicao = request();
+        if ($requisicao->attributes->has($chave)) {
+            return $requisicao->attributes->get($chave);
+        }
+
+        $maisAntigo = DB::table('jobs')->min('available_at');
+        $contagens = [
+            'matriculas'        => Atleta::where('status_atleta', 'PENDENTE')->count(),
+            'fotos'             => Atleta::whereNotNull('foto_pendente_atleta')->count(),
+            'fale_nao_lidas'    => FaleConosco::whereNull('data_leitura_fale_conosco')->count(),
+            'fila_parada_desde' => $maisAntigo !== null && $maisAntigo < now()->subMinutes(self::FILA_PARADA_MINUTOS)->timestamp
+                ? Carbon::createFromTimestamp($maisAntigo) : null,
+            'fila_falhas'       => DB::table('failed_jobs')->count(),
+        ];
+        $requisicao->attributes->set($chave, $contagens);
+
+        return $contagens;
+    }
+
+    /**
+     * Sino do topo (09/11/2026): só o que chega de fora e pede resposta (fila de e-mails com problema, matrículas
+     * novas, fotos do app, Fale conosco não lido). Os pendentes internos (rascunhos, jogos sem placar, sem período,
+     * locais) ficam só no "Precisa da sua atenção" do dashboard. total = a soma (cada problema da fila conta 1).
+     * Cada item: nivel, icone, texto, url (opcional). mensagens = as últimas não lidas, com o link de cada uma.
+     */
+    public function avisosDoSino(): array
+    {
+        $c = $this->contagens();
+        $itens = [];
+
+        if ($c['fila_parada_desde']) {
+            $itens[] = ['nivel' => 'danger', 'icone' => 'hourglass-split', 'url' => route('admin.dashboard'),
+                'texto' => 'Fila de e-mails parada há ' . $this->tempoDesde($c['fila_parada_desde'])];
+        }
+        if ($c['fila_falhas']) {
+            $itens[] = ['nivel' => 'danger', 'icone' => 'x-octagon', 'url' => route('admin.dashboard'),
+                'texto' => "{$c['fila_falhas']} tarefa(s) da fila falharam"];
+        }
+        if ($c['matriculas']) {
+            $itens[] = ['nivel' => 'warning', 'icone' => 'clipboard-check', 'url' => route('admin.matriculas.index'),
+                'texto' => "{$c['matriculas']} matrícula(s) aguardando aprovação"];
+        }
+        if ($c['fotos']) {
+            $itens[] = ['nivel' => 'warning', 'icone' => 'person-bounding-box', 'url' => route('admin.atletas.index', ['status' => 'FOTO']),
+                'texto' => "{$c['fotos']} foto(s) do app para aprovar"];
+        }
+        if ($c['fale_nao_lidas']) {
+            // chave "fale": o sino lista as últimas mensagens logo abaixo deste item
+            $itens[] = ['chave' => 'fale', 'nivel' => 'info', 'icone' => 'envelope', 'url' => route('admin.fale-conosco.index', ['leitura' => 'nao_lidas']),
+                'texto' => "{$c['fale_nao_lidas']} mensagem(ns) do Fale conosco não lida(s)"];
+        }
+
+        $mensagens = $c['fale_nao_lidas']
+            ? FaleConosco::whereNull('data_leitura_fale_conosco')
+                ->orderByDesc('data_fale_conosco')->orderByDesc('id_fale_conosco')
+                ->limit(self::MENSAGENS_NO_SINO)
+                ->get(['id_fale_conosco', 'nome_fale_conosco', 'assunto_fale_conosco', 'data_fale_conosco'])
+            : collect();
+
+        return [
+            'total'     => $c['matriculas'] + $c['fotos'] + $c['fale_nao_lidas']
+                + ($c['fila_parada_desde'] ? 1 : 0) + ($c['fila_falhas'] ? 1 : 0),
+            'itens'     => $itens,
+            'mensagens' => $mensagens,
+        ];
+    }
+
     /**
      * Pendências, cada uma com o que fazer e onde: só as que têm algo (nada = "Tudo em dia" na tela).
      * Cada item: nivel (danger, warning, info), icone, texto, detalhe (opcional), url e rotulo do botão
@@ -48,19 +129,18 @@ class InicioDoPainel
     public function pendencias(): array
     {
         $itens = [];
+        $c = $this->contagens();
 
         // Fila parada ou com falhas: e-mails do Fale conosco e assinaturas do site não saem
-        $maisAntigo = DB::table('jobs')->min('available_at');
-        if ($maisAntigo !== null && $maisAntigo < now()->subMinutes(self::FILA_PARADA_MINUTOS)->timestamp) {
+        if ($c['fila_parada_desde']) {
             $itens[] = [
                 'nivel'   => 'danger',
                 'icone'   => 'hourglass-split',
-                'texto'   => 'A fila de e-mails está parada há ' . Carbon::createFromTimestamp($maisAntigo)->locale('pt_BR')
-                    ->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE, 'parts' => 1]) . '.',
+                'texto'   => 'A fila de e-mails está parada há ' . $this->tempoDesde($c['fila_parada_desde']) . '.',
                 'detalhe' => 'Confira a tarefa agendada "Agendador Laravel" no Plesk (docs/agendador.md). Até ela rodar, os e-mails do Fale conosco e as assinaturas do site não saem.',
             ];
         }
-        if ($falhas = DB::table('failed_jobs')->count()) {
+        if ($falhas = $c['fila_falhas']) {
             $itens[] = [
                 'nivel'   => 'danger',
                 'icone'   => 'x-octagon',
@@ -69,8 +149,7 @@ class InicioDoPainel
             ];
         }
 
-        $matriculas = Atleta::where('status_atleta', 'PENDENTE')->count();
-        if ($matriculas) {
+        if ($matriculas = $c['matriculas']) {
             $itens[] = [
                 'nivel' => 'warning', 'icone' => 'clipboard-check',
                 'texto' => "{$matriculas} matrícula(s) aguardando aprovação.",
@@ -78,8 +157,7 @@ class InicioDoPainel
             ];
         }
 
-        $fotos = Atleta::whereNotNull('foto_pendente_atleta')->count();
-        if ($fotos) {
+        if ($fotos = $c['fotos']) {
             $itens[] = [
                 'nivel' => 'warning', 'icone' => 'person-bounding-box',
                 'texto' => "{$fotos} foto(s) enviada(s) pelo app para aprovar.",
@@ -88,8 +166,7 @@ class InicioDoPainel
             ];
         }
 
-        $naoLidas = FaleConosco::whereNull('data_leitura_fale_conosco')->count();
-        if ($naoLidas) {
+        if ($naoLidas = $c['fale_nao_lidas']) {
             $itens[] = [
                 'nivel' => 'info', 'icone' => 'envelope',
                 'texto' => "{$naoLidas} mensagem(ns) do Fale conosco não lida(s).",
@@ -170,7 +247,7 @@ class InicioDoPainel
                 ->distinct()->count('id_atleta'),
             'atividades_semana'    => $this->daAgenda()->where('status_evento_calendario', 'ATIVO')->count(),
             'campeonatos'          => Campeonato::ativos()->count(),
-            'matriculas_pendentes' => Atleta::where('status_atleta', 'PENDENTE')->count(),
+            'matriculas_pendentes' => $this->contagens()['matriculas'],
         ];
     }
 
@@ -201,7 +278,7 @@ class InicioDoPainel
      */
     public function atalhos(array $numeros): array
     {
-        $naoLidas = FaleConosco::whereNull('data_leitura_fale_conosco')->count();
+        $naoLidas = $this->contagens()['fale_nao_lidas'];
 
         return [
             'Conteúdo do site' => [
@@ -264,6 +341,12 @@ class InicioDoPainel
             ->orderBy($doEvento('data_evento_calendario'), $direcao)
             ->orderBy($doEvento('horario_inicio_evento_calendario'), $direcao)
             ->orderBy('id_jogo', $direcao);
+    }
+
+    // "30 minutos", "2 horas" (sem o "há"), para a fila parada
+    private function tempoDesde(Carbon $desde): string
+    {
+        return $desde->copy()->locale('pt_BR')->diffForHumans(['syntax' => CarbonInterface::DIFF_ABSOLUTE, 'parts' => 1]);
     }
 
     // "Botafogo x AACJ Masculino · sáb, 14/11" com o link da tela do jogo

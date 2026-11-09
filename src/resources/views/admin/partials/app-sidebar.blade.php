@@ -28,7 +28,12 @@
         <li class="nav-item">
           <a href="{{ route('admin.fale-conosco.index') }}" class="nav-link {{ request()->routeIs('admin.fale-conosco.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-envelope"></i>
-            <p>Fale conosco</p>
+            <p>
+              Fale conosco
+              @if ($faleNaoLidas > 0)
+                <span class="badge text-bg-danger menu-contador" title="Mensagens não lidas">{{ $faleNaoLidas }}</span>
+              @endif
+            </p>
           </a>
         </li>
 
@@ -197,7 +202,12 @@
         <li class="nav-item">
           <a href="{{ route('admin.atletas.index') }}" class="nav-link {{ request()->routeIs('admin.atletas.*') ? 'active' : '' }}">
             <i class="nav-icon bi bi-person-badge"></i>
-            <p>Atletas</p>
+            <p>
+              Atletas
+              @if ($fotosParaAprovar > 0)
+                <span class="badge text-bg-danger menu-contador" title="Fotos enviadas pelo app para aprovar">{{ $fotosParaAprovar }}</span>
+              @endif
+            </p>
           </a>
         </li>
 
@@ -208,7 +218,7 @@
             <p>
               Matrículas
               @if ($matriculasPendentes > 0)
-                <span class="badge text-bg-danger ms-1 me-auto" style="font-size:0.65rem;">{{ $matriculasPendentes }}</span>
+                <span class="badge text-bg-danger menu-contador" title="Matrículas aguardando aprovação">{{ $matriculasPendentes }}</span>
               @endif
               <i class="nav-arrow bi bi-chevron-right"></i>
             </p>

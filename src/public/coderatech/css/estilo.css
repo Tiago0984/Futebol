@@ -10593,6 +10593,25 @@ body.lp-body {
 .qt-cor-cadastros { background: #0e7490; }
 .qt-cor-pessoas   { background: #7c3aed; }
 
+/* ── Números do menu lateral e sino do topo (09/11/2026) ──────────
+   Os mesmos números do dashboard (InicioDoPainel::contagens): Matrículas, Atletas (fotos) e Fale conosco. */
+.menu-contador { font-size: .65rem; margin-left: .25rem; vertical-align: middle; }
+
+.sino-painel { min-width: 300px; max-width: 360px; }
+.sino-painel__item { white-space: normal; font-size: var(--aacj-font-size-sm); }
+.sino-painel__mensagem {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0 8px;
+    padding-left: 2.6rem;
+    white-space: normal;
+    font-size: var(--aacj-font-size-xs);
+}
+.sino-painel__nome { font-weight: 600; color: var(--bs-body-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sino-painel__quando { color: var(--bs-secondary-color); white-space: nowrap; }
+.sino-painel__assunto { grid-column: 1 / -1; color: var(--bs-secondary-color); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sino-painel__vazio { white-space: normal; font-size: var(--aacj-font-size-sm); }
+
 /* ── Responsivo ─────────────────────────────────────────────────── */
 @media (max-width: 575px) {
     .kpi-number { font-size: 1.6rem; }
