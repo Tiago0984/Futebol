@@ -315,12 +315,14 @@ class JogoSiteTest extends TestCase
 
     // ---------- dashboard ----------
 
+    // "Últimos resultados" do dashboard (09/11/2026): só jogos que já aconteceram, com a data do evento
     public function test_dashboard_mostra_a_data_do_evento_e_amistoso(): void
     {
-        $this->jogo(0, $this->azul, $this->verde, null, 'ATIVO', [], amistoso: true, data: '2099-07-14');
+        $data = now()->subDays(3);
+        $this->jogo(0, $this->azul, $this->verde, null, 'ATIVO', [], amistoso: true, data: $data->toDateString());
 
         $this->comoAdmin()->get(route('admin.dashboard'))->assertOk()
-            ->assertSee('14/07/2099')
+            ->assertSee($data->format('d/m/Y'))
             ->assertSee('Amistoso');
     }
 

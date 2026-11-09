@@ -149,6 +149,7 @@
                             <option value="ATIVO">Ativo</option>
                             <option value="INATIVO">Inativo</option>
                             <option value="FOTO">Foto para aprovar</option>
+                            <option value="SEM_PERIODO" title="Atletas ativos sem período escolar (não entram nos treinos gerados)">Sem período</option>
                         </select>
                     </div>
                     <div class="col-md-auto">
@@ -219,7 +220,8 @@
                             data-categoria="{{ strtoupper($nomeCategoria ?? '') }}"
                             data-posicao=" {{ $codigosPosicoes->implode(' ') }} "
                             data-status="{{ strtoupper($atleta->status_atleta ?? '') }}"
-                            data-foto-pendente="{{ $atleta->temFotoPendente() ? '1' : '0' }}">
+                            data-foto-pendente="{{ $atleta->temFotoPendente() ? '1' : '0' }}"
+                            data-sem-periodo="{{ $atleta->periodo_escolar_atleta ? '0' : '1' }}">
                             <td>
                                 <div style="position:relative;width:42px;height:42px;flex-shrink:0;">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
@@ -699,7 +701,9 @@ document.addEventListener('DOMContentLoaded', function () {
                     && (!responsavel || row.dataset.responsavel.includes(responsavel))
                     && (!categoria   || row.dataset.categoria === categoria)
                     && (!posicao     || row.dataset.posicao.includes(' ' + posicao + ' '))
-                    && (!status      || (status === 'FOTO' ? row.dataset.fotoPendente === '1' : row.dataset.status === status));
+                    && (!status      || (status === 'FOTO' ? row.dataset.fotoPendente === '1'
+                                        : status === 'SEM_PERIODO' ? row.dataset.semPeriodo === '1' && row.dataset.status === 'ATIVO'
+                                        : row.dataset.status === status));
             row.style.display = ok ? '' : 'none';
             if (ok) visiveis++;
         });
@@ -739,6 +743,15 @@ document.addEventListener('DOMContentLoaded', function () {
         ['filtroCategoria','filtroPosicao','filtroStatus'].forEach(id => document.getElementById(id).value = '');
         aplicarFiltros();
     });
+
+    // Vindo do dashboard (?status=FOTO ou ?status=SEM_PERIODO): abre com o filtro de status já aplicado
+    const statusDaUrl = (new URLSearchParams(location.search).get('status') || '').toUpperCase();
+    const filtroStatus = document.getElementById('filtroStatus');
+    if (statusDaUrl && filtroStatus && [...filtroStatus.options].some(o => o.value === statusDaUrl)) {
+        filtroStatus.value = statusDaUrl;
+        bootstrap.Collapse.getOrCreateInstance(document.getElementById('filterPanel')).show();
+        aplicarFiltros();
+    }
 });
 </script>
 @endsection

@@ -1,273 +1,211 @@
 @extends('layout.admin')
 
+@section('title', 'Dashboard')
+
+{{--
+    Página inicial do painel (09/11/2026; dados em App\Services\InicioDoPainel): o que precisa de atenção (só os
+    itens com algo pendente, cada um com o caminho para resolver), os números do dia, a agenda dos próximos
+    7 dias, os últimos resultados e o acesso rápido nos mesmos grupos do menu.
+--}}
 @section('content')
+@php
+  $usuario = Auth::guard('admin')->user();
+  $primeiroNome = \Illuminate\Support\Str::before(trim($usuario->nome_usuario), ' ') ?: $usuario->nome_usuario;
+@endphp
 <main class="app-main">
+  <div class="container-fluid py-4">
 
-  {{-- ── HEADER ─────────────────────────────────────────────────────────── --}}
-  <div class="app-content-header">
-    <div class="container-fluid">
-      <div class="row align-items-center">
-        <div class="col-sm-7">
-          <p class="dash-greeting-label">Bem-vindo de volta,</p>
-          <h3 class="dash-greeting-name">{{ Auth::guard('admin')->user()->nome_usuario }}</h3>
-        </div>
-        <div class="col-sm-5 text-sm-end">
-          <p class="dash-date">{{ \Carbon\Carbon::now()->locale('pt_BR')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}</p>
-        </div>
-      </div>
-    </div>
-  </div>
+    <x-admin.cabecalho :titulo="'Olá, ' . $primeiroNome">
+      <x-slot:subtitulo class="dash-data">{{ now()->locale('pt_BR')->isoFormat('dddd, D [de] MMMM [de] YYYY') }}</x-slot:subtitulo>
+    </x-admin.cabecalho>
 
-  <div class="app-content">
-    <div class="container-fluid">
-
-      {{-- ── KPI CARDS ──────────────────────────────────────────────────── --}}
-      <div class="row mb-4 g-3">
-
-        <div class="col-6 col-lg-3">
-          <a href="{{ route('admin.atletas.index') }}" class="kpi-card kpi-red">
-            <div class="kpi-icon"><i class="bi bi-person-badge"></i></div>
-            <div class="kpi-body">
-              <div class="kpi-number">{{ $stats['atletas_ativos'] }}</div>
-              <div class="kpi-label">Atletas Ativos</div>
-            </div>
-            <i class="bi bi-arrow-right kpi-arrow"></i>
-          </a>
-        </div>
-
-        <div class="col-6 col-lg-3">
-          <a href="{{ route('admin.campeonatos.index') }}" class="kpi-card kpi-dark">
-            <div class="kpi-icon"><i class="bi bi-trophy"></i></div>
-            <div class="kpi-body">
-              <div class="kpi-number">{{ $stats['campeonatos'] }}</div>
-              <div class="kpi-label">Campeonatos ativos</div>
-            </div>
-            <i class="bi bi-arrow-right kpi-arrow"></i>
-          </a>
-        </div>
-
-        <div class="col-6 col-lg-3">
-          <a href="{{ route('admin.jogos.index') }}" class="kpi-card kpi-slate">
-            <div class="kpi-icon"><i class="bi bi-calendar-event"></i></div>
-            <div class="kpi-body">
-              <div class="kpi-number">{{ $stats['jogos'] }}</div>
-              <div class="kpi-label">Jogos Cadastrados</div>
-            </div>
-            <i class="bi bi-arrow-right kpi-arrow"></i>
-          </a>
-        </div>
-
-        <div class="col-6 col-lg-3">
-          <a href="{{ route('admin.matriculas.index') }}" class="kpi-card {{ $stats['matriculas_pendentes'] > 0 ? 'kpi-warning' : 'kpi-slate' }}">
-            <div class="kpi-icon"><i class="bi bi-clipboard-check"></i></div>
-            <div class="kpi-body">
-              <div class="kpi-number">{{ $stats['matriculas_pendentes'] }}</div>
-              <div class="kpi-label">Matrículas Pendentes</div>
-            </div>
-            @if($stats['matriculas_pendentes'] > 0)
-              <i class="bi bi-exclamation-circle kpi-arrow"></i>
-            @else
-              <i class="bi bi-check-circle kpi-arrow"></i>
+    {{-- ── Números do dia ─────────────────────────────────────────────── --}}
+    <div class="row g-3 mb-4" id="numerosDoPainel">
+      <div class="col-6 col-xl-3">
+        <a href="{{ route('admin.atletas.index') }}" class="kpi-card kpi-red">
+          <div class="kpi-icon"><i class="bi bi-person-badge"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-number">{{ $numeros['atletas_ativos'] }}</div>
+            <div class="kpi-label">Atletas ativos</div>
+            @if ($numeros['afastados_hoje'])
+            <div class="kpi-extra">{{ $numeros['afastados_hoje'] }} afastado(s) hoje</div>
             @endif
-          </a>
-        </div>
-
+          </div>
+          <i class="bi bi-arrow-right kpi-arrow"></i>
+        </a>
       </div>
 
-      {{-- ── CORPO PRINCIPAL ────────────────────────────────────────────── --}}
-      <div class="row g-3">
-
-        {{-- Acesso Rápido ──────────────────────────────────────────────── --}}
-        <div class="col-lg-8">
-          <div class="dash-panel">
-            <div class="dash-panel-header">
-              <i class="bi bi-grid-3x3-gap"></i> Acesso Rápido
-            </div>
-            <div class="dash-panel-body">
-
-              {{-- Conteúdo do Site --}}
-              <div class="quick-group">
-                <p class="quick-group-label">Conteúdo do Site</p>
-                <div class="quick-tiles">
-                  <a href="{{ route('admin.noticias.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#e31c1c;">
-                      <i class="bi bi-newspaper"></i>
-                    </div>
-                    <span class="qt-label">Notícias</span>
-                    <span class="qt-count">{{ $stats['noticias'] }}</span>
-                  </a>
-                  <a href="{{ route('admin.banners.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#b51212;">
-                      <i class="bi bi-image"></i>
-                    </div>
-                    <span class="qt-label">Banners</span>
-                    <span class="qt-count">{{ $stats['banners'] }}</span>
-                  </a>
-                  <a href="{{ route('admin.galeria.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#c0392b;">
-                      <i class="bi bi-images"></i>
-                    </div>
-                    <span class="qt-label">Galeria</span>
-                    <span class="qt-count">{{ $stats['galerias'] }}</span>
-                  </a>
-                  <a href="{{ route('admin.videos.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#7c3aed;">
-                      <i class="bi bi-camera-video"></i>
-                    </div>
-                    <span class="qt-label">Vídeos</span>
-                    <span class="qt-count">{{ $stats['videos'] ?? 0 }}</span>
-                  </a>
-                </div>
-              </div>
-
-              {{-- Esporte --}}
-              <div class="quick-group">
-                <p class="quick-group-label">Esporte</p>
-                <div class="quick-tiles">
-                  <a href="{{ route('admin.campeonatos.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#374151;">
-                      <i class="bi bi-trophy"></i>
-                    </div>
-                    <span class="qt-label">Campeonatos</span>
-                    <span class="qt-count">{{ $stats['campeonatos'] }}</span>
-                  </a>
-                  <a href="{{ route('admin.times.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#1f2937;">
-                      <i class="bi bi-shield-fill"></i>
-                    </div>
-                    <span class="qt-label">Times</span>
-                    <span class="qt-count">{{ $stats['times'] }}</span>
-                  </a>
-                  <a href="{{ route('admin.categorias.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#111827;">
-                      <i class="bi bi-tags"></i>
-                    </div>
-                    <span class="qt-label">Categorias</span>
-                  </a>
-                  <a href="{{ route('admin.jogos.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#4b5563;">
-                      <i class="bi bi-calendar-event"></i>
-                    </div>
-                    <span class="qt-label">Jogos</span>
-                    <span class="qt-count">{{ $stats['jogos'] }}</span>
-                  </a>
-                  <a href="{{ route('admin.calendario.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#6b7280;">
-                      <i class="bi bi-calendar3"></i>
-                    </div>
-                    <span class="qt-label">Calendário</span>
-                  </a>
-                  <a href="{{ route('admin.calendario.index', ['tab' => 'grade']) }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#0891b2;">
-                      <i class="bi bi-clock"></i>
-                    </div>
-                    <span class="qt-label">Grade de treino</span>
-                  </a>
-                </div>
-              </div>
-
-              {{-- Pessoas --}}
-              <div class="quick-group">
-                <p class="quick-group-label">Pessoas</p>
-                <div class="quick-tiles">
-                  <a href="{{ route('admin.atletas.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:#e31c1c;">
-                      <i class="bi bi-person-badge"></i>
-                    </div>
-                    <span class="qt-label">Atletas</span>
-                    <span class="qt-count">{{ $stats['atletas_ativos'] }}</span>
-                  </a>
-                  <a href="{{ route('admin.matriculas.index') }}" class="quick-tile">
-                    <div class="qt-icon" style="background:{{ $stats['matriculas_pendentes'] > 0 ? '#d97706' : '#374151' }};">
-                      <i class="bi bi-clipboard-check"></i>
-                    </div>
-                    <span class="qt-label">Matrículas</span>
-                    @if($stats['matriculas_pendentes'] > 0)
-                      <span class="qt-badge-warn">{{ $stats['matriculas_pendentes'] }}</span>
-                    @endif
-                  </a>
-                </div>
-              </div>
-
-            </div>
+      <div class="col-6 col-xl-3">
+        <a href="{{ route('admin.calendario.index') }}" class="kpi-card kpi-dark">
+          <div class="kpi-icon"><i class="bi bi-calendar-week"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-number">{{ $numeros['atividades_semana'] }}</div>
+            <div class="kpi-label">Atividades nos próximos {{ \App\Services\InicioDoPainel::DIAS_DA_AGENDA }} dias</div>
           </div>
-        </div>
-
-        {{-- Feed de Atividade ─────────────────────────────────────────── --}}
-        <div class="col-lg-4">
-
-          {{-- Matrículas Pendentes --}}
-          <div class="dash-panel mb-3">
-            <div class="dash-panel-header">
-              <i class="bi bi-clipboard-check"></i> Matrículas Pendentes
-              <a href="{{ route('admin.matriculas.index') }}" class="dash-panel-link">Ver todas</a>
-            </div>
-            <div class="dash-feed">
-              @forelse($ultimasMatriculas as $m)
-              <div class="feed-item">
-                <div class="feed-avatar" style="background:var(--aacj-red);">
-                  {{ strtoupper(substr($m->nome_atleta, 0, 1)) }}
-                </div>
-                <div class="feed-info">
-                  <span class="feed-name">{{ $m->nome_atleta }}</span>
-                  <span class="feed-meta">Aguardando aprovação</span>
-                </div>
-                <a href="{{ route('admin.matriculas.show', $m->id_atleta) }}" class="feed-action" title="Visualizar">
-                  <i class="bi bi-eye"></i>
-                </a>
-              </div>
-              @empty
-              <div class="feed-empty">
-                <i class="bi bi-check-circle-fill text-success"></i>
-                Tudo em dia!
-              </div>
-              @endforelse
-            </div>
-          </div>
-
-          {{-- Últimos Jogos --}}
-          <div class="dash-panel">
-            <div class="dash-panel-header">
-              <i class="bi bi-calendar-event"></i> Últimos Jogos
-              <a href="{{ route('admin.jogos.index') }}" class="dash-panel-link">Ver todos</a>
-            </div>
-            <div class="dash-feed">
-              @forelse($ultimosJogos as $j)
-              <div class="feed-item">
-                <div class="feed-avatar" style="background:#374151;">
-                  <i class="bi bi-trophy-fill" style="font-size:.85rem;"></i>
-                </div>
-                <div class="feed-info">
-                  <span class="feed-name">
-                    {{ Str::limit($j->timeCasa?->nome_time ?? '?', 10) }}
-                    <span style="color:var(--aacj-text-muted); font-weight:400;">vs</span>
-                    {{ Str::limit($j->timeVisitante?->nome_time ?? '?', 10) }}
-                  </span>
-                  <span class="feed-meta">
-                    {{ $j->evento?->data_evento_calendario->format('d/m/Y') ?? '—' }}
-                    &bull; {{ Str::limit($j->campeonato?->nome_campeonato ?? 'Amistoso', 18) }}
-                  </span>
-                </div>
-                @if(!is_null($j->placar_time_casa_jogos))
-                  <span class="feed-score">{{ $j->placar_time_casa_jogos }}×{{ $j->placar_time_visitante_jogos }}</span>
-                @else
-                  <span class="feed-badge">{{ $j->evento?->situacao_label ?? '—' }}</span>
-                @endif
-              </div>
-              @empty
-              <div class="feed-empty">
-                <i class="bi bi-calendar-x"></i> Sem jogos cadastrados.
-              </div>
-              @endforelse
-            </div>
-          </div>
-
-        </div>
-
+          <i class="bi bi-arrow-right kpi-arrow"></i>
+        </a>
       </div>
-      {{-- end::corpo principal --}}
 
+      <div class="col-6 col-xl-3">
+        <a href="{{ route('admin.campeonatos.index') }}" class="kpi-card kpi-slate">
+          <div class="kpi-icon"><i class="bi bi-trophy"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-number">{{ $numeros['campeonatos'] }}</div>
+            <div class="kpi-label">Campeonatos ativos</div>
+          </div>
+          <i class="bi bi-arrow-right kpi-arrow"></i>
+        </a>
+      </div>
+
+      <div class="col-6 col-xl-3">
+        <a href="{{ route('admin.matriculas.index') }}" class="kpi-card {{ $numeros['matriculas_pendentes'] ? 'kpi-warning' : 'kpi-slate' }}">
+          <div class="kpi-icon"><i class="bi bi-clipboard-check"></i></div>
+          <div class="kpi-body">
+            <div class="kpi-number">{{ $numeros['matriculas_pendentes'] }}</div>
+            <div class="kpi-label">Matrículas pendentes</div>
+          </div>
+          <i class="bi {{ $numeros['matriculas_pendentes'] ? 'bi-exclamation-circle' : 'bi-check-circle' }} kpi-arrow"></i>
+        </a>
+      </div>
     </div>
+
+    <div class="row g-4">
+      <div class="col-xl-8">
+
+        {{-- ── Precisa da sua atenção ─────────────────────────────────────── --}}
+        <x-admin.secao titulo="Precisa da sua atenção" icone="exclamation-triangle" id="atencaoDoPainel"
+                       ajuda="Só aparece o que tem algo pendente. Cada item leva à tela que resolve.">
+          @forelse ($pendencias as $item)
+          <div class="dash-atencao dash-atencao--{{ $item['nivel'] }}">
+            <i class="bi bi-{{ $item['icone'] }} dash-atencao__icone"></i>
+            <div class="dash-atencao__textos">
+              <div class="dash-atencao__texto">{{ $item['texto'] }}</div>
+              @if (! empty($item['detalhe']))
+              <div class="dash-atencao__detalhe">{{ $item['detalhe'] }}</div>
+              @endif
+              @if (! empty($item['jogos']))
+              <ul class="dash-atencao__jogos">
+                @foreach ($item['jogos'] as [$texto, $url])
+                <li><a href="{{ $url }}">{{ $texto }}</a></li>
+                @endforeach
+                @if ($item['mais'])
+                <li class="text-body-secondary">e mais {{ $item['mais'] }}</li>
+                @endif
+              </ul>
+              @endif
+            </div>
+            @if (! empty($item['url']))
+            <a href="{{ $item['url'] }}" class="btn btn-sm btn-outline-secondary dash-atencao__acao">{{ $item['rotulo'] }}</a>
+            @endif
+          </div>
+          @empty
+          <div class="dash-vazio">
+            <i class="bi bi-check-circle-fill text-success"></i> Tudo em dia: nada pendente agora.
+          </div>
+          @endforelse
+        </x-admin.secao>
+
+        {{-- ── Agenda dos próximos dias ──────────────────────────────────── --}}
+        <x-admin.secao titulo="Agenda dos próximos {{ \App\Services\InicioDoPainel::DIAS_DA_AGENDA }} dias" icone="calendar3" id="agendaDoPainel"
+                       ajuda="Treinos, jogos e outros eventos de hoje em diante, sem os ocultos e os que já terminaram.">
+          <x-slot:acoes>
+            <a href="{{ route('admin.calendario.index') }}" class="btn btn-sm btn-outline-secondary">Ver calendário</a>
+          </x-slot:acoes>
+          @forelse ($agenda as $evento)
+          @php $jogo = $evento->jogo; @endphp
+          <a href="{{ route('admin.calendario.eventos.show', $evento->id_evento_calendario) }}" class="dash-linha">
+            <div class="dash-linha__data">
+              <span class="dash-linha__dia">{{ $evento->data_evento_calendario->isToday() ? 'Hoje' : $evento->data_evento_calendario->locale('pt_BR')->isoFormat('ddd') }}</span>
+              <span class="dash-linha__numero">{{ $evento->data_evento_calendario->format('d/m') }}</span>
+            </div>
+            <div class="dash-linha__textos">
+              <span class="dash-linha__titulo">{{ $evento->titulo_evento_calendario }}</span>
+              <span class="dash-linha__meta">
+                {{ \App\Models\EventoCalendario::TIPOS[$evento->tipo_evento_calendario] ?? $evento->tipo_evento_calendario }}
+                @if ($jogo) · {{ $jogo->campeonato?->nome_campeonato ?? 'Amistoso' }} @endif
+                · {{ $evento->horario_texto }}
+                @if ($evento->local_evento_calendario) · {{ $evento->local_evento_calendario }} @endif
+              </span>
+            </div>
+            <div class="dash-linha__selos">
+              @if (! $evento->estaPublicado())
+              <span class="badge bg-warning-subtle text-warning-emphasis">Rascunho</span>
+              @endif
+              @if ($evento->estaCancelado())
+              <span class="badge bg-danger-subtle text-danger-emphasis">Cancelado</span>
+              @endif
+              <span class="badge bg-body-secondary text-body-secondary" title="Atletas ativos inscritos">
+                <i class="bi bi-people"></i> {{ $evento->inscritos_ativos }}
+              </span>
+            </div>
+          </a>
+          @empty
+          <div class="dash-vazio"><i class="bi bi-calendar-x"></i> Nenhuma atividade nos próximos {{ \App\Services\InicioDoPainel::DIAS_DA_AGENDA }} dias.</div>
+          @endforelse
+          @if ($numeros['atividades_semana'] > $agenda->where('status_evento_calendario', 'ATIVO')->count())
+          <p class="dash-rodape">Mostrando as {{ $agenda->count() }} primeiras. As outras estão no Calendário.</p>
+          @endif
+        </x-admin.secao>
+
+      </div>
+
+      <div class="col-xl-4">
+
+        {{-- ── Últimos resultados ─────────────────────────────────────────── --}}
+        <x-admin.secao titulo="Últimos resultados" icone="flag-fill" id="resultadosDoPainel"
+                       ajuda="Os jogos que já aconteceram, do mais recente ao mais antigo.">
+          <x-slot:acoes>
+            <a href="{{ route('admin.jogos.index') }}" class="btn btn-sm btn-outline-secondary">Ver jogos</a>
+          </x-slot:acoes>
+          @forelse ($resultados as $jogo)
+          <a href="{{ route('admin.calendario.eventos.show', $jogo->id_evento) }}" class="dash-linha">
+            <div class="dash-linha__textos">
+              <span class="dash-linha__titulo">{{ $jogo->timeCasa?->nome_time ?? '?' }} x {{ $jogo->timeVisitante?->nome_time ?? '?' }}</span>
+              <span class="dash-linha__meta">
+                {{ $jogo->evento->data_evento_calendario->format('d/m/Y') }} · {{ $jogo->campeonato?->nome_campeonato ?? 'Amistoso' }}
+              </span>
+            </div>
+            <div class="dash-linha__selos">
+              @if ($jogo->evento->estaCancelado())
+              <span class="badge bg-danger-subtle text-danger-emphasis">Cancelado</span>
+              @elseif (is_null($jogo->placar_time_casa_jogos))
+              <span class="badge bg-warning-subtle text-warning-emphasis">Sem placar</span>
+              @else
+              <span class="dash-placar">{{ $jogo->placar_time_casa_jogos }} × {{ $jogo->placar_time_visitante_jogos }}</span>
+              @endif
+            </div>
+          </a>
+          @empty
+          <div class="dash-vazio"><i class="bi bi-flag"></i> Nenhum jogo realizado ainda.</div>
+          @endforelse
+        </x-admin.secao>
+
+        {{-- ── Acesso rápido (mesmos grupos do menu) ──────────────────────── --}}
+        <x-admin.secao titulo="Acesso rápido" icone="grid-3x3-gap" id="atalhosDoPainel">
+          @foreach ($atalhos as $grupo => $dados)
+          <div class="quick-group">
+            <p class="quick-group-label">{{ $grupo }}</p>
+            <div class="quick-tiles">
+              @foreach ($dados['itens'] as $atalho)
+              @php [$rotulo, $icone, $url] = $atalho; $contador = $atalho[3] ?? null; $alerta = $atalho[4] ?? null; @endphp
+              <a href="{{ $url }}" class="quick-tile">
+                <div class="qt-icon qt-cor-{{ $dados['cor'] }}"><i class="bi bi-{{ $icone }}"></i></div>
+                <span class="qt-label">{{ $rotulo }}</span>
+                @if ($alerta)
+                <span class="qt-badge-warn">{{ $alerta }}</span>
+                @elseif (! is_null($contador))
+                <span class="qt-count">{{ $contador }}</span>
+                @endif
+              </a>
+              @endforeach
+            </div>
+          </div>
+          @endforeach
+        </x-admin.secao>
+
+      </div>
+    </div>
+
   </div>
 </main>
 @endsection

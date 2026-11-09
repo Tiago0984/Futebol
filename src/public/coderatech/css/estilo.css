@@ -9437,34 +9437,6 @@ html[data-bs-theme="dark"] .menu-alca-botao:focus-visible {
     font-size: var(--aacj-font-size-xs) !important;
 }
 
-/* Greeting do dashboard */
-.dash-greeting-label {
-    font-size: var(--aacj-font-size-xs);
-    font-weight: 700;
-    color: var(--aacj-text-muted);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0;
-    line-height: 1;
-}
-.dash-greeting-name {
-    font-family: var(--aacj-font) !important;
-    font-size: 1.3rem !important;
-    font-weight: 700 !important;
-    color: var(--aacj-text-primary) !important;
-    text-transform: none !important;
-    letter-spacing: 0 !important;
-    margin: 4px 0 0 !important;
-    line-height: 1.2 !important;
-}
-.dash-date {
-    font-size: var(--aacj-font-size-sm);
-    color: var(--aacj-text-muted);
-    font-weight: 500;
-    margin: 0;
-    text-transform: capitalize;
-}
-
 /* Título de seção dentro do conteúdo (ex: "Seções") */
 .app-main h5.fw-semibold {
     font-family: var(--aacj-font) !important;
@@ -10391,7 +10363,7 @@ body.lp-body {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   DASHBOARD — KPI Cards, Acesso Rápido, Feed de Atividade
+   DASHBOARD — KPI Cards, Precisa da sua atenção, Agenda, Acesso Rápido
    ═══════════════════════════════════════════════════════════════ */
 
 /* ── KPI Cards ─────────────────────────────────────────────────── */
@@ -10461,40 +10433,85 @@ body.lp-body {
     transform: translateX(3px);
 }
 
-/* ── Painel genérico ────────────────────────────────────────────── */
-.dash-panel {
-    background: #fff;
-    border: 1px solid var(--aacj-border);
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0,0,0,.05);
+/* Linha extra do cartão (ex.: "2 afastado(s) hoje") */
+.kpi-extra {
+    font-size: .68rem;
+    font-weight: 600;
+    color: rgba(255,255,255,.85);
+    margin-top: 4px;
 }
-.dash-panel-header {
+
+/* Data no subtítulo do cabeçalho ("Segunda-feira, 9 de novembro de 2026") */
+.dash-data { text-transform: capitalize; }
+
+/* ── Precisa da sua atenção (09/11/2026) ───────────────────────────
+   Uma faixa por pendência, com a cor do nível nas variáveis do Bootstrap (acompanham o tema). */
+.dash-atencao {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 8px;
+    border-left: 4px solid var(--dash-atencao-cor);
+    background: var(--dash-atencao-fundo);
+}
+.dash-atencao:last-child { margin-bottom: 0; }
+.dash-atencao--danger  { --dash-atencao-cor: var(--bs-danger);  --dash-atencao-fundo: var(--bs-danger-bg-subtle); }
+.dash-atencao--warning { --dash-atencao-cor: var(--bs-warning); --dash-atencao-fundo: var(--bs-warning-bg-subtle); }
+.dash-atencao--info    { --dash-atencao-cor: var(--bs-info);    --dash-atencao-fundo: var(--bs-info-bg-subtle); }
+.dash-atencao__icone { font-size: 1.15rem; color: var(--dash-atencao-cor); line-height: 1.3; flex-shrink: 0; }
+.dash-atencao__textos { flex: 1; min-width: 0; }
+.dash-atencao__texto { font-size: var(--aacj-font-size-sm); font-weight: 600; color: var(--bs-body-color); }
+.dash-atencao__detalhe { font-size: var(--aacj-font-size-xs); color: var(--bs-secondary-color); margin-top: 2px; }
+.dash-atencao__jogos { margin: 4px 0 0; padding-left: 18px; font-size: var(--aacj-font-size-xs); }
+.dash-atencao__acao { flex-shrink: 0; align-self: center; }
+
+/* ── Linhas da agenda e dos resultados ───────────────────────────── */
+.dash-linha {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 13px 18px;
+    gap: 12px;
+    padding: 8px 4px;
     border-bottom: 1px solid var(--aacj-border);
-    font-size: .75rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .8px;
-    color: var(--aacj-text-primary);
-}
-.dash-panel-link {
-    margin-left: auto;
-    font-size: .72rem;
-    font-weight: 500;
-    color: var(--aacj-red);
+    color: inherit;
     text-decoration: none;
-    text-transform: none;
-    letter-spacing: 0;
 }
-.dash-panel-link:hover { text-decoration: underline; }
+.dash-linha:last-of-type { border-bottom: 0; }
+.dash-linha:hover { background: var(--bs-tertiary-bg); }
+.dash-linha__data {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 46px;
+    flex-shrink: 0;
+    line-height: 1.1;
+}
+.dash-linha__dia { font-size: .62rem; font-weight: 700; text-transform: uppercase; color: var(--aacj-red); }
+.dash-linha__numero { font-size: var(--aacj-font-size-sm); font-weight: 700; color: var(--bs-body-color); }
+.dash-linha__textos { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.dash-linha__titulo,
+.dash-linha__meta { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dash-linha__titulo { font-size: var(--aacj-font-size-sm); font-weight: 600; color: var(--bs-body-color); }
+.dash-linha__meta { font-size: var(--aacj-font-size-xs); color: var(--bs-secondary-color); }
+.dash-linha__selos { display: flex; gap: 4px; flex-shrink: 0; }
+.dash-placar {
+    font-size: var(--aacj-font-size-xs);
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 8px;
+    background: var(--bs-success-bg-subtle);
+    color: var(--bs-success-text-emphasis);
+}
+.dash-vazio {
+    padding: 16px 8px;
+    text-align: center;
+    font-size: var(--aacj-font-size-sm);
+    color: var(--bs-secondary-color);
+}
+.dash-rodape { font-size: var(--aacj-font-size-xs); color: var(--bs-secondary-color); margin: 8px 0 0; }
 
 /* ── Acesso Rápido ──────────────────────────────────────────────── */
-.dash-panel-body { padding: 18px 20px; }
-
 .quick-group { margin-bottom: 22px; }
 .quick-group:last-child { margin-bottom: 0; }
 
@@ -10560,111 +10577,21 @@ body.lp-body {
     padding: 1px 6px;
     border-radius: 10px;
 }
-.qt-badge-soon,
 .qt-badge-warn {
     font-size: .6rem;
     font-weight: 700;
     padding: 2px 6px;
     border-radius: 10px;
-    text-transform: uppercase;
     letter-spacing: .4px;
+    background: #fee2e2;
+    color: #991b1b;
 }
-.qt-badge-soon { background: #fef3c7; color: #92400e; }
-.qt-badge-warn  { background: #fee2e2; color: #991b1b; }
 
-.qt-disabled { opacity: .55; cursor: default; }
-.qt-disabled .qt-icon { box-shadow: none; }
-.qt-disabled:hover .qt-icon { transform: none; box-shadow: none; }
-
-/* ── Feed de Atividade ──────────────────────────────────────────── */
-.dash-feed { padding: 4px 0; }
-
-.feed-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--aacj-border);
-    transition: background .12s;
-}
-.feed-item:last-child { border-bottom: none; }
-.feed-item:hover { background: rgba(0,0,0,.02); }
-
-.feed-avatar {
-    width: 34px;
-    height: 34px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-weight: 700;
-    font-size: .82rem;
-    flex-shrink: 0;
-}
-.feed-info {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-.feed-name {
-    font-size: .8rem;
-    font-weight: 600;
-    color: var(--aacj-text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.feed-meta {
-    font-size: .68rem;
-    color: var(--aacj-text-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-.feed-action {
-    color: var(--aacj-text-muted);
-    font-size: .95rem;
-    text-decoration: none;
-    padding: 4px 6px;
-    border-radius: 6px;
-    transition: color .15s, background .15s;
-    flex-shrink: 0;
-}
-.feed-action:hover { color: var(--aacj-red); background: rgba(0,0,0,.04); }
-
-.feed-score {
-    font-size: .72rem;
-    font-weight: 700;
-    background: #d1fae5;
-    color: #065f46;
-    padding: 2px 8px;
-    border-radius: 8px;
-    flex-shrink: 0;
-}
-.feed-badge {
-    font-size: .65rem;
-    font-weight: 600;
-    background: rgba(0,0,0,.06);
-    color: var(--aacj-text-secondary);
-    padding: 2px 8px;
-    border-radius: 8px;
-    flex-shrink: 0;
-    text-transform: uppercase;
-    letter-spacing: .4px;
-}
-.feed-empty {
-    padding: 20px 16px;
-    text-align: center;
-    font-size: .8rem;
-    color: var(--aacj-text-muted);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
+/* Uma cor por grupo do acesso rápido (antes, uma cor fixa no style="" de cada ícone) */
+.qt-cor-site      { background: #e31c1c; }
+.qt-cor-esporte   { background: #374151; }
+.qt-cor-cadastros { background: #0e7490; }
+.qt-cor-pessoas   { background: #7c3aed; }
 
 /* ── Responsivo ─────────────────────────────────────────────────── */
 @media (max-width: 575px) {
@@ -10673,6 +10600,8 @@ body.lp-body {
     .kpi-arrow  { display: none; }
     .quick-tile { width: 68px; }
     .qt-icon    { width: 44px; height: 44px; font-size: 1.1rem; border-radius: 12px; }
+    .dash-atencao { flex-wrap: wrap; }
+    .dash-atencao__acao { margin-left: 28px; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -11874,6 +11803,77 @@ body.lp-body {
    o app). O carrossel da home usa o style.css, que o painel não carrega: .previa-home-* repete os valores dele.
    ========================================================================== */
 .previa-camp-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+.previa-camp { margin: 0; min-width: 0; }
+.previa-camp-topo { grid-column: 1 / -1; }
+.previa-camp figcaption { margin-bottom: 4px; font-size: 0.75rem; color: var(--bs-secondary-color); }
+.previa-camp-moldura { overflow: hidden; border: 1px solid var(--aacj-border); border-radius: 8px; }
+.previa-camp-escala { transform-origin: top left; pointer-events: none; }
+/* min-height fixa: no site é 65vh, e aqui dependeria do tamanho da tela do painel */
+.previa-camp .camp-hero-section { min-height: 520px; }
+.previa-camp .camp-card { box-shadow: none; }
+/* O darkmode.css põe todo título em branco com !important: aqui ele ficaria branco sobre o cartão branco */
+html[data-bs-theme="dark"] .previa-camp .camp-card-title { color: #111111 !important; }
+/* O menu do site fica por cima do topo do banner */
+.previa-camp-menu {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 110px;
+    background: rgba(0, 0, 0, 0.55);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+.previa-app-slide {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 2.1;
+    border-radius: 14px;
+    background-color: #0a0a0a;
+    background-size: cover;
+    background-position: center;
+}
+.previa-app-slide.sem-imagem { background-image: linear-gradient(135deg, #2a0707 0%, #0a0a0a 70%); }
+.previa-app-degrade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 65%); }
+.previa-app-logo { position: absolute; left: 10px; bottom: 10px; width: 40px; height: 40px; object-fit: contain; }
+.previa-app-nome { position: absolute; left: 58px; right: 10px; bottom: 10px; color: #ffffff; font-size: 0.82rem; line-height: 1.2; }
+.previa-app-logo[hidden] + .previa-app-nome { left: 10px; }
+.previa-camp-home { overflow: hidden; border: 1px solid var(--aacj-border); border-radius: 8px; background: #ffffff; }
+/* Carrossel da home na largura de 1366 px (container de 1170 + o padding-bottom da seção 76, a 1366 px) */
+.previa-home-grade { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); align-items: start; }
+.previa-home-slide {
+    position: relative;
+    aspect-ratio: 16 / 9;
+    background-color: #0a0a0a;
+    background-size: cover;
+    background-position: center;
+}
+.previa-home-slide.sem-imagem { background-image: linear-gradient(135deg, #2a0707 0%, #0a0a0a 70%); }
+.previa-home-legenda { position: absolute; left: 113px; bottom: 327px; max-width: 560px; color: #ffffff; }
+.previa-home-titulo {
+    margin-bottom: 8px;
+    padding: 20px;
+    border-left: 4px solid #000000;
+    background-color: #ff0000;
+    font-size: 30px;
+    font-weight: 700;
+    line-height: 42px;
+}
+.previa-home-subtitulo { padding: 20px; border-left: 4px solid #ff0000; background-color: #000000; font-size: 14px; }
+/* No celular, o texto sai de cima da foto e fica logo abaixo dela (seção 76) */
+.previa-home-celular { background-color: #000000; color: #ffffff; }
+.previa-home-celular .previa-home-legenda { position: static; max-width: none; }
+.previa-home-celular .previa-home-titulo { margin-bottom: 0; padding: 10px 15px; font-size: 20px; line-height: 28px; }
+.previa-home-celular .previa-home-subtitulo { padding: 10px 15px; }
+@media (max-width: 767px) {
+    .previa-camp-grade { grid-template-columns: minmax(0, 1fr); }
+}
 
 /* ==========================================================================
    81. INDIVIDUAIS — EXAMES, AVALIAÇÕES, PENEIRAS E REUNIÕES NO PAINEL (09/11/2026)
@@ -11949,75 +11949,4 @@ body.lp-body {
     .individual-corpo { flex-basis: calc(100% - 70px); }
     .individual-acoes { width: 100%; justify-content: flex-end; }
     .individual-leitura { margin-left: 0; }
-}
-.previa-camp { margin: 0; min-width: 0; }
-.previa-camp-topo { grid-column: 1 / -1; }
-.previa-camp figcaption { margin-bottom: 4px; font-size: 0.75rem; color: var(--bs-secondary-color); }
-.previa-camp-moldura { overflow: hidden; border: 1px solid var(--aacj-border); border-radius: 8px; }
-.previa-camp-escala { transform-origin: top left; pointer-events: none; }
-/* min-height fixa: no site é 65vh, e aqui dependeria do tamanho da tela do painel */
-.previa-camp .camp-hero-section { min-height: 520px; }
-.previa-camp .camp-card { box-shadow: none; }
-/* O darkmode.css põe todo título em branco com !important: aqui ele ficaria branco sobre o cartão branco */
-html[data-bs-theme="dark"] .previa-camp .camp-card-title { color: #111111 !important; }
-/* O menu do site fica por cima do topo do banner */
-.previa-camp-menu {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 2;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 110px;
-    background: rgba(0, 0, 0, 0.55);
-    color: rgba(255, 255, 255, 0.6);
-    font-size: 1.1rem;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-}
-.previa-app-slide {
-    position: relative;
-    overflow: hidden;
-    aspect-ratio: 2.1;
-    border-radius: 14px;
-    background-color: #0a0a0a;
-    background-size: cover;
-    background-position: center;
-}
-.previa-app-slide.sem-imagem { background-image: linear-gradient(135deg, #2a0707 0%, #0a0a0a 70%); }
-.previa-app-degrade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0, 0, 0, 0.75) 0%, transparent 65%); }
-.previa-app-logo { position: absolute; left: 10px; bottom: 10px; width: 40px; height: 40px; object-fit: contain; }
-.previa-app-nome { position: absolute; left: 58px; right: 10px; bottom: 10px; color: #ffffff; font-size: 0.82rem; line-height: 1.2; }
-.previa-app-logo[hidden] + .previa-app-nome { left: 10px; }
-.previa-camp-home { overflow: hidden; border: 1px solid var(--aacj-border); border-radius: 8px; background: #ffffff; }
-/* Carrossel da home na largura de 1366 px (container de 1170 + o padding-bottom da seção 76, a 1366 px) */
-.previa-home-grade { grid-template-columns: minmax(0, 3fr) minmax(0, 1fr); align-items: start; }
-.previa-home-slide {
-    position: relative;
-    aspect-ratio: 16 / 9;
-    background-color: #0a0a0a;
-    background-size: cover;
-    background-position: center;
-}
-.previa-home-slide.sem-imagem { background-image: linear-gradient(135deg, #2a0707 0%, #0a0a0a 70%); }
-.previa-home-legenda { position: absolute; left: 113px; bottom: 327px; max-width: 560px; color: #ffffff; }
-.previa-home-titulo {
-    margin-bottom: 8px;
-    padding: 20px;
-    border-left: 4px solid #000000;
-    background-color: #ff0000;
-    font-size: 30px;
-    font-weight: 700;
-    line-height: 42px;
-}
-.previa-home-subtitulo { padding: 20px; border-left: 4px solid #ff0000; background-color: #000000; font-size: 14px; }
-/* No celular, o texto sai de cima da foto e fica logo abaixo dela (seção 76) */
-.previa-home-celular { background-color: #000000; color: #ffffff; }
-.previa-home-celular .previa-home-legenda { position: static; max-width: none; }
-.previa-home-celular .previa-home-titulo { margin-bottom: 0; padding: 10px 15px; font-size: 20px; line-height: 28px; }
-.previa-home-celular .previa-home-subtitulo { padding: 10px 15px; }
-@media (max-width: 767px) {
-    .previa-camp-grade { grid-template-columns: minmax(0, 1fr); }
 }

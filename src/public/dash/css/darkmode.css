@@ -306,37 +306,6 @@ html[data-bs-theme="dark"] .app-content-header {
     border-bottom-color: #2b2b30 !important;
 }
 
-/* ── Painéis personalizados do dashboard (.dash-panel) ───────────────── */
-html[data-bs-theme="dark"] .dash-panel {
-    background: #2a2a2f !important;
-    border-color: #3a3a40 !important;
-}
-
-html[data-bs-theme="dark"] .dash-panel-header {
-    background: #232328 !important;
-    border-bottom-color: #3a3a40 !important;
-    color: #e8e8ec !important;
-}
-
-/* ── Feed de atividade ───────────────────────────────────────────────── */
-html[data-bs-theme="dark"] .feed-item:hover {
-    background: rgba(255, 255, 255, .04) !important;
-}
-
-html[data-bs-theme="dark"] .feed-action:hover {
-    background: rgba(255, 255, 255, .07) !important;
-}
-
-html[data-bs-theme="dark"] .feed-score {
-    background: #064e3b !important;
-    color: #6ee7b7 !important;
-}
-
-html[data-bs-theme="dark"] .feed-badge {
-    background: rgba(255, 255, 255, .10) !important;
-    color: #a0a0a8 !important;
-}
-
 /* ── Hovers padronizados ─────────────────────────────────────────────── */
 
 /* Header — ícones da navbar (hambúrguer, sino, fullscreen, avatar) */
@@ -371,11 +340,6 @@ html[data-bs-theme="dark"] .nav-treeview .nav-link:hover {
 html[data-bs-theme="dark"] .qt-badge-warn {
     background: #450a0a !important;
     color: #fca5a5 !important;
-}
-
-html[data-bs-theme="dark"] .qt-badge-soon {
-    background: #422006 !important;
-    color: #fcd34d !important;
 }
 
 /* ══════════════════════════════════════════════════════════════════════
