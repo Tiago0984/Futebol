@@ -9123,6 +9123,127 @@ body {
     font-size: 0.7rem !important;
 }
 
+/* Item fechado com algo selecionado dentro (ex.: Eventos fechado, Campeonatos selecionado): o caminho do
+   selecionado aparece abaixo do nome e some quando o item abre (o próprio subitem já mostra a seleção). Sem
+   ponto vermelho na seta: parecia aviso de notificação. A linha é montada pelo script do app-sidebar. */
+.sidebar-menu .menu-selecionado {
+    display: block;
+    max-height: 1.4em;
+    margin-top: 1px;
+    padding-right: 1.25rem;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-size: 0.68rem;
+    font-weight: 600;
+    line-height: 1.4;
+    color: var(--aacj-red);
+    opacity: 1;
+    transition: max-height 0.3s ease, opacity 0.2s ease, margin-top 0.3s ease;
+}
+.sidebar-menu .menu-selecionado .bi {
+    font-size: 0.65rem;
+}
+.sidebar-menu .nav-item.menu-open > .nav-link .menu-selecionado {
+    max-height: 0;
+    margin-top: 0;
+    opacity: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-menu .menu-selecionado {
+        transition: none;
+    }
+}
+
+/* Largura do menu ajustável (script do app-sidebar): a borda direita é uma alça de arrastar (linha vermelha ao
+   passar o mouse) e o botão redondo, na altura da marca, alarga para 360px ou volta aos 250px. Os dois seguem
+   a borda pela --lte-sidebar-width (a mesma variável que dá a largura à barra e à coluna do grid). */
+.menu-alca {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: calc(var(--lte-sidebar-width) - 4px);
+    z-index: 1039;
+    width: 8px;
+    cursor: col-resize;
+    touch-action: none;
+    transition: left 0.3s ease-in-out;
+}
+.menu-alca::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: var(--aacj-red);
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+.menu-alca:hover::before,
+.menu-redimensionando .menu-alca::before {
+    opacity: 1;
+}
+.menu-alca-botao {
+    position: fixed;
+    top: calc(3.5rem - 12px);
+    left: calc(var(--lte-sidebar-width) - 12px);
+    z-index: 1040;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    font-size: 0.7rem;
+    line-height: 1;
+    color: var(--aacj-text-muted);
+    background: #ffffff;
+    border: 1px solid var(--aacj-border);
+    border-radius: 50%;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+    transition: left 0.3s ease-in-out, color 0.15s, border-color 0.15s, background 0.15s;
+}
+.menu-alca-botao:hover,
+.menu-alca-botao:focus-visible {
+    color: #ffffff;
+    background: var(--aacj-red);
+    border-color: var(--aacj-red);
+}
+html[data-bs-theme="dark"] .menu-alca-botao {
+    background: #18181b;
+    border-color: #2b2b30;
+}
+html[data-bs-theme="dark"] .menu-alca-botao:hover,
+html[data-bs-theme="dark"] .menu-alca-botao:focus-visible {
+    color: #ffffff;
+    background: var(--aacj-red);
+    border-color: var(--aacj-red);
+}
+/* Arrastando: a barra, a coluna e a alça acompanham o mouse sem a transição, e o texto não é selecionado */
+.menu-redimensionando,
+.menu-redimensionando * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
+.menu-redimensionando .app-sidebar,
+.menu-redimensionando .menu-alca,
+.menu-redimensionando .menu-alca-botao {
+    transition: none !important;
+}
+/* Menu recolhido pelo botão do topo (☰): sem alça nem botão */
+.sidebar-collapse .menu-alca,
+.sidebar-collapse .menu-alca-botao {
+    display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+    .menu-alca,
+    .menu-alca-botao {
+        transition: none;
+    }
+}
+
 /* Bloco do usuário, fixo no rodapé da barra. A área do menu (que rola) termina acima dele: com a altura
    padrão do AdminLTE (tela inteira menos a marca), os últimos itens, como SISTEMA, ficavam escondidos
    atrás do bloco quando um grupo era aberto. 60px = 12px + 34px (avatar) + 12px + 1px (borda) e folga. */

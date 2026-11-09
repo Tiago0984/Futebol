@@ -273,13 +273,55 @@
     </div>
   </div>
   <!--end::Sidebar User-->
+
+  {{-- Largura do menu: arrastar a borda direita (dois cliques voltam ao padrão) ou o botão de alargar/estreitar.
+       Fica guardada no navegador (localStorage 'aacj-largura-menu'); o head aplica antes de pintar. --}}
+  <div class="menu-alca" id="menuAlca" role="separator" aria-orientation="vertical"
+    aria-label="Arraste para mudar a largura do menu" title="Arraste para alargar o menu (dois cliques: largura padrão)"></div>
+  <button type="button" class="menu-alca-botao" id="menuAlcaBotao" aria-label="Alargar o menu" title="Alargar o menu">
+    <i class="bi bi-chevron-double-right"></i>
+  </button>
 </aside>
 <!--end::Sidebar-->
 
 <script>
 // Abre/fecha submenus sem recarregar página, preservando estado da rota ativa
 // Itens sem página: o link inteiro alterna. Itens com página: só a seta alterna, o texto navega.
+// A animação é a do AdminLTE (adminlte.Treeview). Antes só a classe era trocada: o item aberto no carregamento
+// (o da página atual) ganha display:block inline do AdminLTE e não fechava; os outros abriam sem animação.
 document.addEventListener('DOMContentLoaded', function () {
+  var DURACAO = 300;
+
+  // Item fechado com algo selecionado dentro: mostra, abaixo do nome, o caminho do selecionado
+  // (ex.: "Eventos" fechado em Jogos dos campeonatos: "Campeonatos › Jogos"). Some quando o item abre.
+  function textoDoLink(link) {
+    var p = link.querySelector(':scope > p');
+    if (!p) return '';
+    for (var i = 0; i < p.childNodes.length; i++) {
+      if (p.childNodes[i].nodeType === Node.TEXT_NODE && p.childNodes[i].textContent.trim()) {
+        return p.childNodes[i].textContent.trim();
+      }
+    }
+    return '';
+  }
+
+  document.querySelectorAll('.sidebar-menu .nav-item').forEach(function (item) {
+    var sub = item.querySelector(':scope > .nav-treeview');
+    var link = item.querySelector(':scope > a.nav-link');
+    if (!sub || !link) return;
+    var caminho = Array.prototype.map.call(sub.querySelectorAll('.nav-link.active'), textoDoLink).filter(Boolean);
+    if (!caminho.length) return;
+    item.classList.add('tem-selecionado');
+    var p = link.querySelector(':scope > p');
+    if (!p) return;
+    var aviso = document.createElement('span');
+    aviso.className = 'menu-selecionado';
+    aviso.title = 'Selecionado: ' + caminho.join(' › ');
+    aviso.innerHTML = '<i class="bi bi-arrow-return-right"></i> ';
+    aviso.appendChild(document.createTextNode(caminho.join(' › ')));
+    p.appendChild(aviso);
+  });
+
   document.querySelectorAll('.sidebar-menu .nav-item > a.nav-link').forEach(function (link) {
     link.addEventListener('click', function (e) {
       var parent = this.closest('.nav-item');
@@ -287,10 +329,75 @@ document.addEventListener('DOMContentLoaded', function () {
       var semPagina = this.getAttribute('href') === 'javascript:void(0)';
       if (!semPagina && !e.target.closest('.nav-arrow')) return;
       e.preventDefault();
-      var aberto = parent.classList.toggle('menu-open');
+      // Clique durante a animação é ignorado (as duas animações se atropelariam)
+      if (parent.dataset.animando) return;
+      var abrir = !parent.classList.contains('menu-open');
+      if (window.adminlte && adminlte.Treeview) {
+        parent.dataset.animando = '1';
+        var arvore = new adminlte.Treeview(parent, { accordion: false, animationSpeed: DURACAO });
+        abrir ? arvore.open() : arvore.close();
+        setTimeout(function () { delete parent.dataset.animando; }, DURACAO + 20);
+      } else {
+        parent.classList.toggle('menu-open', abrir);
+      }
       // Gaveta com estado (ex.: Campeonatos): aria-expanded acompanha o abrir/fechar
-      if (this.hasAttribute('aria-expanded')) this.setAttribute('aria-expanded', aberto ? 'true' : 'false');
+      if (this.hasAttribute('aria-expanded')) this.setAttribute('aria-expanded', abrir ? 'true' : 'false');
     });
+  });
+
+  // Largura do menu (para ler o que ficou cortado com "…"). Padrão 250px (o do AdminLTE); alargado 360px;
+  // arrastando, de 250px até 480px (ou metade da tela, o que for menor).
+  var PADRAO = 250, ALARGADO = 360, MAXIMO = 480, CHAVE = 'aacj-largura-menu';
+  var raiz = document.documentElement;
+  var alca = document.getElementById('menuAlca');
+  var botao = document.getElementById('menuAlcaBotao');
+  if (!alca || !botao) return;
+
+  function limite(px) {
+    return Math.round(Math.max(PADRAO, Math.min(px, MAXIMO, Math.floor(window.innerWidth / 2))));
+  }
+  function larguraAtual() {
+    return parseInt(getComputedStyle(raiz).getPropertyValue('--lte-sidebar-width'), 10) || PADRAO;
+  }
+  function aplicar(px, guardar) {
+    px = limite(px);
+    if (px === PADRAO) raiz.style.removeProperty('--lte-sidebar-width');
+    else raiz.style.setProperty('--lte-sidebar-width', px + 'px');
+    var alargado = px > PADRAO;
+    botao.querySelector('i').className = 'bi ' + (alargado ? 'bi-chevron-double-left' : 'bi-chevron-double-right');
+    botao.title = alargado ? 'Voltar o menu à largura padrão' : 'Alargar o menu';
+    botao.setAttribute('aria-label', botao.title);
+    if (guardar) {
+      try {
+        if (alargado) localStorage.setItem(CHAVE, String(px)); else localStorage.removeItem(CHAVE);
+      } catch (e) {}
+    }
+  }
+  aplicar(larguraAtual(), false);
+
+  botao.addEventListener('click', function () {
+    aplicar(larguraAtual() > PADRAO ? PADRAO : ALARGADO, true);
+  });
+  alca.addEventListener('dblclick', function () { aplicar(PADRAO, true); });
+
+  // Arrastar a borda: sem a transição do AdminLTE (a barra acompanha o mouse) e sem selecionar texto
+  alca.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    alca.setPointerCapture(e.pointerId);
+    raiz.classList.add('menu-redimensionando');
+    var esquerda = alca.closest('.app-sidebar').getBoundingClientRect().left;
+    function mover(ev) { aplicar(ev.clientX - esquerda, false); }
+    function soltar(ev) {
+      alca.removeEventListener('pointermove', mover);
+      alca.removeEventListener('pointerup', soltar);
+      alca.removeEventListener('pointercancel', soltar);
+      raiz.classList.remove('menu-redimensionando');
+      aplicar(larguraAtual(), true);
+    }
+    alca.addEventListener('pointermove', mover);
+    alca.addEventListener('pointerup', soltar);
+    alca.addEventListener('pointercancel', soltar);
   });
 });
 </script>

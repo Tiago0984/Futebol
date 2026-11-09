@@ -37,6 +37,13 @@
         } catch (e) {
           document.documentElement.setAttribute('data-bs-theme', 'light');
         }
+        // Largura do menu lateral escolhida por quem usa (alça e botão no app-sidebar), antes de pintar
+        try {
+          var largura = parseInt(localStorage.getItem('aacj-largura-menu'), 10);
+          if (largura > 250 && largura <= 480) {
+            document.documentElement.style.setProperty('--lte-sidebar-width', largura + 'px');
+          }
+        } catch (e) {}
       })();
     </script>
     <!--end::Accessibility Features-->
