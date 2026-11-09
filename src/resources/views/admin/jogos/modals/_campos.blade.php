@@ -57,7 +57,7 @@
         <input type="number" name="rodada_jogo" id="{{ $p }}rodada" class="form-control" min="1" max="{{ \App\Models\Jogo::RODADA_MAX }}"
             placeholder="—" value="{{ $valor('rodada_jogo') }}">
     </div>
-    <div class="col-md-9 js-bloco-ida d-none">
+    <div class="col-md-7 js-bloco-ida d-none">
         <label class="form-label" for="{{ $p }}id_jogo_ida">Jogo de volta de…</label>
         <select name="id_jogo_ida" id="{{ $p }}id_jogo_ida" class="form-select js-ida">
             <option value="">— Jogo único ou jogo de ida —</option>
@@ -79,27 +79,31 @@
     <div class="col-12 js-aviso-sem-participantes d-none">
         <small class="text-danger"><i class="bi bi-exclamation-triangle"></i> Esta categoria ainda não tem times no campeonato. Inclua os participantes dela em Campeonatos › Editar antes de marcar o jogo.</small>
     </div>
-    <div class="col-md-5">
-        <label class="form-label">Time Mandante <span class="text-danger">*</span></label>
-        <select name="id_time_casa" id="{{ $p }}id_time_casa" class="form-select js-time-casa" required>
-            <option value="">— Selecionar —</option>
-            @foreach($times as $time)
-            <option value="{{ $time->id_time }}" data-categorias="{{ $time->categorias->pluck('id_categoria')->implode(',') }}"
-                @selected((string) $valor('id_time_casa') === (string) $time->id_time)>{{ $time->nome_time }}</option>
-            @endforeach
-        </select>
-    </div>
-    <div class="col-md-2 d-flex align-items-end justify-content-center pb-1">
-        <span class="fw-bold text-muted">VS</span>
-    </div>
-    <div class="col-md-5">
-        <label class="form-label">Time Visitante <span class="text-danger">*</span></label>
-        <select name="id_time_visitante" id="{{ $p }}id_time_visitante" class="form-select js-time-visitante" required>
-            <option value="">— Selecionar —</option>
-            @foreach($times as $time)
-            <option value="{{ $time->id_time }}" @selected((string) $valor('id_time_visitante') === (string) $time->id_time)>{{ $time->nome_time }}</option>
-            @endforeach
-        </select>
+    <div class="col-12">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label">Time Mandante <span class="text-danger">*</span></label>
+                <select name="id_time_casa" id="{{ $p }}id_time_casa" class="form-select js-time-casa" required>
+                    <option value="">— Selecionar —</option>
+                    @foreach($times as $time)
+                    <option value="{{ $time->id_time }}" data-categorias="{{ $time->categorias->pluck('id_categoria')->implode(',') }}"
+                        @selected((string) $valor('id_time_casa') === (string) $time->id_time)>{{ $time->nome_time }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="col-md-2 d-none d-md-flex justify-content-center pb-2">
+                <span class="fw-bold text-muted">VS</span>
+            </div>
+            <div class="col-md-5">
+                <label class="form-label">Time Visitante <span class="text-danger">*</span></label>
+                <select name="id_time_visitante" id="{{ $p }}id_time_visitante" class="form-select js-time-visitante" required>
+                    <option value="">— Selecionar —</option>
+                    @foreach($times as $time)
+                    <option value="{{ $time->id_time }}" @selected((string) $valor('id_time_visitante') === (string) $time->id_time)>{{ $time->nome_time }}</option>
+                    @endforeach
+                </select>
+            </div>
+        </div>
     </div>
 
     <div class="col-12"><hr class="my-1"><p class="modal-section-label mb-0"><i class="bi bi-calendar-event"></i> Quando e onde (ficam no evento do jogo)</p></div>
@@ -139,23 +143,23 @@
     {{-- Mata-mata (Fase I, Etapa I1b): jogo único empatado tem prorrogação e depois pênaltis; na ida e volta, o
          empate no agregado vai direto para os pênaltis, no jogo de volta --}}
     <div class="col-12 js-bloco-mata-mata d-none">
-        <div class="row g-3">
-            <div class="col-md-3 js-bloco-prorrogacao">
+        <div class="row g-3 align-items-end">
+            <div class="col-sm-6 col-lg-3 js-bloco-prorrogacao">
                 <label class="form-label" for="{{ $p }}prorrogacao_casa">Prorrogação mandante</label>
                 <input type="number" name="prorrogacao_time_casa_jogos" id="{{ $p }}prorrogacao_casa" class="form-control text-center"
                     min="0" max="99" placeholder="—" value="{{ $valor('prorrogacao_time_casa_jogos') }}">
             </div>
-            <div class="col-md-3 js-bloco-prorrogacao">
+            <div class="col-sm-6 col-lg-3 js-bloco-prorrogacao">
                 <label class="form-label" for="{{ $p }}prorrogacao_visitante">Prorrogação visitante</label>
                 <input type="number" name="prorrogacao_time_visitante_jogos" id="{{ $p }}prorrogacao_visitante" class="form-control text-center"
                     min="0" max="99" placeholder="—" value="{{ $valor('prorrogacao_time_visitante_jogos') }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-sm-6 col-lg-3">
                 <label class="form-label" for="{{ $p }}penaltis_casa">Pênaltis mandante</label>
                 <input type="number" name="penaltis_time_casa_jogos" id="{{ $p }}penaltis_casa" class="form-control text-center"
                     min="0" max="99" placeholder="—" value="{{ $valor('penaltis_time_casa_jogos') }}">
             </div>
-            <div class="col-md-3">
+            <div class="col-sm-6 col-lg-3">
                 <label class="form-label" for="{{ $p }}penaltis_visitante">Pênaltis visitante</label>
                 <input type="number" name="penaltis_time_visitante_jogos" id="{{ $p }}penaltis_visitante" class="form-control text-center"
                     min="0" max="99" placeholder="—" value="{{ $valor('penaltis_time_visitante_jogos') }}">
