@@ -1,6 +1,6 @@
 @extends('layout.admin')
 
-@section('title', 'Calendário')
+@section('title', request('tab') === 'grade' ? 'Grade de treino' : 'Calendário')
 
 @section('content')
 <main class="app-main">
@@ -8,8 +8,8 @@
 
         <div class="admin-page-header">
             <div>
-                <h1 class="page-title">Calendário</h1>
-                <p class="page-subtitle">Gerencie eventos e a grade de treinos</p>
+                <h1 class="page-title">{{ request('tab') === 'grade' ? 'Grade de treino' : 'Calendário' }}</h1>
+                <p class="page-subtitle">{{ request('tab') === 'grade' ? 'Gerencie os horários semanais dos treinos' : 'Gerencie eventos e a grade de treinos' }}</p>
             </div>
             <div class="d-flex gap-2">
                 <button class="btn-filter-toggle" data-bs-toggle="collapse" data-bs-target="#filterPanel" aria-expanded="false">
@@ -162,7 +162,8 @@
         </div>
         @endif
 
-        {{-- Tabs --}}
+        {{-- A grade tem tela dedicada, sem navegação para os eventos --}}
+        @if(request('tab') !== 'grade')
         <ul class="nav nav-tabs mb-3" id="calendarioTabs">
             <li class="nav-item">
                 <a class="nav-link {{ request('tab') !== 'grade' ? 'active' : '' }}"
@@ -179,6 +180,7 @@
                 </a>
             </li>
         </ul>
+        @endif
 
         {{-- TAB: Eventos --}}
         @if(request('tab') !== 'grade')
