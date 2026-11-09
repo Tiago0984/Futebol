@@ -1217,6 +1217,14 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Defeito achado:** `GET /api/v1/categorias/{id}/times` respondia 500 desde 27/10/2026 (`id_time` ambíguo com a `tbl_time_categoria`, e nenhum teste cobria a rota). Corrigido; a resposta não traz mais o `id_categoria` do time (coluna sem uso) e tem teste em `CategoriaTimesApiTest`.
 - **Textos atualizados:** Fale conosco sem a nota de "servidor ainda sem esta rota" (publicada em 02/11) e com o e-mail pela fila; `participacao` com o reserva sem posição (escalação no campo); código de recuperação saindo depois da resposta; tokens derrubados também pela redefinição por código; `AGENDA`/`AVISO` com o afastamento e a foto.
 
+#### 09/11/2026 — ajustes nas telas do painel
+- **Novo jogo e Editar jogo:** os times ficam numa linha própria, com o VS centralizado no computador; fase e jogo de volta cabem na mesma linha, e prorrogação/pênaltis se adaptam às telas menores. Campos em `admin.jogos.modals._campos`.
+- **Grade de treino:** título e descrição próprios; sem as abas que levavam para Eventos. Continua no template `admin.calendario.index`, com `?tab=grade` e as ações Novo Horário e Gerar agenda do mês.
+- **Times:** Novo Time e Editar Time têm o bloco "Como vai ficar" do escudo, inteiro e centralizado. Na edição, abre com o escudo salvo; limpar a nova seleção volta ao atual. Trocar de time ou fechar o modal limpa o arquivo e libera a prévia anterior. Mesmo limite de 10 MB do servidor; sem recorte novo.
+- **Comissão técnica:** Novo profissional abre em **modal** (`admin.comissao.modals.create`), na própria lista, com todos os campos e os dados digitados preservados após erro de validação. A rota antiga `admin.comissao.create` redireciona para a lista com `?novo=1`, que abre o modal. A edição continua em sua tela.
+- **Foto da comissão:** prévia circular no cadastro e na edição, como na lista (partial `admin.comissao._foto`, JS `coderatech/js/comissao-tecnica.js`). JPG/PNG/WEBP até **2 MB**; escolher foto **não marca** a autorização para o app. A edição mantém a foto atual se não houver substituta e permite removê-la. Máscara do telefone institucional compartilhada pelos dois formulários. Sem migration ou dependência nova.
+- **Validação desta etapa:** 12 testes / 101 verificações (`ComissaoTecnicaTest` e `AppComissaoTecnicaTest`), além da conferência no navegador em computador, tablet e celular, nos dois temas: modais, prévias, troca/limpeza de arquivos, limites, máscara e reabertura com os dados após validação. O alinhamento dos jogos, a tela da grade e as prévias dos times também foram conferidos nesta sessão.
+
 ---
 
 ## 7. Débitos técnicos conhecidos (planejar, não implementar sem OK)
