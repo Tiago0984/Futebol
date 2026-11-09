@@ -23,12 +23,14 @@ class ComissaoTecnicaController extends Controller
             ->orderBy('nome_comissao_tecnica')
             ->get();
 
-        return view('admin.comissao.index', compact('profissionais'));
+        $categorias = $this->categoriasDoFormulario();
+
+        return view('admin.comissao.index', compact('profissionais', 'categorias'));
     }
 
     public function create()
     {
-        return view('admin.comissao.form', ['profissional' => new ComissaoTecnica(), 'categorias' => $this->categoriasDoFormulario()]);
+        return redirect()->route('admin.comissao.index', ['novo' => 1]);
     }
 
     public function store(Request $request)

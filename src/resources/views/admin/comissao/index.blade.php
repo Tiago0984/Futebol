@@ -12,9 +12,9 @@
                 <p class="page-subtitle">Os profissionais que conduzem as atividades. O app mostra o perfil de quem é o responsável por cada compromisso.</p>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('admin.comissao.create') }}" class="btn-admin-primary">
+                <button type="button" class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalCriarProfissional">
                     <i class="bi bi-plus-lg"></i> Novo profissional
-                </a>
+                </button>
             </div>
         </div>
 
@@ -109,4 +109,6 @@
 
     </div>
 </main>
+
+@include('admin.comissao.modals.create', ['profissional' => new \App\Models\ComissaoTecnica()])
 @endsection

@@ -108,20 +108,8 @@
                 <div class="card-header fw-semibold">Foto</div>
                 <div class="card-body">
                     <div class="row g-3 align-items-center">
-                        @if($profissional->urlFoto())
-                        <div class="col-auto">
-                            <img src="{{ $profissional->urlFoto() }}" alt="Foto atual" style="width:72px;height:72px;object-fit:cover;border-radius:50%;">
-                        </div>
-                        @endif
-                        <div class="col-md-6">
-                            <input type="file" name="foto_comissao_tecnica" class="form-control" accept="image/jpeg,image/png,image/webp">
-                            <small class="text-muted">JPG, PNG ou WEBP, até 2 MB.{{ $profissional->urlFoto() ? ' Em branco, mantém a atual.' : '' }}</small>
-                            @if($profissional->urlFoto())
-                            <div class="form-check mt-1">
-                                <input class="form-check-input" type="checkbox" name="remover_foto" value="1" id="ct_remover_foto">
-                                <label class="form-check-label" for="ct_remover_foto">Remover a foto</label>
-                            </div>
-                            @endif
+                        <div class="col-12">
+                            @include('admin.comissao._foto', ['prefixo' => 'ct_'])
                         </div>
                         <div class="col-12">
                             <div class="form-check">
@@ -145,7 +133,7 @@
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label" for="ct_telefone">Telefone institucional</label>
-                            <input type="text" id="ct_telefone" name="telefone_institucional_comissao_tecnica" class="form-control" maxlength="20" inputmode="numeric"
+                            <input type="text" id="ct_telefone" name="telefone_institucional_comissao_tecnica" class="form-control js-telefone-comissao" maxlength="20" inputmode="numeric"
                                 placeholder="Ex: (11) 4000-0000" value="{{ old('telefone_institucional_comissao_tecnica', $profissional->telefone_formatado) }}">
                         </div>
                         <div class="col-md-8">
@@ -167,15 +155,4 @@
     </div>
 </main>
 
-<script>
-// Máscara do telefone institucional: só dígitos, até 11, como "(11) 4000-0000" ou "(11) 94000-0000" enquanto digita.
-// O servidor confere 10 ou 11 dígitos e grava só os dígitos
-document.getElementById('ct_telefone').addEventListener('input', function (e) {
-    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
-    if (v.length > 10)     v = v.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})/, '($1) $2-$3');
-    else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,4})/, '($1) $2');
-    e.target.value = v;
-});
-</script>
 @endsection

@@ -11823,6 +11823,7 @@ body.lp-body {
    ========================================================================== */
 /* Escudo do novo time: inteiro, centralizado no mesmo formato quadrado salvo no cadastro */
 .previa-time-escudo { display: block; width: 128px; height: 128px; object-fit: contain; }
+.previa-comissao-foto { display: block; width: 128px; height: 128px; object-fit: cover; }
 
 .previa-camp-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .previa-camp { margin: 0; min-width: 0; }
