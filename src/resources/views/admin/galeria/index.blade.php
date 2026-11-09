@@ -27,6 +27,7 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar"></button>
         </div>
         @endif
+        @include('admin.partials.avisos-imagem')
 
         @if ($errors->any())
         <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
@@ -127,7 +128,8 @@
                                             data-titulo="{{ $foto->titulo_galeria }}"
                                             data-categoria="{{ $foto->categoria_galeria ?? 'GERAL' }}"
                                             data-ordem="{{ $foto->ordem_galeria }}"
-                                            data-status="{{ $foto->status_galeria }}">
+                                            data-status="{{ $foto->status_galeria }}"
+                                            data-foto="{{ $foto->foto_galeria ? asset('futebol/images/galeria/' . $foto->foto_galeria) : '' }}">
                                         <i class="bi bi-pencil"></i>
                                     </button>
                                     <form action="{{ route('admin.galeria.destroy', $foto->id_galeria) }}"
@@ -226,6 +228,12 @@ document.addEventListener('DOMContentLoaded', function () {
 
             const statusSelect = document.getElementById('edit_status');
             if (statusSelect) statusSelect.value = this.dataset.status ?? 'ATIVO';
+
+            // Foto atual em miniatura e no "Como vai ficar" (data-foto: o endereço completo; vazio = sem foto)
+            const atual = document.getElementById('edit_foto_galeria_atual');
+            atual.hidden = !this.dataset.foto;
+            atual.querySelector('img').src = this.dataset.foto || '';
+            atual.closest('.js-campo-imagem').dispatchEvent(new CustomEvent('imagem:atual', { detail: { url: this.dataset.foto } }));
 
             const optionExiste = Array.from(editCatSelect.options).some(o => o.value === categoria);
             if (optionExiste) {

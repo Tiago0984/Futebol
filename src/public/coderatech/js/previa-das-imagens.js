@@ -1,6 +1,6 @@
 /* ==========================================================================
    "COMO VAI FICAR" — imagens no painel (06/11/2026; partials admin/campeonatos/_previa_das_imagens,
-   admin/banners/modals/_previa e, desde 09/11/2026, admin/noticias/modals/_previa). Mostra a imagem (a atual, a nova ou o recorte em andamento) com os dados digitados.
+   admin/banners/modals/_previa e, desde 09/11/2026, admin/noticias/modals/_previa e admin/galeria/modals/_previa). Mostra a imagem (a atual, a nova ou o recorte em andamento) com os dados digitados.
    As imagens chegam pelo evento "imagem:mudou" do partial admin.partials.campo-de-imagem, em campo.fonteDaPrevia.
    Nada aqui é gravado: o recorte vai pelo campo escondido de cada imagem.
    ========================================================================== */
@@ -197,9 +197,43 @@
     acompanhar(bloco, () => { atualizarTextos(); atualizarImagem(); escalar(bloco); });
   }
 
+  // Foto da galeria (09/11/2026; partial admin/galeria/modals/_previa): quadrado da página Galeria, 4:3 da home e a
+  // foto inteira que abre ao clicar
+  function iniciarGaleria(bloco) {
+    const form = bloco.closest('form');
+
+    function atualizarTexto() {
+      const titulo = form.querySelector('[name="titulo_galeria"]')?.value.trim() || '';
+      bloco.querySelectorAll('.js-previa-titulo').forEach(elemento => {
+        elemento.textContent = titulo;
+        elemento.hidden = !titulo;
+      });
+    }
+
+    function atualizarImagem() {
+      const foto = form.querySelector('.js-campo-imagem')?.fonteDaPrevia || '';
+
+      bloco.querySelectorAll('.js-previa-foto').forEach(imagem => {
+        imagem.hidden = !foto;
+        if (foto) {
+          imagem.src = foto;
+        } else {
+          imagem.removeAttribute('src');
+        }
+      });
+      bloco.querySelectorAll('.js-previa-sem-foto').forEach(elemento => { elemento.hidden = Boolean(foto); });
+    }
+
+    form.addEventListener('input', () => { atualizarTexto(); escalar(bloco); });
+    form.addEventListener('imagem:mudou', () => { atualizarImagem(); escalar(bloco); });
+
+    acompanhar(bloco, () => { atualizarTexto(); atualizarImagem(); escalar(bloco); });
+  }
+
   document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('.js-previa-campeonato').forEach(iniciarCampeonato);
     document.querySelectorAll('.js-previa-banner-home').forEach(iniciarBannerDaHome);
     document.querySelectorAll('.js-previa-noticia').forEach(iniciarNoticia);
+    document.querySelectorAll('.js-previa-galeria').forEach(iniciarGaleria);
   });
 })();

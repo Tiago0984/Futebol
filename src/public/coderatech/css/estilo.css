@@ -11905,6 +11905,31 @@ html[data-bs-theme="dark"] .previa-noticia-papel .post-main-title,
 html[data-bs-theme="dark"] .previa-noticia-papel .titulo-noticia-link a,
 html[data-bs-theme="dark"] .previa-noticia-papel .recent-item-info h4 { color: #111111 !important; }
 
+/* Foto da galeria (09/11/2026; admin/galeria/modals/_previa): as classes do site (gal-*, home-gallery-*). O título,
+   que lá aparece ao passar o mouse, fica sempre à vista; a foto ampliada (ao clicar) aparece inteira, num fundo
+   escuro como o do site. .gal-img e .home-gallery-img têm display:block, que venceria o "hidden" */
+.previa-galeria-grade { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr); align-items: start; }
+.js-previa-galeria img[hidden] { display: none !important; }
+.previa-galeria-mostrar .gal-overlay,
+.previa-galeria-mostrar .home-gallery-hover { opacity: 1; }
+.previa-galeria-ampliada {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 160px;
+    padding: 10px;
+    border-radius: 8px;
+    background: #0b0b0b;
+}
+.previa-galeria-ampliada img { max-width: 100%; max-height: 240px; object-fit: contain; }
+.previa-galeria-vazia { color: #9ca3af; font-size: 0.8rem; }
+.previa-galeria-legenda { margin-top: 6px; color: #f3f3f3; font-size: 0.75rem; text-align: center; }
+@media (max-width: 767px) {
+    .previa-galeria-grade { grid-template-columns: minmax(0, 1fr); }
+}
+
 @media (max-width: 767px) {
     .previa-camp-grade { grid-template-columns: minmax(0, 1fr); }
 }

@@ -45,9 +45,7 @@
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Foto <span class="text-danger">*</span></label>
-                            <input type="file" name="foto_galeria" class="form-control" accept="image/*" required>
-                            <span class="form-text">Formatos aceitos: JPG, PNG, WEBP. Máx. 5MB</span>
+                            @include('admin.galeria.modals._foto', ['rotulo' => 'Foto', 'obrigatorio' => true])
                         </div>
                     </div>
                 </div>

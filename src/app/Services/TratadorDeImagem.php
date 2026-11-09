@@ -15,7 +15,9 @@ use Intervention\Image\ImageManager;
  *   Cropper.js, ou o centro) e redução, em JPG; menor que o formato não é ampliada (só borraria);
  * - logo do campeonato: a imagem inteira (ou o recorte livre do formulário, para tirar sobras), centralizada num
  *   quadrado de até 512×512 com fundo transparente, em PNG;
- * - foto do atleta enviada pelo app (29/10/2026): quadrado do centro, até 512×512, em JPG.
+ * - foto do atleta enviada pelo app (29/10/2026): quadrado do centro, até 512×512, em JPG;
+ * - foto da galeria (09/11/2026): recorte livre (só tira as sobras; sem recorte, a foto inteira), reduzida a até
+ *   1920 px no lado maior, sem ampliar, em JPG. Sem formato fixo porque o site abre a foto inteira ao clicar.
  * A rotação das fotos de celular (EXIF) é acertada na leitura. Grava no disco "imagens" (public/futebol/images)
  * com nome gerado; quem chama grava o nome no banco e apaga o antigo (apagarSeNinguemUsa).
  */
@@ -28,6 +30,8 @@ class TratadorDeImagem
     public const NOTICIA = [1920, 1080];
     public const LOGO = 512;
     public const FOTO = 512;
+    // Foto da galeria: o lado maior até isto (a foto ampliada do site cabe numa tela grande)
+    public const GALERIA_LADO_MAX = 1920;
     public const QUALIDADE_JPG = 82;
 
     // Tipos aceitos na foto do atleta (pelo conteúdo do arquivo). HEIC/HEIF (iPhone) só abrem com o Imagick que
@@ -57,7 +61,7 @@ class TratadorDeImagem
 
     // Nome gerado: "banner-campeonato-20261026-141500-a1b2c3.jpg". Só arquivos com esse nome são apagados (os que
     // vieram com o projeto, no Git, ficam)
-    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time|foto-atleta|capa-noticia)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
+    private const NOME_GERADO = '/^(logo-campeonato|banner-campeonato|banner-site|logo-time|foto-atleta|capa-noticia|foto-galeria)-\d{8}-\d{6}-[a-z0-9]{6}\.(jpg|png)$/';
 
     /**
      * O que tratar num formulário com "Editar imagem" (06/11/2026): o arquivo enviado ou, sem ele, a imagem atual, se
@@ -135,6 +139,37 @@ class TratadorDeImagem
             'altura'  => $lado,
             'aviso'   => $maior < self::LADO_MINIMO_LOGO
                 ? "Logo pequena: o lado maior tem {$maior} px. Pode ficar sem nitidez no site; o ideal é o lado maior com pelo menos " . self::LADO_MINIMO_LOGO . ' px.'
+                : null,
+        ];
+    }
+
+    /**
+     * Foto com recorte livre (galeria): $recorte "x,y,largura,altura" em qualquer proporção (inválido ou fora da
+     * imagem = a imagem inteira), reduzida até GALERIA_LADO_MAX no lado maior (menor não é ampliada), em JPG.
+     * Aviso quando o lado maior fica abaixo de LARGURA_MINIMA_CAPA (a foto ampliada pode ficar sem nitidez).
+     *
+     * @return array{arquivo: string, largura: int, altura: int, aviso: ?string}
+     */
+    public static function fotoLivre(string $origem, string $pasta, string $prefixo, ?string $recorte = null): array
+    {
+        $imagem = self::ler($origem);
+
+        if ($area = self::recorteValido($recorte, $imagem->width(), $imagem->height())) {
+            [$x, $y, $l, $a] = $area;
+            $imagem->crop($l, $a, $x, $y);
+        }
+
+        $imagem->scaleDown(self::GALERIA_LADO_MAX, self::GALERIA_LADO_MAX);
+        $maior = max($imagem->width(), $imagem->height());
+
+        $arquivo = self::gravar($pasta, $prefixo, 'jpg', (string) $imagem->toJpeg(quality: self::QUALIDADE_JPG, progressive: true));
+
+        return [
+            'arquivo' => $arquivo,
+            'largura' => $imagem->width(),
+            'altura'  => $imagem->height(),
+            'aviso'   => $maior < self::LARGURA_MINIMA_CAPA
+                ? "Foto pequena ({$imagem->width()} × {$imagem->height()} px): pode ficar sem nitidez quando aberta no site. O ideal é o lado maior com pelo menos " . self::LARGURA_MINIMA_CAPA . ' px.'
                 : null,
         ];
     }

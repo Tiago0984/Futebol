@@ -44,8 +44,7 @@
                             </select>
                         </div>
                         <div class="col-12">
-                            <label class="form-label">Alterar Foto <span class="text-muted fw-normal">(opcional — deixe vazio para manter)</span></label>
-                            <input type="file" name="foto_galeria" class="form-control" accept="image/*">
+                            @include('admin.galeria.modals._foto', ['rotulo' => 'Alterar foto (opcional)', 'ajuda' => ' Deixe vazio para manter a foto atual.', 'idAtual' => 'edit_foto_galeria_atual'])
                         </div>
                     </div>
                 </div>

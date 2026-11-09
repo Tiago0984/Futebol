@@ -9,6 +9,9 @@ use Illuminate\Http\Request;
 
 class GaleriaController extends Controller
 {
+    // Pasta das fotos no disco "imagens" (public/futebol/images)
+    public const PASTA = 'galeria';
+
     // 1. Carrega a listagem e os modais estruturados nela
     public function index()
     {
@@ -27,30 +30,17 @@ class GaleriaController extends Controller
     // 2. Salva os dados enviados pelo modal de criação
     public function store(Request $request)
     {
-        $request->validate([
-            'titulo_galeria'         => 'required|string|max:255',
-            'categoria_galeria'      => 'required|string',
-            'nova_categoria_galeria' => 'required_if:categoria_galeria,__nova__|nullable|string|max:60',
-            'ordem_galeria'          => 'required|integer|min:1',
-            'status_galeria'         => 'required|in:ATIVO,INATIVO',
-            'foto_galeria'           => 'required|image|max:4096',
-        ], TratadorDeImagem::mensagensDoEnvio(['foto_galeria'], 4096));
+        $request->validate($this->regras(obrigatoria: true), $this->mensagens());
 
-        $dados = $request->only(['titulo_galeria', 'ordem_galeria', 'status_galeria']);
+        $dados = $this->dados($request);
 
-        $dados['categoria_galeria'] = $request->input('categoria_galeria') === '__nova__' // se for nova categoria, usa o campo de nova categoria, senão usa a selecionada
-            ? strtoupper(trim($request->input('nova_categoria_galeria')))
-            : $request->input('categoria_galeria');
-
-
-        $arquivo = $request->file('foto_galeria');
-        $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName(); // prefixa o nome do arquivo com timestamp para evitar conflitos se o nome for igual.
-        $arquivo->move(public_path('futebol/images/galeria'), $nomeArquivo); // move o arquivo para a pasta pública e salva o nome no banco
-        $dados['foto_galeria'] = $nomeArquivo;
+        $foto = $this->tratarFoto($request, $request->file('foto_galeria')->getRealPath());
+        $dados['foto_galeria'] = $foto['arquivo'];
 
         Galeria::create($dados);
 
-        return redirect()->route('admin.galeria.index')->with('sucesso', 'Foto adicionada com sucesso.');
+        return redirect()->route('admin.galeria.index')->with('sucesso', 'Foto adicionada com sucesso.')
+            ->with('avisos_imagem', array_filter([$foto['aviso']]));
     }
 
     // 3. Processa a atualização dos dados vindos do modal de edição
@@ -58,31 +48,27 @@ class GaleriaController extends Controller
     {
         $foto = Galeria::findOrFail($id);
 
-        $request->validate([
-            'titulo_galeria'         => 'required|string|max:255',
-            'categoria_galeria'      => 'required|string',
-            'nova_categoria_galeria' => 'required_if:categoria_galeria,__nova__|nullable|string|max:60',
-            'ordem_galeria'          => 'required|integer|min:1',
-            'status_galeria'         => 'required|in:ATIVO,INATIVO',
-            'foto_galeria'           => 'nullable|image|max:4096',
-        ], TratadorDeImagem::mensagensDoEnvio(['foto_galeria'], 4096));
+        $request->validate($this->regras(obrigatoria: false), $this->mensagens());
 
-        $dados = $request->only(['titulo_galeria', 'ordem_galeria', 'status_galeria']);
+        $dados = $this->dados($request);
+        $antiga = $foto->foto_galeria;
+        $aviso = null;
 
-        $dados['categoria_galeria'] = $request->input('categoria_galeria') === '__nova__'
-            ? strtoupper(trim($request->input('nova_categoria_galeria')))
-            : $request->input('categoria_galeria');
-
-        if ($request->hasFile('foto_galeria')) {
-            $arquivo = $request->file('foto_galeria');
-            $nomeArquivo = time() . '_' . $arquivo->getClientOriginalName();
-            $arquivo->move(public_path('futebol/images/galeria'), $nomeArquivo);
-            $dados['foto_galeria'] = $nomeArquivo;
+        // Arquivo novo ou, sem ele, o recorte da foto atual ("Editar imagem"); nenhum dos dois: a foto fica
+        if ($origem = TratadorDeImagem::origemDoEnvio($request, 'foto_galeria', self::PASTA, $antiga)) {
+            $nova = $this->tratarFoto($request, $origem);
+            $dados['foto_galeria'] = $nova['arquivo'];
+            $aviso = $nova['aviso'];
         }
 
         $foto->update($dados);
 
-        return redirect()->route('admin.galeria.index')->with('sucesso', 'Foto atualizada com sucesso.');
+        if ($antiga !== $foto->foto_galeria) {
+            TratadorDeImagem::apagarSeNinguemUsa(self::PASTA, $antiga, fn ($arquivo) => Galeria::where('foto_galeria', $arquivo)->exists());
+        }
+
+        return redirect()->route('admin.galeria.index')->with('sucesso', 'Foto atualizada com sucesso.')
+            ->with('avisos_imagem', array_filter([$aviso]));
     }
 
     // 4. Alterna o status entre ativo e inativo
@@ -101,5 +87,42 @@ class GaleriaController extends Controller
         $foto->save();
 
         return redirect()->route('admin.galeria.index')->with('sucesso', $mensagem);
+    }
+
+    private function regras(bool $obrigatoria): array
+    {
+        return [
+            'titulo_galeria'         => 'required|string|max:255',
+            'categoria_galeria'      => 'required|string',
+            'nova_categoria_galeria' => 'required_if:categoria_galeria,__nova__|nullable|string|max:60',
+            'ordem_galeria'          => 'required|integer|min:1',
+            'status_galeria'         => 'required|in:ATIVO,INATIVO',
+            // Qualquer foto até 10 MB: o servidor reduz (antes, 4 MB gravada como veio, com o nome original)
+            'foto_galeria'           => ($obrigatoria ? 'required' : 'nullable') . '|image|max:' . TratadorDeImagem::ENVIO_MAX_KB,
+            'recorte_foto_galeria'   => 'nullable|string|max:60',
+        ];
+    }
+
+    private function mensagens(): array
+    {
+        return ['foto_galeria.image' => 'Envie uma imagem (JPG, PNG, WebP ou GIF).', ...TratadorDeImagem::mensagensDoEnvio(['foto_galeria'])];
+    }
+
+    // Se for nova categoria, usa o campo de nova categoria (em maiúsculas); senão, a selecionada
+    private function dados(Request $request): array
+    {
+        $dados = $request->only(['titulo_galeria', 'ordem_galeria', 'status_galeria']);
+
+        $dados['categoria_galeria'] = $request->input('categoria_galeria') === '__nova__'
+            ? strtoupper(trim($request->input('nova_categoria_galeria')))
+            : $request->input('categoria_galeria');
+
+        return $dados;
+    }
+
+    // Foto da galeria: recorte livre do formulário (ou a foto inteira), até 1920 px no lado maior (TratadorDeImagem)
+    private function tratarFoto(Request $request, string $origem): array
+    {
+        return TratadorDeImagem::fotoLivre($origem, self::PASTA, 'foto-galeria', $request->input('recorte_foto_galeria'));
     }
 }

@@ -4,6 +4,8 @@
     e o servidor confere (sem JavaScript, ou inválidas: o centro).
   - tipo "logo": recorte livre, só para tirar as sobras (06/11/2026); o que ficar no quadro vai inteiro, num quadrado
     com fundo transparente.
+  - tipo "foto": recorte livre, só para tirar as sobras (galeria, 09/11/2026); o que ficar no quadro vai como foto
+    (JPG), na proporção em que ficou. Aviso pelo lado maior.
   Aviso (sem bloquear) para imagem pequena, igual ao do servidor.
   Parâmetros: name, rotulo, tipo, proporcao (largura/altura, na capa), minimo (px: largura do recorte na capa, maior
   lado na logo), ajuda, miniatura (endereço da imagem atual) ou idAtual (id do bloco da imagem atual, que o JavaScript
@@ -39,7 +41,11 @@
 
   <div class="js-area-imagem mt-2" hidden>
     <div class="small text-muted mb-1">
-      {{ $tipo === 'logo' ? 'Puxe os cantos do quadro para tirar as sobras: o que ficar dentro dele vai para o site e para o app.' : 'Arraste ou redimensione o quadro para escolher a parte que aparece.' }}
+      @switch($tipo)
+        @case('logo') Puxe os cantos do quadro para tirar as sobras: o que ficar dentro dele vai para o site e para o app. @break
+        @case('foto') Puxe os cantos do quadro para tirar as sobras (opcional): o que ficar dentro dele vai para o site. @break
+        @default Arraste ou redimensione o quadro para escolher a parte que aparece.
+      @endswitch
     </div>
     <div class="recorte-imagem-palco"><img class="js-imagem-recorte" alt=""></div>
     <div class="alert alert-warning py-1 px-2 small mt-2 mb-0 js-aviso-pequena" hidden></div>
@@ -73,6 +79,8 @@
         const cancelar = campo.querySelector('.js-cancelar-edicao');
         const minimo = parseInt(campo.dataset.minimo, 10);
         const ehLogo = campo.dataset.tipo === 'logo';
+        // Logo e foto da galeria: recorte em qualquer proporção (só tira as sobras); capa: travado na proporção
+        const ehLivre = campo.dataset.tipo !== 'capa';
         let cropper = null, url = null, espera = null, editandoAtual = false;
         let atual = blocoAtual ? blocoAtual.querySelector('img').getAttribute('src') : '';
 
@@ -116,6 +124,9 @@
           if (ehLogo) {
             const maior = Math.max(d.width, d.height);
             avisar(maior, 'Logo pequena: o lado maior tem ' + maior + ' px. Pode ficar sem nitidez no site; o ideal é o lado maior com pelo menos ' + minimo + ' px.');
+          } else if (ehLivre) {
+            const maior = Math.max(d.width, d.height);
+            avisar(maior, 'Foto pequena (' + d.width + ' × ' + d.height + ' px no recorte): pode ficar sem nitidez quando aberta no site. O ideal é o lado maior com pelo menos ' + minimo + ' px.');
           } else {
             avisar(d.width, 'Imagem pequena (' + d.width + ' × ' + d.height + ' px no recorte): pode ficar sem nitidez no site. O ideal é pelo menos ' + minimo + ' px de largura.');
           }
@@ -134,7 +145,7 @@
             imagem.onload = null;
             // checkOrientation: false, porque o navegador já mostra a foto de celular virada certa (o servidor faz o mesmo)
             cropper = new Cropper(imagem, {
-              aspectRatio: ehLogo ? NaN : parseFloat(campo.dataset.proporcao), viewMode: 1, autoCropArea: 1, checkOrientation: false,
+              aspectRatio: ehLivre ? NaN : parseFloat(campo.dataset.proporcao), viewMode: 1, autoCropArea: 1, checkOrientation: false,
               dragMode: 'none', movable: false, zoomable: false, rotatable: false, scalable: false,
               ready: atualizarRecorte, crop: () => cropper && atualizarRecorte(),
             });
