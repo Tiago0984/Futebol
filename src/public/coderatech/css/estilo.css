@@ -11874,6 +11874,82 @@ body.lp-body {
    o app). O carrossel da home usa o style.css, que o painel não carrega: .previa-home-* repete os valores dele.
    ========================================================================== */
 .previa-camp-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+
+/* ==========================================================================
+   81. INDIVIDUAIS — EXAMES, AVALIAÇÕES, PENEIRAS E REUNIÕES NO PAINEL (09/11/2026)
+   Tela Eventos › Individuais (admin.individuais.index): um cartão por atividade, com a data à esquerda, o que
+   é e quem vai no meio e as ações à direita. Só cores do tema (claro e escuro).
+   ========================================================================== */
+.individuais-lista { display: flex; flex-direction: column; gap: 10px; }
+.individual-cartao {
+    display: flex;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 14px 16px;
+    background: var(--bs-body-bg);
+    border: 1px solid var(--bs-border-color);
+    border-left: 4px solid var(--aacj-red);
+    border-radius: 8px;
+}
+.individual-cartao.cancelado { border-left-color: var(--bs-secondary-color); }
+.individual-cartao.cancelado .individual-titulo { text-decoration: line-through; }
+.individual-cartao.oculto { opacity: 0.65; border-left-style: dashed; }
+.individual-data {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 0 0 58px;
+    padding: 6px 0;
+    background: var(--bs-tertiary-bg);
+    border-radius: 6px;
+    line-height: 1.1;
+}
+.individual-data__dia { font-size: 1.35rem; font-weight: 700; color: var(--bs-body-color); }
+.individual-data__mes { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.5px; color: var(--aacj-red); }
+.individual-data__semana { font-size: 0.68rem; color: var(--bs-secondary-color); }
+.individual-corpo { flex: 1 1 auto; min-width: 0; }
+.individual-topo { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 4px; }
+.individual-titulo { font-weight: 700; color: var(--bs-body-color); text-decoration: none; }
+.individual-titulo:hover { color: var(--aacj-red); text-decoration: underline; }
+.individual-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    font-size: 0.78rem;
+    color: var(--bs-secondary-color);
+}
+.individual-meta .bi { margin-right: 2px; }
+.individual-descricao { margin: 6px 0 0; font-size: 0.8rem; color: var(--bs-body-color); }
+.individual-atletas { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; }
+.individual-atletas__total { font-size: 0.78rem; font-weight: 600; color: var(--bs-body-color); margin-right: 2px; }
+.individual-atleta {
+    padding: 1px 8px;
+    font-size: 0.72rem;
+    color: var(--bs-body-color);
+    background: var(--bs-tertiary-bg);
+    border: 1px solid var(--bs-border-color);
+    border-radius: 99px;
+    white-space: nowrap;
+}
+.individual-atleta.mais { font-weight: 700; text-decoration: none; color: var(--aacj-red); }
+.individual-leitura { margin-left: auto; font-size: 0.72rem; color: var(--bs-secondary-color); white-space: nowrap; }
+.individual-acoes { display: flex; flex: 0 0 auto; gap: 4px; }
+.individuais-vazio {
+    padding: 32px 16px;
+    text-align: center;
+    color: var(--bs-secondary-color);
+    background: var(--bs-body-bg);
+    border: 1px dashed var(--bs-border-color);
+    border-radius: 8px;
+}
+.individuais-vazio > .bi { font-size: 1.8rem; }
+.individuais-vazio p { margin: 6px 0 10px; }
+@media (max-width: 767px) {
+    .individual-cartao { flex-wrap: wrap; gap: 10px 12px; }
+    .individual-corpo { flex-basis: calc(100% - 70px); }
+    .individual-acoes { width: 100%; justify-content: flex-end; }
+    .individual-leitura { margin-left: 0; }
+}
 .previa-camp { margin: 0; min-width: 0; }
 .previa-camp-topo { grid-column: 1 / -1; }
 .previa-camp figcaption { margin-bottom: 4px; font-size: 0.75rem; color: var(--bs-secondary-color); }

@@ -42,6 +42,11 @@ class MenuAdminComposer
             return 'grade';
         }
 
+        // Individuais: a tela própria do ramo (09/11/2026)
+        if ($r->routeIs('admin.individuais.*')) {
+            return 'ramo:individuais';
+        }
+
         if ($r->routeIs('admin.calendario.index')) {
             $ramo = $r->query('ramo');
 

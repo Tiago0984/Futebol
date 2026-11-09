@@ -119,6 +119,8 @@ class EventoCalendario extends Model
         'descricao_evento_calendario',
         'tipo_evento_calendario',
         'subtipo_evento_calendario',
+        // Tipo de evento individual cadastrado (09/11/2026): o tipo acima é a base dele e o subtipo, a cópia do nome
+        'id_tipo_evento_individual',
         'id_categoria',
         'data_evento_calendario',
         'horario_inicio_evento_calendario',
@@ -153,6 +155,20 @@ class EventoCalendario extends Model
         static::creating(function (self $evento) {
             if (! array_key_exists('data_publicacao_evento_calendario', $evento->getAttributes())) {
                 $evento->data_publicacao_evento_calendario = now();
+            }
+        });
+
+        // Tipo de evento individual cadastrado (09/11/2026): a edição comum (modal Editar, com só os tipos do ENUM)
+        // que troca o tipo ou o subtipo deixa de ser daquele tipo; o evento fica com o tipo e o subtipo escritos
+        static::saving(function (self $evento) {
+            if (! $evento->id_tipo_evento_individual || ! $evento->isDirty(['tipo_evento_calendario', 'subtipo_evento_calendario'])) {
+                return;
+            }
+            $tipo = TipoEventoIndividual::find($evento->id_tipo_evento_individual);
+            if (! $tipo
+                || $evento->tipo_evento_calendario !== $tipo->base_tipo_evento_individual
+                || $evento->subtipo_evento_calendario !== $tipo->nome_tipo_evento_individual) {
+                $evento->id_tipo_evento_individual = null;
             }
         });
     }
@@ -734,12 +750,15 @@ class EventoCalendario extends Model
         };
     }
 
-    // Página de um ramo (menu e linha de caminho): Amistosos abre a lista de Jogos; os outros, o Calendário filtrado
+    // Página de um ramo (menu e linha de caminho): Amistosos abre a lista de Jogos; Individuais, a tela própria
+    // (09/11/2026); os outros, o Calendário filtrado (o filtro "Ramo" do Calendário continua com todos)
     public static function urlDoRamo(string $ramo): string
     {
-        return $ramo === 'amistosos'
-            ? route('admin.jogos.index', ['campeonato' => 'amistoso'])
-            : route('admin.calendario.index', ['ramo' => $ramo]);
+        return match ($ramo) {
+            'amistosos'   => route('admin.jogos.index', ['campeonato' => 'amistoso']),
+            'individuais' => route('admin.individuais.index'),
+            default       => route('admin.calendario.index', ['ramo' => $ramo]),
+        };
     }
 
     // Ramo do menu deste evento (a mesma regra de scopeDoRamo), para marcar o item ativo na tela do evento
@@ -838,6 +857,12 @@ class EventoCalendario extends Model
     public function local()
     {
         return $this->belongsTo(Local::class, 'id_local', 'id_local');
+    }
+
+    // Tipo de evento individual cadastrado (09/11/2026); null = um dos três de sempre
+    public function tipoIndividual()
+    {
+        return $this->belongsTo(TipoEventoIndividual::class, 'id_tipo_evento_individual', 'id_tipo_evento_individual');
     }
 
     // Nome de quem conduz: o profissional escolhido, ou o texto antigo (24/10/2026), ou null

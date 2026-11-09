@@ -23,12 +23,8 @@
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalGerarAgenda">
                     <i class="bi bi-calendar-plus"></i> Gerar agenda do mês
                 </button>
-                @elseif($filtros['ramo'] === 'individuais')
-                {{-- Individuais: o técnico cria o evento já escolhendo os atletas (a peneira é uma chave no formulário) --}}
-                <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalEventoIndividual">
-                    <i class="bi bi-person-plus"></i> Novo evento individual
-                </button>
                 @else
+                {{-- O "Novo evento individual" fica na tela Individuais (admin.individuais.index, 09/11/2026) --}}
                 <button class="btn-admin-primary" data-bs-toggle="modal" data-bs-target="#modalCriarEvento">
                     <i class="bi bi-plus-lg"></i> Novo Evento
                 </button>
@@ -526,11 +522,6 @@
 
 {{-- ── Modal Editar Evento (partial; também usado na tela do evento) ───────── --}}
 @include('admin.calendario.modals.editar-evento')
-
-{{-- ── Modal Novo Evento Individual (só na lista de Individuais) ─────────── --}}
-@if($filtros['ramo'] === 'individuais')
-@include('admin.calendario.modals.evento-individual')
-@endif
 
 {{-- ── Modal Criar Grade ──────────────────────────────────────────────────── --}}
 <div class="modal fade" id="modalCriarGrade" tabindex="-1" aria-hidden="true">

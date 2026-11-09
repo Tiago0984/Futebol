@@ -42,6 +42,7 @@ use App\Http\Controllers\Admin\GruposController;
 use App\Http\Controllers\Admin\GeradorDeJogosController;
 use App\Http\Controllers\Admin\CentralDoCampeonatoController;
 use App\Http\Controllers\Admin\AmistososController;
+use App\Http\Controllers\Admin\IndividuaisController;
 use App\Http\Controllers\Admin\SumulaController;
 
 Route::get('/', [HomeController::class, 'home'])->name('home');
@@ -170,6 +171,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     Route::delete('jogos/{id}/cartoes/{idCartao}', [SumulaController::class, 'destroyCartao'])->name('jogos.cartoes.destroy');
     // Times dos amistosos, separados por jogo, e jogadores de um time: só leitura, pelo subitem "Times" do menu
     Route::get('amistosos/times',          [AmistososController::class, 'times'])->name('amistosos.times');
+    // Individuais (item de Eventos): exames, avaliações, peneiras e reuniões com os atletas escolhidos um a um
+    Route::get('eventos/individuais',      [IndividuaisController::class, 'index'])->name('individuais.index');
+    // "Adicionar novo tipo…" do formulário do evento individual (JSON, sem sair do formulário)
+    Route::post('eventos/individuais/tipos', [IndividuaisController::class, 'novoTipo'])->name('individuais.tipos.store');
     // Jogadores escalados por um time num jogo (cartão do time nas telas de times por jogo): só leitura
     Route::get('jogos/{id}/times/{timeId}', [JogosController::class, 'escaladosDoTime'])->name('jogos.times.show');
     Route::resource('categorias',  CategoriasController::class)->only($acoesDaLista);

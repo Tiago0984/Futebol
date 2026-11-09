@@ -167,7 +167,7 @@ class ResponsavelPelaAtividadeTest extends TestCase
             ->assertDontSee('name="responsavel_evento_calendario"', false);
         $this->comoAdmin()->get(route('admin.calendario.index', ['tab' => 'grade']))->assertOk()
             ->assertDontSee('name="responsavel_grade_treino"', false);
-        $this->comoAdmin()->get(route('admin.calendario.index', ['ramo' => 'individuais']))->assertOk()
+        $this->comoAdmin()->get(route('admin.individuais.index'))->assertOk()
             ->assertSee('id="ind_responsavel"', false);
     }
 

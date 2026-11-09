@@ -23,13 +23,15 @@ class PeneiraTest extends TestCase
         $id = $this->criarAtleta((now()->year - 14) . '-03-01', 'M', 'ATIVO');
         $this->colocarNaCategoria($id, $this->idCategoria('Sub-15', 'M'));
 
-        $this->comoAdmin()->get(route('admin.calendario.index', ['ramo' => 'individuais']))->assertOk()
-            ->assertDontSee('data-peneira="1"', false)                            // um botão só (22/10/2026)
-            ->assertSee('id="ind_peneira"', false)->assertSee('É uma peneira (avaliação técnica de um clube)')
+        // A chave "É uma peneira" saiu do formulário (dono do projeto, 09/11/2026); a marcação por faixa de ano
+        // de nascimento e sexo continua na caixa de atletas
+        $this->comoAdmin()->get(route('admin.individuais.index'))->assertOk()
+            ->assertDontSee('data-peneira="1"', false)
+            ->assertDontSee('id="ind_peneira"', false)->assertDontSee('É uma peneira (avaliação técnica de um clube)')
+            ->assertDontSee(EventoCalendario::SUBTIPO_PENEIRA)
             ->assertSee('Marcar só quem cabe')
             ->assertSee('data-ano="' . (now()->year - 14) . '" data-sexo="M"', false)
-            ->assertSee('(' . (now()->year - 14) . ')')
-            ->assertSee(EventoCalendario::SUBTIPO_PENEIRA);
+            ->assertSee('(' . (now()->year - 14) . ')');
     }
 
     public function test_so_os_escolhidos_sao_inscritos_e_avisados_e_nada_vai_ao_site(): void
@@ -54,15 +56,18 @@ class PeneiraTest extends TestCase
             'atletas'                     => $escolhidos,
         ])->assertSessionHasNoErrors()->assertSessionHas('sucesso', fn ($m) => str_contains($m, '2 atleta(s) inscrito(s). 2 atleta(s) notificado(s).'));
 
+        // O formulário individual não tem mais o Subtipo (09/11/2026): o enviado por fora é ignorado, então o evento
+        // não vira peneira; os escolhidos continuam inscritos e avisados
         $peneira = EventoCalendario::where('titulo_evento_calendario', 'Peneira · São Caetano')->sole();
-        $this->assertTrue($peneira->ehPeneira());
+        $this->assertNull($peneira->subtipo_evento_calendario);
+        $this->assertFalse($peneira->ehPeneira());
         $this->assertNull($peneira->id_categoria);
         $this->assertEqualsCanonicalizing($escolhidos, $peneira->inscricoes()->pluck('id_atleta')->map(fn ($id) => (int) $id)->all());
         $this->assertSame(0, DB::table('tbl_notificacao')->where('id_atleta', $deFora)->count());
 
-        // Selo na lista de Individuais; nada no site (avaliação fica fora da agenda pública)
-        $this->actingAs($admin, 'admin')->get(route('admin.calendario.index', ['ramo' => 'individuais', 'mes' => now()->addDays(10)->format('Y-m')]))
-            ->assertOk()->assertSee('Peneira · São Caetano')->assertSee('>Peneira</span>', false);
+        // Na tela Individuais, sem o selo; nada no site (avaliação fica fora da agenda pública)
+        $this->actingAs($admin, 'admin')->get(route('admin.individuais.index'))
+            ->assertOk()->assertSee('Peneira · São Caetano')->assertDontSee('<i class="bi bi-binoculars"></i> Peneira</span>', false);
         $this->get('/calendario')->assertOk()->assertDontSee('Peneira · São Caetano');
     }
 }

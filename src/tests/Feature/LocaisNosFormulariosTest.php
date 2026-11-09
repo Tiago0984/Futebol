@@ -53,8 +53,8 @@ class LocaisNosFormulariosTest extends TestCase
     public function test_rotulos_dos_campos_local_e_responsavel_nao_herdam_variavel_da_tela(): void
     {
         $resposta = $this->comoAdmin()->get(route('admin.calendario.index'))->assertOk();
-        // O modal do evento individual só existe na lista de Individuais
-        $individuais = $this->get(route('admin.calendario.index', ['ramo' => 'individuais']))->assertOk();
+        // O modal do evento individual só existe na tela Individuais
+        $individuais = $this->get(route('admin.individuais.index'))->assertOk();
 
         foreach (['cad_ev_local', 'cad_g_local', 'edit_g_local', 'edit_ev_local'] as $id) {
             $resposta->assertSee('<label class="form-label" for="' . $id . '">Local</label>', false);

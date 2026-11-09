@@ -16,6 +16,7 @@ use App\Models\GradeTreino;
 use App\Models\Jogo;
 use App\Models\Notificacao;
 use App\Models\Time;
+use App\Models\TipoEventoIndividual;
 use App\Services\Escalacao;
 use App\Support\CentralDoCampeonato;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -68,12 +69,10 @@ class CalendarioController extends Controller
 
         $mesesGeracao = GradeTreino::mesesPermitidos();
 
-        // Formulário "Novo evento individual" (só na lista de Individuais): atletas ativos pela categoria atual
-        $atletasParaIndividual = $filtros['ramo'] === 'individuais' ? Atleta::ativosPorCategoria() : collect();
-
+        // O "Novo evento individual" fica na tela Individuais (IndividuaisController, 09/11/2026)
         return view('admin.calendario.index', compact(
             'eventos', 'grades', 'categorias', 'categoriasInativasEmUso', 'mes', 'mesesLista', 'mesesGeracao',
-            'filtros', 'ocultosForaDaLista', 'atletasParaIndividual',
+            'filtros', 'ocultosForaDaLista',
         ));
     }
 
@@ -173,7 +172,23 @@ class CalendarioController extends Controller
      */
     public function storeEventoIndividual(Request $request)
     {
-        $request->merge(['id_categoria' => null]);
+        // Tipo cadastrado (09/11/2026): o select manda "tipo:ID"; o evento fica com a base dele (um dos três do ENUM)
+        // e o nome no subtipo. tipo_escolhido guarda o valor do select para reabrir o formulário com ele, se houver erro,
+        // e para o "Confirmar mesmo assim" do conflito, que reenvia os dados já convertidos
+        $escolhido = (string) $request->input('tipo_escolhido', $request->input('tipo_evento_calendario'));
+        $tipoCadastrado = TipoEventoIndividual::doValorDoSelect($escolhido);
+        if (str_starts_with($escolhido, TipoEventoIndividual::PREFIXO_NO_SELECT) && ! $tipoCadastrado) {
+            throw ValidationException::withMessages(['tipo_evento_calendario' => 'Este tipo foi desativado ou não existe. Escolha outro.']);
+        }
+        // O formulário individual não tem mais o Subtipo (09/11/2026): ele só é gravado com um tipo cadastrado (o nome
+        // dele, que o app mostra); sem tipo cadastrado, fica vazio
+        $request->merge([
+            'id_categoria' => null, 'tipo_escolhido' => $escolhido,
+            'subtipo_evento_calendario' => $tipoCadastrado?->nome_tipo_evento_individual,
+        ]);
+        if ($tipoCadastrado) {
+            $request->merge(['tipo_evento_calendario' => $tipoCadastrado->base_tipo_evento_individual]);
+        }
         $request->validate([
             'tipo_evento_calendario' => ['required', Rule::in(EventoCalendario::TIPOS_INDIVIDUAIS)],
             'atletas'                => 'required|array|min:1',
@@ -185,7 +200,10 @@ class CalendarioController extends Controller
             'atletas.*.exists'          => 'Escolha só atletas ativos.',
         ]);
 
-        $dados = [...$this->dadosEvento($request), 'id_categoria' => null, 'status_evento_calendario' => 'ATIVO'];
+        $dados = [
+            ...$this->dadosEvento($request), 'id_categoria' => null, 'status_evento_calendario' => 'ATIVO',
+            'id_tipo_evento_individual' => $tipoCadastrado?->id_tipo_evento_individual,
+        ];
         $ids   = collect($request->input('atletas'))->map(fn ($id) => (int) $id)->unique()->values()->all();
 
         if ($confirmar = $this->confirmarConflitos($request, (new EventoCalendario($dados))->conflitosPara($ids))) {

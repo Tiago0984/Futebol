@@ -63,7 +63,9 @@ class MenuAdminTest extends TestCase
         $links = $this->linksDaBarra($this->comoAdmin()->get(route('admin.dashboard'))->assertOk());
 
         // Ramos, Campeonatos (todos), Jogos, Times do campeonato, Grade, Categorias e Times
-        $this->assertContains(route('admin.calendario.index', ['ramo' => 'individuais']), $links);
+        // Individuais: a tela própria (09/11/2026; antes, o Calendário filtrado)
+        $this->assertContains(route('admin.individuais.index'), $links);
+        $this->assertNotContains(route('admin.calendario.index', ['ramo' => 'individuais']), $links);
         // Treinos e Outros saíram do menu (os ramos continuam no filtro do Calendário e na linha de caminho)
         $this->assertNotContains(route('admin.calendario.index', ['ramo' => 'treinos']), $links);
         $this->assertNotContains(route('admin.calendario.index', ['ramo' => 'outros']), $links);
@@ -128,7 +130,10 @@ class MenuAdminTest extends TestCase
             // Treinos e Outros não estão no menu: nenhum link (a gaveta Eventos fica aberta)
             route('admin.calendario.index', ['ramo' => 'treinos'])            => null,
             route('admin.calendario.index', ['ramo' => 'outros'])             => null,
-            route('admin.calendario.index', ['ramo' => 'individuais'])        => route('admin.calendario.index', ['ramo' => 'individuais']),
+            // Individuais: a tela própria; o filtro "Ramo" do Calendário marca o mesmo item
+            route('admin.individuais.index')                                  => route('admin.individuais.index'),
+            route('admin.individuais.index', ['aba' => 'realizados'])         => route('admin.individuais.index'),
+            route('admin.calendario.index', ['ramo' => 'individuais'])        => route('admin.individuais.index'),
             route('admin.calendario.index', ['ramo' => 'campeonatos'])        => route('admin.campeonatos.index'), // Campeonatos (o ramo)
             route('admin.calendario.index', ['tab' => 'grade'])               => route('admin.calendario.index', ['tab' => 'grade']),
             route('admin.calendario.grade.previa', ['mes' => now()->format('Y-m')]) => route('admin.calendario.index', ['tab' => 'grade']), // Grade de treino
@@ -654,7 +659,7 @@ class MenuAdminTest extends TestCase
             . 'O resultado sai em uma semana e será enviado ao departamento médico do clube para avaliação.';
 
         // O botão e o formulário ficam na lista de Individuais (com os atletas ativos para escolher)
-        $pagina = $this->comoAdmin()->get(route('admin.calendario.index', ['ramo' => 'individuais']))->assertOk()
+        $pagina = $this->comoAdmin()->get(route('admin.individuais.index'))->assertOk()
             ->assertSee('data-bs-target="#modalEventoIndividual"', false);
         // Caixa com uma caixa de marcar por atleta ativo (agrupada por categoria, com busca)
         $pagina->assertSee('id="ind_atleta_' . $ana . '"', false)
@@ -726,7 +731,7 @@ class MenuAdminTest extends TestCase
             'tipo_evento_calendario' => 'AVALIACAO', 'titulo_evento_calendario' => 'Teste físico',
             'data_evento_calendario' => $dia, 'horario_inicio_evento_calendario' => '09:00', 'atletas' => [$ana],
         ];
-        $this->comoAdmin()->from(route('admin.calendario.index', ['ramo' => 'individuais']))
+        $this->comoAdmin()->from(route('admin.individuais.index'))
             ->post(route('admin.calendario.eventos.individual'), $dados)
             ->assertSessionHas('conflitos_pendentes');
         $this->assertSame(0, EventoCalendario::where('titulo_evento_calendario', 'Teste físico')->count());

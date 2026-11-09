@@ -36,7 +36,7 @@
             </select>
         </div>
         <button type="button" class="btn btn-sm btn-outline-primary js-marcar-faixa">Marcar só quem cabe</button>
-        <small class="text-muted w-100">Para a peneira: marca os atletas ativos da faixa e desmarca o resto. Dá para ajustar à mão depois.</small>
+        <small class="text-muted w-100">Marca os atletas ativos da faixa e desmarca o resto. Dá para ajustar à mão depois.</small>
     </div>
     @endif
     <div class="d-flex flex-wrap align-items-end gap-2 mb-1">
