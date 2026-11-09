@@ -23,10 +23,19 @@
                         </div>
                         @include('admin.times._categorias', ['prefixo' => 'editar', 'marcadas' => []])
                         <div class="col-12">
-                            <label class="form-label">Logo / Escudo</label>
+                            <label class="form-label" for="edit_logo_time">Logo / Escudo</label>
                             <small id="edit_logo_atual" class="d-block text-muted mb-1"></small>
-                            <input type="file" name="logo_time" class="form-control" accept="image/*">
-                            <span class="form-text">Deixe em branco para manter a logo atual. JPG, PNG, WEBP, até 10 MB.</span>
+                            <input type="file" name="logo_time" id="edit_logo_time" class="form-control" accept="image/*"
+                                data-max-kb="{{ \App\Services\TratadorDeImagem::ENVIO_MAX_KB }}"
+                                aria-describedby="edit_logo_time_ajuda edit_logo_time_erro">
+                            <span class="form-text" id="edit_logo_time_ajuda">Deixe em branco para manter a logo atual. JPG, PNG, WEBP, até 10 MB.</span>
+                            <p id="edit_logo_time_erro" class="text-danger small mt-2 mb-0" role="alert" hidden></p>
+                            <div id="edit_previa_escudo" class="mt-3" hidden>
+                                <p class="modal-section-label mb-2"><i class="bi bi-eye"></i> Como vai ficar</p>
+                                <img id="edit_imagem_escudo" class="previa-time-escudo rounded border bg-body-tertiary"
+                                    alt="Prévia do escudo do time em edição">
+                                <span class="form-text">O escudo fica inteiro e centralizado, sem cortes.</span>
+                            </div>
                         </div>
                     </div>
                 </div>

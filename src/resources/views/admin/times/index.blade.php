@@ -156,7 +156,7 @@
                                         data-nome="{{ $time->nome_time }}"
                                         data-tipo="{{ $time->tipo_time }}"
                                         data-categorias="{{ json_encode($idsCategorias) }}"
-                                        data-logo="{{ $time->logo_time }}"
+                                        data-logo="{{ $time->logo_time ? asset('futebol/images/team/' . $time->logo_time) : '' }}"
                                         title="Editar">
                                         <i class="bi bi-pencil"></i>
                                     </button>
@@ -202,6 +202,74 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+
+    // Mesma prévia no cadastro e na edição; na edição, sem arquivo novo, volta ao escudo atual
+    ['criar', 'edit'].forEach(prefixo => {
+        const arquivoEscudo = document.getElementById(`${prefixo}_logo_time`);
+        const previaEscudo = document.getElementById(`${prefixo}_previa_escudo`);
+        const imagemEscudo = document.getElementById(`${prefixo}_imagem_escudo`);
+        const erroEscudo = document.getElementById(`${prefixo}_logo_time_erro`);
+        let urlEscudo = null;
+
+        function limparPreviaEscudo() {
+            previaEscudo.hidden = true;
+            imagemEscudo.onload = null;
+            imagemEscudo.onerror = null;
+            imagemEscudo.removeAttribute('src');
+            if (urlEscudo) URL.revokeObjectURL(urlEscudo);
+            urlEscudo = null;
+        }
+
+        function avisarErroEscudo(mensagem = '') {
+            erroEscudo.textContent = mensagem;
+            erroEscudo.hidden = !mensagem;
+        }
+
+        function voltarParaEscudoAtual(mensagem = '') {
+            limparPreviaEscudo();
+            arquivoEscudo.value = '';
+            avisarErroEscudo(mensagem);
+            const atual = arquivoEscudo.dataset.atual;
+            if (!atual) return;
+
+            imagemEscudo.onload = () => { previaEscudo.hidden = false; };
+            imagemEscudo.onerror = limparPreviaEscudo;
+            imagemEscudo.src = atual;
+        }
+
+        arquivoEscudo.addEventListener('change', function () {
+            const escolhido = arquivoEscudo.files[0];
+            if (!escolhido) {
+                voltarParaEscudoAtual();
+                return;
+            }
+            limparPreviaEscudo();
+            avisarErroEscudo();
+
+            const maxKb = Number(arquivoEscudo.dataset.maxKb);
+            if (escolhido.size > maxKb * 1024) {
+                voltarParaEscudoAtual(`Use uma imagem de até ${Math.round(maxKb / 1024)} MB.`);
+                return;
+            }
+            if (escolhido.type && !escolhido.type.startsWith('image/')) {
+                voltarParaEscudoAtual('Selecione uma imagem JPG, PNG ou WEBP.');
+                return;
+            }
+
+            imagemEscudo.onload = () => { previaEscudo.hidden = false; };
+            imagemEscudo.onerror = () => {
+                voltarParaEscudoAtual('Não foi possível abrir esta imagem. Escolha uma imagem JPG, PNG ou WEBP.');
+            };
+            urlEscudo = URL.createObjectURL(escolhido);
+            imagemEscudo.src = urlEscudo;
+        });
+
+        arquivoEscudo.closest('.modal').addEventListener('hidden.bs.modal', () => {
+            limparPreviaEscudo();
+            avisarErroEscudo();
+            arquivoEscudo.value = '';
+        });
+    });
 
     // --- Filtros ---
     function aplicarFiltros() {
@@ -262,7 +330,11 @@ function preencherEdicaoDoTime(id, nome, tipo, categorias, logo) {
     });
     travarSexoDasCategorias(f.querySelector('.js-categorias-do-time'));
     const logoInfo = document.getElementById('edit_logo_atual');
-    logoInfo.textContent = logo ? `Atual: ${logo}` : 'Sem logo cadastrado';
+    logoInfo.textContent = logo ? 'Escudo atual cadastrado' : 'Sem escudo cadastrado';
+    const arquivoEscudo = document.getElementById('edit_logo_time');
+    arquivoEscudo.dataset.atual = logo || '';
+    arquivoEscudo.value = '';
+    arquivoEscudo.dispatchEvent(new Event('change'));
 }
 
 document.querySelectorAll('.btn-editar-time').forEach(btn => {

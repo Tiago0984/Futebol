@@ -11821,6 +11821,9 @@ body.lp-body {
    As peças do campeonato são as classes do site; aqui só a moldura, a escala e o que não existe no painel (o menu e
    o app). O carrossel da home usa o style.css, que o painel não carrega: .previa-home-* repete os valores dele.
    ========================================================================== */
+/* Escudo do novo time: inteiro, centralizado no mesmo formato quadrado salvo no cadastro */
+.previa-time-escudo { display: block; width: 128px; height: 128px; object-fit: contain; }
+
 .previa-camp-grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
 .previa-camp { margin: 0; min-width: 0; }
 .previa-camp-topo { grid-column: 1 / -1; }

@@ -24,9 +24,18 @@
                         </div>
                         @include('admin.times._categorias', ['prefixo' => 'criar', 'marcadas' => old('_editar_id') ? [] : old('categorias', [])])
                         <div class="col-12">
-                            <label class="form-label">Logo / Escudo</label>
-                            <input type="file" name="logo_time" class="form-control" accept="image/*">
-                            <span class="form-text">JPG, PNG, WEBP, até 10 MB. A logo entra inteira num quadrado de até 512 px, com fundo transparente.</span>
+                            <label class="form-label" for="criar_logo_time">Logo / Escudo</label>
+                            <input type="file" name="logo_time" id="criar_logo_time" class="form-control" accept="image/*"
+                                data-max-kb="{{ \App\Services\TratadorDeImagem::ENVIO_MAX_KB }}"
+                                aria-describedby="criar_logo_time_ajuda criar_logo_time_erro">
+                            <span class="form-text" id="criar_logo_time_ajuda">JPG, PNG, WEBP, até 10 MB. A logo entra inteira num quadrado de até 512 px, com fundo transparente.</span>
+                            <p id="criar_logo_time_erro" class="text-danger small mt-2 mb-0" role="alert" hidden></p>
+                            <div id="criar_previa_escudo" class="mt-3" hidden>
+                                <p class="modal-section-label mb-2"><i class="bi bi-eye"></i> Como vai ficar</p>
+                                <img id="criar_imagem_escudo" class="previa-time-escudo rounded border bg-body-tertiary"
+                                    alt="Prévia do escudo do novo time">
+                                <span class="form-text">O escudo fica inteiro e centralizado, sem cortes.</span>
+                            </div>
                         </div>
                     </div>
                 </div>
