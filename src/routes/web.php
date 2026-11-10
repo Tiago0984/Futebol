@@ -256,4 +256,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastad
     // Configurações do painel
     Route::get('configuracoes', [ConfiguracoesController::class, 'index'])->name('configuracoes.index');
 
+    // Meu perfil (10/11/2026): os dados e a senha de quem está logado
+    Route::get('perfil',       [\App\Http\Controllers\Admin\PerfilController::class, 'show'])->name('perfil');
+    Route::put('perfil',       [\App\Http\Controllers\Admin\PerfilController::class, 'update'])->name('perfil.update');
+    Route::put('perfil/senha', [\App\Http\Controllers\Admin\PerfilController::class, 'senha'])->name('perfil.senha');
+
 });

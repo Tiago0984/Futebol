@@ -74,6 +74,21 @@ class User extends Authenticatable
         return 'remember_token_usuario';
     }
 
+    // Endereço da foto do usuário (10/11/2026): a enviada pelo "Meu perfil" (nome gerado, em futebol/images/usuarios),
+    // a antiga do projeto (dash/assets/img/user) ou o avatar padrão
+    public function urlFoto(): string
+    {
+        $foto = $this->foto_usuario;
+
+        if (blank($foto)) {
+            return asset('dash/assets/img/user/avatar5.png');
+        }
+
+        return \App\Services\TratadorDeImagem::ehGerado($foto)
+            ? asset('futebol/images/usuarios/' . $foto)
+            : asset('dash/assets/img/user/' . $foto);
+    }
+
     public function getCargoLabelAttribute(): ?string
     {
         if ($this->cargo_usuario === null) {

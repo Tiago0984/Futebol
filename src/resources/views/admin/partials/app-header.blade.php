@@ -80,7 +80,7 @@
 
             <!--begin::User Menu Dropdown-->
             @php $adminUser = Auth::guard('admin')->user(); @endphp
-            @php $avatarUrl = $adminUser->foto_usuario ? asset('dash/assets/img/user/' . $adminUser->foto_usuario) : asset('dash/assets/img/user/avatar5.png'); @endphp
+            @php $avatarUrl = $adminUser->urlFoto(); @endphp
             <li class="nav-item dropdown user-menu">
               <a href="javascript:void(0)" class="nav-link dropdown-toggle" data-bs-toggle="dropdown">
                 <img
@@ -92,22 +92,25 @@
               </a>
               <ul class="dropdown-menu dropdown-menu-lg dropdown-menu-end">
                 <!--begin::User Image-->
-                <li class="user-header text-bg-primary">
+                <li class="user-header menu-usuario-topo">
                   <img
                     src="{{ $avatarUrl }}"
                     class="rounded-circle shadow"
-                    alt="User Image"
+                    alt="Foto de {{ $adminUser->nome_usuario }}"
                   />
                   <p>
                     {{ $adminUser->nome_usuario }}
+                    <small>{{ $adminUser->cargo_label ? $adminUser->cargo_label . ' · ' : '' }}{{ \App\Models\User::NIVEIS[$adminUser->nivel_usuario] ?? $adminUser->nivel_usuario }}</small>
                     <small>{{ $adminUser->email_usuario }}</small>
+                    @if ($adminUser->criado_em_usuarios)
                     <small>Membro desde {{ \Carbon\Carbon::parse($adminUser->criado_em_usuarios)->format('d/m/Y') }}</small>
+                    @endif
                   </p>
                 </li>
                 <!--end::User Image-->
                 <!--begin::Menu Footer-->
                 <li class="user-footer">
-                  <a href="#" class="btn btn-outline-secondary">Perfil</a>
+                  <a href="{{ route('admin.perfil') }}" class="btn btn-outline-secondary"><i class="bi bi-person-gear"></i> Meu perfil</a>
                   <form action="{{ route('admin.logout') }}" method="POST" class="d-inline">
                     @csrf
                     <button type="submit" class="btn btn-outline-danger float-end">Sair</button>
