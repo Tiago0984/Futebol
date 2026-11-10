@@ -82,6 +82,24 @@ class LocaisTest extends TestCase
         $this->assertSame(1, Local::count());
     }
 
+    // "Novo local" é um modal na lista (10/11/2026): com erro, volta à lista com o modal aberto e o que foi digitado
+    public function test_novo_local_em_modal_reabre_com_o_erro_e_o_digitado(): void
+    {
+        $this->comoAdmin()->get(route('admin.locais.index'))->assertOk()
+            ->assertSee('id="modalCriarLocal"', false)
+            ->assertSee('data-abrir="0"', false)
+            ->assertSee('action="' . route('admin.locais.store') . '"', false);
+
+        $this->from(route('admin.locais.index'))
+            ->post(route('admin.locais.store'), ['nome_local' => 'Arena Nova'])
+            ->assertRedirect(route('admin.locais.index'));
+
+        $this->get(route('admin.locais.index'))
+            ->assertSee('data-abrir="1"', false)
+            ->assertSee('Informe a rua.')
+            ->assertSee('value="Arena Nova"', false);
+    }
+
     public function test_link_do_mapa_so_do_google_maps(): void
     {
         foreach ([
@@ -210,7 +228,13 @@ class LocaisTest extends TestCase
             ->assertDontSee('Ligar ao Campo AACJ')
             ->assertDontSee('action="' . route('admin.locais.destroy', $local->id_local) . '"', false);
 
-        // "Cadastrar" abre o formulário com o nome preenchido
-        $this->get(route('admin.locais.create', ['nome' => 'Quadra A']))->assertOk()->assertSee('value="Quadra A"', false);
+        // "Cadastrar" abre o modal "Novo local" (10/11/2026; antes, uma tela) com o nome preenchido e o texto de origem
+        $this->get(route('admin.locais.create', ['nome' => 'Quadra A']))
+            ->assertRedirect(route('admin.locais.index', ['novo' => 1, 'nome' => 'Quadra A']));
+        $this->get(route('admin.locais.index', ['novo' => 1, 'nome' => 'Quadra A']))->assertOk()
+            ->assertSee('id="modalCriarLocal"', false)
+            ->assertSee('data-abrir="1"', false)
+            ->assertSee('placeholder="Ex: Campo AACJ" value="Quadra A"', false)
+            ->assertSee('id="lc_texto_origem" value="Quadra A"', false);
     }
 }

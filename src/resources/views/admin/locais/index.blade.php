@@ -12,9 +12,9 @@
                 <p class="page-subtitle">Campos, quadras e arenas dos treinos, jogos e eventos. O app usa o endereço e o link do mapa no "Abrir mapa".</p>
             </div>
             <div class="d-flex gap-2">
-                <a href="{{ route('admin.locais.create') }}" class="btn-admin-primary">
+                <button type="button" class="btn-admin-primary js-novo-local" data-nome="">
                     <i class="bi bi-plus-lg"></i> Novo local
-                </a>
+                </button>
             </div>
         </div>
 
@@ -54,7 +54,8 @@
                             </button>
                         </form>
                         @else
-                        <a href="{{ route('admin.locais.create', ['nome' => $usado->texto]) }}" class="btn btn-outline-secondary js-local-sem-cadastro"
+                        <a href="{{ route('admin.locais.create', ['nome' => $usado->texto]) }}" class="btn btn-outline-secondary js-local-sem-cadastro js-novo-local"
+                           data-nome="{{ $usado->texto }}"
                            title="Usado {{ $usado->usos }} vez(es). Cadastrar com este nome">
                             <i class="bi bi-plus-circle"></i> {{ $usado->texto }} <span class="text-muted">({{ $usado->usos }})</span>
                         </a>
@@ -167,7 +168,28 @@
     </div>
 </main>
 
+@include('admin.locais.modals.create')
+
 <script>
+// "Novo local" e "Cadastrar" (de um texto já usado) abrem o mesmo modal; o "Cadastrar" já preenche o nome e guarda o
+// texto, para o cadastro levar ao "Ligar os usos". O link continua com o endereço antigo, caso o JavaScript falhe
+document.addEventListener('DOMContentLoaded', () => {
+    const modal = document.getElementById('modalCriarLocal');
+    if (!modal) return;
+    const nome = document.getElementById('lc_nome'), origem = document.getElementById('lc_texto_origem');
+
+    document.querySelectorAll('.js-novo-local').forEach(botao => botao.addEventListener('click', evento => {
+        evento.preventDefault();
+        nome.value = botao.dataset.nome || '';
+        origem.value = botao.dataset.nome || '';
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    }));
+
+    if (modal.dataset.abrir === '1') {
+        bootstrap.Modal.getOrCreateInstance(modal).show();
+    }
+});
+
 // Busca por nome ou cidade e filtro de status, na própria página (abre só com os ativos: os desativados ficam em "Inativos")
 (() => {
     const busca = document.getElementById('filtroLocal'), status = document.getElementById('filtroStatusLocal');

@@ -25,12 +25,13 @@ class LocaisController extends Controller
         return view('admin.locais.index', compact('locais', 'soltos', 'usos'));
     }
 
-    // ?nome= vem do "Cadastrar" de um texto já usado
+    // O "Novo local" é um modal na lista (10/11/2026): o endereço antigo abre a lista com o modal aberto (?nome= vem
+    // do "Cadastrar" de um texto já usado e preenche o nome)
     public function create(Request $request)
     {
         $nome = mb_substr(trim((string) $request->query('nome')), 0, 100);
 
-        return view('admin.locais.form', ['local' => new Local(['nome_local' => $nome]), 'textoOrigem' => $nome]);
+        return redirect()->route('admin.locais.index', array_filter(['novo' => 1, 'nome' => $nome]));
     }
 
     // Cadastrado a partir de um texto já usado (texto_origem): abre o Editar com o "Ligar os usos" desse texto
