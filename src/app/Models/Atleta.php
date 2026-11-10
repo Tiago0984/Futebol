@@ -36,6 +36,16 @@ class Atleta extends Authenticatable
     // PENDENTE e REJEITADO só mudam pela tela de Matrículas.
     public const STATUS_APROVADOS = ['ATIVO', 'INATIVO'];
 
+    // RG: números, X (dígito do RG de SP), pontos, hífen e espaço, de 5 a 15 (a coluna tem 15). Site e painel
+    public const REGEX_RG = '/^[0-9Xx.\-\s]{5,15}$/';
+
+    // Peso em kg e altura em metros (10/11/2026; colunas decimal(5,2) e decimal(4,2)): faixas de quem tem 9 a 17
+    // anos, com folga. A altura em centímetros (180) é recusada com o exemplo em metros
+    public const PESO_MIN = 15;
+    public const PESO_MAX = 150;
+    public const ALTURA_MIN = 0.8;
+    public const ALTURA_MAX = 2.3;
+
     // Faixa atendida pela escolinha, contada pelo ano (idade = ano atual − ano de nascimento)
     public const IDADE_MINIMA = 9;
     public const IDADE_MAXIMA = 17;

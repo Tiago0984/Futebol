@@ -33,8 +33,9 @@ class CadastroController extends Controller
         // CPF sempre no formato do banco (000.000.000-00) antes de validar: assim o "único" compara igual,
         // venha com ou sem pontos (App\Support\Cpf)
         $request->merge(['cpf_atleta' => Cpf::formatar($request->cpf_atleta), 'cpf_responsavel' => Cpf::formatar($request->cpf_responsavel)]);
-        $rgRegex  = '/^[0-9Xx.\-\s]{5,15}$/';
-        $foneRegex = '/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/';
+        // As mesmas regras do cadastro pelo painel (10/11/2026)
+        $rgRegex   = Atleta::REGEX_RG;
+        $foneRegex = Responsavel::REGEX_TELEFONE;
 
         // Idade pelo ano (9 a 17 anos no ano), mesma regra do cadastro pelo admin
         $nascimento = Atleta::regrasNascimento();

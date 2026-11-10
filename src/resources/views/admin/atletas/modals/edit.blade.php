@@ -33,11 +33,11 @@
                         {{-- Sem camisa nem times (Fase G, Etapa 4): a camisa e o time são da convocação de cada campeonato --}}
                         <div class="col-md-6">
                             <label class="form-label">CPF <span class="text-danger">*</span></label>
-                            <input type="text" name="cpf_atleta" id="edit_cpf" class="form-control" placeholder="000.000.000-00" maxlength="14" required>
+                            <input type="text" name="cpf_atleta" id="edit_cpf" class="form-control" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">RG <span class="text-danger">*</span></label>
-                            <input type="text" name="rg_atleta" id="edit_rg" class="form-control" placeholder="00.000.000-0" maxlength="12" required>
+                            <input type="text" name="rg_atleta" id="edit_rg" class="form-control" placeholder="00.000.000-0" maxlength="15" autocomplete="off" required>
                         </div>
 
                         <div class="col-md-8">
@@ -89,15 +89,16 @@
 
                         <div class="col-md-3">
                             <label class="form-label">Peso (kg)</label>
-                            <input type="number" name="peso_atleta" id="edit_peso" class="form-control text-center" step="0.01" min="0" placeholder="55.00">
+                            <input type="text" name="peso_atleta" id="edit_peso" class="form-control text-center js-peso"
+                                placeholder="55,5" inputmode="decimal" maxlength="6" autocomplete="off">
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Altura (m)</label>
-                            <input type="number" name="altura_atleta" id="edit_altura" class="form-control text-center" step="0.01" min="0" placeholder="1.70">
+                            <input type="text" name="altura_atleta" id="edit_altura" class="form-control text-center js-altura"
+                                placeholder="1,80" inputmode="decimal" maxlength="4" autocomplete="off">
                         </div>
-                        <div class="col-md-6">
-                            <label class="form-label">Alterar Foto <span class="text-muted fw-normal">(opcional)</span></label>
-                            <input type="file" name="foto_atleta" class="form-control" accept="image/*">
+                        <div class="col-md-6" id="edit_foto_atleta">
+                            @include('admin.atletas._foto', ['rotulo' => 'Alterar foto', 'ajuda' => 'Deixe vazio para manter a foto atual. JPG, PNG ou WebP, até 2 MB.'])
                         </div>
 
                         <div class="col-md-5">
@@ -140,11 +141,11 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">WhatsApp <span class="text-danger">*</span></label>
-                            <input type="text" name="whatsapp_responsavel" id="edit_whatsapp_responsavel" class="form-control" required>
+                            <input type="text" name="whatsapp_responsavel" id="edit_whatsapp_responsavel" class="form-control" placeholder="(11) 99999-9999" maxlength="15" inputmode="tel" autocomplete="off" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">CPF do Responsável <span class="text-danger">*</span></label>
-                            <input type="text" name="cpf_responsavel" id="edit_cpf_responsavel" class="form-control" maxlength="14" required>
+                            <input type="text" name="cpf_responsavel" id="edit_cpf_responsavel" class="form-control" placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off" required>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label">E-mail do Responsável</label>

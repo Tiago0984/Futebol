@@ -31,6 +31,9 @@ class Responsavel extends Authenticatable
     // O valor gravado é o próprio texto exibido.
     public const GRAUS_PARENTESCO = ['Pai', 'Mãe', 'Avô', 'Avó', 'Tio', 'Tia', 'Responsável Legal', 'Outro'];
 
+    // Telefone e WhatsApp com DDD: (11) 98765-4321, (11) 3456-7890 ou só os dígitos. Site e painel
+    public const REGEX_TELEFONE = '/^\(?\d{2}\)?\s?\d{4,5}-?\d{4}$/';
+
     protected $fillable = [
         'nome_responsavel',
         'cpf_responsavel',

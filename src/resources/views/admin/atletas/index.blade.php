@@ -323,6 +323,7 @@
                                             data-rg="{{ $atleta->rg_atleta }}"
                                             data-status="{{ $atleta->status_atleta }}"
                                             data-sexo="{{ $atleta->sexo_atleta }}"
+                                            data-foto-url="{{ $atleta->urlFoto() }}"
                                             data-peso="{{ $atleta->peso_atleta }}"
                                             data-altura="{{ $atleta->altura_atleta }}"
                                             data-escola="{{ $atleta->escola_atleta }}"
@@ -475,15 +476,93 @@
 @endif
 
 <script>
-// Máscara de CPF nos modais de novo atleta e de editar (21/10/2026; a mesma do cadastro do site): só dígitos,
-// até 11, com os pontos e o hífen aparecendo enquanto digita. O servidor confere os dígitos verificadores
+// Máscaras dos modais de novo atleta e de editar (CPF desde 21/10/2026; RG, WhatsApp, peso e altura desde 10/11/2026,
+// as mesmas regras do cadastro do site). Só ajudam a digitar: o servidor confere tudo de novo
 document.addEventListener('input', function (e) {
-    if (!e.target.matches('input[name="cpf_atleta"], input[name="cpf_responsavel"]')) return;
-    let v = e.target.value.replace(/\D/g, '').slice(0, 11);
-    if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
-    else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
-    else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
-    e.target.value = v;
+    const campo = e.target;
+
+    // CPF: só dígitos, até 11, com os pontos e o hífen aparecendo enquanto digita
+    if (campo.matches('input[name="cpf_atleta"], input[name="cpf_responsavel"]')) {
+        let v = campo.value.replace(/\D/g, '').slice(0, 11);
+        if (v.length > 9)      v = v.replace(/(\d{3})(\d{3})(\d{3})(\d{1,2})/, '$1.$2.$3-$4');
+        else if (v.length > 6) v = v.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3');
+        else if (v.length > 3) v = v.replace(/(\d{3})(\d{1,3})/, '$1.$2');
+        campo.value = v;
+        return;
+    }
+
+    // RG: números, X (dígito do RG de SP), pontos, hífen e espaço, até 15
+    if (campo.matches('input[name="rg_atleta"]')) {
+        campo.value = campo.value.replace(/[^0-9Xx.\-\s]/g, '').toUpperCase().slice(0, 15);
+        return;
+    }
+
+    // WhatsApp com DDD: (11) 98765-4321 ou (11) 3456-7890
+    if (campo.matches('input[name="whatsapp_responsavel"]')) {
+        let v = campo.value.replace(/\D/g, '').slice(0, 11);
+        if (v.length > 10)     v = v.replace(/(\d{2})(\d{5})(\d{1,4})$/, '($1) $2-$3');
+        else if (v.length > 6) v = v.replace(/(\d{2})(\d{4})(\d{1,4})$/, '($1) $2-$3');
+        else if (v.length > 2) v = v.replace(/(\d{2})(\d{1,5})$/, '($1) $2');
+        else if (v.length > 0) v = '(' + v;
+        campo.value = v;
+        return;
+    }
+
+    // Peso em kg: até 3 dígitos inteiros e 2 decimais, com vírgula (55,5)
+    if (campo.matches('.js-peso')) {
+        const [inteiro, decimal] = campo.value.replace('.', ',').replace(/[^\d,]/g, '').split(',');
+        campo.value = inteiro.slice(0, 3) + (decimal !== undefined ? ',' + decimal.slice(0, 2) : '');
+        return;
+    }
+
+    // Altura em metros: digitando só números, a vírgula entra depois do primeiro (180 vira 1,80)
+    if (campo.matches('.js-altura')) {
+        const digitos = campo.value.replace(/\D/g, '').slice(0, 3);
+        campo.value = digitos.length > 1 ? digitos[0] + ',' + digitos.slice(1) : digitos;
+    }
+});
+
+// Foto do atleta (partial admin.atletas._foto): prévia da escolhida ou, no Editar, da atual; acima de 2 MB avisa e descarta
+function mostrarFotoAtual(campo, url) {
+    if (!campo) return;
+    campo.dataset.atual = url || '';
+    campo.querySelector('.js-foto-atleta-arquivo').value = '';
+    campo.querySelector('.js-foto-atleta-erro').hidden = true;
+    pintarFotoAtleta(campo, url);
+}
+
+function pintarFotoAtleta(campo, url) {
+    const imagem = campo.querySelector('.js-foto-atleta-previa');
+    imagem.hidden = !url;
+    campo.querySelector('.js-foto-atleta-vazia').hidden = Boolean(url);
+    if (url) imagem.src = url; else imagem.removeAttribute('src');
+}
+
+document.addEventListener('change', function (e) {
+    if (!e.target.matches('.js-foto-atleta-arquivo')) return;
+    const campo = e.target.closest('.js-campo-foto-atleta');
+    const erro = campo.querySelector('.js-foto-atleta-erro');
+    const arquivo = e.target.files && e.target.files[0];
+    const maxKb = parseInt(campo.dataset.maxKb, 10);
+
+    erro.hidden = true;
+    if (campo.dataset.objeto) { URL.revokeObjectURL(campo.dataset.objeto); delete campo.dataset.objeto; }
+
+    if (arquivo && arquivo.size > maxKb * 1024) {
+        erro.textContent = 'Esta foto tem ' + (arquivo.size / 1048576).toFixed(1).replace('.', ',') + ' MB. Use uma foto de até ' + Math.round(maxKb / 1024) + ' MB.';
+        erro.hidden = false;
+        e.target.value = '';
+        pintarFotoAtleta(campo, campo.dataset.atual || '');
+        return;
+    }
+
+    if (!arquivo || !arquivo.type.startsWith('image/')) {
+        pintarFotoAtleta(campo, campo.dataset.atual || '');
+        return;
+    }
+
+    campo.dataset.objeto = URL.createObjectURL(arquivo);
+    pintarFotoAtleta(campo, campo.dataset.objeto);
 });
 
 // Período escolar: o turno do treino só aparece (e só é obrigatório) para quem estuda à noite
@@ -512,8 +591,10 @@ document.addEventListener('DOMContentLoaded', function () {
             document.getElementById('edit_cpf').value       = g('data-cpf');
             document.getElementById('edit_email').value     = g('data-email');
             document.getElementById('edit_rg').value        = g('data-rg');
-            document.getElementById('edit_peso').value      = g('data-peso');
-            document.getElementById('edit_altura').value    = g('data-altura');
+            // Com vírgula, como a máscara escreve (o servidor aceita os dois)
+            document.getElementById('edit_peso').value      = g('data-peso').replace('.', ',');
+            document.getElementById('edit_altura').value    = g('data-altura').replace('.', ',');
+            mostrarFotoAtual(document.querySelector('#edit_foto_atleta .js-campo-foto-atleta'), g('data-foto-url'));
             document.getElementById('edit_escola').value    = g('data-escola');
             document.getElementById('edit_serie').value     = g('data-serie');
             document.getElementById('edit_sala').value      = g('data-sala');

@@ -42,13 +42,14 @@
                         <div class="col-md-6">
                             <label class="form-label">CPF <span class="text-danger">*</span></label>
                             <input type="text" name="cpf_atleta" class="form-control @error('cpf_atleta') is-invalid @enderror"
-                                placeholder="000.000.000-00" maxlength="14" required value="{{ $oldCadastro('cpf_atleta') }}">
+                                placeholder="000.000.000-00" maxlength="14" inputmode="numeric" autocomplete="off" required value="{{ $oldCadastro('cpf_atleta') }}">
                             @error('cpf_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">RG <span class="text-danger">*</span></label>
                             <input type="text" name="rg_atleta" class="form-control @error('rg_atleta') is-invalid @enderror"
-                                placeholder="00.000.000-0" maxlength="12" required value="{{ $oldCadastro('rg_atleta') }}">
+                                placeholder="00.000.000-0" maxlength="15" autocomplete="off" required value="{{ $oldCadastro('rg_atleta') }}">
+                            <div class="form-text">Números, X, pontos e hífen.</div>
                             @error('rg_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
@@ -92,17 +93,18 @@
 
                         <div class="col-md-3">
                             <label class="form-label">Peso (kg)</label>
-                            <input type="number" name="peso_atleta" class="form-control text-center" placeholder="55.00"
-                                step="0.01" min="0" value="{{ $oldCadastro('peso_atleta') }}">
+                            <input type="text" name="peso_atleta" class="form-control text-center js-peso @error('peso_atleta') is-invalid @enderror"
+                                placeholder="55,5" inputmode="decimal" maxlength="6" autocomplete="off" value="{{ $oldCadastro('peso_atleta') }}">
+                            @error('peso_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-3">
                             <label class="form-label">Altura (m)</label>
-                            <input type="number" name="altura_atleta" class="form-control text-center" placeholder="1.70"
-                                step="0.01" min="0" value="{{ $oldCadastro('altura_atleta') }}">
+                            <input type="text" name="altura_atleta" class="form-control text-center js-altura @error('altura_atleta') is-invalid @enderror"
+                                placeholder="1,80" inputmode="decimal" maxlength="4" autocomplete="off" value="{{ $oldCadastro('altura_atleta') }}">
+                            @error('altura_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label">Foto do Atleta</label>
-                            <input type="file" name="foto_atleta" class="form-control" accept="image/*">
+                            @include('admin.atletas._foto', ['rotulo' => 'Foto do atleta', 'comErro' => true])
                         </div>
 
                         <div class="col-md-5">
@@ -158,14 +160,14 @@
                             <label class="form-label">WhatsApp <span class="text-danger">*</span></label>
                             <input type="text" name="whatsapp_responsavel"
                                 class="form-control @error('whatsapp_responsavel') is-invalid @enderror" placeholder="(11) 99999-9999"
-                                required value="{{ $oldCadastro('whatsapp_responsavel') }}">
+                                maxlength="15" inputmode="tel" autocomplete="off" required value="{{ $oldCadastro('whatsapp_responsavel') }}">
                             @error('whatsapp_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">CPF do Responsável <span class="text-danger">*</span></label>
                             <input type="text" name="cpf_responsavel"
                                 class="form-control @error('cpf_responsavel') is-invalid @enderror" placeholder="000.000.000-00"
-                                maxlength="14" required value="{{ $oldCadastro('cpf_responsavel') }}">
+                                maxlength="14" inputmode="numeric" autocomplete="off" required value="{{ $oldCadastro('cpf_responsavel') }}">
                             @error('cpf_responsavel')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-12">
