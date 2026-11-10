@@ -47,3 +47,6 @@ chat_*.md
 /src/public/futebol/images/**/banner-campeonato-*
 /src/public/futebol/images/**/banner-site-*
 /src/public/futebol/images/**/foto-atleta-*
+/src/public/futebol/images/**/capa-noticia-*
+/src/public/futebol/images/**/foto-galeria-*
+/src/public/futebol/images/**/foto-usuario-*
