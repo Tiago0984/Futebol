@@ -3042,7 +3042,11 @@ textarea.mat-input { min-height: 80px; resize: vertical; }
     color: #bbb;
     font-size: 28px;
 }
-.mat-foto-previa img { width: 100%; height: 100%; object-fit: cover; }
+/* A foto ocupa o círculo inteiro, cortada pelo centro (como o servidor grava: o quadrado do centro) */
+.mat-foto-previa img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+/* O .fa (display: inline-block) vence o [hidden] do Bootstrap 3: sem isto, o ícone ficava ao lado da foto e a
+   empurrava para fora do centro */
+.mat-foto-previa [hidden] { display: none !important; }
 
 @media (max-width: 767px) {
     .mat-section {
@@ -11359,7 +11363,8 @@ body.lp-body {
     color: var(--bs-secondary-color);
     font-size: 2rem;
 }
-.foto-atleta-previa img { width: 100%; height: 100%; object-fit: cover; }
+.foto-atleta-previa img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center; }
+.foto-atleta-previa [hidden] { display: none !important; }
 
 /* Meu perfil (10/11/2026): a foto do usuário e o topo do menu do usuário com a cor da AACJ (era o azul do AdminLTE) */
 .perfil-foto { width: 96px; height: 96px; flex-shrink: 0; object-fit: cover; border-radius: 50%; border: 1px solid var(--bs-border-color); }
