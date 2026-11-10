@@ -39,15 +39,20 @@ class PerfilTest extends TestCase
             ->assertSee('Definido por um administrador.');
     }
 
-    public function test_atualiza_os_dados_sem_mudar_o_nivel(): void
+    // O cargo e o nível são do administrador (dono do projeto, 10/11/2026): enviados pelo perfil, são ignorados
+    public function test_atualiza_os_dados_sem_mudar_o_nivel_nem_o_cargo(): void
     {
-        $this->actingAs($this->usuario, 'admin')->put(route('admin.perfil.update'), [
+        $this->actingAs($this->usuario, 'admin')->get(route('admin.perfil'))->assertOk()
+            ->assertDontSee('name="cargo_usuario"', false)
+            ->assertDontSee('Cargo');
+
+        $this->put(route('admin.perfil.update'), [
             'nome_usuario' => 'Ana Souza', 'email_usuario' => 'ana.souza@aacj.test', 'cargo_usuario' => 'COORDENADOR',
             'nivel_usuario' => 'ADMIN',
         ])->assertRedirect(route('admin.perfil'))->assertSessionHasNoErrors();
 
         $this->usuario->refresh();
-        $this->assertSame(['Ana Souza', 'ana.souza@aacj.test', 'COORDENADOR', 'LEITURA'],
+        $this->assertSame(['Ana Souza', 'ana.souza@aacj.test', null, 'LEITURA'],
             [$this->usuario->nome_usuario, $this->usuario->email_usuario, $this->usuario->cargo_usuario, $this->usuario->nivel_usuario]);
     }
 

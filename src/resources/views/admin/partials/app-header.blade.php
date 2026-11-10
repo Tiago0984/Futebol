@@ -100,7 +100,7 @@
                   />
                   <p>
                     {{ $adminUser->nome_usuario }}
-                    <small>{{ $adminUser->cargo_label ? $adminUser->cargo_label . ' · ' : '' }}{{ \App\Models\User::NIVEIS[$adminUser->nivel_usuario] ?? $adminUser->nivel_usuario }}</small>
+                    <small>{{ \App\Models\User::NIVEIS[$adminUser->nivel_usuario] ?? $adminUser->nivel_usuario }}</small>
                     <small>{{ $adminUser->email_usuario }}</small>
                     @if ($adminUser->criado_em_usuarios)
                     <small>Membro desde {{ \Carbon\Carbon::parse($adminUser->criado_em_usuarios)->format('d/m/Y') }}</small>

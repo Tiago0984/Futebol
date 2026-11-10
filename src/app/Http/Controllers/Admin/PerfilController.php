@@ -10,9 +10,10 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 /**
- * Meu perfil (10/11/2026; o "Perfil" do menu do usuário apontava para "#"): quem está logado muda o nome, o e-mail, o
- * cargo exibido e a foto, e troca a senha informando a atual. O nível de acesso só aparece (fora do $fillable de User:
- * ninguém se promove a administrador por aqui). A foto é tratada como a do atleta: quadrada, até 512 px, JPG, com nome
+ * Meu perfil (10/11/2026; o "Perfil" do menu do usuário apontava para "#"): quem está logado muda o nome, o e-mail e
+ * a foto, e troca a senha informando a atual. O nível de acesso só aparece (fora do $fillable de User: ninguém se
+ * promove a administrador por aqui) e o cargo não é mudado por aqui (dono do projeto, 10/11/2026: o cargo é da
+ * comissão técnica e só o administrador o define). A foto é tratada como a do atleta: quadrada, até 512 px, JPG, com nome
  * gerado em futebol/images/usuarios; a antiga gerada é apagada (as do projeto, em dash/assets/img/user, ficam).
  */
 class PerfilController extends Controller
@@ -31,7 +32,6 @@ class PerfilController extends Controller
         $dados = $request->validate([
             'nome_usuario'  => 'required|string|max:255',
             'email_usuario' => ['required', 'email', 'max:255', Rule::unique('tbl_usuarios', 'email_usuario')->ignore($usuario->id_usuario, 'id_usuario')],
-            'cargo_usuario' => ['nullable', Rule::in(array_keys(User::CARGOS))],
             'foto_usuario'  => 'nullable|image|max:' . TratadorDeImagem::ENVIO_MAX_KB,
             'remover_foto'  => 'nullable|boolean',
         ], [
@@ -39,13 +39,13 @@ class PerfilController extends Controller
             'email_usuario.required' => 'Informe o seu e-mail.',
             'email_usuario.email'    => 'Informe um e-mail válido.',
             'email_usuario.unique'   => 'Este e-mail já é de outro usuário do painel.',
-            'cargo_usuario.in'       => 'Escolha um cargo da lista.',
             'foto_usuario.image'     => 'Envie uma imagem (JPG, PNG ou WebP).',
             ...TratadorDeImagem::mensagensDoEnvio(['foto_usuario']),
         ]);
 
         $antiga = $usuario->foto_usuario;
-        $usuario->fill(collect($dados)->only(['nome_usuario', 'email_usuario', 'cargo_usuario'])->all());
+        // Só nome e e-mail: o cargo e o nível são definidos pelo administrador (um cargo_usuario enviado é ignorado)
+        $usuario->fill(collect($dados)->only(['nome_usuario', 'email_usuario'])->all());
 
         if ($request->hasFile('foto_usuario')) {
             $usuario->foto_usuario = TratadorDeImagem::foto($request->file('foto_usuario')->getRealPath(), 'imagens', self::PASTA, 'foto-usuario');

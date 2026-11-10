@@ -3,8 +3,9 @@
 @section('title', 'Meu perfil')
 
 {{--
-    Meu perfil (10/11/2026; Admin\PerfilController): os dados de quem está logado (foto com prévia, nome, e-mail, cargo) e
-    a troca de senha com a atual. O nível de acesso só aparece: é definido por um administrador.
+    Meu perfil (10/11/2026; Admin\PerfilController): os dados de quem está logado (foto com prévia, nome, e-mail) e a troca
+    de senha com a atual. O nível de acesso só aparece: é definido por um administrador. Sem o cargo (dono do projeto,
+    10/11/2026: o cargo é da comissão técnica, e só o administrador o define).
 --}}
 @section('content')
 @php $senhaErros = $errors->getBag('senha'); @endphp
@@ -62,15 +63,6 @@
                 <label class="form-label" for="pf_email">E-mail (login) <span class="text-danger">*</span></label>
                 <input type="email" id="pf_email" name="email_usuario" class="form-control" maxlength="255" required
                        value="{{ old('email_usuario', $usuario->email_usuario) }}">
-              </div>
-              <div class="col-md-6">
-                <label class="form-label" for="pf_cargo">Cargo</label>
-                <select id="pf_cargo" name="cargo_usuario" class="form-select">
-                  <option value="">— Sem cargo —</option>
-                  @foreach (\App\Models\User::CARGOS as $codigo => $rotulo)
-                  <option value="{{ $codigo }}" @selected(old('cargo_usuario', $usuario->cargo_usuario) === $codigo)>{{ $rotulo }}</option>
-                  @endforeach
-                </select>
               </div>
               <div class="col-md-6">
                 <label class="form-label">Nível de acesso</label>
