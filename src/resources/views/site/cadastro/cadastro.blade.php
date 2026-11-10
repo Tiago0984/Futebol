@@ -71,7 +71,7 @@
                         <div class="mat-group">
                             <label class="mat-label">RG *</label>
                             <input type="text" name="rg_atleta" value="{{ old('rg_atleta') }}" required class="mat-input" id="rg-atleta" maxlength="15" autocomplete="off" placeholder="00.000.000-0">
-                            <p class="mat-hint">Digite só os números: a pontuação entra sozinha (o RG novo usa o número do CPF).</p>
+                            <p class="mat-hint">Digite só os números: a pontuação entra sozinha. Se for o RG novo (que usa o número do CPF), é aceito: é só repetir o número do CPF.</p>
                         </div>
                     </div>
                     <div class="col-sm-4">
@@ -258,6 +258,7 @@
                         <div class="mat-group">
                             <label class="mat-label">RG *</label>
                             <input type="text" name="rg_responsavel" value="{{ old('rg_responsavel') }}" required class="mat-input" id="rg-resp" maxlength="15" autocomplete="off" placeholder="00.000.000-0">
+                            <p class="mat-hint">Se for o RG novo (que usa o número do CPF), é só repetir o número do CPF.</p>
                         </div>
                     </div>
                 </div>

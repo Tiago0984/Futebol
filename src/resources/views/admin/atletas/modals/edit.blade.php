@@ -38,6 +38,7 @@
                         <div class="col-md-6">
                             <label class="form-label">RG <span class="text-danger">*</span></label>
                             <input type="text" name="rg_atleta" id="edit_rg" class="form-control" placeholder="00.000.000-0" maxlength="15" autocomplete="off" required>
+                            <div class="form-text">Se for o RG novo (que usa o número do CPF), é só repetir o número do CPF.</div>
                         </div>
 
                         <div class="col-md-8">
