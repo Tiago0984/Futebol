@@ -11307,18 +11307,12 @@ body.lp-body {
 
 /* Meu perfil (10/11/2026): a foto do usuário e o topo do menu do usuário com a cor da AACJ (era o azul do AdminLTE) */
 .perfil-foto { width: 96px; height: 96px; flex-shrink: 0; object-fit: cover; border-radius: 50%; border: 1px solid var(--bs-border-color); }
+.perfil-foto--pequena { width: 48px; height: 48px; }
 .user-menu .user-header.menu-usuario-topo { background: linear-gradient(135deg, var(--aacj-red) 0%, var(--aacj-red-dark) 100%); color: #ffffff; }
 .user-menu .user-header.menu-usuario-topo img { object-fit: cover; }
 
-/* Configurações (10/11/2026): a chave do modo escuro maior e a lista "Sistema" em duas colunas (uma no celular) */
+/* Configurações (10/11/2026): a chave do modo escuro maior (antes, num style="") */
 .config-chave { width: 3rem !important; height: 1.5rem; cursor: pointer; }
-.config-lista { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: 10px 16px; margin: 0; }
-.config-lista dt { font-weight: 600; font-size: var(--aacj-font-size-sm); color: var(--bs-secondary-color); }
-.config-lista dd { margin: 0; font-size: var(--aacj-font-size-sm); overflow-wrap: anywhere; }
-@media (max-width: 575px) {
-    .config-lista { grid-template-columns: minmax(0, 1fr); gap: 2px; }
-    .config-lista dd { margin-bottom: 8px; }
-}
 
 /* Logos pequenas nas listas do painel (campeonatos, times) e o quadro vazio quando não há logo */
 .admin-logo-mini { width: 40px; height: 40px; object-fit: contain; }
