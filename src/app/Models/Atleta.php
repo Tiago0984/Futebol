@@ -39,6 +39,30 @@ class Atleta extends Authenticatable
     // RG: números, X (dígito do RG de SP), pontos, hífen e espaço, de 5 a 15 (a coluna tem 15). Site e painel
     public const REGEX_RG = '/^[0-9Xx.\-\s]{5,15}$/';
 
+    /**
+     * RG com a pontuação (10/11/2026), a mesma da máscara do site e do painel: 9 caracteres (o RG antigo, o último pode
+     * ser X) = 00.000.000-0; 11 dígitos (o RG novo, com o número do CPF) = 000.000.000-00. Outro tamanho (RG de outro
+     * estado) fica como foi digitado.
+     */
+    public static function formatarRg(?string $rg): ?string
+    {
+        if ($rg === null) {
+            return null;
+        }
+
+        $limpo = strtoupper(preg_replace('/[^0-9Xx]/', '', $rg));
+
+        if (preg_match('/^\d{8}[0-9X]$/', $limpo)) {
+            return substr($limpo, 0, 2) . '.' . substr($limpo, 2, 3) . '.' . substr($limpo, 5, 3) . '-' . substr($limpo, 8, 1);
+        }
+
+        if (preg_match('/^\d{11}$/', $limpo)) {
+            return substr($limpo, 0, 3) . '.' . substr($limpo, 3, 3) . '.' . substr($limpo, 6, 3) . '-' . substr($limpo, 9, 2);
+        }
+
+        return trim($rg);
+    }
+
     // Peso em kg e altura em metros (10/11/2026; colunas decimal(5,2) e decimal(4,2)): faixas de quem tem 9 a 17
     // anos, com folga. A altura em centímetros (180) é recusada com o exemplo em metros
     public const PESO_MIN = 15;

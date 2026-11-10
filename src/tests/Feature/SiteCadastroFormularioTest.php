@@ -74,6 +74,27 @@ class SiteCadastroFormularioTest extends TestCase
         ]);
     }
 
+    // RG com a pontuação que se adapta (10/11/2026): 9 caracteres (o antigo, com X) ou 11 dígitos (o novo, com o CPF)
+    public function test_rg_ganha_a_pontuacao_do_antigo_e_do_novo(): void
+    {
+        $this->assertSame('12.345.678-9', Atleta::formatarRg('123456789'));
+        $this->assertSame('12.345.678-X', Atleta::formatarRg('12345678x'));
+        $this->assertSame('123.456.789-01', Atleta::formatarRg('12345678901'));
+        $this->assertSame('123.456.789-01', Atleta::formatarRg('123.456.789-01'));
+        $this->assertSame('MG-12.345', Atleta::formatarRg(' MG-12.345 '));   // outro tamanho: como foi digitado
+
+        $this->post(route('cadastro.store'), $this->formulario(['rg_atleta' => '12345678901', 'rg_responsavel' => '987654321']))
+            ->assertSessionHasNoErrors();
+        $atleta = Atleta::where('email_atleta', 'novo@atleta.com')->sole();
+        $this->assertSame('123.456.789-01', $atleta->rg_atleta);
+        $this->assertSame('98.765.432-1', DB::table('tbl_responsavel')->where('email_responsavel', 'resp@site.com')->value('rg_responsavel'));
+
+        // No painel, a mesma regra
+        $this->comoAdmin()->post(route('admin.atletas.store'), $this->dadosCadastro(['rg_atleta' => '11122233344']))
+            ->assertSessionHasNoErrors();
+        $this->assertSame('111.222.333-44', DB::table('tbl_atletas')->where('nome_atleta', 'Atleta Novo')->value('rg_atleta'));
+    }
+
     public function test_formulario_preparado_para_o_celular(): void
     {
         $this->get(route('cadastro.index'))->assertOk()

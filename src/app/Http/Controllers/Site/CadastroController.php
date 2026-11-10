@@ -36,6 +36,12 @@ class CadastroController extends Controller
         $request->merge(['cpf_atleta' => Cpf::formatar($request->cpf_atleta), 'cpf_responsavel' => Cpf::formatar($request->cpf_responsavel)]);
         // Peso e altura com vírgula (55,5 e 1,80) e a UF em maiúsculas, como o banco guarda (10/11/2026)
         Atleta::normalizarMedidas($request);
+        // RG do atleta e do responsável com a pontuação, de 9 ou de 11 dígitos
+        foreach (['rg_atleta', 'rg_responsavel'] as $campo) {
+            if (is_string($request->input($campo))) {
+                $request->merge([$campo => Atleta::formatarRg($request->input($campo))]);
+            }
+        }
         foreach (['estado_endereco', 'estado_resp_endereco'] as $campo) {
             if (is_string($request->input($campo))) {
                 $request->merge([$campo => strtoupper(trim($request->input($campo)))]);

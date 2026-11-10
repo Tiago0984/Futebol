@@ -71,7 +71,7 @@
                         <div class="mat-group">
                             <label class="mat-label">RG *</label>
                             <input type="text" name="rg_atleta" value="{{ old('rg_atleta') }}" required class="mat-input" id="rg-atleta" maxlength="15" autocomplete="off" placeholder="00.000.000-0">
-                            <p class="mat-hint">Números, X, pontos e hífen.</p>
+                            <p class="mat-hint">Digite só os números: a pontuação entra sozinha (o RG novo usa o número do CPF).</p>
                         </div>
                     </div>
                     <div class="col-sm-4">
@@ -391,10 +391,19 @@ function aplicaMascaraCEP(el) {
         el.value = v;
     });
 }
+// RG com a pontuação que se adapta (10/11/2026; a mesma regra de Atleta::formatarRg no servidor): até 9 caracteres,
+// o RG antigo 00.000.000-0 (o último pode ser X); 10 ou 11 dígitos, o RG novo com o número do CPF 000.000.000-00
+function formataRg(valor) {
+    let v = valor.toUpperCase().replace(/[^0-9X]/g, '');
+    v = v.replace(/X(?=.)/g, '').slice(0, 11);   // o X só pode ser o último
+    const partes = v.length <= 9
+        ? [v.slice(0, 2), v.slice(2, 5), v.slice(5, 8), v.slice(8, 9)]
+        : [v.slice(0, 3), v.slice(3, 6), v.slice(6, 9), v.slice(9, 11)];
+    return partes[0] + (partes[1] ? '.' + partes[1] : '') + (partes[2] ? '.' + partes[2] : '') + (partes[3] ? '-' + partes[3] : '');
+}
 function aplicaMascaraRG(el) {
-    el.addEventListener('input', () => {
-        el.value = el.value.replace(/[^0-9Xx.\-\s]/g, '').slice(0, 15);
-    });
+    el.addEventListener('input', () => { el.value = formataRg(el.value); });
+    if (el.value) el.value = formataRg(el.value);   // o que voltou depois de um erro
 }
 function aplicaMascaraTelefone(el) {
     el.addEventListener('input', () => {

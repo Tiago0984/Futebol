@@ -128,6 +128,10 @@ class AtletasController extends Controller
     private function formatarCpfs(Request $request): void
     {
         $request->merge(['cpf_atleta' => Cpf::formatar($request->cpf_atleta), 'cpf_responsavel' => Cpf::formatar($request->cpf_responsavel)]);
+        // RG com a pontuação, de 9 ou de 11 dígitos (10/11/2026)
+        if (is_string($request->input('rg_atleta'))) {
+            $request->merge(['rg_atleta' => Atleta::formatarRg($request->input('rg_atleta'))]);
+        }
         Atleta::normalizarMedidas($request);
     }
 

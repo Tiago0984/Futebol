@@ -60,7 +60,7 @@
                             <label class="form-label">RG <span class="text-danger">*</span></label>
                             <input type="text" name="rg_atleta" class="form-control @error('rg_atleta') is-invalid @enderror"
                                 placeholder="00.000.000-0" maxlength="15" autocomplete="off" required value="{{ $oldCadastro('rg_atleta') }}">
-                            <div class="form-text">Números, X, pontos e hífen.</div>
+                            <div class="form-text">Digite só os números: a pontuação entra sozinha (o RG novo usa o número do CPF).</div>
                             @error('rg_atleta')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
 
