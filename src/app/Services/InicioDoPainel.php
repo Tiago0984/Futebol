@@ -65,7 +65,8 @@ class InicioDoPainel
             'fotos'             => Atleta::whereNotNull('foto_pendente_atleta')->count(),
             'fale_nao_lidas'    => FaleConosco::whereNull('data_leitura_fale_conosco')->count(),
             'fila_parada_desde' => $maisAntigo !== null && $maisAntigo < now()->subMinutes(self::FILA_PARADA_MINUTOS)->timestamp
-                ? Carbon::createFromTimestamp($maisAntigo) : null,
+                // No fuso do app: sem ele, o Carbon usa UTC e a hora apareceria 3 horas adiantada
+                ? Carbon::createFromTimestamp($maisAntigo, config('app.timezone')) : null,
             'fila_falhas'       => DB::table('failed_jobs')->count(),
         ];
         $requisicao->attributes->set($chave, $contagens);
