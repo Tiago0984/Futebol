@@ -3,16 +3,21 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>Painel Administrativo | AACJ</title>
 
+    {{-- Ícone do painel (10/11/2026): o escudo da AACJ com uma engrenagem, para separar a aba do painel da do site --}}
+    <link rel="icon" type="image/png" sizes="32x32" href="{{ asset('dash/favicon/favicon-32.png') }}" />
+    <link rel="icon" type="image/png" sizes="192x192" href="{{ asset('dash/favicon/favicon-192.png') }}" />
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('dash/favicon/apple-touch-icon.png') }}" />
+
     <!--begin::Accessibility Meta Tags-->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <meta name="color-scheme" content="light dark" />
-    <meta name="theme-color" content="#007bff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#e31c1c" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#1a1a1a" media="(prefers-color-scheme: dark)" />
     <!--end::Accessibility Meta Tags-->
 
     <!--begin::Primary Meta Tags-->
-    <meta name="title" content="AdminLTE v4 | Dashboard" />
-    <meta name="author" content="ColorlibHQ" />
+    <meta name="title" content="Painel Administrativo | AACJ" />
+    <meta name="author" content="AACJ" />
     <meta
       name="description"
       content="Sistema de gerenciamento interno da Associação Atlética Cohab Jucelino e Adjacência."
