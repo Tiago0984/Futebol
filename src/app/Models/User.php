@@ -75,13 +75,16 @@ class User extends Authenticatable
     }
 
     // Endereço da foto do usuário (10/11/2026): a enviada pelo "Meu perfil" (nome gerado, em futebol/images/usuarios),
-    // a antiga do projeto (dash/assets/img/user) ou o avatar padrão
+    // a antiga do projeto (dash/assets/img/user) ou o avatar padrão: uma silhueta neutra (dono do projeto, 10/11/2026:
+    // o avatar5.png era um homem, e quem entra no painel pode ser uma mulher), cinza num fundo claro, visível nos dois temas
+    public const AVATAR_PADRAO = 'dash/assets/img/user/avatar-padrao.png';
+
     public function urlFoto(): string
     {
         $foto = $this->foto_usuario;
 
         if (blank($foto)) {
-            return asset('dash/assets/img/user/avatar5.png');
+            return asset(self::AVATAR_PADRAO);
         }
 
         return \App\Services\TratadorDeImagem::ehGerado($foto)

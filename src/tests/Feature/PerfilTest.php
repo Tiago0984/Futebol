@@ -36,7 +36,11 @@ class PerfilTest extends TestCase
 
         $this->get(route('admin.perfil'))->assertOk()
             ->assertSee('value="Ana Secretaria"', false)
-            ->assertSee('Definido por um administrador.');
+            ->assertSee('Definido por um administrador.')
+            // Sem foto: a silhueta neutra (10/11/2026), não mais o avatar5.png
+            ->assertSee(asset(User::AVATAR_PADRAO), false)
+            ->assertDontSee('avatar5.png');
+        $this->assertFileExists(public_path(User::AVATAR_PADRAO));
     }
 
     // O cargo e o nível são do administrador (dono do projeto, 10/11/2026): enviados pelo perfil, são ignorados
