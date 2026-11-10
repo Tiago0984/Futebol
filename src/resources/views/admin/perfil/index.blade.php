@@ -90,18 +90,24 @@
           <form method="POST" action="{{ route('admin.perfil.senha') }}">
             @csrf
             @method('PUT')
+            {{-- O olho mostra e esconde o que foi digitado (10/11/2026), como na tela de login --}}
+            @foreach ([
+              ['pf_senha_atual', 'senha_atual', 'Senha atual', 'current-password', false],
+              ['pf_nova_senha', 'nova_senha', 'Nova senha', 'new-password', true],
+              ['pf_confirmacao', 'nova_senha_confirmation', 'Repita a nova senha', 'new-password', true],
+            ] as [$id, $nome, $rotulo, $autocomplete, $minimo])
             <div class="mb-3">
-              <label class="form-label" for="pf_senha_atual">Senha atual</label>
-              <input type="password" id="pf_senha_atual" name="senha_atual" class="form-control" required autocomplete="current-password">
+              <label class="form-label" for="{{ $id }}">{{ $rotulo }}</label>
+              <div class="input-group">
+                <input type="password" id="{{ $id }}" name="{{ $nome }}" class="form-control" required
+                       @if ($minimo) minlength="8" @endif autocomplete="{{ $autocomplete }}">
+                <button type="button" class="btn btn-outline-secondary js-ver-senha" data-campo="{{ $id }}"
+                        title="Mostrar a senha" aria-label="Mostrar a senha" aria-pressed="false">
+                  <i class="bi bi-eye"></i>
+                </button>
+              </div>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="pf_nova_senha">Nova senha</label>
-              <input type="password" id="pf_nova_senha" name="nova_senha" class="form-control" required minlength="8" autocomplete="new-password">
-            </div>
-            <div class="mb-3">
-              <label class="form-label" for="pf_confirmacao">Repita a nova senha</label>
-              <input type="password" id="pf_confirmacao" name="nova_senha_confirmation" class="form-control" required minlength="8" autocomplete="new-password">
-            </div>
+            @endforeach
             <div class="d-flex justify-content-end">
               <button type="submit" class="btn-modal-submit"><i class="bi bi-shield-lock"></i> Trocar senha</button>
             </div>
@@ -116,6 +122,17 @@
 
 @push('scripts')
 <script>
+// Olho dos campos de senha: alterna entre mostrar e esconder o que foi digitado
+document.querySelectorAll('.js-ver-senha').forEach(botao => botao.addEventListener('click', () => {
+    const campo = document.getElementById(botao.dataset.campo);
+    const mostrar = campo.type === 'password';
+    campo.type = mostrar ? 'text' : 'password';
+    botao.querySelector('i').className = mostrar ? 'bi bi-eye-slash' : 'bi bi-eye';
+    botao.title = mostrar ? 'Esconder a senha' : 'Mostrar a senha';
+    botao.setAttribute('aria-label', botao.title);
+    botao.setAttribute('aria-pressed', mostrar ? 'true' : 'false');
+}));
+
 // Prévia da foto escolhida (a atual se nada foi escolhido); acima do limite, avisa e descarta
 document.addEventListener('DOMContentLoaded', () => {
     const campo = document.querySelector('.js-campo-foto-perfil');

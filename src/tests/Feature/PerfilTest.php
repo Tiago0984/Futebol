@@ -39,7 +39,11 @@ class PerfilTest extends TestCase
             ->assertSee('Definido por um administrador.')
             // Sem foto: a silhueta neutra (10/11/2026), não mais o avatar5.png
             ->assertSee(asset(User::AVATAR_PADRAO), false)
-            ->assertDontSee('avatar5.png');
+            ->assertDontSee('avatar5.png')
+            // O olho nos três campos de senha
+            ->assertSee('data-campo="pf_senha_atual"', false)
+            ->assertSee('data-campo="pf_nova_senha"', false)
+            ->assertSee('data-campo="pf_confirmacao"', false);
         $this->assertFileExists(public_path(User::AVATAR_PADRAO));
     }
 
