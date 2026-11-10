@@ -37,7 +37,7 @@
                                     @endforeach
                                 </optgroup>
                                 @endif
-                                <option value="__novo__">➕ Adicionar novo tipo…</option>
+                                <option value="__novo__">+ Adicionar novo tipo…</option>
                             </select>
                         </div>
                         {{-- Sem o campo Subtipo (dono do projeto, 09/11/2026): o tipo cadastrado faz esse papel. O servidor
