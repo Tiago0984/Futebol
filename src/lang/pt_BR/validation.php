@@ -119,5 +119,14 @@ return [
         'estado_endereco'             => 'estado (UF)',
         'posicoes'                    => 'posições',
         'posicoes.*'                  => 'posição',
+
+        // Site, Matricule-se (10/11/2026): o endereço do responsável e o parentesco
+        'grau_parentesco'             => 'grau de parentesco',
+        'cep_resp_endereco'           => 'CEP do responsável',
+        'rua_resp_endereco'           => 'rua do responsável',
+        'numero_resp_endereco'        => 'número do responsável',
+        'bairro_resp_endereco'        => 'bairro do responsável',
+        'cidade_resp_endereco'        => 'cidade do responsável',
+        'estado_resp_endereco'        => 'estado (UF) do responsável',
     ],
 ];

@@ -73,7 +73,8 @@ Route::post('/contato', [ContatoController::class, 'enviar'])->middleware('throt
 
 // Cadastro público de atletas
 Route::get('/cadastro',  [CadastroController::class, 'index'])->name('cadastro.index');
-Route::post('/cadastro', [CadastroController::class, 'store'])->middleware('throttle:5,1')->name('cadastro.store');
+// Mensagens de validação em português (lang/pt_BR) também no Matricule-se (10/11/2026)
+Route::post('/cadastro', [CadastroController::class, 'store'])->middleware(['throttle:5,1', \App\Http\Middleware\IdiomaPortugues::class])->name('cadastro.store');
 
 // Assinatura do responsável (link enviado por WhatsApp)
 Route::get('/assinar/{token}',  [AssinaturaController::class, 'show'])->name('assinar.show');

@@ -3010,12 +3010,68 @@ img:focus {
     text-decoration: none;
 }
 
+/* Matricule-se no celular e no app (10/11/2026) ─────────────────────────────────────────────────────────────
+   O app abre esta página no celular: os campos mantêm a altura de toque, os selects voltam a ter a seta (o
+   -webkit-appearance: none a tirava), o campo de data não fica sem altura no iPhone e a foto tem prévia. */
+.mat-oculto { display: none; }
+select.mat-input {
+    padding-right: 34px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8 0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    background-size: 10px 7px;
+}
+.mat-input { min-height: 42px; }
+input[type="date"].mat-input { line-height: 20px; }
+textarea.mat-input { min-height: 80px; resize: vertical; }
+.mat-uf { text-transform: uppercase; }
+.mat-input-arquivo { padding: 7px 10px; font-size: 13px; }
+.mat-foto { display: flex; align-items: center; gap: 14px; }
+.mat-foto-campo { flex: 1; min-width: 0; }
+.mat-foto-previa {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 64px;
+    height: 64px;
+    flex-shrink: 0;
+    overflow: hidden;
+    border-radius: 50%;
+    border: 1px solid #ddd;
+    background: #f0f0f0;
+    color: #bbb;
+    font-size: 28px;
+}
+.mat-foto-previa img { width: 100%; height: 100%; object-fit: cover; }
+
 @media (max-width: 767px) {
     .mat-section {
         padding: 20px 15px;
     }
+    .mat-section h3 {
+        font-size: 15px;
+        margin-bottom: 18px;
+    }
     .mat-col {
         margin-bottom: 0;
+    }
+    /* 16 px: com menos, o Safari do iPhone dá zoom na página ao tocar no campo */
+    .mat-input,
+    .mat-input-arquivo {
+        font-size: 16px;
+    }
+    .mat-input { min-height: 46px; }
+    .mat-group { margin-bottom: 16px; }
+    /* Enviar na largura toda, fácil de tocar */
+    .mat-btn {
+        display: block;
+        width: 100%;
+        padding: 15px 20px;
+    }
+    .alert-ok,
+    .alert-err {
+        font-size: 14px;
+        word-break: break-word;
     }
 }
 

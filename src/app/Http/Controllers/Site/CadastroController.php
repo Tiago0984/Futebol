@@ -9,6 +9,7 @@ use App\Models\Endereco;
 use App\Models\Responsavel;
 use App\Models\Autorizacao;
 use App\Rules\CpfValido;
+use App\Services\TratadorDeImagem;
 use App\Support\Cpf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -33,6 +34,14 @@ class CadastroController extends Controller
         // CPF sempre no formato do banco (000.000.000-00) antes de validar: assim o "único" compara igual,
         // venha com ou sem pontos (App\Support\Cpf)
         $request->merge(['cpf_atleta' => Cpf::formatar($request->cpf_atleta), 'cpf_responsavel' => Cpf::formatar($request->cpf_responsavel)]);
+        // Peso e altura com vírgula (55,5 e 1,80) e a UF em maiúsculas, como o banco guarda (10/11/2026)
+        Atleta::normalizarMedidas($request);
+        foreach (['estado_endereco', 'estado_resp_endereco'] as $campo) {
+            if (is_string($request->input($campo))) {
+                $request->merge([$campo => strtoupper(trim($request->input($campo)))]);
+            }
+        }
+        $medidas = Atleta::regrasMedidas();
         // As mesmas regras do cadastro pelo painel (10/11/2026)
         $rgRegex   = Atleta::REGEX_RG;
         $foneRegex = Responsavel::REGEX_TELEFONE;
@@ -52,17 +61,24 @@ class CadastroController extends Controller
             'cpf_atleta'             => ['required', 'string', 'max:14', new CpfValido('Informe um CPF válido para o atleta.'), 'unique:tbl_atletas,cpf_atleta'],
             'rg_atleta'              => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
             'sexo_atleta'            => 'required|in:M,F',
+            ...$medidas['regras'],
+            // Foto do celular até 10 MB: o servidor recorta o quadrado do centro e reduz a 512 px (TratadorDeImagem)
+            'foto_atleta'            => 'nullable|image|mimes:jpg,jpeg,png,webp|max:' . TratadorDeImagem::ENVIO_MAX_KB,
             'escola_atleta'          => 'required|string|max:100',
             'serie_atleta'           => 'required|string|max:20',
             ...$periodo['regras'],
-            'email_atleta'           => 'required|email|unique:tbl_atletas,email_atleta',
-            // Endereço atleta
+            'sala_atleta'            => 'nullable|string|max:50',
+            'descricao_atleta'       => 'nullable|string|max:1000',
+            'email_atleta'           => 'required|email|max:255|unique:tbl_atletas,email_atleta',
+            // Endereço atleta (no tamanho das colunas de tbl_endereco: antes o número ia até 10 e bairro e cidade
+            // até 100, e o banco recusava acima de 6 e de 50)
             'cep_endereco'           => ['required', 'string', 'max:10', 'regex:' . $cepRegex],
             'rua_endereco'           => 'required|string|max:100',
-            'numero_endereco'        => 'required|string|max:10',
-            'bairro_endereco'        => 'required|string|max:100',
-            'cidade_endereco'        => 'required|string|max:100',
-            'estado_endereco'        => 'required|string|max:2',
+            'numero_endereco'        => 'required|string|max:6',
+            'bairro_endereco'        => 'required|string|max:50',
+            'cidade_endereco'        => 'required|string|max:50',
+            'estado_endereco'        => ['required', 'regex:/^[A-Z]{2}$/'],
+            'complemento_endereco'   => 'nullable|string|max:100',
             // Responsável
             'nome_responsavel'       => 'required|string|max:100',
             'cpf_responsavel'        => ['required', 'string', 'max:14', new CpfValido('Informe um CPF válido para o responsável.')],
@@ -75,11 +91,19 @@ class CadastroController extends Controller
             // Endereço responsável
             'cep_resp_endereco'      => ['required', 'string', 'max:10', 'regex:' . $cepRegex],
             'rua_resp_endereco'      => 'required|string|max:100',
-            'numero_resp_endereco'   => 'required|string|max:10',
-            'bairro_resp_endereco'   => 'required|string|max:100',
-            'cidade_resp_endereco'   => 'required|string|max:100',
-            'estado_resp_endereco'   => 'required|string|max:2',
+            'numero_resp_endereco'   => 'required|string|max:6',
+            'bairro_resp_endereco'   => 'required|string|max:50',
+            'cidade_resp_endereco'   => 'required|string|max:50',
+            'estado_resp_endereco'   => ['required', 'regex:/^[A-Z]{2}$/'],
         ], [
+            ...$medidas['mensagens'],
+            'foto_atleta.image'          => 'A foto precisa ser uma imagem (JPG, PNG ou WebP).',
+            'foto_atleta.mimes'          => 'A foto precisa ser uma imagem (JPG, PNG ou WebP).',
+            ...TratadorDeImagem::mensagensDoEnvio(['foto_atleta']),
+            'numero_endereco.max'        => 'O número pode ter no máximo 6 caracteres (ex.: 123, 1500A ou S/N).',
+            'numero_resp_endereco.max'   => 'O número pode ter no máximo 6 caracteres (ex.: 123, 1500A ou S/N).',
+            'estado_endereco.regex'      => 'Informe a UF com 2 letras (ex.: SP).',
+            'estado_resp_endereco.regex' => 'Informe a UF com 2 letras (ex.: SP).',
             'email_atleta.unique'  => 'Este e-mail já está cadastrado.',
             'cpf_atleta.unique'    => 'Este CPF já está cadastrado.',
             'email_responsavel.unique' => 'Este e-mail já está cadastrado para outro responsável.',
@@ -111,10 +135,17 @@ class CadastroController extends Controller
             'complemento_endereco'  => $request->complemento_endereco,
         ]);
 
-        // 2. Salva foto do atleta (se enviada)
+        // 2. Salva foto do atleta (se enviada): quadrado do centro, até 512 px, JPG (antes, a foto do celular ia inteira,
+        // com vários MB). Grava em storage/app/public/atletas, como antes (o caminho com "/" é o do site: Atleta::urlFoto)
         $fotoNome = null;
         if ($request->hasFile('foto_atleta')) {
-            $fotoNome = $request->file('foto_atleta')->store('atletas', 'public');
+            try {
+                $fotoNome = 'atletas/' . TratadorDeImagem::foto($request->file('foto_atleta')->getRealPath(), 'public', 'atletas', 'foto-atleta');
+            } catch (\Throwable $e) {
+                $enderecoAtleta->delete();
+
+                return back()->withErrors(['foto_atleta' => 'Não foi possível abrir esta foto. Tente outra (JPG ou PNG).'])->withInput();
+            }
         }
 
         // 3. Gera token único para o link de assinatura

@@ -99,10 +99,7 @@ class AtletasController extends Controller
             'grau_parentesco_responsavel' => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
             'cep_endereco'                => 'required|string|max:9',
             'rua_endereco'                => 'required|string|max:255',
-            'numero_endereco'             => 'required|string|max:10',
-            'bairro_endereco'             => 'required|string|max:100',
             'complemento_endereco'        => 'nullable|string|max:100',
-            'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
         ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL, ...$documentos['mensagens'],
             'id_categoria.required' => self::MENSAGEM_SEM_CATEGORIA, 'cpf_atleta.unique' => self::MENSAGEM_CPF_REPETIDO, ...TratadorDeImagem::mensagensDoEnvio(['foto_atleta'], 2048)]);
@@ -131,37 +128,35 @@ class AtletasController extends Controller
     private function formatarCpfs(Request $request): void
     {
         $request->merge(['cpf_atleta' => Cpf::formatar($request->cpf_atleta), 'cpf_responsavel' => Cpf::formatar($request->cpf_responsavel)]);
-
-        foreach (['peso_atleta', 'altura_atleta'] as $campo) {
-            if (is_string($request->input($campo))) {
-                $request->merge([$campo => str_replace(',', '.', trim($request->input($campo)))]);
-            }
-        }
+        Atleta::normalizarMedidas($request);
     }
 
     /**
      * Campos de documento e medidas do atleta (10/11/2026), iguais no cadastro e na edição pelo painel e no site:
-     * RG (Atleta::REGEX_RG, até 15, o tamanho da coluna), peso em kg e altura em metros nas faixas de Atleta e
-     * WhatsApp do responsável com DDD (Responsavel::REGEX_TELEFONE). O CPF continua com a regra CpfValido.
+     * RG (Atleta::REGEX_RG, até 15, o tamanho da coluna), peso em kg e altura em metros (Atleta::regrasMedidas),
+     * WhatsApp do responsável com DDD (Responsavel::REGEX_TELEFONE) e o endereço no tamanho das colunas de
+     * tbl_endereco (número 6, bairro e cidade 50: antes, 10 e 100, e o banco recusava). O CPF continua com CpfValido.
      */
     private function regrasDosDocumentos(): array
     {
+        $medidas = Atleta::regrasMedidas();
+
         return [
             'regras' => [
                 'rg_atleta'            => ['required', 'string', 'max:15', 'regex:' . Atleta::REGEX_RG],
-                'peso_atleta'          => ['nullable', 'numeric', 'between:' . Atleta::PESO_MIN . ',' . Atleta::PESO_MAX],
-                'altura_atleta'        => ['nullable', 'numeric', 'between:' . Atleta::ALTURA_MIN . ',' . Atleta::ALTURA_MAX],
+                ...$medidas['regras'],
                 'whatsapp_responsavel' => ['required', 'string', 'max:15', 'regex:' . Responsavel::REGEX_TELEFONE],
+                'numero_endereco'      => 'required|string|max:6',
+                'bairro_endereco'      => 'required|string|max:50',
+                'cidade_endereco'      => 'required|string|max:50',
             ],
             'mensagens' => [
                 'rg_atleta.regex'             => 'Informe um RG válido para o atleta (só números, X, pontos e hífen; de 5 a 15 caracteres).',
                 'rg_atleta.max'               => 'O RG pode ter no máximo 15 caracteres.',
-                'peso_atleta.numeric'         => 'Informe o peso em quilos, só com números (ex.: 55,5).',
-                'peso_atleta.between'         => 'O peso precisa ficar entre ' . Atleta::PESO_MIN . ' e ' . Atleta::PESO_MAX . ' kg.',
-                'altura_atleta.numeric'       => 'Informe a altura em metros, só com números (ex.: 1,80).',
-                'altura_atleta.between'       => 'Informe a altura em metros (ex.: 1,80), entre 0,80 e 2,30.',
+                ...$medidas['mensagens'],
                 'whatsapp_responsavel.regex'  => 'Informe um WhatsApp válido com DDD, como (11) 98765-4321.',
                 'whatsapp_responsavel.max'    => 'Informe um WhatsApp válido com DDD, como (11) 98765-4321.',
+                'numero_endereco.max'         => 'O número pode ter no máximo 6 caracteres (ex.: 123, 1500A ou S/N).',
             ],
         ];
     }
@@ -299,10 +294,7 @@ class AtletasController extends Controller
             'grau_parentesco_responsavel' => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],
             'cep_endereco'                => 'required|string|max:9',
             'rua_endereco'                => 'required|string|max:255',
-            'numero_endereco'             => 'required|string|max:10',
-            'bairro_endereco'             => 'required|string|max:100',
             'complemento_endereco'        => 'nullable|string|max:100',
-            'cidade_endereco'             => 'required|string|max:100',
             'estado_endereco'             => 'required|string|max:2',
         ], [...$nascimento['mensagens'], ...$periodo['mensagens'], ...$posicoes['mensagens'], ...self::MENSAGENS_EMAIL, ...$documentos['mensagens'],
             'cpf_atleta.unique' => self::MENSAGEM_CPF_REPETIDO]);

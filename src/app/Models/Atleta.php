@@ -46,6 +46,35 @@ class Atleta extends Authenticatable
     public const ALTURA_MIN = 0.8;
     public const ALTURA_MAX = 2.3;
 
+    /**
+     * Peso (kg) e altura (m) do atleta, as mesmas regras no painel e no site (10/11/2026). Antes de validar, chame
+     * normalizarMedidas(): a vírgula (55,5 e 1,80) vira ponto.
+     */
+    public static function regrasMedidas(): array
+    {
+        return [
+            'regras' => [
+                'peso_atleta'   => ['nullable', 'numeric', 'between:' . self::PESO_MIN . ',' . self::PESO_MAX],
+                'altura_atleta' => ['nullable', 'numeric', 'between:' . self::ALTURA_MIN . ',' . self::ALTURA_MAX],
+            ],
+            'mensagens' => [
+                'peso_atleta.numeric'   => 'Informe o peso em quilos, só com números (ex.: 55,5).',
+                'peso_atleta.between'   => 'O peso precisa ficar entre ' . self::PESO_MIN . ' e ' . self::PESO_MAX . ' kg.',
+                'altura_atleta.numeric' => 'Informe a altura em metros, só com números (ex.: 1,80).',
+                'altura_atleta.between' => 'Informe a altura em metros (ex.: 1,80), entre 0,80 e 2,30.',
+            ],
+        ];
+    }
+
+    public static function normalizarMedidas(\Illuminate\Http\Request $request): void
+    {
+        foreach (['peso_atleta', 'altura_atleta'] as $campo) {
+            if (is_string($request->input($campo))) {
+                $request->merge([$campo => str_replace(',', '.', trim($request->input($campo)))]);
+            }
+        }
+    }
+
     // Faixa atendida pela escolinha, contada pelo ano (idade = ano atual − ano de nascimento)
     public const IDADE_MINIMA = 9;
     public const IDADE_MAXIMA = 17;
@@ -61,7 +90,8 @@ class Atleta extends Authenticatable
 
     // Fotos enviadas que podem ser apagadas do disco: a tratada (foto-atleta-…), a do admin (atleta_<uniqid>.ext) e
     // a do cadastro do site (atletas/<hash>.ext, disco "public"). As que vieram no Git (jogador1.png, a padrão) ficam
-    private const FOTO_ENVIADA = '/^(foto-atleta-\d{8}-\d{6}-[a-z0-9]{6}\.jpg|atleta_[0-9a-f]{13}\.[A-Za-z0-9]+|atletas\/[A-Za-z0-9]{40}\.[A-Za-z0-9]+)$/';
+    // atletas/foto-atleta-…: a foto do cadastro pelo site, tratada desde 10/11/2026 (antes, atletas/<hash>)
+    private const FOTO_ENVIADA = '/^(foto-atleta-\d{8}-\d{6}-[a-z0-9]{6}\.jpg|atleta_[0-9a-f]{13}\.[A-Za-z0-9]+|atletas\/[A-Za-z0-9]{40}\.[A-Za-z0-9]+|atletas\/foto-atleta-\d{8}-\d{6}-[a-z0-9]{6}\.jpg)$/';
 
     // Período escolar (ENUM sem acento => rótulo). O atleta treina no turno oposto ao da escola (professor,
     // 13/10/2026); quem estuda à noite escolhe o turno do treino (TURNOS_TREINO)

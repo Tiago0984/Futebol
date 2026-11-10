@@ -45,7 +45,7 @@
                     <div class="col-sm-8">
                         <div class="mat-group">
                             <label class="mat-label">Nome Completo *</label>
-                            <input type="text" name="nome_atleta" value="{{ old('nome_atleta') }}" required class="mat-input">
+                            <input type="text" name="nome_atleta" value="{{ old('nome_atleta') }}" required class="mat-input" maxlength="100" autocomplete="off" autocapitalize="words">
                         </div>
                     </div>
                     <div class="col-sm-4">
@@ -70,7 +70,8 @@
                     <div class="col-sm-4">
                         <div class="mat-group">
                             <label class="mat-label">RG *</label>
-                            <input type="text" name="rg_atleta" value="{{ old('rg_atleta') }}" required class="mat-input" id="rg-atleta" maxlength="15" autocomplete="off">
+                            <input type="text" name="rg_atleta" value="{{ old('rg_atleta') }}" required class="mat-input" id="rg-atleta" maxlength="15" autocomplete="off" placeholder="00.000.000-0">
+                            <p class="mat-hint">Números, X, pontos e hífen.</p>
                         </div>
                     </div>
                     <div class="col-sm-4">
@@ -85,23 +86,36 @@
                     </div>
                 </div>
 
+                {{-- Peso em kg e altura em metros com vírgula (55,5 e 1,80: digitando 180 vira 1,80), como no painel.
+                     No celular, os dois ficam lado a lado (col-xs-6) e a foto embaixo --}}
                 <div class="row">
-                    <div class="col-sm-3">
+                    <div class="col-xs-6 col-sm-3">
                         <div class="mat-group">
-                            <label class="mat-label">Peso (kg)</label>
-                            <input type="number" step="0.01" name="peso_atleta" value="{{ old('peso_atleta') }}" class="mat-input" placeholder="Ex: 55.00">
+                            <label class="mat-label" for="peso-atleta">Peso (kg)</label>
+                            <input type="text" name="peso_atleta" value="{{ old('peso_atleta') ? str_replace('.', ',', old('peso_atleta')) : '' }}" class="mat-input" id="peso-atleta"
+                                placeholder="Ex: 55,5" inputmode="decimal" maxlength="6" autocomplete="off">
                         </div>
                     </div>
-                    <div class="col-sm-3">
+                    <div class="col-xs-6 col-sm-3">
                         <div class="mat-group">
-                            <label class="mat-label">Altura (m)</label>
-                            <input type="number" step="0.01" name="altura_atleta" value="{{ old('altura_atleta') }}" class="mat-input" placeholder="Ex: 1.70">
+                            <label class="mat-label" for="altura-atleta">Altura (m)</label>
+                            <input type="text" name="altura_atleta" value="{{ old('altura_atleta') ? str_replace('.', ',', old('altura_atleta')) : '' }}" class="mat-input" id="altura-atleta"
+                                placeholder="Ex: 1,70" inputmode="decimal" maxlength="4" autocomplete="off">
                         </div>
                     </div>
-                    <div class="col-sm-6">
+                    <div class="col-xs-12 col-sm-6">
                         <div class="mat-group">
-                            <label class="mat-label">Foto do Atleta</label>
-                            <input type="file" name="foto_atleta" class="mat-input" accept="image/*" style="padding:7px 14px;">
+                            <label class="mat-label" for="foto-atleta">Foto do Atleta</label>
+                            <div class="mat-foto">
+                                <div class="mat-foto-previa">
+                                    <img id="foto-atleta-previa" alt="Prévia da foto" hidden>
+                                    <span class="fa fa-user" id="foto-atleta-vazia" aria-hidden="true"></span>
+                                </div>
+                                <div class="mat-foto-campo">
+                                    <input type="file" name="foto_atleta" class="mat-input mat-input-arquivo" id="foto-atleta" accept="image/jpeg,image/png,image/webp">
+                                    <p class="mat-hint">Opcional. JPG, PNG ou WebP, até 10 MB.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -110,17 +124,17 @@
                     <div class="col-sm-4">
                         <div class="mat-group">
                             <label class="mat-label">Escola *</label>
-                            <input type="text" name="escola_atleta" value="{{ old('escola_atleta') }}" required class="mat-input">
+                            <input type="text" name="escola_atleta" value="{{ old('escola_atleta') }}" required class="mat-input" maxlength="100">
                         </div>
                     </div>
-                    <div class="col-sm-2">
+                    <div class="col-xs-6 col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Série *</label>
-                            <input type="text" name="serie_atleta" value="{{ old('serie_atleta') }}" required class="mat-input" placeholder="Ex: 7º Ano">
+                            <input type="text" name="serie_atleta" value="{{ old('serie_atleta') }}" required class="mat-input" placeholder="Ex: 7º Ano" maxlength="20">
                         </div>
                     </div>
                     {{-- O treino é no turno oposto ao da escola; quem estuda à noite escolhe o turno do treino --}}
-                    <div class="col-sm-2">
+                    <div class="col-xs-6 col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Período *</label>
                             <select name="periodo_escolar_atleta" id="periodoEscolar" required class="mat-input">
@@ -131,7 +145,8 @@
                             </select>
                         </div>
                     </div>
-                    <div class="col-sm-2 {{ old('periodo_escolar_atleta') === 'NOITE' ? '' : 'd-none' }}" id="turnoTreinoCol">
+                    {{-- mat-oculto (10/11/2026): o d-none de antes não existe no Bootstrap 3 do site, e o campo ficava sempre à mostra --}}
+                    <div class="col-xs-6 col-sm-2 {{ old('periodo_escolar_atleta') === 'NOITE' ? '' : 'mat-oculto' }}" id="turnoTreinoCol">
                         <div class="mat-group">
                             <label class="mat-label">Treina de *</label>
                             <select name="turno_treino_atleta" id="turnoTreino" class="mat-input" @required(old('periodo_escolar_atleta') === 'NOITE')>
@@ -146,27 +161,27 @@
                     document.getElementById('periodoEscolar').addEventListener('change', function () {
                         const noite = this.value === 'NOITE';
                         const turno = document.getElementById('turnoTreino');
-                        document.getElementById('turnoTreinoCol').classList.toggle('d-none', !noite);
+                        document.getElementById('turnoTreinoCol').classList.toggle('mat-oculto', !noite);
                         turno.required = noite;
                         if (!noite) turno.value = '';
                     });
                     </script>
-                    <div class="col-sm-2">
+                    <div class="col-xs-6 col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Sala</label>
-                            <input type="text" name="sala_atleta" value="{{ old('sala_atleta') }}" class="mat-input" placeholder="Ex: A1">
+                            <input type="text" name="sala_atleta" value="{{ old('sala_atleta') }}" class="mat-input" placeholder="Ex: A1" maxlength="50">
                         </div>
                     </div>
                 </div>
 
                 <div class="mat-group">
                     <label class="mat-label">Descrição / Observações</label>
-                    <textarea name="descricao_atleta" rows="3" class="mat-input">{{ old('descricao_atleta') }}</textarea>
+                    <textarea name="descricao_atleta" rows="3" class="mat-input" maxlength="1000">{{ old('descricao_atleta') }}</textarea>
                 </div>
 
                 <div class="mat-group">
                     <label class="mat-label">E-mail *</label>
-                    <input type="email" name="email_atleta" value="{{ old('email_atleta') }}" required class="mat-input">
+                    <input type="email" name="email_atleta" value="{{ old('email_atleta') }}" required class="mat-input" maxlength="255" inputmode="email" autocomplete="off" autocapitalize="off">
                 </div>
             </div>
 
@@ -178,19 +193,19 @@
                     <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">CEP *</label>
-                            <input type="text" name="cep_endereco" value="{{ old('cep_endereco') }}" required class="mat-input" placeholder="00000-000" id="cep-atleta" maxlength="9" inputmode="numeric" autocomplete="off">
+                            <input type="text" name="cep_endereco" value="{{ old('cep_endereco') }}" required class="mat-input" placeholder="00000-000" id="cep-atleta" maxlength="9" inputmode="numeric" autocomplete="postal-code">
                         </div>
                     </div>
                     <div class="col-sm-7">
                         <div class="mat-group">
                             <label class="mat-label">Rua *</label>
-                            <input type="text" name="rua_endereco" value="{{ old('rua_endereco') }}" required class="mat-input" id="rua-atleta">
+                            <input type="text" name="rua_endereco" value="{{ old('rua_endereco') }}" required class="mat-input" id="rua-atleta" maxlength="100" autocomplete="address-line1">
                         </div>
                     </div>
                     <div class="col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Número *</label>
-                            <input type="text" name="numero_endereco" value="{{ old('numero_endereco') }}" required class="mat-input">
+                            <input type="text" name="numero_endereco" value="{{ old('numero_endereco') }}" required class="mat-input" maxlength="6" placeholder="Ex: 123" autocomplete="off">
                         </div>
                     </div>
                 </div>
@@ -199,26 +214,26 @@
                     <div class="col-sm-4">
                         <div class="mat-group">
                             <label class="mat-label">Bairro *</label>
-                            <input type="text" name="bairro_endereco" value="{{ old('bairro_endereco') }}" required class="mat-input" id="bairro-atleta">
+                            <input type="text" name="bairro_endereco" value="{{ old('bairro_endereco') }}" required class="mat-input" id="bairro-atleta" maxlength="50">
                         </div>
                     </div>
-                    <div class="col-sm-5">
+                    <div class="col-xs-8 col-sm-5">
                         <div class="mat-group">
                             <label class="mat-label">Cidade *</label>
-                            <input type="text" name="cidade_endereco" value="{{ old('cidade_endereco') }}" required class="mat-input" id="cidade-atleta">
+                            <input type="text" name="cidade_endereco" value="{{ old('cidade_endereco') }}" required class="mat-input" id="cidade-atleta" maxlength="50" autocomplete="address-level2">
                         </div>
                     </div>
-                    <div class="col-sm-3">
+                    <div class="col-xs-4 col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">Estado *</label>
-                            <input type="text" name="estado_endereco" value="{{ old('estado_endereco') }}" required class="mat-input" maxlength="2" placeholder="SP" id="estado-atleta">
+                            <input type="text" name="estado_endereco" value="{{ old('estado_endereco') }}" required class="mat-input mat-uf" maxlength="2" placeholder="SP" id="estado-atleta" autocomplete="address-level1" autocapitalize="characters">
                         </div>
                     </div>
                 </div>
 
                 <div class="mat-group">
                     <label class="mat-label">Complemento</label>
-                    <input type="text" name="complemento_endereco" value="{{ old('complemento_endereco') }}" class="mat-input" placeholder="Apto, Bloco, Casa, etc.">
+                    <input type="text" name="complemento_endereco" value="{{ old('complemento_endereco') }}" class="mat-input" placeholder="Apto, Bloco, Casa, etc." maxlength="100">
                 </div>
             </div>
 
@@ -230,7 +245,7 @@
                     <div class="col-sm-6">
                         <div class="mat-group">
                             <label class="mat-label">Nome Completo *</label>
-                            <input type="text" name="nome_responsavel" value="{{ old('nome_responsavel') }}" required class="mat-input">
+                            <input type="text" name="nome_responsavel" value="{{ old('nome_responsavel') }}" required class="mat-input" maxlength="100" autocomplete="name" autocapitalize="words">
                         </div>
                     </div>
                     <div class="col-sm-3">
@@ -242,7 +257,7 @@
                     <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">RG *</label>
-                            <input type="text" name="rg_responsavel" value="{{ old('rg_responsavel') }}" required class="mat-input" id="rg-resp" maxlength="15" autocomplete="off">
+                            <input type="text" name="rg_responsavel" value="{{ old('rg_responsavel') }}" required class="mat-input" id="rg-resp" maxlength="15" autocomplete="off" placeholder="00.000.000-0">
                         </div>
                     </div>
                 </div>
@@ -262,19 +277,19 @@
                     <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">E-mail *</label>
-                            <input type="email" name="email_responsavel" value="{{ old('email_responsavel') }}" required class="mat-input">
+                            <input type="email" name="email_responsavel" value="{{ old('email_responsavel') }}" required class="mat-input" maxlength="150" inputmode="email" autocomplete="email" autocapitalize="off">
                         </div>
                     </div>
                     <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">Telefone</label>
-                            <input type="text" name="telefone_responsavel" value="{{ old('telefone_responsavel') }}" class="mat-input" placeholder="(00) 0000-0000" id="telefone-resp" maxlength="15" inputmode="numeric" autocomplete="off">
+                            <input type="text" name="telefone_responsavel" value="{{ old('telefone_responsavel') }}" class="mat-input" placeholder="(00) 0000-0000" id="telefone-resp" maxlength="15" inputmode="tel" autocomplete="tel-national">
                         </div>
                     </div>
                     <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">WhatsApp *</label>
-                            <input type="text" name="whatsapp_responsavel" value="{{ old('whatsapp_responsavel') }}" required class="mat-input" placeholder="(00) 00000-0000" id="whatsapp-resp" maxlength="15" inputmode="numeric" autocomplete="off">
+                            <input type="text" name="whatsapp_responsavel" value="{{ old('whatsapp_responsavel') }}" required class="mat-input" placeholder="(00) 00000-0000" id="whatsapp-resp" maxlength="15" inputmode="tel" autocomplete="tel-national">
                         </div>
                     </div>
                 </div>
@@ -286,19 +301,19 @@
                     <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">CEP *</label>
-                            <input type="text" name="cep_resp_endereco" value="{{ old('cep_resp_endereco') }}" required class="mat-input" placeholder="00000-000" id="cep-resp" maxlength="9" inputmode="numeric" autocomplete="off">
+                            <input type="text" name="cep_resp_endereco" value="{{ old('cep_resp_endereco') }}" required class="mat-input" placeholder="00000-000" id="cep-resp" maxlength="9" inputmode="numeric" autocomplete="postal-code">
                         </div>
                     </div>
                     <div class="col-sm-7">
                         <div class="mat-group">
                             <label class="mat-label">Rua *</label>
-                            <input type="text" name="rua_resp_endereco" value="{{ old('rua_resp_endereco') }}" required class="mat-input" id="rua-resp">
+                            <input type="text" name="rua_resp_endereco" value="{{ old('rua_resp_endereco') }}" required class="mat-input" id="rua-resp" maxlength="100" autocomplete="address-line1">
                         </div>
                     </div>
                     <div class="col-sm-2">
                         <div class="mat-group">
                             <label class="mat-label">Número *</label>
-                            <input type="text" name="numero_resp_endereco" value="{{ old('numero_resp_endereco') }}" required class="mat-input">
+                            <input type="text" name="numero_resp_endereco" value="{{ old('numero_resp_endereco') }}" required class="mat-input" maxlength="6" placeholder="Ex: 123" autocomplete="off">
                         </div>
                     </div>
                 </div>
@@ -307,19 +322,19 @@
                     <div class="col-sm-4">
                         <div class="mat-group">
                             <label class="mat-label">Bairro *</label>
-                            <input type="text" name="bairro_resp_endereco" value="{{ old('bairro_resp_endereco') }}" required class="mat-input" id="bairro-resp">
+                            <input type="text" name="bairro_resp_endereco" value="{{ old('bairro_resp_endereco') }}" required class="mat-input" id="bairro-resp" maxlength="50">
                         </div>
                     </div>
-                    <div class="col-sm-5">
+                    <div class="col-xs-8 col-sm-5">
                         <div class="mat-group">
                             <label class="mat-label">Cidade *</label>
-                            <input type="text" name="cidade_resp_endereco" value="{{ old('cidade_resp_endereco') }}" required class="mat-input" id="cidade-resp">
+                            <input type="text" name="cidade_resp_endereco" value="{{ old('cidade_resp_endereco') }}" required class="mat-input" id="cidade-resp" maxlength="50" autocomplete="address-level2">
                         </div>
                     </div>
-                    <div class="col-sm-3">
+                    <div class="col-xs-4 col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">Estado *</label>
-                            <input type="text" name="estado_resp_endereco" value="{{ old('estado_resp_endereco') }}" required class="mat-input" maxlength="2" placeholder="SP" id="estado-resp">
+                            <input type="text" name="estado_resp_endereco" value="{{ old('estado_resp_endereco') }}" required class="mat-input mat-uf" maxlength="2" placeholder="SP" id="estado-resp" autocomplete="address-level1" autocapitalize="characters">
                         </div>
                     </div>
                 </div>
@@ -401,6 +416,58 @@ function aplicaMascaraTelefone(el) {
 ['cep-atleta', 'cep-resp'].forEach(id => aplicaMascaraCEP(document.getElementById(id)));
 ['rg-atleta', 'rg-resp'].forEach(id => aplicaMascaraRG(document.getElementById(id)));
 ['telefone-resp', 'whatsapp-resp'].forEach(id => aplicaMascaraTelefone(document.getElementById(id)));
+
+/* ===== Peso, altura e UF (10/11/2026; as mesmas máscaras do painel) ===== */
+// Peso em kg: até 3 dígitos inteiros e 2 decimais, com vírgula (55,5)
+document.getElementById('peso-atleta').addEventListener('input', function () {
+    const [inteiro, decimal] = this.value.replace('.', ',').replace(/[^\d,]/g, '').split(',');
+    this.value = inteiro.slice(0, 3) + (decimal !== undefined ? ',' + decimal.slice(0, 2) : '');
+});
+// Altura em metros: digitando só números, a vírgula entra depois do primeiro (180 vira 1,80)
+document.getElementById('altura-atleta').addEventListener('input', function () {
+    const digitos = this.value.replace(/\D/g, '').slice(0, 3);
+    this.value = digitos.length > 1 ? digitos[0] + ',' + digitos.slice(1) : digitos;
+});
+// UF: só letras, em maiúsculas
+['estado-atleta', 'estado-resp'].forEach(id => document.getElementById(id).addEventListener('input', function () {
+    this.value = this.value.replace(/[^A-Za-z]/g, '').toUpperCase().slice(0, 2);
+}));
+
+/* ===== Foto do atleta: prévia no círculo e aviso já ao escolher acima de 10 MB ===== */
+(function () {
+    const MAX_MB = 10;
+    const arquivo = document.getElementById('foto-atleta');
+    const previa = document.getElementById('foto-atleta-previa');
+    const vazia = document.getElementById('foto-atleta-vazia');
+    let url = null;
+
+    function mostrar(fonte) {
+        previa.hidden = !fonte;
+        vazia.hidden = Boolean(fonte);
+        if (fonte) previa.src = fonte; else previa.removeAttribute('src');
+    }
+
+    arquivo.addEventListener('change', function () {
+        if (url) { URL.revokeObjectURL(url); url = null; }
+        limpaErro(arquivo);
+        const foto = arquivo.files && arquivo.files[0];
+
+        if (foto && foto.size > MAX_MB * 1048576) {
+            marcaErro(arquivo, 'Esta foto tem ' + (foto.size / 1048576).toFixed(1).replace('.', ',') + ' MB. Use uma foto de até ' + MAX_MB + ' MB.');
+            arquivo.value = '';
+            mostrar(null);
+            return;
+        }
+        if (foto && !/^image\/(jpeg|png|webp)$/.test(foto.type)) {
+            marcaErro(arquivo, 'A foto precisa ser uma imagem JPG, PNG ou WebP.');
+            arquivo.value = '';
+            mostrar(null);
+            return;
+        }
+        url = foto ? URL.createObjectURL(foto) : null;
+        mostrar(url);
+    });
+})();
 
 /* ===== Validação de idade do atleta (9 a 17 anos) ===== */
 function idadeValida(dataNasc) {
@@ -512,6 +579,29 @@ formCadastro.addEventListener('submit', function (e) {
         if (el.value.replace(/\D/g, '').length !== 8) {
             valido = false;
             marcaErro(el, 'CEP inválido.');
+        } else {
+            limpaErro(el);
+        }
+    });
+
+    // Peso e altura são opcionais; preenchidos, nas mesmas faixas do servidor (Atleta::PESO_* e ALTURA_*)
+    [
+        [document.getElementById('peso-atleta'), {{ \App\Models\Atleta::PESO_MIN }}, {{ \App\Models\Atleta::PESO_MAX }}, 'O peso precisa ficar entre {{ \App\Models\Atleta::PESO_MIN }} e {{ \App\Models\Atleta::PESO_MAX }} kg.'],
+        [document.getElementById('altura-atleta'), {{ \App\Models\Atleta::ALTURA_MIN }}, {{ \App\Models\Atleta::ALTURA_MAX }}, 'Informe a altura em metros (ex.: 1,80), entre 0,80 e 2,30.'],
+    ].forEach(([el, min, max, mensagem]) => {
+        const valor = parseFloat(el.value.replace(',', '.'));
+        if (el.value.trim() !== '' && (isNaN(valor) || valor < min || valor > max)) {
+            valido = false;
+            marcaErro(el, mensagem);
+        } else {
+            limpaErro(el);
+        }
+    });
+
+    [document.getElementById('estado-atleta'), document.getElementById('estado-resp')].forEach(el => {
+        if (!/^[A-Z]{2}$/.test(el.value.trim().toUpperCase())) {
+            valido = false;
+            marcaErro(el, 'Informe a UF com 2 letras (ex.: SP).');
         } else {
             limpaErro(el);
         }
