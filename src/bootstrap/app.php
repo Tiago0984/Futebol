@@ -34,8 +34,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'avisa.afastados'   => \App\Http\Middleware\AvisaAfastadosIgnorados::class,
         ]);
 
-        // API em português (mensagens de validação de lang/pt_BR)
-        $middleware->api(prepend: [\App\Http\Middleware\IdiomaDaApi::class]);
+        // API em português (mensagens de validação de lang/pt_BR); o painel também, pelo grupo admin em routes/web.php
+        $middleware->api(prepend: [\App\Http\Middleware\IdiomaPortugues::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Na API, erros (401, 404, 422...) sempre voltam em JSON, mesmo sem o header Accept

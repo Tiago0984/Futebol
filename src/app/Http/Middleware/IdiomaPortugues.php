@@ -7,10 +7,11 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Rotas da API (api/*) em português: as mensagens de validação (422) saem de lang/pt_BR. O admin e o site
- * continuam com o idioma do config/app.php.
+ * Mensagens em português (lang/pt_BR): nas rotas da API (api/*) e, desde 10/11/2026, nas do painel (admin/*), onde
+ * as regras sem mensagem própria apareciam em inglês ("The nome atleta field is required."). O site continua com o
+ * idioma do config/app.php (os formulários dele têm as mensagens próprias). Antes se chamava IdiomaDaApi.
  */
-class IdiomaDaApi
+class IdiomaPortugues
 {
     public function handle(Request $request, Closure $next): Response
     {

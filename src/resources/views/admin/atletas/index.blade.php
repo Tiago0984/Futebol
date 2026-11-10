@@ -471,10 +471,6 @@
     </div>
 </div>
 
-@if($errors->any())
-    <div class="modal-backdrop fade show"></div>
-@endif
-
 <script>
 // Máscaras dos modais de novo atleta e de editar (CPF desde 21/10/2026; RG, WhatsApp, peso e altura desde 10/11/2026,
 // as mesmas regras do cadastro do site). Só ajudam a digitar: o servidor confere tudo de novo
@@ -747,6 +743,12 @@ document.addEventListener('DOMContentLoaded', function () {
         motivo: 'edit_motivo_categoria', dica: 'edit_dica_categoria',
     });
     sugestaoCadastro.atualizar(!@js(old('_editar_id') ? null : old('id_categoria'))); // categoria digitada só se o erro foi do cadastro
+
+    // Erro no cadastro: reabre o "Novo atleta" pelo Bootstrap, com o que foi digitado (o Cancelar e o X fecham)
+    const modalNovo = document.getElementById('modalNovoAtleta');
+    if (modalNovo?.dataset.abrir === '1') {
+        bootstrap.Modal.getOrCreateInstance(modalNovo).show();
+    }
 
     // Erro na edição: reabre o modal do mesmo atleta e devolve o que foi digitado na categoria (e nas posições)
     @if ($errors->edicao->any() && old('_editar_id'))

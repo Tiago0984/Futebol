@@ -89,15 +89,15 @@ Route::post('/senha/{perfil}', [SenhaController::class, 'store'])->whereIn('perf
 Route::view('/api/documentacao', 'api.documentacao')->name('api.documentacao');
 
 
-// Rotas de autenticação admin (sem middleware)
-Route::prefix('admin')->name('admin.')->group(function () {
+// Rotas de autenticação admin (sem login; mensagens em português desde 10/11/2026)
+Route::prefix('admin')->name('admin.')->middleware(\App\Http\Middleware\IdiomaPortugues::class)->group(function () {
     Route::get('/login',  [LoginController::class, 'showLogin'])->name('login');
     Route::post('/login', [LoginController::class, 'login'])->name('login.post');
     Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 });
 
-// Rotas protegidas da área admin
-Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastados'])->group(function () {
+// Rotas protegidas da área admin (mensagens de validação em português, lang/pt_BR, desde 10/11/2026)
+Route::prefix('admin')->name('admin.')->middleware(['auth:admin', 'avisa.afastados', \App\Http\Middleware\IdiomaPortugues::class])->group(function () {
 
     Route::get('/', [DashController::class, 'index'])->name('dash');
     Route::get('/dashboard', [DashController::class, 'index'])->name('dashboard');

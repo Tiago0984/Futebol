@@ -1,11 +1,29 @@
 <?php
 
 /*
- * Mensagens de validação em português, usadas pela API do app (o middleware IdiomaDaApi liga o pt_BR nas rotas
- * api/*). As regras que não estão aqui caem no inglês do Laravel (fallback_locale).
+ * Mensagens de validação em português, usadas pela API do app e, desde 10/11/2026, pelo painel (o middleware
+ * IdiomaPortugues liga o pt_BR nas rotas api/* e admin/*). As regras que não estão aqui caem no inglês do Laravel
+ * (fallback_locale): ao usar uma regra nova, acrescente-a aqui.
  */
 return [
     'accepted'       => 'O campo :attribute deve ser aceito.',
+    'after'          => 'O campo :attribute deve ser uma data depois de :date.',
+    'after_or_equal' => 'O campo :attribute deve ser uma data igual ou depois de :date.',
+    'before'         => 'O campo :attribute deve ser uma data antes de :date.',
+    'before_or_equal' => 'O campo :attribute deve ser uma data igual ou antes de :date.',
+    'between'        => [
+        'array'   => 'O campo :attribute deve ter entre :min e :max itens.',
+        'file'    => 'O arquivo :attribute deve ter entre :min e :max kilobytes.',
+        'numeric' => 'O campo :attribute deve ficar entre :min e :max.',
+        'string'  => 'O campo :attribute deve ter entre :min e :max caracteres.',
+    ],
+    'distinct'       => 'O campo :attribute tem um valor repetido.',
+    'file'           => 'O campo :attribute deve ser um arquivo.',
+    'image'          => 'O campo :attribute deve ser uma imagem (JPG, PNG ou WebP).',
+    'mimes'          => 'O campo :attribute deve ser um arquivo do tipo: :values.',
+    'required_unless' => 'O campo :attribute é obrigatório, a não ser que :other seja :values.',
+    'required_without' => 'O campo :attribute é obrigatório quando :values não é informado.',
+    'uploaded'       => 'Não foi possível enviar o arquivo :attribute. Tente um arquivo menor.',
     'array'          => 'O campo :attribute deve ser uma lista.',
     'boolean'        => 'O campo :attribute deve ser verdadeiro ou falso.',
     'confirmed'      => 'A confirmação de :attribute não confere.',
@@ -79,5 +97,27 @@ return [
         'email_responsavel'       => 'e-mail',
         'telefone_responsavel'    => 'telefone',
         'whatsapp_responsavel'    => 'WhatsApp',
+
+        // Painel (10/11/2026): cadastro e edição do atleta e do responsável
+        'rg_atleta'                   => 'RG',
+        'sexo_atleta'                 => 'sexo',
+        'foto_atleta'                 => 'foto',
+        'numero_matricula_atleta'     => 'número de matrícula',
+        'status_atleta'               => 'status',
+        'id_categoria'                => 'categoria',
+        'motivo_categoria'            => 'motivo da categoria',
+        'nome_responsavel'            => 'nome do responsável',
+        'cpf_responsavel'             => 'CPF do responsável',
+        'rg_responsavel'              => 'RG do responsável',
+        'grau_parentesco_responsavel' => 'grau de parentesco',
+        'cep_endereco'                => 'CEP',
+        'rua_endereco'                => 'rua',
+        'numero_endereco'             => 'número',
+        'complemento_endereco'        => 'complemento',
+        'bairro_endereco'             => 'bairro',
+        'cidade_endereco'             => 'cidade',
+        'estado_endereco'             => 'estado (UF)',
+        'posicoes'                    => 'posições',
+        'posicoes.*'                  => 'posição',
     ],
 ];

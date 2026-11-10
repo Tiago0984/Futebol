@@ -3,8 +3,11 @@
     // (que traz _editar_id), o "Novo Atleta" abre vazio, e não com os dados do atleta editado
     $oldCadastro = fn (string $campo, $padrao = null) => old('_editar_id') ? $padrao : old($campo, $padrao);
 @endphp
-<div class="modal fade {{ $errors->any() ? 'show' : '' }}" id="modalNovoAtleta" tabindex="-1"
-    aria-labelledby="modalNovoAtletaLabel" @if($errors->any()) style="display:block;" aria-modal="true" role="dialog" @endif>
+{{-- Com erro no cadastro, a lista abre este modal pelo Bootstrap (data-abrir; 10/11/2026). Antes ele vinha aberto
+     à força (classe show, display:block e um fundo desenhado na página): o Bootstrap não sabia que estava aberto, e o
+     "Cancelar" e o "X" não fechavam --}}
+<div class="modal fade" id="modalNovoAtleta" tabindex="-1" aria-labelledby="modalNovoAtletaLabel" aria-hidden="true"
+    data-abrir="{{ $errors->any() && ! old('_editar_id') ? '1' : '0' }}">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content text-start modal-admin">
 
@@ -18,6 +21,14 @@
             <form action="{{ route('admin.atletas.store') }}" method="POST" enctype="multipart/form-data" novalidate>
                 @csrf
                 <div class="modal-body px-4" style="max-height:65vh;overflow-y:auto;">
+
+                    {{-- O aviso da página fica atrás do modal: os erros do cadastro aparecem também aqui --}}
+                    @if ($errors->any() && ! old('_editar_id'))
+                    <div class="alert alert-danger mt-2 mb-3" role="alert" id="errosNovoAtleta">
+                        <strong>Não foi possível salvar. Corrija:</strong>
+                        <ul class="mb-0 mt-1">@foreach ($errors->all() as $erro)<li>{{ $erro }}</li>@endforeach</ul>
+                    </div>
+                    @endif
 
                     <p class="modal-section-label mt-2">
                         <i class="bi bi-person-circle"></i> Dados do Atleta
