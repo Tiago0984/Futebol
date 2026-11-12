@@ -2,8 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\Admin\PerfilController;
 use App\Models\User;
+use Illuminate\Auth\SessionGuard;
+use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Tests\RefreshBancoDeTestes;
@@ -31,7 +36,7 @@ class PerfilTest extends TestCase
     public function test_menu_do_usuario_leva_ao_perfil(): void
     {
         $this->actingAs($this->usuario, 'admin')->get(route('admin.dashboard'))->assertOk()
-            ->assertSee('href="' . route('admin.perfil') . '"', false)
+            ->assertSee('href="'.route('admin.perfil').'"', false)
             ->assertSee('Somente leitura');
 
         $this->get(route('admin.perfil'))->assertOk()
@@ -84,7 +89,7 @@ class PerfilTest extends TestCase
         Storage::disk('imagens')->assertExists("usuarios/{$primeira}");
         [$largura, $altura] = getimagesize(Storage::disk('imagens')->path("usuarios/{$primeira}"));
         $this->assertSame([512, 512], [$largura, $altura]);
-        $this->get(route('admin.perfil'))->assertSee(asset('futebol/images/usuarios/' . $primeira), false);
+        $this->get(route('admin.perfil'))->assertSee(asset('futebol/images/usuarios/'.$primeira), false);
 
         // Remover: volta ao avatar padrão e a foto gerada sai do disco
         $this->put(route('admin.perfil.update'), ['nome_usuario' => 'Ana', 'email_usuario' => 'ana@aacj.test', 'remover_foto' => '1']);
@@ -106,6 +111,54 @@ class PerfilTest extends TestCase
             'senha_atual' => 'senha-antiga-123', 'nova_senha' => 'senha-nova-456', 'nova_senha_confirmation' => 'senha-nova-456',
         ])->assertRedirect(route('admin.perfil'))->assertSessionHas('sucesso', 'Sua senha foi trocada.');
 
+        $this->assertTrue(Hash::check('senha-nova-456', $this->usuario->fresh()->senha_usuario));
+    }
+
+    public function test_erro_na_troca_nao_guarda_senhas_na_sessao(): void
+    {
+        $this->actingAs($this->usuario, 'admin');
+
+        foreach ([
+            ['senha_atual' => 'errada', 'nova_senha_confirmation' => 'senha-nova-456'],
+            ['senha_atual' => 'senha-antiga-123', 'nova_senha_confirmation' => 'confirmacao-diferente'],
+        ] as $dados) {
+            $this->from(route('admin.perfil'))->put(route('admin.perfil.senha'), [
+                'nova_senha' => 'senha-nova-456', ...$dados,
+            ])->assertRedirect(route('admin.perfil'))
+                ->assertSessionHasErrorsIn('senha')
+                ->assertSessionMissing('_old_input.senha_atual')
+                ->assertSessionMissing('_old_input.nova_senha')
+                ->assertSessionMissing('_old_input.nova_senha_confirmation');
+        }
+
+        $this->assertTrue(Hash::check('senha-antiga-123', $this->usuario->fresh()->senha_usuario));
+    }
+
+    public function test_troca_de_senha_invalida_a_sessao_anterior_e_mantem_o_usuario_logado_na_nova(): void
+    {
+        $this->actingAs($this->usuario, 'admin');
+        $guard = $this->app['auth']->guard('admin');
+        $handler = new ArraySessionHandler(120);
+        $session = new Store('teste-perfil', $handler);
+        $session->start();
+        $session->put($guard->getName(), $this->usuario->getKey());
+        $idAnterior = $session->getId();
+        $session->save();
+
+        $request = Request::create(route('admin.perfil.senha'), 'PUT', [
+            'senha_atual' => 'senha-antiga-123', 'nova_senha' => 'senha-nova-456', 'nova_senha_confirmation' => 'senha-nova-456',
+        ]);
+        $request->setLaravelSession($session);
+        (new PerfilController)->senha($request);
+        $session->save();
+
+        $this->assertNotSame($idAnterior, $session->getId());
+        $anterior = new Store('teste-perfil', $handler, $idAnterior);
+        $anterior->start();
+        $this->assertFalse((new SessionGuard('admin', $guard->getProvider(), $anterior))->check());
+        $atual = new Store('teste-perfil', $handler, $session->getId());
+        $atual->start();
+        $this->assertTrue((new SessionGuard('admin', $guard->getProvider(), $atual))->check());
         $this->assertTrue(Hash::check('senha-nova-456', $this->usuario->fresh()->senha_usuario));
     }
 }

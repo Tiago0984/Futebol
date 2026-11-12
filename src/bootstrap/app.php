@@ -38,6 +38,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->api(prepend: [\App\Http\Middleware\IdiomaPortugues::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        // Os nomes personalizados do formulário de senha também são segredos: não guardar em old input.
+        $exceptions->dontFlash(['senha_atual', 'nova_senha', 'nova_senha_confirmation']);
+
         // Na API, erros (401, 404, 422...) sempre voltam em JSON, mesmo sem o header Accept
         $exceptions->shouldRenderJsonWhen(
             fn ($request) => $request->is('api/*') || $request->expectsJson()

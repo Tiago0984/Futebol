@@ -81,8 +81,8 @@ class PerfilController extends Controller
         $usuario->senha_usuario = $request->input('nova_senha'); // o cast "hashed" do model grava o hash
         $usuario->save();
 
-        // Sessão nova, como num login (a anterior, se alguém a tivesse, deixa de valer)
-        $request->session()->regenerate();
+        // Apaga o ID anterior no armazenamento e mantém a autenticação somente na sessão renovada.
+        $request->session()->regenerate(true);
 
         return redirect()->route('admin.perfil')->with('sucesso', 'Sua senha foi trocada.');
     }
