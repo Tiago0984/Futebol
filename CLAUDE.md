@@ -333,7 +333,7 @@ Contexto permanente do projeto. Leia antes de qualquer tarefa. Se algo aqui dive
 - **Provisórios** (seção 8, pergunta 16): remoção avisa, reativar avisa, ocultar avisa como cancelamento e mostrar como reativação, inscrição em evento cancelado não avisa, escalação não avisa, sem e-mail.
 
 ### App: perfis, senhas, agenda e avisos (Fase 9)
-- **Dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha. O mesmo e-mail pode ser dos dois (o `perfil` do login escolhe a conta). **Todo atleta de 9 a 17 anos com e-mail pode ter login**; atleta sem e-mail entra só pelo perfil do responsável.
+- **Dois perfis de login, atleta e responsável**, cada um com o próprio e-mail e senha. O mesmo e-mail pode ser dos dois (o `perfil` do login escolhe a conta), **menos no Matricule-se do site** (12/11/2026: lá o e-mail do responsável precisa ser diferente do do atleta; painel e app continuam aceitando). **Todo atleta de 9 a 17 anos com e-mail pode ter login**; atleta sem e-mail entra só pelo perfil do responsável.
 - **Cada perfil tem a própria área:** o token do atleta só entra nas rotas do atleta e o do responsável só nas `/responsavel...` (middleware `perfil:atleta|responsavel`, 403 no outro).
 - **Atleta:** só ATIVO entra; inativar/rejeitar apaga os tokens (`Atleta::booted`) e a rota confere a cada requisição (`atleta.ativo`).
 - **Responsável vê tudo o que o atleta vê, em modo leitura, e escolhe o filho:** dados, agenda e avisos de cada filho, nas mesmas formas; edita os próprios dados (desde 29/10/2026 também nome, CPF e endereço; o RG fica com a secretaria; item "Responsável edita os próprios dados", abaixo). **Lista de filhos só ATIVO**; sem nenhum filho ATIVO, não entra (403) e perde os tokens (`responsavel.ativo`). No servidor, sempre: o filho precisa ser dele e estar ATIVO, senão 404 (o mesmo 404 para outra família, inativado ou inexistente); o aviso precisa ser daquele atleta. O atleta edita os próprios dados de contato, escola e corpo e, desde 22/10/2026, corrige nome, CPF e o dia e mês do nascimento (abaixo).
@@ -1224,6 +1224,17 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 - **Comissão técnica:** Novo profissional abre em **modal** (`admin.comissao.modals.create`), na própria lista, com todos os campos e os dados digitados preservados após erro de validação. A rota antiga `admin.comissao.create` redireciona para a lista com `?novo=1`, que abre o modal. A edição continua em sua tela.
 - **Foto da comissão:** prévia circular no cadastro e na edição, como na lista (partial `admin.comissao._foto`, JS `coderatech/js/comissao-tecnica.js`). JPG/PNG/WEBP até **2 MB**; escolher foto **não marca** a autorização para o app. A edição mantém a foto atual se não houver substituta e permite removê-la. Máscara do telefone institucional compartilhada pelos dois formulários. Sem migration ou dependência nova.
 - **Validação desta etapa:** 12 testes / 101 verificações (`ComissaoTecnicaTest` e `AppComissaoTecnicaTest`), além da conferência no navegador em computador, tablet e celular, nos dois temas: modais, prévias, troca/limpeza de arquivos, limites, máscara e reabertura com os dados após validação. O alinhamento dos jogos, a tela da grade e as prévias dos times também foram conferidos nesta sessão.
+
+#### 12/11/2026 — depois da apresentação do app
+- **Apresentação feita e aprovada** (dono do projeto). A ferramenta usada nela (comando `aacj:preparar-apresentacao`, serviços `DadosDaApresentacao` e `BackupDaApresentacao`, `DadosDaApresentacaoTest`, guia `docs/apresentacao-app.md` e as fotos de `src/resources/apresentacao/`, 9,4 MB) **ficou fora do Git** (decisão do dono do projeto: a entrega começa do zero e o comando apaga e recria os dados): guardada em `backup/apresentacao/` (só neste computador), com a mesma estrutura de pastas. Para usar de novo, copiar de volta para `src/`.
+- **Branch:** o trabalho voltou para a `feature/agenda-eventos` (a local estava 31 commits atrás e foi avançada em fast-forward até `0af4c72`, igual à `main`).
+- **Commits** (sem migration; push e servidor pendentes, com OK):
+  - `5345f18` fix: no Meu perfil, a troca de senha apaga o ID anterior da sessão (`regenerate(true)`) e `senha_atual`, `nova_senha` e `nova_senha_confirmation` não ficam no old input (`dontFlash` no `bootstrap/app.php`). Testes no `PerfilTest`.
+  - `5571d85` fix: a página Jogadores do site usa `Atleta::urlFoto()` no cartão e no modal (a foto enviada pelo cadastro do site, em `storage/atletas`, aparecia quebrada). `SiteJogadoresFotosTest`.
+  - `ec94b5f` feat: no Matricule-se, o e-mail do responsável precisa ser diferente do e-mail do atleta (sem diferenciar maiúsculas e espaços; regra no `CadastroController`, aviso no formulário antes do envio e a dica abaixo do campo). Só no site, decisão do dono do projeto (seção 4, "App"). Teste no `SiteCadastroFormularioTest`.
+- **O cadastro pelo site envia o link de assinatura só ao e-mail do responsável** (conferido): o e-mail do atleta recebe o convite do app só na aprovação da matrícula.
+- **Validação:** 19 testes (perfil, fotos e cadastro do site) depois da troca de branch; antes, 63 testes do cadastro (site, responsável único, período, grau, categoria, CPF).
+- **Próximo passo:** correções finais e entrega ao cliente (seção 7, "Entrega: começar do zero").
 
 ---
 
