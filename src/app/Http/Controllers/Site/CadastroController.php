@@ -90,7 +90,15 @@ class CadastroController extends Controller
             'cpf_responsavel'        => ['required', 'string', 'max:14', new CpfValido('Informe um CPF válido para o responsável.')],
             'rg_responsavel'         => ['required', 'string', 'max:15', 'regex:' . $rgRegex],
             'email_responsavel'      => ['required', 'email', 'max:150',
-                Rule::unique('tbl_responsavel', 'email_responsavel')->ignore($responsavelExistente?->id_responsavel, 'id_responsavel')],
+                Rule::unique('tbl_responsavel', 'email_responsavel')->ignore($responsavelExistente?->id_responsavel, 'id_responsavel'),
+                // Cada um com o próprio e-mail (12/11/2026, só no Matricule-se): o mesmo nos dois mandaria os dois
+                // convites para a mesma caixa. Sem diferenciar maiúsculas e espaços, como o Responsavel grava
+                function (string $atributo, mixed $valor, \Closure $falha) use ($request) {
+                    $doAtleta = Responsavel::normalizarEmail(is_string($request->email_atleta) ? $request->email_atleta : null);
+                    if ($doAtleta !== null && $doAtleta === Responsavel::normalizarEmail(is_string($valor) ? $valor : null)) {
+                        $falha('O e-mail do responsável precisa ser diferente do e-mail do atleta.');
+                    }
+                }],
             'telefone_responsavel'   => ['nullable', 'string', 'max:15', 'regex:' . $foneRegex],
             'whatsapp_responsavel'   => ['required', 'string', 'max:15', 'regex:' . $foneRegex],
             'grau_parentesco'        => ['required', Rule::in(Responsavel::GRAUS_PARENTESCO)],

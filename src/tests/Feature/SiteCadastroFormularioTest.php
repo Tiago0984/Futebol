@@ -109,6 +109,26 @@ class SiteCadastroFormularioTest extends TestCase
             ->assertDontSee('d-none');
     }
 
+    // Cada um com o próprio e-mail (12/11/2026): o mesmo, mesmo com outras maiúsculas e espaços, é recusado sem gravar nada
+    public function test_email_do_responsavel_diferente_do_email_do_atleta(): void
+    {
+        $this->post(route('cadastro.store'), $this->formulario([
+            'email_atleta' => 'familia@site.com', 'email_responsavel' => ' Familia@Site.com ',
+        ]))->assertSessionHasErrors([
+            'email_responsavel' => 'O e-mail do responsável precisa ser diferente do e-mail do atleta.',
+        ])->assertSessionDoesntHaveErrors('email_atleta');
+
+        $this->assertSame(0, DB::table('tbl_atletas')->count());
+        $this->assertSame(0, DB::table('tbl_responsavel')->count());
+        Mail::assertNothingQueued();
+
+        // Com e-mails diferentes, o cadastro segue normal
+        $this->post(route('cadastro.store'), $this->formulario(['email_atleta' => 'familia@site.com']))
+            ->assertSessionHasNoErrors()->assertRedirect(route('cadastro.index'));
+        $this->get(route('cadastro.index'))->assertSee('id="email-resp"', false)
+            ->assertSee('Diferente do e-mail do atleta');
+    }
+
     // ---------- ajudantes ----------
 
     private function formulario(array $extra = []): array

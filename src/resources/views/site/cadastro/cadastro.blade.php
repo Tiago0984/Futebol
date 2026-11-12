@@ -181,7 +181,7 @@
 
                 <div class="mat-group">
                     <label class="mat-label">E-mail *</label>
-                    <input type="email" name="email_atleta" value="{{ old('email_atleta') }}" required class="mat-input" maxlength="255" inputmode="email" autocomplete="off" autocapitalize="off">
+                    <input type="email" name="email_atleta" id="email-atleta" value="{{ old('email_atleta') }}" required class="mat-input" maxlength="255" inputmode="email" autocomplete="off" autocapitalize="off">
                 </div>
             </div>
 
@@ -278,7 +278,8 @@
                     <div class="col-sm-3">
                         <div class="mat-group">
                             <label class="mat-label">E-mail *</label>
-                            <input type="email" name="email_responsavel" value="{{ old('email_responsavel') }}" required class="mat-input" maxlength="150" inputmode="email" autocomplete="email" autocapitalize="off">
+                            <input type="email" name="email_responsavel" id="email-resp" value="{{ old('email_responsavel') }}" required class="mat-input" maxlength="150" inputmode="email" autocomplete="email" autocapitalize="off">
+                            <p class="mat-hint">Diferente do e-mail do atleta: cada um recebe o próprio acesso ao app.</p>
                         </div>
                     </div>
                     <div class="col-sm-3">
@@ -555,6 +556,16 @@ formCadastro.addEventListener('submit', function (e) {
         marcaErro(whatsappEl, 'Informe um WhatsApp válido com DDD.');
     } else {
         limpaErro(whatsappEl);
+    }
+
+    // Cada um com o próprio e-mail (a mesma regra do servidor: sem diferenciar maiúsculas e espaços)
+    const emailRespEl = document.getElementById('email-resp');
+    const emailAtleta = document.getElementById('email-atleta').value.trim().toLowerCase();
+    if (emailAtleta !== '' && emailAtleta === emailRespEl.value.trim().toLowerCase()) {
+        valido = false;
+        marcaErro(emailRespEl, 'O e-mail do responsável precisa ser diferente do e-mail do atleta.');
+    } else {
+        limpaErro(emailRespEl);
     }
 
     const telefoneEl = document.getElementById('telefone-resp');
