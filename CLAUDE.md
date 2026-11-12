@@ -1228,13 +1228,19 @@ Em casa, 09/10: dump do Senac restaurado (`backup/db_futebol_para_casa.sql`, de 
 #### 12/11/2026 — depois da apresentação do app
 - **Apresentação feita e aprovada** (dono do projeto). A ferramenta usada nela (comando `aacj:preparar-apresentacao`, serviços `DadosDaApresentacao` e `BackupDaApresentacao`, `DadosDaApresentacaoTest`, guia `docs/apresentacao-app.md` e as fotos de `src/resources/apresentacao/`, 9,4 MB) **ficou fora do Git** (decisão do dono do projeto: a entrega começa do zero e o comando apaga e recria os dados): guardada em `backup/apresentacao/` (só neste computador), com a mesma estrutura de pastas. Para usar de novo, copiar de volta para `src/`.
 - **Branch:** o trabalho voltou para a `feature/agenda-eventos` (a local estava 31 commits atrás e foi avançada em fast-forward até `0af4c72`, igual à `main`).
-- **Commits** (sem migration; push e servidor pendentes, com OK):
+- **Commits** (sem migration; publicados, abaixo):
   - `5345f18` fix: no Meu perfil, a troca de senha apaga o ID anterior da sessão (`regenerate(true)`) e `senha_atual`, `nova_senha` e `nova_senha_confirmation` não ficam no old input (`dontFlash` no `bootstrap/app.php`). Testes no `PerfilTest`.
   - `5571d85` fix: a página Jogadores do site usa `Atleta::urlFoto()` no cartão e no modal (a foto enviada pelo cadastro do site, em `storage/atletas`, aparecia quebrada). `SiteJogadoresFotosTest`.
   - `ec94b5f` feat: no Matricule-se, o e-mail do responsável precisa ser diferente do e-mail do atleta (sem diferenciar maiúsculas e espaços; regra no `CadastroController`, aviso no formulário antes do envio e a dica abaixo do campo). Só no site, decisão do dono do projeto (seção 4, "App"). Teste no `SiteCadastroFormularioTest`.
 - **O cadastro pelo site envia o link de assinatura só ao e-mail do responsável** (conferido): o e-mail do atleta recebe o convite do app só na aprovação da matrícula.
 - **Validação:** 19 testes (perfil, fotos e cadastro do site) depois da troca de branch; antes, 63 testes do cadastro (site, responsável único, período, grau, categoria, CPF).
-- **Próximo passo:** correções finais e entrega ao cliente (seção 7, "Entrega: começar do zero").
+- **Publicado no servidor (12/11/2026):**
+  - push da feature e da `main` até `8d0c3b6` (pelo Claude, com OK);
+  - o `git pull` parou: `PerfilController.php`, `bootstrap/app.php` e `grid-atletas.blade.php` tinham sido alterados direto no servidor (as mesmas mudanças dos commits, pelo tamanho do diff). Guardados com `git stash push -m "alteracoes-locais-12-11" -- …` (pode ser descartado com `git stash drop` quando não houver dúvida); depois, `git pull --ff-only` de `0af4c72` a `8d0c3b6` e `optimize:clear`. **No Terminal SSH, os caminhos do Git são relativos a `src/`** (o terminal já está nela);
+  - o `composer.lock` do servidor está alterado (1.781 linhas, regravado pelo Instalar do PHP Composer do painel) e **ficou como está**: combina com o `vendor` de lá e não trava o pull enquanto nenhum commit mexer nele;
+  - a ferramenta da apresentação, que estava solta no servidor, foi **movida para `~/apresentacao-guardada-20261112`** (fora do site e do Git): o comando, os dois serviços, `resources/apresentacao/` e `docs/apresentacao-app.md`. O `artisan list` não tem mais o comando. As fotos que ele copiou para `storage/` (`storage/apresentacao/…`, `comissao/apresentacao-…`) continuam servidas;
+  - conferido pelo Claude com o `curl`: home, Matricule-se (com a dica e o aviso do e-mail), Jogadores (fotos de `storage/atletas` e `storage/apresentacao` em 200), campeonato e documentação em 200, `/admin` 302. O `git status` lá ficou só com os soltos de sempre (`composer.lock`, `.env.bak-20261024-1251`, `composer.phar`, `composer-setup.php`) e as imagens enviadas.
+- **Próximo passo:** correções finais e entrega ao cliente (seção 7, "Entrega: começar do zero"). Na entrega, apagar também as fotos da apresentação em `storage/app/public/apresentacao` e `public/futebol/images/comissao/apresentacao-*`, e a pasta `~/apresentacao-guardada-20261112`, se não for mais usada.
 
 ---
 
