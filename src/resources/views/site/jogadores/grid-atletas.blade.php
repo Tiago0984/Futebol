@@ -10,6 +10,7 @@
             $categoriaDoAtleta = $atleta->categoriasAtivas->first();
             // Campeonatos em que foi convocado (um por campeonato, mesmo se convocado em duas categorias)
             $campeonatosConvocado = $atleta->convocacoes->pluck('id_campeonato')->unique()->count();
+            $fotoUrl = $atleta->urlFoto();
         @endphp
 
         <article class="player-sticker-card"
@@ -22,8 +23,8 @@
             role="button" tabindex="0">
             <div class="sticker-inner-frame">
                 <figure class="sticker-photo-box">
-                    @if($atleta->foto_atleta && $atleta->foto_atleta != 'default-player.jpg')
-                    <img src="{{ asset('futebol/images/our-teams/' . $atleta->foto_atleta) }}" alt="Foto do atleta {{ $atleta->nome_atleta }}">
+                    @if($fotoUrl)
+                    <img src="{{ $fotoUrl }}" alt="Foto do atleta {{ $atleta->nome_atleta }}">
                     @else
                     <img src="{{ asset('futebol/images/our-teams/default-player.jpg') }}" alt="Foto padrão">
                     @endif
@@ -51,7 +52,7 @@
 
                             <div class="col-xs-12 col-md-4 mb-4-mobile">
                                 <div class="modal-avatar-frame text-center">
-                                    <img src="{{ $atleta->foto_atleta && $atleta->foto_atleta != 'default-player.jpg' ? asset('futebol/images/our-teams/' . $atleta->foto_atleta) : asset('futebol/images/our-teams/default-player.jpg') }}" class="img-responsive profile-picture" alt="{{ $atleta->nome_atleta }}">
+                                    <img src="{{ $fotoUrl ?? asset('futebol/images/our-teams/default-player.jpg') }}" class="img-responsive profile-picture" alt="{{ $atleta->nome_atleta }}">
                                 </div>
                             </div>
 
